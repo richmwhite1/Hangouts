@@ -257,8 +257,8 @@ export default function MessagesPage() {
         </div>
 
         <div className="flex">
-          {/* Sidebar */}
-          <div className="w-80 bg-gray-900/30 border-r border-gray-700/50 h-screen overflow-hidden flex flex-col">
+          {/* Sidebar - Full Width */}
+          <div className="w-full bg-gray-900/30 h-screen overflow-hidden flex flex-col">
             {/* Search */}
             <div className="p-4 border-b border-gray-700/50">
               <div className="relative">
@@ -307,7 +307,7 @@ export default function MessagesPage() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-1 p-2">
+                <div className={`p-2 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" : "space-y-1"}`}>
                   {filteredConversations.map((conversation) => {
                     const otherParticipant = conversation.participants.find(p => p.id !== user?.id)
                     const isSelected = selectedConversations.includes(conversation.id)
@@ -319,14 +319,14 @@ export default function MessagesPage() {
                         href={`/messages/${conversation.id}`}
                         onClick={() => markConversationAsRead(conversation.id)}
                       >
-                        <div className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        <div className={`group relative ${viewMode === "grid" ? "p-4" : "p-3"} rounded-lg cursor-pointer transition-all duration-200 ${
                           isSelected 
                             ? 'bg-purple-600/20 border border-purple-500/30' 
                             : 'hover:bg-gray-800/50'
                         }`}>
-                          <div className="flex items-center space-x-3">
+                          <div className={`flex ${viewMode === "grid" ? "flex-col text-center space-y-3" : "items-center space-x-3"}`}>
                             <div className="relative">
-                              <Avatar className="w-12 h-12 rounded-lg">
+                              <Avatar className={`${viewMode === "grid" ? "w-16 h-16 mx-auto" : "w-12 h-12"} rounded-lg`}>
                                 <AvatarImage 
                                   src={conversation.type === "GROUP" 
                                     ? conversation.avatar || "/group-avatar.svg"
@@ -345,10 +345,10 @@ export default function MessagesPage() {
                                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-gray-900 rounded-full"></div>
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h3 className="font-medium text-white truncate">{conversation.name}</h3>
-                                <div className="flex items-center space-x-2">
+                            <div className={`${viewMode === "grid" ? "w-full" : "flex-1 min-w-0"}`}>
+                              <div className={`flex ${viewMode === "grid" ? "flex-col space-y-2" : "items-center justify-between mb-1"}`}>
+                                <h3 className={`font-medium text-white ${viewMode === "grid" ? "text-center" : "truncate"}`}>{conversation.name}</h3>
+                                <div className={`flex items-center ${viewMode === "grid" ? "justify-center space-x-2" : "space-x-2"}`}>
                                   {conversation.lastMessage && (
                                     <span className="text-xs text-gray-400">
                                       {formatLastMessageTime(conversation.lastMessage.timestamp)}
@@ -361,8 +361,8 @@ export default function MessagesPage() {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-400 truncate">
+                              <div className={`${viewMode === "grid" ? "text-center" : "flex items-center justify-between"}`}>
+                                <p className={`text-sm text-gray-400 ${viewMode === "grid" ? "text-center" : "truncate"}`}>
                                   {conversation.lastMessage ? (
                                     <>
                                       <span className="font-medium">
@@ -374,7 +374,7 @@ export default function MessagesPage() {
                                     "No messages yet"
                                   )}
                                 </p>
-                                {conversation.type === "GROUP" && (
+                                {conversation.type === "GROUP" && viewMode === "list" && (
                                   <Users className="w-4 h-4 text-gray-500" />
                                 )}
                               </div>
@@ -386,22 +386,6 @@ export default function MessagesPage() {
                   })}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Main Content Area */}
-          <div className="flex-1 flex items-center justify-center bg-gray-900/20">
-            <div className="text-center">
-              <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h2 className="text-xl font-semibold text-white mb-2">Select a conversation</h2>
-              <p className="text-gray-400 mb-6">Choose a conversation from the sidebar to start messaging</p>
-              <Button
-                onClick={() => setShowNewChat(true)}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Start New Chat
-              </Button>
             </div>
           </div>
         </div>
