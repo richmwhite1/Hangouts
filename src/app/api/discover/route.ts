@@ -45,11 +45,13 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
       )
     }
 
-    // DISCOVER PAGE LOGIC: Show public hangouts + friends' hangouts
+    // DISCOVER PAGE LOGIC: Show public hangouts + friends' hangouts + user's own hangouts
     const whereClause = {
       OR: [
         // Public hangouts (everyone can see)
         { privacyLevel: 'PUBLIC' },
+        // User's own hangouts (if authenticated)
+        ...(userId ? [{ creatorId: userId }] : []),
         // Friends-only hangouts from user's friends (if authenticated)
         ...(userId && friendIds.length > 0 ? [{
           AND: [

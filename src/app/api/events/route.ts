@@ -16,18 +16,70 @@ export async function GET(request: NextRequest) {
     
     console.log('🔍 Query params:', { search, category, dateFrom, dateTo })
     console.log('🔍 Available db models:', Object.keys(db))
-    // Build where clause with search and category filters
+    
+    // Get user ID for friend context (optional for discover page)
+    let userId: string | null = null
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      const payload = verifyToken(token)
+      if (payload) {
+        userId = payload.userId
+      }
+    }
+
+    let friendIds: string[] = []
+    
+    // If user is authenticated, get their friends for FRIENDS_ONLY events
+    if (userId) {
+      const userFriends = await db.friendship.findMany({
+        where: {
+          OR: [
+            { userId: userId },
+            { friendId: userId }
+          ]
+        },
+        select: {
+          userId: true,
+          friendId: true
+        }
+      })
+
+      friendIds = userFriends.map(friend => 
+        friend.userId === userId ? friend.friendId : friend.userId
+      )
+    }
+
+    // Build where clause with privacy logic: PUBLIC events + user's own events + FRIENDS_ONLY events from user's friends
     const whereClause: any = {
       type: 'EVENT',
-      privacyLevel: 'PUBLIC'
+      OR: [
+        // Public events (everyone can see)
+        { privacyLevel: 'PUBLIC' },
+        // User's own events (if authenticated)
+        ...(userId ? [{ creatorId: userId }] : []),
+        // Friends-only events from user's friends (if authenticated)
+        ...(userId && friendIds.length > 0 ? [{
+          AND: [
+            { privacyLevel: 'FRIENDS_ONLY' },
+            { creatorId: { in: friendIds } }
+          ]
+        }] : [])
+      ],
+      status: 'PUBLISHED'
     }
     
     if (search) {
-      whereClause.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { venue: { contains: search } },
-        { city: { contains: search } }
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { title: { contains: search } },
+            { description: { contains: search } },
+            { venue: { contains: search } },
+            { city: { contains: search } }
+          ]
+        }
       ]
     }
     
