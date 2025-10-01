@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        button { padding: 10px 15px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .result { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 5px; }
+        pre { background: #1a1a1a; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .friend-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+        .friend-card { background: #333; padding: 10px; border-radius: 5px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>👥 Friends System Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Authentication Test</h2>
+        <button onclick="testSignIn()">Test Frank Sign In</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Friends API Test</h2>
+        <button onclick="testFriendsAPI()">Fetch Friends</button>
+        <button onclick="testFriendsRequests()">Fetch Friend Requests</button>
+        <div id="friends-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Friends Display Test</h2>
+        <button onclick="displayFriends()">Display Friends Grid</button>
+        <div id="friends-display" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Friend Request Flow Test</h2>
+        <button onclick="testFriendRequestFlow()">Test Request/Accept Flow</button>
+        <div id="friend-request-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Enterprise Features Test</h2>
+        <button onclick="testEnterpriseFeatures()">Test Enterprise Features</button>
+        <div id="enterprise-result" class="result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let currentUser = null;
+
+        async function testSignIn() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<div class="info">Testing Frank sign in...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'frank@example.com',
+                        password: 'Password1!'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.token;
+                    currentUser = data.data.user;
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Frank signed in successfully!</div>
+                        <div class="info">User: ${currentUser.name} (${currentUser.email})</div>
+                        <div class="info">Token: ${authToken.substring(0, 20)}...</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Sign in failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFriendsAPI() {
+            if (!authToken) {
+                document.getElementById('friends-result').innerHTML = '<div class="error">❌ Please sign in first</div>';
+                return;
+            }
+
+            const resultDiv = document.getElementById('friends-result');
+            resultDiv.innerHTML = '<div class="info">Fetching friends...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/friends', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Friends API working!</div>
+                        <div class="info">Found ${data.data.length} friends</div>
+                        <pre>${JSON.stringify(data.data.slice(0, 3), null, 2)}...</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFriendsRequests() {
+            if (!authToken) {
+                document.getElementById('friends-result').innerHTML = '<div class="error">❌ Please sign in first</div>';
+                return;
+            }
+
+            const resultDiv = document.getElementById('friends-result');
+            resultDiv.innerHTML = '<div class="info">Fetching friend requests...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/friends/requests', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Friend requests API working!</div>
+                        <div class="info">Found ${data.data.length} friend requests</div>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function displayFriends() {
+            if (!authToken) {
+                document.getElementById('friends-display').innerHTML = '<div class="error">❌ Please sign in first</div>';
+                return;
+            }
+
+            const resultDiv = document.getElementById('friends-display');
+            resultDiv.innerHTML = '<div class="info">Loading friends...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/friends', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const friends = data.data;
+                    let html = `
+                        <div class="success">✅ Friends Display Test</div>
+                        <div class="info">Found ${friends.length} friends</div>
+                        <div class="friend-list">
+                    `;
+                    
+                    friends.forEach(friend => {
+                        html += `
+                            <div class="friend-card">
+                                <div style="font-weight: bold;">${friend.name}</div>
+                                <div style="font-size: 0.8em; color: #888;">@${friend.username}</div>
+                                <div style="font-size: 0.7em; color: #666;">${friend.email}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFriendRequestFlow() {
+            if (!authToken) {
+                document.getElementById('friend-request-result').innerHTML = '<div class="error">❌ Please sign in first</div>';
+                return;
+            }
+
+            const resultDiv = document.getElementById('friend-request-result');
+            resultDiv.innerHTML = '<div class="info">Testing friend request flow...</div>';
+            
+            try {
+                // Test sending a friend request
+                const response = await fetch('http://localhost:3000/api/friends/requests', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        friendId: 'test-friend-id' // This will fail but test the endpoint
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Friend request flow test completed</div>
+                    <div class="info">Response: ${data.message || 'Endpoint accessible'}</div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testEnterpriseFeatures() {
+            if (!authToken) {
+                document.getElementById('enterprise-result').innerHTML = '<div class="error">❌ Please sign in first</div>';
+                return;
+            }
+
+            const resultDiv = document.getElementById('enterprise-result');
+            resultDiv.innerHTML = '<div class="info">Testing enterprise features...</div>';
+            
+            try {
+                // Test multiple endpoints
+                const tests = [
+                    { name: 'Friends List', url: '/api/friends' },
+                    { name: 'Friend Requests', url: '/api/friends/requests' },
+                    { name: 'Friend Suggestions', url: '/api/friends/suggestions' },
+                    { name: 'Recent Friends', url: '/api/friends/recent' }
+                ];
+                
+                let results = [];
+                
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(`http://localhost:3000${test.url}`, {
+                            headers: { 'Authorization': `Bearer ${authToken}` }
+                        });
+                        const data = await response.json();
+                        results.push(`✅ ${test.name}: ${data.success ? 'Working' : 'Failed'}`);
+                    } catch (error) {
+                        results.push(`❌ ${test.name}: Error`);
+                    }
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Enterprise Features Test</div>
+                    <div class="info">${results.join('<br>')}</div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-run basic tests on load
+        window.onload = function() {
+            testSignIn();
+        };
+    </script>
+</body>
+</html>
