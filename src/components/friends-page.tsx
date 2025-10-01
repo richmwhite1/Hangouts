@@ -311,7 +311,7 @@ export function FriendsPage() {
 
         {/* Requests Tab */}
         <TabsContent value="requests" className="p-4 space-y-4">
-          {receivedRequests.length === 0 && sentRequests.length === 0 ? (
+          {(!receivedRequests || receivedRequests.length === 0) && (!sentRequests || sentRequests.length === 0) ? (
             <div className="text-center py-12">
               <UserPlus className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-lg font-medium text-white mb-2">No friend requests</h3>
@@ -320,7 +320,7 @@ export function FriendsPage() {
           ) : (
             <div className="space-y-4">
               {/* Received Requests */}
-              {receivedRequests.length > 0 && (
+              {receivedRequests && receivedRequests.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-white mb-3">Received Requests</h3>
                   <div className="space-y-3">
@@ -377,7 +377,7 @@ export function FriendsPage() {
               )}
 
               {/* Sent Requests */}
-              {sentRequests.length > 0 && (
+              {sentRequests && sentRequests.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-white mb-3">Sent Requests</h3>
                   <div className="space-y-3">

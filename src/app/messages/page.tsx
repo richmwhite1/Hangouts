@@ -19,7 +19,6 @@ import {
   Settings,
   Archive,
   Star,
-  Filter,
   Grid3X3,
   List
 } from "lucide-react"
@@ -227,9 +226,6 @@ export default function MessagesPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-3xl font-bold">Messages</h1>
-              <Badge variant="secondary" className="bg-purple-600/20 text-purple-300">
-                {conversations.length} conversations
-              </Badge>
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -238,9 +234,6 @@ export default function MessagesPage() {
                 onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")}
               >
                 {viewMode === "list" ? <Grid3X3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Filter className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="sm">
                 <Settings className="w-4 h-4" />

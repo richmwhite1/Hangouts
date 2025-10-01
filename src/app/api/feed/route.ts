@@ -274,96 +274,108 @@ async function getFeedHandler(request: NextRequest) {
     })
 
     // Transform the data for frontend consumption
-    const transformedContent = content.map(item => ({
-      id: item.id,
-      type: item.type,
-      title: item.title,
-      description: item.description,
-      image: item.image,
-      location: item.location,
-      latitude: item.latitude,
-      longitude: item.longitude,
-      startTime: item.startTime?.toISOString(),
-      endTime: item.endTime?.toISOString(),
-      privacyLevel: item.privacyLevel,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-      creator: item.users,
-      participants: item.content_participants.map(p => ({
-        id: p.id,
-        contentId: p.contentId,
-        userId: p.userId,
-        role: p.role,
-        canEdit: p.canEdit,
-        isMandatory: p.isMandatory,
-        isCoHost: p.isCoHost,
-        invitedAt: p.invitedAt.toISOString(),
-        joinedAt: p.joinedAt?.toISOString(),
-        user: p.users
-      })),
-      // Event-specific data
-      ...(item.type === 'EVENT' && {
-        venue: item.venue,
-        address: item.address,
-        city: item.city,
-        state: item.state,
-        zipCode: item.zipCode,
-        price: {
-          min: item.priceMin,
-          max: item.priceMax,
-          currency: item.currency
-        },
-        ticketUrl: item.ticketUrl,
-        attendeeCount: item.attendeeCount,
-        externalEventId: item.externalEventId,
-        source: item.source,
-        tags: item.eventTags.map(tag => tag.tag),
-        images: item.eventImages.map(img => img.imageUrl),
-        saveCount: item._count.eventSaves
-      }),
-      // Hangout-specific data
-      ...(item.type === 'HANGOUT' && {
-        maxParticipants: item.maxParticipants,
-        weatherEnabled: item.weatherEnabled,
-        polls: item.polls.map(poll => ({
-          id: poll.id,
-          title: poll.title,
-          description: poll.description,
-          options: poll.options,
-          status: poll.status,
-          consensusPercentage: poll.consensusPercentage,
-          expiresAt: poll.expiresAt?.toISOString(),
-          createdAt: poll.createdAt.toISOString()
-        }))
-      }),
-      // Common data
-      photos: item.photos.map(photo => ({
-        id: photo.id,
-        originalUrl: photo.originalUrl,
-        thumbnailUrl: photo.thumbnailUrl,
-        caption: photo.caption,
-        createdAt: photo.createdAt.toISOString(),
-        user: photo.users
-      })),
-      rsvps: item.rsvps.map(rsvp => ({
-        id: rsvp.id,
-        contentId: item.id,
-        userId: rsvp.userId,
-        status: rsvp.status,
-        respondedAt: rsvp.respondedAt?.toISOString(),
-        user: rsvp.users
-      })),
-      counts: {
-        participants: item._count.content_participants,
-        comments: item._count.comments,
-        likes: item._count.content_likes,
-        shares: item._count.content_shares,
-        messages: item._count.messages,
-        photos: item._count.photos,
-        rsvps: item._count.rsvps,
-        saves: item._count.eventSaves
+    const transformedContent = content.map(item => {
+      // Find current user's RSVP status
+      let myRsvpStatus = 'PENDING'
+      if (userId && item.rsvps) {
+        const userRsvp = item.rsvps.find(rsvp => rsvp.userId === userId)
+        if (userRsvp) {
+          myRsvpStatus = userRsvp.status
+        }
       }
-    }))
+      
+      return {
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        image: item.image,
+        location: item.location,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        startTime: item.startTime?.toISOString(),
+        endTime: item.endTime?.toISOString(),
+        privacyLevel: item.privacyLevel,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+        creator: item.users,
+        myRsvpStatus: myRsvpStatus,
+        participants: item.content_participants.map(p => ({
+          id: p.id,
+          contentId: p.contentId,
+          userId: p.userId,
+          role: p.role,
+          canEdit: p.canEdit,
+          isMandatory: p.isMandatory,
+          isCoHost: p.isCoHost,
+          invitedAt: p.invitedAt.toISOString(),
+          joinedAt: p.joinedAt?.toISOString(),
+          user: p.users
+        })),
+        // Event-specific data
+        ...(item.type === 'EVENT' && {
+          venue: item.venue,
+          address: item.address,
+          city: item.city,
+          state: item.state,
+          zipCode: item.zipCode,
+          price: {
+            min: item.priceMin,
+            max: item.priceMax,
+            currency: item.currency
+          },
+          ticketUrl: item.ticketUrl,
+          attendeeCount: item.attendeeCount,
+          externalEventId: item.externalEventId,
+          source: item.source,
+          tags: item.eventTags.map(tag => tag.tag),
+          images: item.eventImages.map(img => img.imageUrl),
+          saveCount: item._count.eventSaves
+        }),
+        // Hangout-specific data
+        ...(item.type === 'HANGOUT' && {
+          maxParticipants: item.maxParticipants,
+          weatherEnabled: item.weatherEnabled,
+          polls: item.polls.map(poll => ({
+            id: poll.id,
+            title: poll.title,
+            description: poll.description,
+            options: poll.options,
+            status: poll.status,
+            consensusPercentage: poll.consensusPercentage,
+            expiresAt: poll.expiresAt?.toISOString(),
+            createdAt: poll.createdAt.toISOString()
+          }))
+        }),
+        // Common data
+        photos: item.photos.map(photo => ({
+          id: photo.id,
+          originalUrl: photo.originalUrl,
+          thumbnailUrl: photo.thumbnailUrl,
+          caption: photo.caption,
+          createdAt: photo.createdAt.toISOString(),
+          user: photo.users
+        })),
+        rsvps: item.rsvps.map(rsvp => ({
+          id: rsvp.id,
+          contentId: item.id,
+          userId: rsvp.userId,
+          status: rsvp.status,
+          respondedAt: rsvp.respondedAt?.toISOString(),
+          user: rsvp.users
+        })),
+        counts: {
+          participants: item._count.content_participants,
+          comments: item._count.comments,
+          likes: item._count.content_likes,
+          shares: item._count.content_shares,
+          messages: item._count.messages,
+          photos: item._count.photos,
+          rsvps: item._count.rsvps,
+          saves: item._count.eventSaves
+        }
+      }
+    })
 
     return NextResponse.json({ 
       success: true,
