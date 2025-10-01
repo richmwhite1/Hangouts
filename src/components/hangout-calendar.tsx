@@ -282,9 +282,13 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
         <div
           className="fixed z-50 bg-popover border border-border/50 rounded-lg p-4 shadow-lg pointer-events-auto cursor-pointer max-w-xs"
           style={{
-            left: mousePosition.x + 10,
-            top: mousePosition.y - 10,
-            transform: "translateY(-100%)",
+            left: Math.min(
+              Math.max(mousePosition.x + 10, 10), // At least 10px from left edge
+              window.innerWidth - 320 // 320px is max-w-xs width
+            ),
+            top: Math.max(mousePosition.y - 10, 10), // Keep at least 10px from top
+            transform: mousePosition.y < 200 ? "translateY(0)" : "translateY(-100%)", // Show below if near top
+            maxWidth: '300px', // Ensure consistent width
           }}
           onClick={() => {
             // Navigate to hangout or event detail page
