@@ -1,4 +1,5 @@
-const { db } = require('../../db')
+const { PrismaClient } = require('@prisma/client')
+const db = new PrismaClient()
 
 class ReminderProcessor {
   static intervalId = null
