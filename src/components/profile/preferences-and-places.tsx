@@ -59,12 +59,22 @@ export function PreferencesAndPlaces({
     if (newPlace.trim()) {
       const newPlaceObj: Place = {
         id: `place_${Date.now()}`,
-        title: newPlace.trim()
+        title: newPlace.trim(),
+        mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(newPlace.trim())}`
       }
       onPlacesChange([...favoritePlaces, newPlaceObj])
       setNewPlace("")
       setIsAddingPlace(false)
     }
+  }
+
+  const generateMapLink = (placeTitle: string) => {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeTitle)}`
+  }
+
+  const handlePlaceClick = (place: Place) => {
+    const mapLink = place.mapLink || generateMapLink(place.title)
+    window.open(mapLink, '_blank', 'noopener,noreferrer')
   }
 
   const handleRemovePlace = (id: string) => {
@@ -148,30 +158,25 @@ export function PreferencesAndPlaces({
             {favoritePlaces.map((place) => (
               <div
                 key={place.id}
-                className="flex items-center justify-between p-2.5 border border-gray-600/30 rounded-md bg-gray-800/30 hover:bg-gray-800/50 transition-colors"
+                className="flex items-center justify-between p-2.5 border border-gray-600/30 rounded-md bg-gray-800/30 hover:bg-gray-800/50 transition-colors group"
               >
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-300">{place.title}</span>
+                <div 
+                  className="flex items-center gap-2 flex-1 cursor-pointer hover:text-gray-200 transition-colors"
+                  onClick={() => handlePlaceClick(place)}
+                >
+                  <MapPin className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-300 transition-colors" />
+                  <span className="text-xs text-gray-300 group-hover:text-gray-200 transition-colors">{place.title}</span>
+                  <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-gray-400 transition-colors ml-1" />
                 </div>
-                <div className="flex items-center gap-2">
-                  {place.mapLink && (
-                    <a
-                      href={place.mapLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-gray-300 transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  <button
-                    onClick={() => handleRemovePlace(place.id)}
-                    className="text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemovePlace(place.id)
+                  }}
+                  className="text-gray-500 hover:text-gray-300 transition-colors p-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             ))}
           </div>

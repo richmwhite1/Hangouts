@@ -36,8 +36,8 @@ export function ProfilePage() {
   ])
   const [favoritePlaces, setFavoritePlaces] = useState<Array<{id: string, title: string, mapLink?: string}>>([
     { id: 'place_1', title: 'Central Park', mapLink: 'https://www.google.com/maps/search/?api=1&query=Central+Park' },
-    { id: 'place_2', title: 'Blue Bottle Coffee' },
-    { id: 'place_3', title: 'Brooklyn Bridge' }
+    { id: 'place_2', title: 'Blue Bottle Coffee', mapLink: 'https://www.google.com/maps/search/?api=1&query=Blue+Bottle+Coffee' },
+    { id: 'place_3', title: 'Brooklyn Bridge', mapLink: 'https://www.google.com/maps/search/?api=1&query=Brooklyn+Bridge' }
   ])
   const { isAuthenticated, isLoading: authLoading, signOut } = useAuth()
   const { profile, userHangouts, isLoading, error, refetch } = useProfile()
