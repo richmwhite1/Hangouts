@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Search, Filter, MapPin, Calendar as CalendarIcon, Users, X } from "lucide-react"
+import { Search, Filter, MapPin, Calendar as CalendarIcon, X } from "lucide-react"
 import { format } from "date-fns"
 
 interface SearchFilters {
@@ -75,7 +75,7 @@ export function AdvancedSearch({ onFiltersChange, onSearch }: AdvancedSearchProp
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [activeFilters, setActiveFilters] = useState<string[]>([])
 
-  const updateFilter = (key: keyof SearchFilters, value: any) => {
+  const updateFilter = (key: keyof SearchFilters, value: string | { from: Date | undefined; to: Date | undefined }) => {
     const newFilters = { ...filters, [key]: value }
     setFilters(newFilters)
     onFiltersChange(newFilters)

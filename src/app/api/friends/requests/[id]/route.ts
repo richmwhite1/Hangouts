@@ -5,9 +5,11 @@ import { createFriendAcceptedNotification } from '@/lib/notifications'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: requestId } = await params
+    
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -38,7 +40,7 @@ export async function PUT(
 
     // Find the friend request
     const friendRequest = await db.friendRequest.findUnique({
-      where: { id: params.id },
+      where: { id: requestId },
       include: {
         sender: {
           select: {
@@ -84,7 +86,7 @@ export async function PUT(
 
     // Update the friend request status
     const updatedRequest = await db.friendRequest.update({
-      where: { id: params.id },
+      where: { id: requestId },
       data: { status },
       include: {
         sender: {
@@ -121,6 +123,16 @@ export async function PUT(
         friendRequest.receiverId, 
         friendRequest.receiver.name
       )
+
+      // Mark the original friend request notification as read for the receiver
+      // Use raw SQL to update the notification since Prisma JSON queries can be tricky
+      await db.$executeRaw`
+        UPDATE "Notification" 
+        SET "isRead" = true, "readAt" = NOW()
+        WHERE "userId" = ${friendRequest.receiverId} 
+        AND "type" = 'FRIEND_REQUEST'
+        AND "data"->>'senderId' = ${friendRequest.senderId}
+      `
     }
 
     return NextResponse.json(updatedRequest)
@@ -135,9 +147,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: requestId } = await params
+    
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -158,7 +172,7 @@ export async function DELETE(
 
     // Find the friend request
     const friendRequest = await db.friendRequest.findUnique({
-      where: { id: params.id }
+      where: { id: requestId }
     })
 
     if (!friendRequest) {
@@ -178,7 +192,7 @@ export async function DELETE(
 
     // Delete the friend request
     await db.friendRequest.delete({
-      where: { id: params.id }
+      where: { id: requestId }
     })
 
     return NextResponse.json({ success: true })

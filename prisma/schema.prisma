@@ -1,224 +1,110 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-enum FriendRequestStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-}
-
-enum HangoutStatus {
-  PLANNING
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum PrivacyLevel {
-  PRIVATE
-  FRIENDS_ONLY
-  PUBLIC
-}
-
-enum ParticipantRole {
-  CREATOR
-  CO_ORGANIZER
-  MEMBER
-}
-
-enum RSVPStatus {
-  PENDING
-  YES
-  NO
-  MAYBE
-}
-
-enum NotificationType {
-  FRIEND_REQUEST
-  FRIEND_ACCEPTED
-  HANGOUT_INVITATION
-  HANGOUT_RSVP
-  HANGOUT_REMINDER
-  HANGOUT_UPDATE
-  TASK_ASSIGNED
-  TASK_DUE
-  MESSAGE_RECEIVED
-  WEATHER_ALERT
-  ETA_UPDATE
-}
-
-enum MessageType {
-  TEXT
-  IMAGE
-  FILE
-}
-
-enum TaskStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-}
-
-enum PollStatus {
-  ACTIVE
-  CLOSED
-  EXPIRED
-}
-
-enum PollType {
-  SINGLE_CHOICE
-  MULTIPLE_CHOICE
-  RANKING
-  CONSENSUS
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  name      String
-  avatar    String?
-  password  String
-  isActive  Boolean  @default(true)
-  lastSeen  DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                       String                    @id @default(cuid())
+  email                    String                    @unique
+  username                 String                    @unique
+  name                     String
+  avatar                   String?
+  backgroundImage          String?
+  bio                      String?
+  location                 String?
+  zodiac                   String?
+  enneagram                String?
+  bigFive                  String?
+  loveLanguage             String?
+  website                  String?
+  birthDate                DateTime?
+  password                 String
+  role                     UserRole                  @default(USER)
+  isActive                 Boolean                   @default(true)
+  isVerified               Boolean                   @default(false)
+  lastSeen                 DateTime                  @default(now())
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  comments                 comments[]
+  content                  content[]
+  content_likes            content_likes[]
+  content_participants     content_participants[]
+  content_reports          content_reports[]
+  content_shares           content_shares[]
+  conversationParticipants ConversationParticipant[]
+  conversationParticipantsAdded ConversationParticipant[] @relation("ConversationParticipantAddedBy")
+  conversationsCreated     Conversation[]            @relation("ConversationCreator")
+  eventSaves               EventSave[]
+  finalPlans               finalPlan[]
+  receivedFriendRequests   FriendRequest[]           @relation("FriendRequestReceiver")
+  sentFriendRequests       FriendRequest[]           @relation("FriendRequestSender")
+  friendships              Friendship[]              @relation("UserFriendships")
+  friendOf                 Friendship[]              @relation("FriendFriendships")
+  message_reads            message_reads[]
+  messages                 messages[]
+  messageReactions         MessageReaction[]
+  typingIndicators         TypingIndicator[]
+  notificationPreferences  NotificationPreference[]
+  notifications            Notification[]
+  reminders                Reminder[]
+  passwordResetTokens      PasswordResetToken?
+  photo_comments           photo_comments[]
+  photo_likes              photo_likes[]
+  photo_tags               photo_tags[]
+  photos                   photos[]
+  pollParticipants         PollParticipant[]
+  pollVotes                PollVote[]
+  polls                    polls[]
+  refreshTokens            RefreshToken[]
+  rsvps                    rsvp[]
+  securityLogs             SecurityLog[]
+  hangoutTasks             hangout_tasks[]
+  hangoutTaskAssignments   hangout_task_assignments[]
 
-  // Relations
-  sentFriendRequests     FriendRequest[] @relation("FriendRequestSender")
-  receivedFriendRequests FriendRequest[] @relation("FriendRequestReceiver")
-  friendships1           Friendship[]    @relation("User1")
-  friendships2           Friendship[]    @relation("User2")
-  createdHangouts        Hangout[]       @relation("HangoutCreator")
-  hangoutParticipants    HangoutParticipant[]
-  assignedTasks          HangoutTask[]   @relation("TaskAssignee")
-  notifications          Notification[]
-  notificationPreferences NotificationPreference[]
-  hangoutMessages        HangoutMessage[]
-  hangoutMemories        HangoutMemory[]
-  createdPolls           HangoutPoll[]      @relation("PollCreator")
-  pollVotes              PollVote[]
-
+  @@index([email])
+  @@index([username])
+  @@index([isActive])
+  @@index([lastSeen])
+  @@index([createdAt])
   @@map("users")
 }
 
 model FriendRequest {
-  id         String             @id @default(cuid())
+  id         String              @id @default(cuid())
   senderId   String
   receiverId String
   status     FriendRequestStatus @default(PENDING)
   message    String?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-
-  sender   User @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  receiver   User                @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User                @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
   @@map("friend_requests")
 }
 
 model Friendship {
-  id      String   @id @default(cuid())
-  user1Id String
-  user2Id String
-  createdAt DateTime @default(now())
+  id        String           @id @default(cuid())
+  userId    String
+  friendId  String
+  status    FriendshipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User             @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
 
-  user1 User @relation("User1", fields: [user1Id], references: [id], onDelete: Cascade)
-  user2 User @relation("User2", fields: [user2Id], references: [id], onDelete: Cascade)
-
-  @@unique([user1Id, user2Id])
+  @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
   @@map("friendships")
-}
-
-model Hangout {
-  id              String        @id @default(cuid())
-  title           String
-  description     String?
-  location        String?
-  latitude        Float?
-  longitude       Float?
-  startTime       DateTime
-  endTime         DateTime
-  status          HangoutStatus @default(PLANNING)
-  privacyLevel    PrivacyLevel  @default(PRIVATE)
-  maxParticipants Int?
-  weatherEnabled  Boolean       @default(false)
-  creatorId       String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Relations
-  creator       User                @relation("HangoutCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  participants  HangoutParticipant[]
-  tasks         HangoutTask[]
-  itinerary     HangoutItinerary[]
-  polls         HangoutPoll[]
-  messages      HangoutMessage[]
-  memories      HangoutMemory[]
-
-  @@map("hangouts")
-}
-
-model HangoutParticipant {
-  id           String        @id @default(cuid())
-  hangoutId    String
-  userId       String
-  role         ParticipantRole @default(MEMBER)
-  rsvpStatus   RSVPStatus    @default(PENDING)
-  canEdit      Boolean       @default(false)
-  invitedAt    DateTime      @default(now())
-  respondedAt  DateTime?
-  joinedAt     DateTime?
-
-  hangout Hangout @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([hangoutId, userId])
-  @@map("hangout_participants")
-}
-
-model HangoutTask {
-  id          String     @id @default(cuid())
-  hangoutId   String
-  title       String
-  description String?
-  assignedToId String?
-  status      TaskStatus @default(PENDING)
-  dueDate     DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  hangout    Hangout @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
-  assignedTo User?   @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-
-  @@map("hangout_tasks")
-}
-
-model HangoutItinerary {
-  id          String   @id @default(cuid())
-  hangoutId   String
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  location    String?
-  order       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  hangout Hangout @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
-
-  @@map("hangout_itinerary")
 }
 
 model Notification {
@@ -229,13 +115,19 @@ model Notification {
   message     String
   data        Json?
   isRead      Boolean          @default(false)
+  isDismissed Boolean          @default(false)
   isEmailSent Boolean          @default(false)
   isPushSent  Boolean          @default(false)
   createdAt   DateTime         @default(now())
   readAt      DateTime?
+  dismissedAt DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([isDismissed])
+  @@index([createdAt])
   @@map("notifications")
 }
 
@@ -248,81 +140,773 @@ model NotificationPreference {
   inAppEnabled Boolean          @default(true)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type])
+  @@index([userId])
+  @@index([type])
   @@map("notification_preferences")
 }
 
-model HangoutMessage {
-  id          String      @id @default(cuid())
-  hangoutId   String
+model PollVote {
+  id          String   @id @default(cuid())
+  pollId      String
   userId      String
-  message     String
-  messageType MessageType @default(TEXT)
-  fileUrl     String?
-  replyToId   String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  option      String
+  voteType    String   @default("SINGLE")
+  ranking     Int?
+  score       Int?
+  weight      Float    @default(1.0)
+  isDelegated Boolean  @default(false)
+  delegatedTo String?
+  isPreferred Boolean  @default(false)
+  sentiment   String?
+  comment     String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  poll        polls    @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  hangout Hangout         @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  replyTo HangoutMessage? @relation("MessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies HangoutMessage[] @relation("MessageReply")
-
-  @@map("hangout_messages")
+  @@unique([pollId, userId, option])
+  @@index([pollId])
+  @@index([userId])
+  @@index([option])
+  @@map("poll_votes")
 }
 
-model HangoutMemory {
+model RefreshToken {
   id        String   @id @default(cuid())
-  hangoutId String
+  userId    String
+  tokenId   String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([isRevoked])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String?
+  ipAddress String?
+  userAgent String?
+  details   Json?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("security_logs")
+}
+
+model finalPlan {
+  id                String   @id @default(cuid())
+  contentId         String
+  pollId            String
+  title             String
+  description       String?
+  optionId          String
+  optionText        String
+  optionDescription String?
+  metadata          Json?
+  consensusLevel    Float
+  totalVotes        Int
+  finalizedBy       String
+  finalizedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  users             User     @relation(fields: [finalizedBy], references: [id])
+  content           content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([pollId])
+  @@index([finalizedBy])
+  @@map("final_plans")
+}
+
+model rsvp {
+  id          String     @id @default(cuid())
+  contentId   String
+  userId      String
+  status      RSVPStatus @default(PENDING)
+  respondedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  users       User       @relation(fields: [userId], references: [id])
+  content     content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+  @@index([contentId])
+  @@index([userId])
+  @@index([status])
+  @@index([respondedAt])
+  @@index([createdAt])
+  @@map("rsvps")
+}
+
+model comments {
+  id             String     @id
+  contentId      String
+  userId         String
+  text           String
+  replyToId      String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime
+  users          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments       comments?  @relation("commentsTocomments", fields: [replyToId], references: [id])
+  other_comments comments[] @relation("commentsTocomments")
+  content        content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model content {
+  id                   String                 @id
+  type                 ContentType
+  title                String
+  description          String?
+  image                String?
+  location             String?
+  latitude             Float?
+  longitude            Float?
+  startTime            DateTime?
+  endTime              DateTime?
+  status               ContentStatus          @default(DRAFT)
+  privacyLevel         PrivacyLevel           @default(PRIVATE)
+  creatorId            String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  venue                String?
+  address              String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  priceMin             Float?                 @default(0)
+  priceMax             Float?
+  currency             String?                @default("USD")
+  ticketUrl            String?
+  attendeeCount        Int?                   @default(0)
+  externalEventId      String?
+  source               EventSource?           @default(MANUAL)
+  maxParticipants      Int?
+  weatherEnabled       Boolean?               @default(false)
+  comments             comments[]
+  users                User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  content_likes        content_likes[]
+  content_participants content_participants[]
+  content_reports      content_reports[]
+  content_shares       content_shares[]
+  eventImages          EventImage[]
+  eventSaves           EventSave[]
+  eventTags            EventTag[]
+  finalPlans           finalPlan[]
+  messages             messages[]
+  photos               photos[]
+  polls                polls[]
+  rsvps                rsvp[]
+  hangoutTasks         hangout_tasks[]
+  reminders            Reminder[]
+
+  @@index([createdAt])
+  @@index([creatorId])
+  @@index([privacyLevel])
+  @@index([startTime])
+  @@index([status])
+  @@index([type])
+  @@index([venue])
+  @@index([city])
+  @@index([priceMin])
+  @@index([attendeeCount])
+}
+
+model content_likes {
+  id        String   @id
+  contentId String
+  userId    String
+  createdAt DateTime @default(now())
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+  @@index([contentId])
+  @@index([userId])
+}
+
+model content_participants {
+  id          String          @id
+  contentId   String
+  userId      String
+  role        ParticipantRole @default(MEMBER)
+  canEdit     Boolean         @default(false)
+  isMandatory Boolean         @default(false)
+  isCoHost    Boolean         @default(false)
+  invitedAt   DateTime        @default(now())
+  joinedAt    DateTime?
+  users       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     content         @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+  @@index([contentId])
+  @@index([isMandatory])
+  @@index([userId])
+}
+
+model content_reports {
+  id          String       @id
+  contentId   String
+  reporterId  String
+  reason      String
+  description String?
+  status      ReportStatus @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  users       User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  content     content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([reporterId])
+  @@index([status])
+}
+
+model content_shares {
+  id        String   @id
+  contentId String
+  userId    String
+  message   String?
+  createdAt DateTime @default(now())
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([userId])
+}
+
+model message_reads {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  messages  messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId], map: "message_reads_messageId_idx")
+  @@index([userId], map: "message_reads_userId_idx")
+  @@index([readAt], map: "message_reads_readAt_idx")
+}
+
+model hangout_tasks {
+  id          String                    @id @default(cuid())
+  hangoutId   String
+  text        String
+  createdById String
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  hangout     content                   @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
+  createdBy   User                      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  assignedUsers hangout_task_assignments[]
+
+  @@index([hangoutId])
+  @@index([createdById])
+}
+
+model hangout_task_assignments {
+  id       String      @id @default(cuid())
+  taskId   String
+  userId   String
+  assignedAt DateTime  @default(now())
+  task     hangout_tasks @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+}
+
+model messages {
+  id             String              @id @default(cuid())
+  contentId      String?
+  conversationId String?
+  senderId       String
+  text           String
+  type           MessageType         @default(TEXT)
+  replyToId      String?
+  editedAt       DateTime?
+  isEdited       Boolean             @default(false)
+  isDeleted      Boolean             @default(false)
+  deletedAt      DateTime?
+  metadata       Json?               // Additional message metadata
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  message_reads  message_reads[]
+  attachments    MessageAttachment[]
+  reactions      MessageReaction[]
+  conversation   Conversation?       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  content        content?            @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  messages       messages?           @relation("messagesTomessages", fields: [replyToId], references: [id])
+  other_messages messages[]          @relation("messagesTomessages")
+  users          User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([replyToId])
+  @@index([senderId])
+  @@index([isDeleted])
+  @@index([type])
+}
+
+model photo_comments {
+  id        String   @id
+  photoId   String
   userId    String
   content   String
-  photos    String[]
-  isPublic  Boolean  @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime
+  photos    photos   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  hangout Hangout @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("hangout_memories")
+  @@index([createdAt])
+  @@index([photoId])
+  @@index([userId])
 }
 
-model HangoutPoll {
-  id          String     @id @default(cuid())
-  hangoutId   String
-  creatorId   String
-  title       String
-  description String?
-  type        PollType   @default(SINGLE_CHOICE)
-  status      PollStatus @default(ACTIVE)
-  options     String[]   // JSON array of poll options
-  expiresAt   DateTime?
-  allowMultiple Boolean  @default(false)
-  isAnonymous Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  hangout Hangout   @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
-  creator User      @relation("PollCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  votes   PollVote[]
-
-  @@map("hangout_polls")
-}
-
-model PollVote {
-  id        String   @id @default(cuid())
-  pollId    String
+model photo_likes {
+  id        String   @id
+  photoId   String
   userId    String
-  option    String   // The selected option
-  ranking   Int?     // For ranking polls
   createdAt DateTime @default(now())
+  photos    photos   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  poll HangoutPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([photoId, userId])
+  @@index([photoId])
+  @@index([userId])
+}
+
+model photo_tags {
+  id        String   @id
+  photoId   String
+  name      String
+  creatorId String
+  createdAt DateTime @default(now())
+  users     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  photos    photos   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, name])
+  @@index([creatorId])
+  @@index([name])
+  @@index([photoId])
+}
+
+model photos {
+  id             String           @id
+  creatorId      String
+  contentId      String?
+  caption        String?
+  isPublic       Boolean          @default(false)
+  originalUrl    String
+  thumbnailUrl   String
+  smallUrl       String
+  mediumUrl      String
+  largeUrl       String
+  originalWidth  Int
+  originalHeight Int
+  fileSize       Int
+  mimeType       String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  photo_comments photo_comments[]
+  photo_likes    photo_likes[]
+  photo_tags     photo_tags[]
+  users          User             @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  content        content?         @relation(fields: [contentId], references: [id])
+
+  @@index([contentId])
+  @@index([createdAt])
+  @@index([creatorId])
+  @@index([isPublic])
+}
+
+model polls {
+  id                  String            @id
+  contentId           String
+  creatorId           String
+  title               String
+  description         String?
+  options             Json
+  allowMultiple       Boolean           @default(false)
+  isAnonymous         Boolean           @default(false)
+  expiresAt           DateTime?
+  consensusPercentage Int               @default(70)
+  minimumParticipants Int               @default(2)
+  consensusType       String            @default("percentage")
+  status              String            @default("ACTIVE")
+  allowDelegation     Boolean           @default(false)
+  allowAbstention     Boolean           @default(true)
+  allowAddOptions     Boolean           @default(true)
+  isPublic            Boolean           @default(false)
+  visibility          PollVisibility    @default(PRIVATE)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now())
+  participants        PollParticipant[]
+  votes               PollVote[]
+  users               User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  content             content           @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([contentId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([visibility])
+}
+
+model PollParticipant {
+  id           String    @id @default(cuid())
+  pollId       String
+  userId       String
+  status       String    @default("INVITED")
+  canVote      Boolean   @default(true)
+  canDelegate  Boolean   @default(false)
+  delegatedTo  String?
+  delegatedBy  String?
+  joinedAt     DateTime?
+  lastActiveAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now())
+  poll         polls     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([pollId, userId])
-  @@map("poll_votes")
+  @@index([pollId])
+  @@index([userId])
+  @@index([status])
+  @@map("poll_participants")
+}
+
+model EventTag {
+  id        String   @id @default(cuid())
+  contentId String
+  tag       String
+  createdAt DateTime @default(now())
+  content   content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, tag])
+  @@map("event_tags")
+}
+
+model EventImage {
+  id         String   @id @default(cuid())
+  contentId  String
+  imageUrl   String
+  orderIndex Int      @default(0)
+  createdAt  DateTime @default(now())
+  content    content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@map("event_images")
+}
+
+model EventSave {
+  id        String   @id @default(cuid())
+  contentId String
+  userId    String
+  createdAt DateTime @default(now())
+  content   content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+  @@map("event_saves")
+}
+
+model Conversation {
+  id            String                    @id @default(cuid())
+  type          ConversationType          @default(DIRECT)
+  name          String?                   // Group name, null for direct chats
+  description   String?                   // Group description
+  avatar        String?                   // Group avatar URL
+  createdById   String                    // Creator of the conversation
+  lastMessageAt DateTime?
+  isActive      Boolean                   @default(true)
+  isArchived    Boolean                   @default(false)
+  settings      Json?                     // Group settings (mute, notifications, etc.)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  createdBy     User                      @relation("ConversationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  participants  ConversationParticipant[]
+  messages      messages[]
+  typingIndicators TypingIndicator[]
+
+  @@index([type])
+  @@index([lastMessageAt])
+  @@index([createdAt])
+  @@index([isActive])
+  @@index([isArchived])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  role           ConversationRole @default(MEMBER)
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+  lastActiveAt   DateTime?
+  isMuted        Boolean      @default(false)
+  isArchived     Boolean      @default(false)
+  addedById      String?      // Who added this participant (for groups)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  addedBy        User?        @relation("ConversationParticipantAddedBy", fields: [addedById], references: [id])
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+  @@index([role])
+  @@index([lastReadAt])
+  @@map("conversation_participants")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String   // Unicode emoji or custom emoji ID
+  createdAt DateTime @default(now())
+  message   messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_reactions")
+}
+
+model MessageAttachment {
+  id          String   @id @default(cuid())
+  messageId   String
+  type        AttachmentType
+  url         String
+  filename    String?
+  mimeType    String?
+  fileSize    Int?
+  thumbnailUrl String?
+  metadata    Json?    // Additional file metadata
+  createdAt   DateTime @default(now())
+  message     messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([type])
+  @@map("message_attachments")
+}
+
+model TypingIndicator {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  startedAt      DateTime     @default(now())
+  expiresAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("typing_indicators")
+}
+
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+enum FriendshipStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum PrivacyLevel {
+  PRIVATE
+  FRIENDS_ONLY
+  PUBLIC
+}
+
+enum PollVisibility {
+  PRIVATE
+  FRIENDS
+  PUBLIC
+}
+
+enum ParticipantRole {
+  CREATOR
+  ADMIN
+  MODERATOR
+  MEMBER
+  CO_HOST
+}
+
+enum RSVPStatus {
+  PENDING
+  YES
+  NO
+  MAYBE
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  MESSAGE_RECEIVED
+  CONTENT_INVITATION
+  CONTENT_RSVP
+  CONTENT_REMINDER
+  CONTENT_UPDATE
+  COMMUNITY_INVITATION
+  MENTION
+  LIKE
+  COMMENT
+  SHARE
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  LOCATION
+  POLL
+  SYSTEM
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+enum ContentType {
+  HANGOUT
+  EVENT
+  COMMUNITY
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum EventCategory {
+  MUSIC
+  SPORTS
+  FOOD
+  NIGHTLIFE
+  ARTS
+  OUTDOORS
+  TECHNOLOGY
+  BUSINESS
+  EDUCATION
+  HEALTH
+  FAMILY
+  OTHER
+}
+
+enum EventSource {
+  MANUAL
+  EVENTBRITE
+  FACEBOOK
+  MEETUP
+  OTHER
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+enum ConversationRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LOCATION
+  CONTACT
+  STICKER
+  GIF
+}
+
+model Reminder {
+  id            String        @id @default(cuid())
+  userId        String
+  contentId     String?       // Reference to hangout or event
+  type          ReminderType
+  title         String
+  message       String
+  scheduledFor  DateTime      // When to send the reminder
+  isSent        Boolean       @default(false)
+  isDismissed   Boolean       @default(false)
+  sentAt        DateTime?
+  dismissedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       content?      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([scheduledFor])
+  @@index([isSent])
+  @@index([isDismissed])
+  @@map("reminders")
+}
+
+enum ReminderType {
+  HANGOUT_1_HOUR
+  HANGOUT_STARTING
+  EVENT_1_HOUR
+  EVENT_STARTING
+  HANGOUT_DAY_BEFORE
+  EVENT_DAY_BEFORE
 }

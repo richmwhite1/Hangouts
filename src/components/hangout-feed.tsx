@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import { HangoutCard } from "@/components/hangout-card"
 import { MobileHangoutCard } from "@/components/mobile-optimized-hangout-card"
+import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, AlertCircle } from "lucide-react"
@@ -15,25 +16,32 @@ import { DraftHangoutCard } from "@/components/draft-hangout-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { apiClient } from "@/lib/api-client"
 
 export function HangoutFeed() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState("all")
-  const [hangouts, setHangouts] = useState<any[]>([])
+  const [hangouts, setHangouts] = useState<{ id: string; title: string; description?: string; startTime: string; endTime: string; location?: string; creator: { name: string; username: string; avatar?: string }; privacyLevel?: string; maxParticipants?: number; image?: string; photos?: string[]; participants?: any[]; _count?: { participants: number } }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, authLoading } = useAuth()
   
   console.log('🔄 HangoutFeed component mounting...')
   
   // Use useEffect properly
   useEffect(() => {
     const fetchData = async () => {
+      if (authLoading) return
+      
+      if (!isAuthenticated) {
+        setIsLoading(false)
+        return
+      }
+      
       try {
         console.log('🚀 useEffect API call starting...')
         setIsLoading(true)
-        const response = await fetch('http://localhost:3000/api/hangouts')
-        const data = await response.json()
+        const data = await apiClient.getHangouts()
         console.log('✅ useEffect API success:', data.hangouts?.length || 0)
         setHangouts(data.hangouts || [])
       } catch (err) {
@@ -45,14 +53,14 @@ export function HangoutFeed() {
     }
     
     fetchData()
-  }, [])
+  }, [isAuthenticated, authLoading])
   
   console.log('📊 Direct state:', { hangoutsCount: hangouts.length, isLoading, error })
   
   const { drafts, loadDraft, deleteDraft } = useDraft()
   const router = useRouter()
 
-  const handleEditDraft = (draft: any) => {
+  const handleEditDraft = (draft: { id: string; [key: string]: unknown }) => {
     loadDraft(draft.id)
     router.push('/create')
   }
@@ -92,10 +100,13 @@ export function HangoutFeed() {
     return filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
   }, [hangouts, searchQuery, activeFilter])
 
-  // Temporarily bypass authentication for testing
-  // if (!isAuthenticated) {
-  //   return <UnauthorizedMessage />
-  // }
+  if (authLoading) {
+    return <HangoutFeedSkeleton />
+  }
+
+  if (!isAuthenticated) {
+    return <UnauthorizedMessage />
+  }
 
   if (isLoading) {
     return <HangoutFeedSkeleton />
@@ -193,16 +204,22 @@ export function HangoutFeed() {
             🎉 Published Hangouts
           </h3>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAndSortedHangouts.map((hangout) => (
-            <MobileHangoutCard key={hangout.id} hangout={hangout} />
+        {/* Stacked Editorial Feed */}
+        <div className="space-y-0">
+          {filteredAndSortedHangouts.map((hangout, index) => (
+            <StackedHangoutTile 
+              key={hangout.id} 
+              hangout={hangout} 
+              index={index}
+              totalCount={filteredAndSortedHangouts.length}
+            />
           ))}
         </div>
       </div>
 
       {filteredAndSortedHangouts.length === 0 && searchQuery && (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">No hangouts found matching "{searchQuery}"</p>
+          <p className="text-muted-foreground">No hangouts found matching &quot;{searchQuery}&quot;</p>
         </div>
       )}
 

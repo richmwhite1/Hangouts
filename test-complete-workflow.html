@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Complete Workflow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Complete Hangout Workflow Test</h1>
+    
+    <div class="test-section info">
+        <h2>📋 Test Plan</h2>
+        <ol>
+            <li>Create a test user</li>
+            <li>Create a hangout with poll</li>
+            <li>Test poll voting</li>
+            <li>Test poll transition to RSVP</li>
+            <li>Test RSVP functionality</li>
+            <li>Test hangout detail page tabs</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Create Test User</h2>
+        <button onclick="createUser()">Create User</button>
+        <div id="user-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Create Hangout with Poll</h2>
+        <button onclick="createHangout()">Create Hangout</button>
+        <div id="hangout-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Poll Voting</h2>
+        <button onclick="voteOnPoll()">Vote on Poll</button>
+        <div id="vote-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Poll Transition</h2>
+        <button onclick="transitionPoll()">Transition to RSVP</button>
+        <div id="transition-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Test RSVP</h2>
+        <button onclick="testRSVP()">Test RSVP</button>
+        <div id="rsvp-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Test Hangout Detail Page</h2>
+        <button onclick="openHangoutPage()">Open Hangout Page</button>
+        <div id="page-result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let hangoutId = null;
+        let pollId = null;
+
+        async function createUser() {
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'password123',
+                        name: 'Test User',
+                        username: 'testuser'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    document.getElementById('user-result').innerHTML = 
+                        `<div class="success">✅ User created successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create user');
+                }
+            } catch (error) {
+                document.getElementById('user-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function createHangout() {
+            if (!authToken) {
+                document.getElementById('hangout-result').innerHTML = 
+                    `<div class="error">❌ Please create a user first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hangouts', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Hangout with Poll',
+                        description: 'Testing the complete workflow',
+                        location: 'Test Location',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        privacyLevel: 'PUBLIC',
+                        isPoll: true,
+                        pollOptions: [
+                            { title: 'Option 1', description: 'First option' },
+                            { title: 'Option 2', description: 'Second option' },
+                            { title: 'Option 3', description: 'Third option' }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    hangoutId = data.data.id;
+                    document.getElementById('hangout-result').innerHTML = 
+                        `<div class="success">✅ Hangout created successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create hangout');
+                }
+            } catch (error) {
+                document.getElementById('hangout-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function voteOnPoll() {
+            if (!authToken || !hangoutId) {
+                document.getElementById('vote-result').innerHTML = 
+                    `<div class="error">❌ Please create a hangout first</div>`;
+                return;
+            }
+
+            try {
+                // First get polls
+                const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const pollsData = await pollsResponse.json();
+                
+                if (pollsData.success && pollsData.data.length > 0) {
+                    pollId = pollsData.data[0].id;
+                    
+                    // Vote on the poll
+                    const voteResponse = await fetch(`/api/hangouts/${hangoutId}/polls/${pollId}/vote`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ option: 'Option 1' })
+                    });
+
+                    const voteData = await voteResponse.json();
+                    if (voteData.success) {
+                        document.getElementById('vote-result').innerHTML = 
+                            `<div class="success">✅ Vote cast successfully!<br><pre>${JSON.stringify(voteData, null, 2)}</pre></div>`;
+                    } else {
+                        throw new Error(voteData.error || 'Failed to vote');
+                    }
+                } else {
+                    throw new Error('No polls found');
+                }
+            } catch (error) {
+                document.getElementById('vote-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function transitionPoll() {
+            if (!authToken || !hangoutId || !pollId) {
+                document.getElementById('transition-result').innerHTML = 
+                    `<div class="error">❌ Please vote on poll first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/hangouts/${hangoutId}/polls/${pollId}/transition`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ action: 'start' })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('transition-result').innerHTML = 
+                        `<div class="success">✅ Poll transitioned successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to transition poll');
+                }
+            } catch (error) {
+                document.getElementById('transition-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testRSVP() {
+            if (!authToken || !hangoutId) {
+                document.getElementById('rsvp-result').innerHTML = 
+                    `<div class="error">❌ Please create a hangout first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/hangouts/${hangoutId}/rsvp`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ status: 'YES' })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('rsvp-result').innerHTML = 
+                        `<div class="success">✅ RSVP updated successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to update RSVP');
+                }
+            } catch (error) {
+                document.getElementById('rsvp-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function openHangoutPage() {
+            if (!hangoutId) {
+                document.getElementById('page-result').innerHTML = 
+                    `<div class="error">❌ Please create a hangout first</div>`;
+                return;
+            }
+
+            const url = `http://localhost:3000/hangout/${hangoutId}`;
+            document.getElementById('page-result').innerHTML = 
+                `<div class="info">🔗 <a href="${url}" target="_blank">Open Hangout Page</a><br>URL: ${url}</div>`;
+        }
+    </script>
+</body>
+</html>
+
+
+
+

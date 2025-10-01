@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { apiClient, User } from '@/lib/api-client'
+import { useAuth } from '@/contexts/auth-context'
 
 interface FriendRequest {
   id: string
@@ -26,6 +27,7 @@ interface UseFriendsReturn {
 }
 
 export const useFriends = (): UseFriendsReturn => {
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const [friends, setFriends] = useState<User[]>([])
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -33,18 +35,18 @@ export const useFriends = (): UseFriendsReturn => {
   const [error, setError] = useState<string | null>(null)
 
   const fetchData = async () => {
+    // Don't fetch if auth is still loading or user is not authenticated
+    if (authLoading || !isAuthenticated) {
+      setFriends([])
+      setSentRequests([])
+      setReceivedRequests([])
+      setIsLoading(authLoading)
+      return
+    }
+
     try {
       setIsLoading(true)
       setError(null)
-      
-      // Check if user is authenticated before making requests
-      if (!apiClient.isAuthenticated()) {
-        setFriends([])
-        setSentRequests([])
-        setReceivedRequests([])
-        setIsLoading(false)
-        return
-      }
       
       const [friendsData, requestsData] = await Promise.all([
         apiClient.getFriends(),
@@ -69,6 +71,13 @@ export const useFriends = (): UseFriendsReturn => {
       await fetchData() // Refresh data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send friend request'
+      
+      // If it's an "already exists" error, refresh data anyway to show correct status
+      if (err instanceof Error && errorMessage.includes('already exists')) {
+        await fetchData() // Refresh data to show correct status
+        return // Don't throw error, just return
+      }
+      
       setError(errorMessage)
       throw err
     }
@@ -87,7 +96,7 @@ export const useFriends = (): UseFriendsReturn => {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [isAuthenticated, authLoading])
 
   return {
     friends,

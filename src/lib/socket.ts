@@ -30,12 +30,12 @@ export function initializeSocket(server: HTTPServer) {
     })
 
     // Handle new participants
-    socket.on('participant-joined', (data: { hangoutId: string; participant: any }) => {
+    socket.on('participant-joined', (data: { hangoutId: string; participant: { id: string; user: { name: string; username: string } } }) => {
       socket.to(`hangout-${data.hangoutId}`).emit('participant-joined', data)
     })
 
     // Handle hangout updates
-    socket.on('hangout-updated', (data: { hangoutId: string; updates: any }) => {
+    socket.on('hangout-updated', (data: { hangoutId: string; updates: Record<string, unknown> }) => {
       socket.to(`hangout-${data.hangoutId}`).emit('hangout-updated', data)
     })
 

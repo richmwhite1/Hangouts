@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,18 +19,14 @@ import {
   Clock,
 } from "lucide-react"
 import { HangoutCard } from "@/components/hangout-card"
+import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
+import { ContentFeed } from "@/components/content-feed"
+import { useState, useEffect } from "react"
+import { apiClient } from "@/lib/api-client"
 
 async function getHangouts() {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const response = await fetch(`${baseUrl}/api/hangouts`, {
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
+    const response = await fetch('/api/discover')
     const data = await response.json()
     return data.hangouts || []
   } catch (error) {
@@ -49,8 +47,34 @@ function getCategoryFromTitle(title) {
   return 'social'
 }
 
-export async function DiscoveryPageServer() {
-  const hangouts = await getHangouts()
+export function DiscoveryPageServer() {
+  const [hangouts, setHangouts] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const fetchHangouts = async () => {
+      try {
+        setIsLoading(true)
+        const hangoutsData = await getHangouts()
+        setHangouts(hangoutsData)
+      } catch (err) {
+        console.error('Error fetching hangouts:', err)
+        setError('Failed to load hangouts')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchHangouts()
+  }, [mounted])
 
   // Ensure hangouts is an array
   const safeHangouts = Array.isArray(hangouts) ? hangouts : []
@@ -75,16 +99,21 @@ export async function DiscoveryPageServer() {
       weatherEnabled: hangout.weatherEnabled,
       category: getCategoryFromTitle(hangout.title),
       image: hangout.image || '/placeholder.jpg',
-      // Convert creator to host format expected by HangoutCard
-      host: {
+      // Convert creator to format expected by StackedHangoutTile
+      creator: {
         name: hangout.creator?.name || 'Anonymous',
+        username: hangout.creator?.username || 'anonymous',
         avatar: hangout.creator?.avatar || '/placeholder-user.jpg'
       },
       // Convert startTime/endTime to date/time format expected by HangoutCard
-      date: startDate.toLocaleDateString(),
-      time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      // Only format dates on client side to prevent hydration mismatch
+      date: mounted ? startDate.toLocaleDateString() : hangout.startTime,
+      time: mounted ? startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : hangout.startTime,
       // Add participants array (empty for now since API doesn't provide this)
-      participants: []
+      participants: [],
+      _count: {
+        participants: hangout._count?.participants || 0
+      }
     }
   })
 
@@ -98,6 +127,61 @@ export async function DiscoveryPageServer() {
     { value: "fitness", label: "Fitness", icon: Dumbbell },
     { value: "social", label: "Social", icon: Users },
   ]
+
+  if (!mounted) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Discover</h1>
+          <p className="text-muted-foreground text-sm">Find events near you</p>
+        </div>
+        <div className="text-center py-12">
+          <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-muted-foreground animate-pulse" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Loading...</h3>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Discover</h1>
+          <p className="text-muted-foreground text-sm">Find events near you</p>
+        </div>
+        <div className="text-center py-12">
+          <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-muted-foreground animate-pulse" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Loading hangouts...</h3>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Discover</h1>
+          <p className="text-muted-foreground text-sm">Find events near you</p>
+        </div>
+        <div className="text-center py-12">
+          <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Error loading hangouts</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -183,12 +267,36 @@ export async function DiscoveryPageServer() {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {displayHangouts.map((hangout) => (
-              <HangoutCard key={hangout.id} hangout={hangout} />
+          <div className="space-y-0">
+            {displayHangouts.map((hangout, index) => (
+              <StackedHangoutTile 
+                key={hangout.id} 
+                hangout={hangout} 
+                index={index}
+                totalCount={displayHangouts.length}
+              />
             ))}
           </div>
         )}
+      </div>
+
+      {/* Unified Content System - All Content Types */}
+      <div className="mt-12">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Discover Everything
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Explore hangouts, events, and communities all in one place
+          </p>
+        </div>
+        
+        <ContentFeed 
+          showFilters={true}
+          showSearch={true}
+          variant="magazine"
+          maxItems={10}
+        />
       </div>
     </div>
   )

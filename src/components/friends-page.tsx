@@ -1,344 +1,555 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, UserPlus, Users, MessageSquare, MoreHorizontal } from "lucide-react"
-
-interface Friend {
-  id: string
-  name: string
-  avatar: string
-  status: "online" | "away" | "offline"
-  mutualFriends: number
-  lastSeen?: string
-}
+import { 
+  Search, 
+  UserPlus, 
+  Users, 
+  MessageSquare, 
+  MoreHorizontal, 
+  Check, 
+  X, 
+  Loader2, 
+  UserSearch, 
+  UserMinus, 
+  Plus, 
+  Settings,
+  Phone,
+  Video,
+  Star,
+  Clock,
+  Globe
+} from "lucide-react"
+import { useFriends } from "@/hooks/use-friends"
+import { useAuth } from "@/contexts/auth-context"
+import { apiClient, User } from "@/lib/api-client"
+import Link from "next/link"
 
 interface Group {
   id: string
   name: string
-  avatar: string
-  memberCount: number
-  lastActivity: string
-  isAdmin: boolean
+  type: 'GROUP'
+  participants: Array<{
+    id: string
+    name: string
+    username: string
+    avatar?: string
+  }>
+  lastMessage?: {
+    content: string
+    sender: string
+    timestamp: string
+  }
+  unreadCount: number
+  isOnline: boolean
+  createdAt: string
+  updatedAt: string
 }
-
-const mockFriends: Friend[] = [
-  { id: "1", name: "Sarah Chen", avatar: "/professional-woman-avatar.png", status: "online", mutualFriends: 12 },
-  { id: "2", name: "Mike Rodriguez", avatar: "/friendly-man-avatar.jpg", status: "online", mutualFriends: 8 },
-  {
-    id: "3",
-    name: "Alex Johnson",
-    avatar: "/man-avatar.png",
-    status: "away",
-    mutualFriends: 15,
-    lastSeen: "2 hours ago",
-  },
-  { id: "4", name: "Maya Patel", avatar: "/diverse-woman-avatar.png", status: "online", mutualFriends: 6 },
-  {
-    id: "5",
-    name: "Jordan Kim",
-    avatar: "/diverse-person-avatars.png",
-    status: "offline",
-    mutualFriends: 4,
-    lastSeen: "Yesterday",
-  },
-  { id: "6", name: "Sam Wilson", avatar: "/outdoorsy-man-avatar.jpg", status: "online", mutualFriends: 9 },
-  {
-    id: "7",
-    name: "Emma Davis",
-    avatar: "/athletic-woman-avatar.jpg",
-    status: "away",
-    mutualFriends: 11,
-    lastSeen: "1 hour ago",
-  },
-  { id: "8", name: "Chris Lee", avatar: "/man-avatar.png", status: "online", mutualFriends: 7 },
-]
-
-const mockGroups: Group[] = [
-  {
-    id: "1",
-    name: "Weekend Warriors",
-    avatar: "/diverse-hiking-group.png",
-    memberCount: 8,
-    lastActivity: "2 hours ago",
-    isAdmin: true,
-  },
-  {
-    id: "2",
-    name: "Coffee Enthusiasts",
-    avatar: "/coffee-group.jpg",
-    memberCount: 12,
-    lastActivity: "1 day ago",
-    isAdmin: false,
-  },
-  {
-    id: "3",
-    name: "Gaming Squad",
-    avatar: "/diverse-gaming-group.png",
-    memberCount: 6,
-    lastActivity: "3 hours ago",
-    isAdmin: true,
-  },
-  {
-    id: "4",
-    name: "Photography Club",
-    avatar: "/camera-group.jpg",
-    memberCount: 15,
-    lastActivity: "5 hours ago",
-    isAdmin: false,
-  },
-]
-
-const suggestedFriends: Friend[] = [
-  { id: "s1", name: "Jessica Park", avatar: "/professional-woman-avatar.png", status: "online", mutualFriends: 5 },
-  { id: "s2", name: "David Chen", avatar: "/friendly-man-avatar.jpg", status: "away", mutualFriends: 3 },
-  { id: "s3", name: "Lisa Rodriguez", avatar: "/diverse-woman-avatar.png", status: "online", mutualFriends: 7 },
-  { id: "s4", name: "Ryan Kim", avatar: "/man-avatar.png", status: "offline", mutualFriends: 2 },
-]
-
-const allUsers: Friend[] = [
-  { id: "u1", name: "Taylor Swift", avatar: "/professional-woman-avatar.png", status: "online", mutualFriends: 0 },
-  { id: "u2", name: "John Doe", avatar: "/friendly-man-avatar.jpg", status: "away", mutualFriends: 1 },
-  { id: "u3", name: "Jane Smith", avatar: "/diverse-woman-avatar.png", status: "online", mutualFriends: 0 },
-  { id: "u4", name: "Michael Brown", avatar: "/man-avatar.png", status: "offline", mutualFriends: 2 },
-]
 
 export function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState("find")
+  const [activeTab, setActiveTab] = useState("friends")
+  const [isResponding, setIsResponding] = useState<string | null>(null)
+  const [searchResults, setSearchResults] = useState<User[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [sendingRequests, setSendingRequests] = useState<Set<string>>(new Set())
+  
+  // Group-related state
+  const [groups, setGroups] = useState<Group[]>([])
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false)
+  
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { 
+    friends, 
+    sentRequests, 
+    receivedRequests, 
+    isLoading, 
+    error, 
+    sendFriendRequest, 
+    respondToFriendRequest,
+    refetch
+  } = useFriends()
 
-  const filteredFriends = mockFriends.filter((friend) => friend.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  const filteredGroups = mockGroups.filter((group) => group.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Load group conversations
+  const loadGroups = async () => {
+    if (!user?.token) return
+    
+    setIsLoadingGroups(true)
+    try {
+      const response = await fetch('/api/conversations', {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // Filter only group conversations
+        const groupConversations = data.data.conversations.filter((conv: any) => conv.type === 'GROUP')
+        setGroups(groupConversations)
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error)
+    } finally {
+      setIsLoadingGroups(false)
+    }
+  }
 
-  const filteredUsers = allUsers.filter((user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Search users
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
 
-  const onlineFriends = mockFriends.filter((f) => f.status === "online").length
+    setIsSearching(true)
+    try {
+      const response = await apiClient.searchUsers(query, 20, 0)
+      setSearchResults(response.users)
+    } catch (error) {
+      console.error('Error searching users:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value
+    setSearchQuery(query)
+    searchUsers(query)
+  }
+
+  // Send friend request
+  const handleSendFriendRequest = async (userId: string) => {
+    setSendingRequests(prev => new Set(prev).add(userId))
+    try {
+      await sendFriendRequest(userId)
+    } catch (error) {
+      console.error('Error sending friend request:', error)
+    } finally {
+      setSendingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  // Respond to friend request
+  const handleRespondToRequest = async (requestId: string, status: 'ACCEPTED' | 'DECLINED') => {
+    setIsResponding(requestId)
+    try {
+      await respondToFriendRequest(requestId, status)
+    } catch (error) {
+      console.error('Error responding to friend request:', error)
+    } finally {
+      setIsResponding(null)
+    }
+  }
+
+  // Create direct message
+  const createDirectMessage = async (friendId: string) => {
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          type: 'DIRECT',
+          participantIds: [friendId]
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data.conversation) {
+          window.location.href = `/messages/${data.data.conversation.id}`
+        }
+      }
+    } catch (error) {
+      console.error('Error creating direct message:', error)
+    }
+  }
+
+
+  // Load groups on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadGroups()
+    }
+  }, [isAuthenticated])
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Please sign in to view friends</h1>
+          <Link href="/signin">
+            <Button>Sign In</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading friends...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="min-h-screen bg-gray-950 text-white pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-balance">Friends & Groups</h1>
-          <p className="text-muted-foreground">{onlineFriends} friends online</p>
+      <div className="bg-gray-900/50 border-b border-gray-700/50 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Friends</h1>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+        
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search friends or find new people..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+          />
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input
-          placeholder={activeTab === "find" ? "Search all users..." : "Search friends and groups..."}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="find" className="flex items-center space-x-2">
-            <UserPlus className="w-4 h-4" />
-            <span>Find Friends</span>
-          </TabsTrigger>
-          <TabsTrigger value="friends" className="flex items-center space-x-2">
-            <Users className="w-4 h-4" />
-            <span>Friends ({mockFriends.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="flex items-center space-x-2">
-            <Users className="w-4 h-4" />
-            <span>Groups ({mockGroups.length})</span>
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-900/50 border-b border-gray-700/50">
+          <TabsTrigger value="friends" className="text-sm">Friends</TabsTrigger>
+          <TabsTrigger value="requests" className="text-sm">Requests</TabsTrigger>
+          <TabsTrigger value="groups" className="text-sm">Groups</TabsTrigger>
+          <TabsTrigger value="find" className="text-sm">Find People</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="find" className="space-y-4">
-          {!searchQuery && (
-            <div>
-              <h3 className="font-medium mb-3 text-sm text-muted-foreground">SUGGESTED FOR YOU</h3>
-              <p className="text-xs text-muted-foreground mb-4">
-                People who have attended events near you or with your friends
-              </p>
-              <div className="grid gap-3">
-                {suggestedFriends.map((friend) => (
-                  <Card key={friend.id} className="hover:bg-accent/50 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="relative">
-                            <Avatar className="w-12 h-12">
-                              <AvatarImage src={friend.avatar || "/placeholder.svg"} alt={friend.name} />
-                              <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div
-                              className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${
-                                friend.status === "online"
-                                  ? "bg-green-500"
-                                  : friend.status === "away"
-                                    ? "bg-yellow-500"
-                                    : "bg-gray-400"
-                              }`}
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{friend.name}</h3>
-                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                              <span>{friend.mutualFriends} mutual friends</span>
-                            </div>
-                          </div>
-                        </div>
-                        <Button size="sm" className="bg-primary hover:bg-primary/90">
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Add Friend
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+        {/* Friends Tab */}
+        <TabsContent value="friends" className="p-4 space-y-4">
+          {friends.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-white mb-2">No friends yet</h3>
+              <p className="text-gray-400 mb-4">Start by finding people to connect with</p>
+              <Button onClick={() => setActiveTab("find")}>
+                Find People
+              </Button>
             </div>
-          )}
-
-          {searchQuery && (
-            <div>
-              <h3 className="font-medium mb-3 text-sm text-muted-foreground">SEARCH RESULTS</h3>
-              <div className="grid gap-3">
-                {filteredUsers.map((user) => (
-                  <Card key={user.id} className="hover:bg-accent/50 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="relative">
-                            <Avatar className="w-12 h-12">
-                              <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div
-                              className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${
-                                user.status === "online"
-                                  ? "bg-green-500"
-                                  : user.status === "away"
-                                    ? "bg-yellow-500"
-                                    : "bg-gray-400"
-                              }`}
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{user.name}</h3>
-                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                              {user.mutualFriends > 0 ? (
-                                <span>{user.mutualFriends} mutual friends</span>
-                              ) : (
-                                <span>No mutual friends</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <Button size="sm" className="bg-primary hover:bg-primary/90">
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Add Friend
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="friends" className="space-y-4">
-          <div className="grid gap-3">
-            {filteredFriends.map((friend) => (
-              <Card key={friend.id} className="hover:bg-accent/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={friend.avatar || "/placeholder.svg"} alt={friend.name} />
-                          <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
+          ) : (
+            <div className="space-y-3">
+              {friends.map((friend) => (
+                <Card key={friend.id} className="bg-gray-800/50 border-gray-700/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-12 h-12 rounded-lg">
+                          <AvatarImage src={friend.avatar || "/placeholder-avatar.png"} />
+                          <AvatarFallback className="bg-gray-700 text-white rounded-lg">
+                            {friend.name?.charAt(0) || "U"}
+                          </AvatarFallback>
                         </Avatar>
-                        <div
-                          className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${
-                            friend.status === "online"
-                              ? "bg-green-500"
-                              : friend.status === "away"
-                                ? "bg-yellow-500"
-                                : "bg-gray-400"
-                          }`}
-                        />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{friend.name}</h3>
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                          <span className="capitalize">{friend.status}</span>
-                          {friend.lastSeen && <span>• {friend.lastSeen}</span>}
-                          <span>• {friend.mutualFriends} mutual friends</span>
+                        <div>
+                          <h3 className="font-medium text-white">{friend.name}</h3>
+                          <p className="text-sm text-gray-400">@{friend.username}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {friend.isActive ? "Online" : "Offline"}
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              Friends since {new Date(friend.friendshipCreatedAt).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => createDirectMessage(friend.id)}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Phone className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Video className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <MessageSquare className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
-        <TabsContent value="groups" className="space-y-4">
-          <div className="grid gap-3">
-            {filteredGroups.map((group) => (
-              <Card key={group.id} className="hover:bg-accent/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={group.avatar || "/placeholder.svg"} alt={group.name} />
-                        <AvatarFallback>{group.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-medium">{group.name}</h3>
-                          {group.isAdmin && (
-                            <Badge variant="secondary" className="text-xs">
-                              Admin
-                            </Badge>
+        {/* Requests Tab */}
+        <TabsContent value="requests" className="p-4 space-y-4">
+          {receivedRequests.length === 0 && sentRequests.length === 0 ? (
+            <div className="text-center py-12">
+              <UserPlus className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-white mb-2">No friend requests</h3>
+              <p className="text-gray-400">You don't have any pending friend requests</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Received Requests */}
+              {receivedRequests.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-white mb-3">Received Requests</h3>
+                  <div className="space-y-3">
+                    {receivedRequests.map((request) => (
+                      <Card key={request.id} className="bg-gray-800/50 border-gray-700/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-12 h-12 rounded-lg">
+                                <AvatarImage src={request.sender.avatar || "/placeholder-avatar.png"} />
+                                <AvatarFallback className="bg-gray-700 text-white rounded-lg">
+                                  {request.sender.name?.charAt(0) || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="font-medium text-white">{request.sender.name}</h3>
+                                <p className="text-sm text-gray-400">@{request.sender.username}</p>
+                                {request.message && (
+                                  <p className="text-sm text-gray-300 mt-1">"{request.message}"</p>
+                                )}
+                                <p className="text-xs text-gray-500">
+                                  {new Date(request.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleRespondToRequest(request.id, 'ACCEPTED')}
+                                disabled={isResponding === request.id}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                {isResponding === request.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Check className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRespondToRequest(request.id, 'DECLINED')}
+                                disabled={isResponding === request.id}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sent Requests */}
+              {sentRequests.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-white mb-3">Sent Requests</h3>
+                  <div className="space-y-3">
+                    {sentRequests.map((request) => (
+                      <Card key={request.id} className="bg-gray-800/50 border-gray-700/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-12 h-12 rounded-lg">
+                                <AvatarImage src={request.receiver.avatar || "/placeholder-avatar.png"} />
+                                <AvatarFallback className="bg-gray-700 text-white rounded-lg">
+                                  {request.receiver.name?.charAt(0) || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="font-medium text-white">{request.receiver.name}</h3>
+                                <p className="text-sm text-gray-400">@{request.receiver.username}</p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    Pending
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(request.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Groups Tab */}
+        <TabsContent value="groups" className="p-4 space-y-4">
+          {groups.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-white mb-2">No group chats yet</h3>
+              <p className="text-gray-400 mb-4">Start a direct message and add more people to create a group chat</p>
+              <Button onClick={() => setActiveTab("friends")}>
+                View Friends
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {groups.map((group) => (
+                <Card key={group.id} className="bg-gray-800/50 border-gray-700/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-12 h-12 rounded-lg">
+                          <AvatarImage src={group.avatar || "/group-avatar.svg"} />
+                          <AvatarFallback className="bg-gray-700 text-white rounded-lg">
+                            {group.name?.charAt(0) || "G"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium text-white">{group.name}</h3>
+                          {group.lastMessage && (
+                            <p className="text-sm text-gray-400 truncate">
+                              {group.lastMessage.sender}: {group.lastMessage.content}
+                            </p>
                           )}
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                          <span>{group.memberCount} members</span>
-                          <span>• Active {group.lastActivity}</span>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {group.participants.length} members
+                            </Badge>
+                            {group.unreadCount > 0 && (
+                              <Badge variant="destructive" className="text-xs">
+                                {group.unreadCount} unread
+                              </Badge>
+                            )}
+                            <span className="text-xs text-gray-500">
+                              {new Date(group.updatedAt).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <Link href={`/messages/${group.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <MessageSquare className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <MessageSquare className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Find People Tab */}
+        <TabsContent value="find" className="p-4 space-y-4">
+          {searchQuery ? (
+            <div>
+              <h3 className="text-lg font-medium text-white mb-3">
+                Search Results {isSearching && <Loader2 className="w-4 h-4 inline animate-spin ml-2" />}
+              </h3>
+              {searchResults.length === 0 && !isSearching ? (
+                <div className="text-center py-8">
+                  <UserSearch className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-400">No users found for "{searchQuery}"</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {searchResults.map((user) => (
+                    <Card key={user.id} className="bg-gray-800/50 border-gray-700/50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-12 h-12 rounded-lg">
+                              <AvatarImage src={user.avatar || "/placeholder-avatar.png"} />
+                              <AvatarFallback className="bg-gray-700 text-white rounded-lg">
+                                {user.name?.charAt(0) || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="font-medium text-white">{user.name}</h3>
+                              <p className="text-sm text-gray-400">@{user.username}</p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {user.isActive ? "Online" : "Offline"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleSendFriendRequest(user.id)}
+                              disabled={sendingRequests.has(user.id)}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              {sendingRequests.has(user.id) ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <UserPlus className="w-4 h-4" />
+                              )}
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Globe className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-white mb-2">Find New People</h3>
+              <p className="text-gray-400 mb-4">Search for people to connect with</p>
+              <p className="text-sm text-gray-500">Start typing in the search box above</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
+
     </div>
   )
 }

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Frontend Token</title>
+</head>
+<body>
+    <h1>Update Frontend Token</h1>
+    <p>Click the button below to set the correct authentication token in your browser's local storage.</p>
+    <button id="updateTokenButton">Update Token</button>
+    <p id="status"></p>
+
+    <script>
+        document.getElementById('updateTokenButton').addEventListener('click', () => {
+            // Use the valid user token that actually exists in the database
+            const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ5aTZybW0wMDAwanA0eXY5cjRucThjIiwiZW1haWwiOiJrYXJsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoia2FybCIsImlhdCI6MTc1ODc0OTc0MywiZXhwIjoxNzU5MzU0NTQzfQ.2Q3vFE250O6shvjjlDuF9mRHPZW_7du5xzLXsBUmGDM";
+            const user = {"id":"cmfyi6rmm0000jp4yv9r4nq8c","email":"karl@email.com","username":"karl","name":"Karl Test User"};
+
+            try {
+                localStorage.setItem('auth_token', token);
+                localStorage.setItem('auth_user', JSON.stringify(user));
+                document.getElementById('status').innerText = 'Token updated successfully! You can now create hangouts.';
+                document.getElementById('status').style.color = 'green';
+                console.log('Updated auth token:', token);
+                console.log('Updated auth user:', user);
+            } catch (e) {
+                document.getElementById('status').innerText = 'Error updating token: ' + e.message;
+                document.getElementById('status').style.color = 'red';
+                console.error('Error updating token:', e);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+

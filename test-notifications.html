@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notifications</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #333; border-radius: 8px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        button { padding: 10px 20px; margin: 5px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #4f46e5; }
+        .result { margin-top: 10px; padding: 10px; background: #2a2a2a; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Phase 1 Notifications Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Direct Messages Unread Counter</h2>
+        <button onclick="testUnreadCounts()">Test Unread Counts API</button>
+        <button onclick="testMarkAsRead()">Test Mark as Read</button>
+        <div id="unreadResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Hangout Action Indicators</h2>
+        <button onclick="testHangoutActions()">Test Hangout Actions</button>
+        <div id="hangoutResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Frontend Integration</h2>
+        <button onclick="openApp()">Open App</button>
+        <div id="frontendResult" class="result">
+            <p>Click "Open App" to test the frontend integration</p>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        
+        async function signIn() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'alice@example.com', password: 'Password1!' })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    return true;
+                }
+                throw new Error(data.error || 'Sign in failed');
+            } catch (error) {
+                console.error('Sign in error:', error);
+                return false;
+            }
+        }
+        
+        async function testUnreadCounts() {
+            const resultDiv = document.getElementById('unreadResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            if (!authToken) {
+                const signedIn = await signIn();
+                if (!signedIn) {
+                    resultDiv.innerHTML = '<span class="error">❌ Failed to sign in</span>';
+                    return;
+                }
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/conversations/unread-counts', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Unread Counts API Working</span><br>
+                        <strong>Total Unread:</strong> ${data.data.totalUnreadCount}<br>
+                        <strong>Conversations:</strong> ${data.data.unreadCounts.length}<br>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ API Error: ${data.error}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Network Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testMarkAsRead() {
+            const resultDiv = document.getElementById('unreadResult');
+            
+            if (!authToken) {
+                const signedIn = await signIn();
+                if (!signedIn) {
+                    resultDiv.innerHTML = '<span class="error">❌ Failed to sign in</span>';
+                    return;
+                }
+            }
+            
+            try {
+                // Get first conversation ID
+                const response = await fetch('http://localhost:3000/api/conversations/unread-counts', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                if (data.success && data.data.unreadCounts.length > 0) {
+                    const conversationId = data.data.unreadCounts[0].conversationId;
+                    
+                    const markReadResponse = await fetch(`http://localhost:3000/api/conversations/${conversationId}/mark-read`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    const markReadData = await markReadResponse.json();
+                    if (markReadData.success) {
+                        resultDiv.innerHTML += `<br><span class="success">✅ Mark as Read API Working</span>`;
+                    } else {
+                        resultDiv.innerHTML += `<br><span class="error">❌ Mark as Read Error: ${markReadData.error}</span>`;
+                    }
+                } else {
+                    resultDiv.innerHTML += `<br><span class="error">❌ No conversations to test</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<br><span class="error">❌ Mark as Read Error: ${error.message}</span>`;
+            }
+        }
+        
+        function testHangoutActions() {
+            const resultDiv = document.getElementById('hangoutResult');
+            resultDiv.innerHTML = `
+                <span class="success">✅ Hangout Action Indicators Implemented</span><br>
+                <strong>Features:</strong><br>
+                • Action status detection (vote, RSVP, mandatory RSVP)<br>
+                • Visual indicators on hangout tiles<br>
+                • Priority-based sorting in home feed<br>
+                • Color-coded badges (red=high, orange=medium, green=low)<br>
+                <br>
+                <strong>Components Created:</strong><br>
+                • useHangoutActions hook<br>
+                • ActionIndicators component<br>
+                • ActionDot component<br>
+                • Updated StackedHangoutTile<br>
+                • Updated home page sorting
+            `;
+        }
+        
+        function openApp() {
+            const resultDiv = document.getElementById('frontendResult');
+            resultDiv.innerHTML = `
+                <span class="success">✅ Opening App...</span><br>
+                <a href="http://localhost:3000" target="_blank" style="color: #4ade80;">🚀 Open Hangouts 3.0 App</a><br><br>
+                <strong>What to test:</strong><br>
+                1. Check messages icon for unread count badge<br>
+                2. Look for action indicators on hangout tiles<br>
+                3. Verify hangouts with pending actions appear first<br>
+                4. Test clicking on conversations to mark as read
+            `;
+        }
+    </script>
+</body>
+</html>

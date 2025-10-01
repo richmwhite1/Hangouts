@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Create Page</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #000; 
+            color: #fff; 
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #333; 
+            border-radius: 5px; 
+            background: #111;
+        }
+        .success { 
+            background-color: #0d4f0d; 
+            border-color: #28a745; 
+        }
+        .error { 
+            background-color: #4f0d0d; 
+            border-color: #dc3545; 
+        }
+        .info { 
+            background-color: #0d2d4f; 
+            border-color: #007bff; 
+        }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            cursor: pointer; 
+            background: #ff1493; 
+            color: #000; 
+            border: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+        }
+        button:hover { background: #ff69b4; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        pre { 
+            background: #222; 
+            padding: 10px; 
+            border-radius: 3px; 
+            overflow-x: auto; 
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Create Page Access</h1>
+    
+    <div class="test-section info">
+        <h2>📋 Test Plan</h2>
+        <p>1. Test login page access</p>
+        <p>2. Test signup page access</p>
+        <p>3. Test create page access (should redirect to login if not authenticated)</p>
+        <p>4. Test authentication flow</p>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Test Pages</h2>
+        <button onclick="testLoginPage()">Test Login Page</button>
+        <button onclick="testSignupPage()">Test Signup Page</button>
+        <button onclick="testCreatePage()">Test Create Page</button>
+        <div id="page-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Authentication</h2>
+        <button onclick="testSignup()">Sign Up Test User</button>
+        <button onclick="testSignin()">Sign In Test User</button>
+        <button onclick="testCreateWithAuth()">Test Create with Auth</button>
+        <div id="auth-result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        function testLoginPage() {
+            const url = 'http://localhost:3001/login';
+            document.getElementById('page-result').innerHTML = 
+                `<div class="info">🔗 <a href="${url}" target="_blank" style="color: #ff1493;">Open Login Page</a><br>URL: ${url}</div>`;
+        }
+
+        function testSignupPage() {
+            const url = 'http://localhost:3001/signup';
+            document.getElementById('page-result').innerHTML = 
+                `<div class="info">🔗 <a href="${url}" target="_blank" style="color: #ff1493;">Open Signup Page</a><br>URL: ${url}</div>`;
+        }
+
+        function testCreatePage() {
+            const url = 'http://localhost:3001/create';
+            document.getElementById('page-result').innerHTML = 
+                `<div class="info">🔗 <a href="${url}" target="_blank" style="color: #ff1493;">Open Create Page</a><br>URL: ${url}<br>Note: Should redirect to login if not authenticated</div>`;
+        }
+
+        async function testSignup() {
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'testuser@example.com',
+                        password: 'password123',
+                        name: 'Test User',
+                        username: 'testuser'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    document.getElementById('auth-result').innerHTML = 
+                        `<div class="success">✅ User created successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create user');
+                }
+            } catch (error) {
+                document.getElementById('auth-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testSignin() {
+            try {
+                const response = await fetch('/api/auth/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'testuser@example.com',
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    document.getElementById('auth-result').innerHTML = 
+                        `<div class="success">✅ User signed in successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to sign in');
+                }
+            } catch (error) {
+                document.getElementById('auth-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function testCreateWithAuth() {
+            if (!authToken) {
+                document.getElementById('auth-result').innerHTML = 
+                    `<div class="error">❌ Please sign in first</div>`;
+                return;
+            }
+
+            const url = 'http://localhost:3001/create';
+            document.getElementById('auth-result').innerHTML = 
+                `<div class="success">✅ <a href="${url}" target="_blank" style="color: #ff1493;">Open Create Page with Auth</a><br>URL: ${url}<br>Token: ${authToken.substring(0, 20)}...</div>`;
+        }
+    </script>
+</body>
+</html>
+
+
+
+

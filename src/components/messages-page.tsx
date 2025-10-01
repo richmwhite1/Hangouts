@@ -140,7 +140,7 @@ export function MessagesPage() {
                         ) : (
                           <Avatar className="w-10 h-10">
                             <AvatarImage
-                              src={conversation.participants[0]?.avatar || "/placeholder.svg"}
+                              src={conversation.participants[0]?.avatar || "/placeholder-avatar.png"}
                               alt={conversation.participants[0]?.name}
                             />
                             <AvatarFallback>{conversation.participants[0]?.name.charAt(0)}</AvatarFallback>
@@ -165,7 +165,7 @@ export function MessagesPage() {
                           <div className="flex -space-x-1 mt-1">
                             {conversation.participants.slice(0, 3).map((participant, index) => (
                               <Avatar key={index} className="w-4 h-4 border border-background">
-                                <AvatarImage src={participant.avatar || "/placeholder.svg"} alt={participant.name} />
+                                <AvatarImage src={participant.avatar || "/placeholder-avatar.png"} alt={participant.name} />
                                 <AvatarFallback className="text-xs">{participant.name.charAt(0)}</AvatarFallback>
                               </Avatar>
                             ))}

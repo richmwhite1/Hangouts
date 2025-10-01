@@ -234,7 +234,7 @@ export interface ParticipantUpdate {
   hangoutId: string
   participantId: string
   action: 'joined' | 'left' | 'voted' | 'rsvp_changed'
-  data: any
+  data: Record<string, unknown>
   timestamp: string
 }
 

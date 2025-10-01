@@ -9,6 +9,7 @@ interface AuthContextType {
   signIn: (data: SignInData) => Promise<void>
   signUp: (data: SignUpData) => Promise<void>
   signOut: () => void
+  clearAuthState: () => void
   isLoading: boolean
   isAuthenticated: boolean
 }
@@ -34,6 +35,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user && !!token
 
+  const clearAuthState = () => {
+    setUser(null)
+    setToken(null)
+    apiClient.setToken(null)
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+  }
+
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
@@ -41,22 +50,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedToken = localStorage.getItem('auth_token')
         const storedUser = localStorage.getItem('auth_user')
         
-        if (storedToken && storedUser) {
-          setToken(storedToken)
-          setUser(JSON.parse(storedUser))
-          apiClient.setToken(storedToken)
-          
-          // Verify token is still valid
+        if (storedToken && storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
           try {
-            const { user: currentUser } = await apiClient.getCurrentUser()
-            setUser(currentUser)
+            const parsedUser = JSON.parse(storedUser)
+            
+            // Set token first before making API call
+            apiClient.setToken(storedToken)
+            
+            // Validate token by making a test API call
+            const testResponse = await apiClient.get('/api/auth/me')
+            if (!testResponse.success) {
+              console.log('Auth: Token validation failed, clearing auth state')
+              clearAuthState()
+              return
+            }
+            
+            setToken(storedToken)
+            setUser(parsedUser)
+            console.log('Auth: Valid token found, user authenticated')
           } catch (error) {
-            // Token is invalid, clear auth state
+            console.error('Auth: Token validation error:', error)
             clearAuthState()
           }
+        } else {
+          console.log('Auth: No stored auth data found')
         }
       } catch (error) {
-        console.error('Auth initialization error:', error)
+        console.error('Auth: Initialization error:', error)
         clearAuthState()
       } finally {
         setIsLoading(false)
@@ -65,14 +85,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth()
   }, [])
-
-  const clearAuthState = () => {
-    setUser(null)
-    setToken(null)
-    apiClient.setToken(null)
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
-  }
 
   const signIn = async (data: SignInData) => {
     try {
@@ -122,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signUp,
     signOut,
+    clearAuthState,
     isLoading,
     isAuthenticated,
   }

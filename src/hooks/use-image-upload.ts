@@ -1,74 +1,109 @@
 import { useState } from 'react'
+import { apiClient } from '@/lib/api-client'
 
-interface UploadedImage {
+interface UploadResult {
   url: string
-  jpegUrl: string
   filename: string
+  type: 'profile' | 'background' | 'hangout'
   size: number
-  sizeKB: number
+  dimensions: { width: number; height: number }
+  originalSize: number
+  compressionRatio: number
 }
 
-interface UseImageUploadReturn {
-  uploadImage: (file: File) => Promise<UploadedImage | null>
-  isUploading: boolean
-  uploadError: string | null
-  clearError: () => void
-}
-
-export const useImageUpload = (): UseImageUploadReturn => {
+export function useImageUpload() {
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const uploadImage = async (file: File): Promise<UploadedImage | null> => {
+  const uploadImage = async (file: File, type: 'profile' | 'background' | 'hangout', hangoutId?: string): Promise<UploadResult | null> => {
     try {
       setIsUploading(true)
-      setUploadError(null)
+      setError(null)
 
-      // Validate file
-      if (!file.type.startsWith('image/')) {
-        throw new Error('File must be an image')
-      }
-
-      if (file.size > 10 * 1024 * 1024) { // 10MB
-        throw new Error('File size must be less than 10MB')
-      }
-
-      // Create form data
       const formData = new FormData()
-      formData.append('image', file)
+      formData.append('file', file)
+      formData.append('type', type)
+      
+      // Add hangoutId for hangout photos
+      if (type === 'hangout' && hangoutId) {
+        formData.append('hangoutId', hangoutId)
+      }
 
-      // Upload image
-      const response = await fetch('/api/upload/image', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Authorization': `Bearer ${apiClient.token}`
+        },
+        body: formData
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Upload failed')
+        const errorMessage = errorData.error || errorData.message || 'Upload failed'
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()
-      return result.image
+      return result.data
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
-      setUploadError(errorMessage)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed'
+      setError(errorMessage)
+      console.error('Upload error:', err)
       return null
     } finally {
       setIsUploading(false)
     }
   }
 
-  const clearError = () => {
-    setUploadError(null)
+  const updateProfile = async (updates: {
+    avatar?: string
+    backgroundImage?: string
+    bio?: string
+    location?: string
+    name?: string
+    zodiac?: string
+    enneagram?: string
+    bigFive?: string
+    loveLanguage?: string
+  }) => {
+    try {
+      setIsUploading(true)
+      setError(null)
+
+      const response = await fetch('/api/profile/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiClient.token}`
+        },
+        body: JSON.stringify(updates)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.error || errorData.message || 'Profile update failed'
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      return result.data.user
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Profile update failed'
+      setError(errorMessage)
+      console.error('Profile update error:', err)
+      return null
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return {
     uploadImage,
+    updateProfile,
     isUploading,
-    uploadError,
-    clearError,
+    error,
+    clearError: () => setError(null)
   }
 }
-

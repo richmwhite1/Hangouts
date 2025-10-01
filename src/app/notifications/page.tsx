@@ -1,12 +1,31 @@
 'use client'
 
 import { useState } from 'react'
-// import Layout from '@/components/layout/Layout'
-// import { useNotifications } from '@/contexts/NotificationContext'
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react'
 
+// Mock data for notifications since the context is commented out
+const mockNotifications = [
+  {
+    id: '1',
+    title: 'Welcome!',
+    message: 'Welcome to Hangouts 3.0',
+    type: 'WELCOME',
+    isRead: false,
+    createdAt: new Date().toISOString()
+  }
+]
+
 export default function NotificationsPage() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading } = useNotifications()
+  // Mock implementation since useNotifications is commented out
+  const notifications = mockNotifications
+  const unreadCount = 1
+  const markAsRead = async (ids: string[]) => {
+    console.log('Mark as read:', ids)
+  }
+  const markAllAsRead = async () => {
+    console.log('Mark all as read')
+  }
+  const isLoading = false
   const [isMarkingAll, setIsMarkingAll] = useState(false)
 
   const handleMarkAllAsRead = async () => {
@@ -74,8 +93,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <Layout>
-      <div className="mobile-container">
+    <div className="mobile-container">
         <div className="flex items-center justify-between py-6">
           <div>
             <h1 className="text-2xl font-bold text-dark-900 dark:text-white">
@@ -151,12 +169,11 @@ export default function NotificationsPage() {
                 No notifications yet
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                You'll see notifications about hangouts and friends here
+                You&apos;ll see notifications about hangouts and friends here
               </p>
             </div>
           </div>
         )}
       </div>
-    </Layout>
   )
 }

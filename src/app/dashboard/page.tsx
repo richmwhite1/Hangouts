@@ -13,7 +13,7 @@ export default function DashboardPage() {
           </div>
           <div className="card">
             <h3 className="font-semibold mb-2">Upcoming</h3>
-            <p className="text-gray-600">Hangouts you're attending</p>
+            <p className="text-gray-600">Hangouts you&apos;re attending</p>
           </div>
           <div className="card">
             <h3 className="font-semibold mb-2">Recent Activity</h3>

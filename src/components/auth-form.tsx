@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,18 +14,44 @@ export function AuthForm() {
   const router = useRouter()
   const { signIn, signUp, isLoading } = useAuth()
   
+  const [mounted, setMounted] = useState(false)
   const [isSignIn, setIsSignIn] = useState(true)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     username: "",
     name: "",
   })
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Client-side validation for signup
+    if (!isSignIn) {
+      if (formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match")
+        return
+      }
+      if (formData.password.length < 8) {
+        setError("Password must be at least 8 characters long")
+        return
+      }
+      if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+        setError("Password must contain at least one uppercase letter, one lowercase letter, and one number")
+        return
+      }
+      if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+        setError("Name can only contain letters and spaces")
+        return
+      }
+    }
 
     try {
       if (isSignIn) {
@@ -34,6 +60,7 @@ export function AuthForm() {
         await signUp({
           email: formData.email,
           password: formData.password,
+          confirmPassword: formData.confirmPassword,
           username: formData.username,
           name: formData.name,
         })
@@ -46,6 +73,20 @@ export function AuthForm() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-gray-800 border-gray-700">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-white" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -140,6 +181,16 @@ export function AuthForm() {
                     placeholder="Password"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                     className="bg-gray-700 border-gray-600 text-white"
                     required
                   />

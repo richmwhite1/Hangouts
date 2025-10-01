@@ -34,9 +34,6 @@ export async function GET(request: NextRequest) {
     const imageBuffer = await readFile(fullPath)
     let image = sharp(imageBuffer)
     
-    // Get original metadata
-    const metadata = await image.metadata()
-    
     // Resize if dimensions provided
     if (width > 0 || height > 0) {
       image = image.resize(width || null, height || null, {
@@ -75,7 +72,7 @@ export async function GET(request: NextRequest) {
       ? 'image/png' 
       : 'image/webp'
     
-    return new NextResponse(outputBuffer, {
+    return new NextResponse(outputBuffer as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': contentType,

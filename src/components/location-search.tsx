@@ -42,6 +42,13 @@ export function LocationSearch({
       return
     }
 
+    // Don't search if we have a selected location and the value matches it
+    if (selectedLocation && value === selectedLocation.displayName) {
+      setSearchResults([])
+      setShowResults(false)
+      return
+    }
+
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true)
       try {
@@ -61,7 +68,7 @@ export function LocationSearch({
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [value])
+  }, [value, selectedLocation])
 
   const handleLocationSelect = (location: GeocodeResult) => {
     setSelectedLocation(location)
@@ -186,4 +193,6 @@ export function LocationSearch({
     </div>
   )
 }
+
+
 

@@ -8,6 +8,7 @@ import { DraftIndicator } from '@/components/draft-indicator'
 import { Edit, Trash2, MapPin, Clock, Users } from 'lucide-react'
 import { getOptimizedImageUrl, ImageSizes } from '@/lib/image-utils'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface DraftHangout {
   id: string
@@ -155,10 +156,12 @@ export function DraftHangoutCard({ draft, onEdit, onDelete }: DraftHangoutCardPr
           {/* Draft Image */}
           {draft.hangoutPhoto && (
             <div className="w-16 h-16 bg-gray-700 rounded-lg overflow-hidden ml-3">
-              <img 
+              <Image 
                 src={getOptimizedImageUrl(draft.hangoutPhoto.url, ImageSizes.thumbnail)} 
                 alt="Draft" 
                 className="w-full h-full object-cover" 
+                width={64}
+                height={64}
               />
             </div>
           )}

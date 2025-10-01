@@ -86,7 +86,7 @@ export function HangoutCard({ hangout }: HangoutCardProps) {
 
         <div className="relative">
           <Image
-            src={allPhotos[currentPhotoIndex] || "/placeholder.svg"}
+            src={allPhotos[currentPhotoIndex] || "/placeholder-avatar.png"}
             alt={hangout.title}
             width={400}
             height={200}
@@ -138,7 +138,7 @@ export function HangoutCard({ hangout }: HangoutCardProps) {
           </div>
           <div className="absolute top-3 right-3">
             <Avatar className="w-8 h-8 border-2 border-white">
-              <AvatarImage src={hangout.host?.avatar || "/placeholder.svg"} alt={hangout.host?.name || "Host"} />
+              <AvatarImage src={hangout.host?.avatar || "/placeholder-avatar.png"} alt={hangout.host?.name || "Host"} />
               <AvatarFallback>{(hangout.host?.name || "H").charAt(0)}</AvatarFallback>
             </Avatar>
           </div>
@@ -168,7 +168,7 @@ export function HangoutCard({ hangout }: HangoutCardProps) {
                   {hangout.participants.slice(0, 4).map((participant, index) => (
                     <div key={index} className="relative">
                       <Avatar className="w-6 h-6 border-2 border-background">
-                        <AvatarImage src={participant.avatar || "/placeholder.svg"} alt={participant.name} />
+                        <AvatarImage src={participant.avatar || "/placeholder-avatar.png"} alt={participant.name} />
                         <AvatarFallback className="text-xs">{participant.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div

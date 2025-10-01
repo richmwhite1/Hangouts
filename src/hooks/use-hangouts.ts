@@ -63,7 +63,7 @@ export const useHangout = (id: string) => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchHangout = async () => {
+  const fetchHangout = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -76,13 +76,13 @@ export const useHangout = (id: string) => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [id])
 
   useEffect(() => {
     if (id) {
       fetchHangout()
     }
-  }, [id])
+  }, [id, fetchHangout])
 
   return {
     hangout,

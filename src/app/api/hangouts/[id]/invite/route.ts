@@ -10,9 +10,11 @@ const inviteSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: hangoutId } = await params
+    
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -36,7 +38,7 @@ export async function POST(
 
     // Check if hangout exists and user has permission to invite
     const hangout = await db.hangout.findUnique({
-      where: { id: params.id },
+      where: { id: hangoutId },
       include: {
         participants: {
           where: { userId: payload.userId }
@@ -64,7 +66,7 @@ export async function POST(
     // Check if hangout has reached max participants
     if (hangout.maxParticipants) {
       const currentParticipantCount = await db.hangoutParticipant.count({
-        where: { hangoutId: params.id }
+        where: { hangoutId: hangoutId }
       })
 
       if (currentParticipantCount + userIds.length > hangout.maxParticipants) {
@@ -99,7 +101,7 @@ export async function POST(
         const existingParticipant = await db.hangoutParticipant.findUnique({
           where: {
             hangoutId_userId: {
-              hangoutId: params.id,
+              hangoutId: hangoutId,
               userId
             }
           }
@@ -113,7 +115,7 @@ export async function POST(
         // Add user as participant
         const participant = await db.hangoutParticipant.create({
           data: {
-            hangoutId: params.id,
+            hangoutId: hangoutId,
             userId,
             role: 'MEMBER',
             rsvpStatus: 'PENDING',
@@ -138,12 +140,12 @@ export async function POST(
             type: 'HANGOUT_INVITATION',
             title: 'Hangout Invitation',
             message: `${inviter.name} invited you to "${hangout.title}"`,
-            data: { hangoutId: params.id, inviterId: payload.userId }
+            data: { hangoutId: hangoutId, inviterId: payload.userId }
           })
         }
 
         results.push({ userId, success: true, participant })
-      } catch (error) {
+      } catch (_error) {
         results.push({ userId, success: false, error: 'Failed to invite user' })
       }
     }

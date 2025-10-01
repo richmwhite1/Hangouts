@@ -58,7 +58,7 @@ export const useDraft = () => {
     try {
       const savedDrafts = localStorage.getItem(DRAFT_KEY)
       if (savedDrafts) {
-        const parsedDrafts = JSON.parse(savedDrafts).map((draft: any) => ({
+        const parsedDrafts = JSON.parse(savedDrafts).map((draft: { createdAt: string; updatedAt: string; [key: string]: unknown }) => ({
           ...draft,
           createdAt: new Date(draft.createdAt),
           updatedAt: new Date(draft.updatedAt),

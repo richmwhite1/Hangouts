@@ -103,7 +103,7 @@ const searchWithOverpass = async (query: string, userLocation?: { lat: number; l
     if (!response.ok) return []
 
     const data = await response.json()
-    return data.elements?.map((element: any) => {
+    return data.elements?.map((element: { id: number; lat?: number; lon?: number; center?: { lat: number; lng: number }; tags?: { name?: string; [key: string]: string }; address?: { [key: string]: string } }) => {
       const lat = element.lat || element.center?.lat || 0
       const lng = element.lon || element.center?.lng || 0
       
@@ -141,7 +141,7 @@ const searchWithNominatim = async (query: string, userLocation?: { lat: number; 
     if (!response.ok) return []
 
     const results = await response.json()
-    return results.map((place: any) => ({
+    return results.map((place: { place_id: string; display_name: string }) => ({
       place_id: place.place_id,
       name: place.display_name.split(',')[0],
       formatted_address: place.display_name,
@@ -179,7 +179,7 @@ const searchWithSimpleText = async (query: string, userLocation?: { lat: number;
     if (!response.ok) return []
 
     const results = await response.json()
-    return results.map((place: any) => ({
+    return results.map((place: { place_id: string; display_name: string }) => ({
       place_id: place.place_id,
       name: place.display_name.split(',')[0],
       formatted_address: place.display_name,
@@ -204,7 +204,7 @@ const searchWithSimpleText = async (query: string, userLocation?: { lat: number;
 }
 
 // Helper functions
-const formatAddress = (tags: any, address: any) => {
+const formatAddress = (tags: { [key: string]: string }, address: { [key: string]: string }) => {
   if (address?.full) return address.full
   const parts = []
   if (tags?.['addr:street']) parts.push(tags['addr:street'])
@@ -213,13 +213,13 @@ const formatAddress = (tags: any, address: any) => {
   return parts.join(', ') || 'Address not available'
 }
 
-const getPriceLevel = (tags: any) => {
+const getPriceLevel = (tags: { [key: string]: string }) => {
   if (tags?.fee === 'yes') return 2
   if (tags?.fee === 'no') return 1
   return 0
 }
 
-const getBusinessTypes = (tags: any) => {
+const getBusinessTypes = (tags: { [key: string]: string }) => {
   const types = []
   if (tags?.amenity) types.push(tags.amenity)
   if (tags?.shop) types.push(tags.shop)
@@ -260,7 +260,7 @@ const searchWithFallback = async (query: string, userLocation?: { lat: number; l
 
     const results = await response.json()
     
-    return results.map((place: any) => ({
+    return results.map((place: { place_id: string; display_name: string }) => ({
       place_id: place.place_id,
       name: place.display_name.split(',')[0],
       formatted_address: place.display_name,
@@ -334,6 +334,13 @@ export function BusinessLocationSearch({
       setSelectedLocation(null)
     }
 
+    // Don't search if we have a selected location and the value matches it
+    if (selectedLocation && value === selectedLocation.name) {
+      setSearchResults([])
+      setShowResults(false)
+      return
+    }
+
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true)
       try {
@@ -353,7 +360,7 @@ export function BusinessLocationSearch({
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [value, userLocation, selectedLocation])
+  }, [value, userLocation])
 
   const handleLocationSelect = (location: BusinessResult) => {
     setSelectedLocation(location)
@@ -361,7 +368,10 @@ export function BusinessLocationSearch({
     onLocationSelect(location)
     setShowResults(false)
     setSearchResults([]) // Clear search results
-    inputRef.current?.blur()
+    // Don't blur immediately to prevent onBlur from interfering
+    setTimeout(() => {
+      inputRef.current?.blur()
+    }, 100)
   }
 
   const handleClear = () => {
@@ -396,7 +406,11 @@ export function BusinessLocationSearch({
           onFocus={() => setShowResults(searchResults.length > 0)}
           onBlur={() => {
             // Delay hiding results to allow for click events
-            setTimeout(() => setShowResults(false), 150)
+            setTimeout(() => {
+              if (!selectedLocation) {
+                setShowResults(false)
+              }
+            }, 200)
           }}
           className="bg-gray-800 border-gray-700 text-white pl-10 pr-10"
         />

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Auth Test</title>
+</head>
+<body>
+    <h1>Frontend Authentication Test</h1>
+    <div id="status"></div>
+    <button onclick="setAuth()">Set Authentication</button>
+    <button onclick="testPolls()">Test Polls API</button>
+    <button onclick="clearAuth()">Clear Authentication</button>
+    
+    <script>
+        const JWT_SECRET = 'your-super-secret-jwt-key-here-make-it-long-and-random';
+        
+        function setAuth() {
+            const testUser = {
+                id: 'cmfq75h2v0000jpf08u3kfi6b',
+                email: 'bill@example.com',
+                username: 'bill',
+                name: 'bill'
+            };
+            
+            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtZnE3NWgydjAwMDBqcGYwOHUza2ZpNmIiLCJlbWFpbCI6ImJpbGxAZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImJpbGwiLCJpYXQiOjE3NTg1MTI3NDAsImV4cCI6MTc1OTExNzU0MH0.xwGP_zgGiGpSpUyZYm0hX7z0gdTBr6Czg8fAxUGxJ24';
+            
+            localStorage.setItem('auth_token', token);
+            localStorage.setItem('auth_user', JSON.stringify(testUser));
+            
+            document.getElementById('status').innerHTML = '✅ Authentication set successfully!';
+        }
+        
+        async function testPolls() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('status').innerHTML = '❌ No token found. Set authentication first.';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/hangouts/hangout_1758511366656_plvc93u5a/polls-simple', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('status').innerHTML = `
+                        <h3>✅ Polls API Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('status').innerHTML = `❌ API Error: ${response.status} - ${errorText}`;
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            document.getElementById('status').innerHTML = '🗑️ Authentication cleared!';
+        }
+        
+        // Check current auth status
+        window.onload = function() {
+            const token = localStorage.getItem('auth_token');
+            const user = localStorage.getItem('auth_user');
+            
+            if (token && user) {
+                document.getElementById('status').innerHTML = `
+                    <h3>✅ Currently Authenticated:</h3>
+                    <p><strong>Token:</strong> ${token.substring(0, 50)}...</p>
+                    <p><strong>User:</strong> ${user}</p>
+                `;
+            } else {
+                document.getElementById('status').innerHTML = '❌ Not authenticated. Click "Set Authentication" to test.';
+            }
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+

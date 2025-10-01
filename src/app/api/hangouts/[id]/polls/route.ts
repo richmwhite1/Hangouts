@@ -1,78 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { z } from 'zod'
+import { createSuccessResponse, createErrorResponse, PollResponse } from '@/lib/api-response'
 
-const createPollSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
-  description: z.string().max(500, 'Description too long').optional(),
-  type: z.enum(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'RANKING', 'CONSENSUS']).default('SINGLE_CHOICE'),
-  options: z.array(z.string().min(1, 'Option cannot be empty')).min(2, 'At least 2 options required'),
-  expiresAt: z.string().datetime().optional(),
+// Validation schemas - Simplified for new schema
+const CreatePollSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  options: z.array(z.object({
+    title: z.string().min(1).max(100),
+    description: z.string().max(200).optional(),
+    date: z.string().optional(),
+    time: z.string().optional(),
+    location: z.string().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional()
+  })).min(2).max(10),
   allowMultiple: z.boolean().default(false),
   isAnonymous: z.boolean().default(false),
+  visibility: z.enum(['PRIVATE', 'FRIENDS', 'PUBLIC']).default('PRIVATE')
 })
 
+// GET /api/hangouts/[id]/polls - Get all polls for a specific hangout
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
     const payload = verifyToken(token)
-    
     if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // Check if user is a participant of the hangout
-    const participant = await db.hangoutParticipant.findUnique({
-      where: {
-        hangoutId_userId: {
-          hangoutId: params.id,
-          userId: payload.userId
-        }
+    const { id: hangoutId } = await params
+
+    // Get the hangout details ID from the content ID
+    const hangout = await db.content.findUnique({
+      where: { id: hangoutId },
+      include: { 
+        hangout_details: true
       }
     })
 
-    if (!participant) {
-      return NextResponse.json(
-        { error: 'You are not a participant of this hangout' },
-        { status: 403 }
-      )
+    if (!hangout) {
+      return NextResponse.json({ error: 'Hangout not found' }, { status: 404 })
     }
 
-    // Get all polls for the hangout
-    const polls = await db.hangoutPoll.findMany({
-      where: { hangoutId: params.id },
+    // Polls must use hangout_details ID due to foreign key constraint
+    const hangoutDetailsId = hangout.hangout_details?.id
+    if (!hangoutDetailsId) {
+      return NextResponse.json({ error: 'Hangout details not found' }, { status: 404 })
+    }
+
+    // Get all polls for this hangout
+    const polls = await db.polls.findMany({
+      where: {
+        hangoutId: hangoutDetailsId
+      },
       include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-          }
-        },
         votes: {
           include: {
             user: {
               select: {
                 id: true,
-                name: true,
                 username: true,
-                avatar: true,
+                name: true,
+                avatar: true
               }
             }
           }
@@ -83,120 +82,104 @@ export async function GET(
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: {
+        createdAt: 'desc'
+      }
     })
 
-    return NextResponse.json({ polls })
+    return NextResponse.json(createSuccessResponse(polls, 'Polls fetched successfully'))
+
   } catch (error) {
     console.error('Error fetching polls:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch polls' },
+      createErrorResponse('Failed to fetch polls', error.message),
       { status: 500 }
     )
   }
 }
 
+// POST /api/hangouts/[id]/polls - Create a poll for a specific hangout
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
     const payload = verifyToken(token)
-    
     if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // Check if hangout exists
-    const hangout = await db.hangout.findUnique({
-      where: { id: params.id }
+    const { id: hangoutId } = await params
+    const body = await request.json()
+    
+    // Debug logging
+    console.log('Poll creation request body:', JSON.stringify(body, null, 2))
+    
+    // Get the hangout details ID from the content ID
+    const hangout = await db.content.findUnique({
+      where: { id: hangoutId },
+      include: { 
+        hangout_details: true,
+        content_participants: true
+      }
     })
 
     if (!hangout) {
-      return NextResponse.json(
-        { error: 'Hangout not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Hangout not found' }, { status: 404 })
     }
 
-    // Check if user is a participant
-    const participant = await db.hangoutParticipant.findUnique({
-      where: {
-        hangoutId_userId: {
-          hangoutId: params.id,
-          userId: payload.userId
-        }
-      }
-    })
+    // Polls must use hangout_details ID due to foreign key constraint
+    const hangoutDetailsId = hangout.hangout_details?.id
+    if (!hangoutDetailsId) {
+      return NextResponse.json({ error: 'Hangout details not found' }, { status: 404 })
+    }
+    const validatedData = CreatePollSchema.parse(body)
 
-    if (!participant) {
-      return NextResponse.json(
-        { error: 'You are not a participant of this hangout' },
-        { status: 403 }
-      )
+    // Check if user has permission to create polls in this hangout
+    // (hangout_details check removed - we'll use content ID directly)
+
+    // Check if user is participant or creator
+    const isParticipant = hangout.content_participants.some(p => p.userId === payload.userId)
+    const isCreator = hangout.creatorId === payload.userId
+
+    if (!isParticipant && !isCreator) {
+      return NextResponse.json({ error: 'Not authorized to create polls in this hangout' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const validatedData = createPollSchema.parse(body)
-
-    // Create the poll
-    const poll = await db.hangoutPoll.create({
-      data: {
-        hangoutId: params.id,
-        creatorId: payload.userId,
-        title: validatedData.title,
-        description: validatedData.description,
-        type: validatedData.type,
-        options: validatedData.options,
-        expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null,
-        allowMultiple: validatedData.allowMultiple,
-        isAnonymous: validatedData.isAnonymous,
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-          }
-        },
-        votes: true,
-        _count: {
-          select: {
-            votes: true
-          }
+    // Create poll with simplified schema
+    const result = await db.$transaction(async (tx) => {
+      // Create poll
+      const poll = await tx.polls.create({
+        data: {
+          id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          hangoutId: hangoutDetailsId,
+          creatorId: payload.userId,
+          title: validatedData.title,
+          description: validatedData.description,
+          options: validatedData.options, // Store options as JSON
+          allowMultiple: validatedData.allowMultiple,
+          isAnonymous: validatedData.isAnonymous,
+          status: 'ACTIVE',
+          visibility: validatedData.visibility,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
         }
-      }
+      })
+
+      return { poll }
     })
 
-    return NextResponse.json({ poll }, { status: 201 })
+    return NextResponse.json(createSuccessResponse(result.poll, 'Poll created successfully'), { status: 201 })
   } catch (error) {
-    console.error('Error creating poll:', error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
-    return NextResponse.json(
-      { error: 'Failed to create poll' },
-      { status: 500 }
-    )
+    console.error('Error creating poll:', error)
+    console.error('Error stack:', error.stack)
+    return NextResponse.json(createErrorResponse('Failed to create poll', error.message), { status: 500 })
   }
 }
-
-
-

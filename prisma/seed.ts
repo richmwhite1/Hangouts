@@ -14,10 +14,11 @@ async function main() {
     }
   })
 
-  if (!user) {
+  let currentUser = user
+  if (!currentUser) {
     console.log('No user found, creating one...')
     const hashedPassword = await bcrypt.hash('password123', 10)
-    const newUser = await prisma.user.create({
+    currentUser = await prisma.user.create({
       data: {
         email: 'test@example.com',
         username: 'testuser',
@@ -25,27 +26,58 @@ async function main() {
         password: hashedPassword,
       },
     })
-    console.log('Created user:', newUser)
+    console.log('Created user:', currentUser)
   } else {
-    console.log('Using existing user:', user)
+    console.log('Using existing user:', currentUser)
   }
 
-  // Create a test hangout
-  const hangout = await prisma.hangout.create({
+  // Create a second user for testing
+  const secondUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: 'bill@email.com' },
+        { username: 'billbev' }
+      ]
+    }
+  })
+
+  let currentUser2 = secondUser
+  if (!currentUser2) {
+    console.log('No second user found, creating one...')
+    const hashedPassword2 = await bcrypt.hash('password123', 10)
+    currentUser2 = await prisma.user.create({
+      data: {
+        email: 'bill@email.com',
+        username: 'billbev',
+        name: 'Bill Beverly',
+        password: hashedPassword2,
+      },
+    })
+    console.log('Created second user:', currentUser2)
+  } else {
+    console.log('Using existing second user:', currentUser2)
+  }
+
+  // Create a test hangout content
+  const hangoutContent = await prisma.content.create({
     data: {
+      id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'HANGOUT',
       title: 'Coffee Meetup',
       description: 'Let\'s grab coffee together!',
       location: 'Starbucks Downtown',
       startTime: new Date('2024-12-15T10:00:00.000Z'),
       endTime: new Date('2024-12-15T12:00:00.000Z'),
       privacyLevel: 'FRIENDS_ONLY',
+      status: 'PUBLISHED',
+      creatorId: currentUser.id,
       maxParticipants: 5,
       weatherEnabled: false,
-      creatorId: user.id,
+      updatedAt: new Date(),
     },
   })
 
-  console.log('Created hangout:', hangout)
+  console.log('Created hangout content:', hangoutContent)
 }
 
 main()

@@ -5,7 +5,7 @@ export async function createNotification(data: {
   type: string
   title: string
   message: string
-  data?: any
+  data?: Record<string, unknown>
 }) {
   try {
     const notification = await db.notification.create({

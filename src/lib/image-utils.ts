@@ -97,3 +97,16 @@ export function getBestFormat(): 'webp' | 'jpeg' {
   return supportsWebP() ? 'webp' : 'jpeg'
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+

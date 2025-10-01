@@ -1,75 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { verifyToken } from '@/lib/auth'
+import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
+import { FriendsSystem } from '@/lib/friends-system'
 
-export async function GET(request: NextRequest) {
+// Get user's friends
+async function getFriendsHandler(request: AuthenticatedRequest) {
+  const userId = request.user.userId
+
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    // Get user's friendships
-    const friendships = await db.friendship.findMany({
-      where: {
-        OR: [
-          { user1Id: payload.userId },
-          { user2Id: payload.userId }
-        ]
-      },
-      include: {
-        user1: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true,
-            lastSeen: true,
-          }
-        },
-        user2: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true,
-            lastSeen: true,
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    // Transform friendships to get the friend (not the current user)
-    const friends = friendships.map(friendship => {
-      const friend = friendship.user1Id === payload.userId ? friendship.user2 : friendship.user1
-      return {
-        ...friend,
-        friendshipId: friendship.id,
-        friendsSince: friendship.createdAt,
-      }
-    })
-
-    return NextResponse.json({ friends })
+    const friends = await FriendsSystem.getUserFriends(userId)
+    return createSuccessResponse({ friends })
   } catch (error) {
-    console.error('Get friends error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error fetching friends:', error)
+    return createErrorResponse('Failed to fetch friends', error instanceof Error ? error.message : 'Unknown error')
   }
 }
 
+// Send friend request
+async function sendFriendRequestHandler(request: AuthenticatedRequest) {
+  const userId = request.user.userId
+  const { receiverId } = await request.json()
+
+  if (!receiverId) {
+    return createErrorResponse('Receiver ID is required', 'MISSING_RECEIVER_ID')
+  }
+
+  if (userId === receiverId) {
+    return createErrorResponse('Cannot send friend request to yourself', 'INVALID_RECEIVER')
+  }
+
+  try {
+    const friendRequest = await FriendsSystem.sendFriendRequest(userId, receiverId)
+    return createSuccessResponse({ friendRequest }, 'Friend request sent successfully')
+  } catch (error) {
+    console.error('Error sending friend request:', error)
+    return createErrorResponse('Failed to send friend request', error instanceof Error ? error.message : 'Unknown error')
+  }
+}
+
+export const GET = createApiHandler(getFriendsHandler)
+export const POST = createApiHandler(sendFriendRequestHandler)

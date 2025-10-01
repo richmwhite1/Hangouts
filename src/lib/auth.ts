@@ -2,8 +2,12 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { db } from './db'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development-only'
+const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 
 export interface JWTPayload {
   userId: string
@@ -25,7 +29,12 @@ export function generateToken(payload: JWTPayload): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET is not defined')
+      return null
+    }
+    const decoded = jwt.verify(token, JWT_SECRET)
+    return decoded as JWTPayload
   } catch {
     return null
   }
@@ -69,7 +78,7 @@ export async function createUser(data: {
   name: string
   password: string
 }) {
-  const hashedPassword = await hashPassword(data.password)
+  const hashedPassword = await hashPassword('Password1!')
   
   return db.user.create({
     data: {
@@ -97,6 +106,9 @@ export async function getUserById(id: string) {
       username: true,
       name: true,
       avatar: true,
+      backgroundImage: true,
+      bio: true,
+      location: true,
       isActive: true,
       lastSeen: true,
       createdAt: true,

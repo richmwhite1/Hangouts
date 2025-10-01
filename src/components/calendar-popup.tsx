@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Clock, Calendar as CalendarIcon } from 'lucide-react'
 import { format, addDays, addWeeks, addMonths } from 'date-fns'
+import { MobileModal } from '@/components/ui/mobile-modal'
 
 interface CalendarPopupProps {
   isOpen: boolean
@@ -70,22 +71,15 @@ export function CalendarPopup({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md bg-gray-800 border-gray-700">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-white flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5" />
-            Select Date & Time
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </CardHeader>
+    <MobileModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Select Date & Time"
+      className="w-full max-w-md bg-gray-800 border-gray-700"
+      closeOnBackdropClick={true}
+      closeOnEscape={true}
+      preventBodyScroll={true}
+    >
         
         <CardContent className="space-y-6">
           {/* Quick Date Options */}
@@ -201,8 +195,19 @@ export function CalendarPopup({
             </Button>
           </div>
         </CardContent>
-      </Card>
-    </div>
+    </MobileModal>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
 

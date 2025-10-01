@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Frontend Auth</title>
+</head>
+<body>
+    <h1>Clear Frontend Authentication</h1>
+    <button onclick="clearAuth()">Clear Auth & Reload</button>
+    <div id="status"></div>
+    
+    <script>
+        function clearAuth() {
+            // Clear all authentication data
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear any cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            document.getElementById('status').innerHTML = 'Auth cleared! Redirecting...';
+            
+            // Redirect to home page
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000/';
+            }, 1000);
+        }
+        
+        // Show current auth status
+        const token = localStorage.getItem('auth_token');
+        const user = localStorage.getItem('auth_user');
+        
+        document.getElementById('status').innerHTML = `
+            <p>Current Auth Status:</p>
+            <p>Token: ${token ? token.substring(0, 50) + '...' : 'None'}</p>
+            <p>User: ${user ? user.substring(0, 100) + '...' : 'None'}</p>
+        `;
+    </script>
+</body>
+</html>
+

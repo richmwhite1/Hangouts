@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Hangout Page Logic</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .debug { background: #333; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .poll { background: #2d3748; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #4299e1; }
+        .event-details { background: #2d3748; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #f56565; }
+        .consensus { background: #2d3748; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #48bb78; }
+        button { background: #4299e1; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+        button:hover { background: #3182ce; }
+        .error { background: #f56565; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #48bb78; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        pre { background: #1a202c; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Hangout Page Logic</h1>
+    
+    <div class="debug">
+        <h3>🔐 Authentication Status</h3>
+        <button onclick="setAuth()">Set Authentication</button>
+        <button onclick="clearAuth()">Clear Authentication</button>
+        <div id="authStatus"></div>
+    </div>
+
+    <div class="debug">
+        <h3>📊 Data Fetching</h3>
+        <button onclick="fetchAllData()">Fetch All Data</button>
+        <button onclick="fetchPolls()">Fetch Polls Only</button>
+        <button onclick="fetchHangout()">Fetch Hangout Only</button>
+        <div id="fetchStatus"></div>
+    </div>
+
+    <div class="debug">
+        <h3>🧮 Poll Logic Test</h3>
+        <button onclick="testPollLogic()">Test Poll Logic</button>
+        <div id="logicStatus"></div>
+    </div>
+
+    <div class="debug">
+        <h3>📋 "The Plan" Tab Simulation</h3>
+        <div id="planContent"></div>
+    </div>
+
+    <script>
+        const JWT_SECRET = 'your-super-secret-jwt-key-here-make-it-long-and-random';
+        const hangoutId = 'hangout_1758565278199_adqpwjcwh';
+        
+        let currentHangout = null;
+        let polls = [];
+        let user = null;
+        let token = null;
+        
+        function setAuth() {
+            user = {
+                id: 'cmfvgcfli0000jphd45q3zadx',
+                email: 'test@example.com',
+                username: 'testuser',
+                name: 'Test User'
+            };
+            
+            token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ2Z2NmbGkwMDAwanBoZDQ1cTN6YWR4IiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTc1ODU2NTI4MiwiZXhwIjoxNzU5MTcwMDgyfQ.NDVcQMwRUT6JHnHtDgQZ9fxcmzNMYHGO5oxxvofH4xE';
+            
+            localStorage.setItem('auth_token', token);
+            localStorage.setItem('auth_user', JSON.stringify(user));
+            
+            document.getElementById('authStatus').innerHTML = `
+                <div class="success">✅ Authentication set successfully!</div>
+                <div>User: ${user.name} (${user.username})</div>
+                <div>Token: ${token.substring(0, 20)}...</div>
+            `;
+        }
+        
+        function clearAuth() {
+            user = null;
+            token = null;
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            document.getElementById('authStatus').innerHTML = '<div class="error">❌ Authentication cleared</div>';
+        }
+        
+        async function fetchHangout() {
+            if (!token) {
+                document.getElementById('fetchStatus').innerHTML = '<div class="error">No authentication token</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/hangouts/${hangoutId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                currentHangout = data.hangout || data;
+                
+                document.getElementById('fetchStatus').innerHTML = `
+                    <div class="success">✅ Hangout fetched successfully</div>
+                    <div>Title: ${currentHangout.title}</div>
+                    <div>ID: ${currentHangout.id}</div>
+                    <div>Creator: ${currentHangout.creatorId}</div>
+                `;
+                
+                updatePlanContent();
+            } catch (error) {
+                document.getElementById('fetchStatus').innerHTML = `<div class="error">❌ Error fetching hangout: ${error.message}</div>`;
+            }
+        }
+        
+        async function fetchPolls() {
+            if (!token) {
+                document.getElementById('fetchStatus').innerHTML = '<div class="error">No authentication token</div>';
+                return;
+            }
+            
+            try {
+                console.log('🔄 fetchPolls called with:', { token: !!token, hangoutId });
+                console.log('🌐 Fetching polls from:', `/api/hangouts/${hangoutId}/polls-simple`);
+                
+                const response = await fetch(`http://localhost:3000/api/hangouts/${hangoutId}/polls-simple`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                console.log('📡 Polls response status:', response.status, response.ok);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📊 Polls API Response:', data);
+                    console.log('📊 Setting polls to:', data.polls || []);
+                    
+                    polls = data.polls || [];
+                    
+                    document.getElementById('fetchStatus').innerHTML = `
+                        <div class="success">✅ Polls fetched successfully</div>
+                        <div>Polls count: ${polls.length}</div>
+                        <div>Raw data: <pre>${JSON.stringify(data, null, 2)}</pre></div>
+                    `;
+                    
+                    updatePlanContent();
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Polls API error:', response.status, errorText);
+                    document.getElementById('fetchStatus').innerHTML = `<div class="error">❌ Polls API error: ${response.status} ${errorText}</div>`;
+                }
+            } catch (error) {
+                console.error('❌ Error fetching polls:', error);
+                document.getElementById('fetchStatus').innerHTML = `<div class="error">❌ Error fetching polls: ${error.message}</div>`;
+            }
+        }
+        
+        async function fetchAllData() {
+            await fetchHangout();
+            await fetchPolls();
+        }
+        
+        function testPollLogic() {
+            console.log('🧮 Testing poll logic with:', { polls, user, currentHangout });
+            
+            // This is the exact logic from the hangout page
+            const activePoll = polls.find(p => p.isActive && !p.consensusReached);
+            const hasActivePoll = !!activePoll;
+            const hasConsensusReached = polls.some(p => p.consensusReached);
+            const isCreator = currentHangout && currentHangout.creatorId === user?.id;
+            
+            document.getElementById('logicStatus').innerHTML = `
+                <div><strong>Poll Logic Results:</strong></div>
+                <div>Polls count: ${polls.length}</div>
+                <div>Active poll: ${activePoll ? activePoll.title : 'None'}</div>
+                <div>Has active poll: ${hasActivePoll}</div>
+                <div>Has consensus reached: ${hasConsensusReached}</div>
+                <div>Is creator: ${isCreator}</div>
+                <div>User ID: ${user?.id || 'None'}</div>
+                <div>Hangout creator: ${currentHangout?.creatorId || 'None'}</div>
+                <div><strong>Poll Details:</strong></div>
+                <pre>${JSON.stringify(polls.map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    isActive: p.isActive,
+                    status: p.status,
+                    consensusReached: p.consensusReached,
+                    visibility: p.visibility
+                })), null, 2)}</pre>
+            `;
+            
+            updatePlanContent();
+        }
+        
+        function updatePlanContent() {
+            if (!polls.length && !currentHangout) {
+                document.getElementById('planContent').innerHTML = '<div class="error">No data loaded yet</div>';
+                return;
+            }
+            
+            // This is the exact logic from the hangout page
+            const activePoll = polls.find(p => p.isActive && !p.consensusReached);
+            const hasActivePoll = !!activePoll;
+            const hasConsensusReached = polls.some(p => p.consensusReached);
+            const isCreator = currentHangout && currentHangout.creatorId === user?.id;
+            
+            let content = '';
+            
+            // Show Poll if Active
+            if (hasActivePoll && activePoll) {
+                content += `
+                    <div class="poll">
+                        <h3>🗳️ Poll in Progress</h3>
+                        <h4>${activePoll.title}</h4>
+                        <div>Status: ${activePoll.status}</div>
+                        <div>Is Active: ${activePoll.isActive}</div>
+                        <div>Consensus Reached: ${activePoll.consensusReached}</div>
+                        <div>Visibility: ${activePoll.visibility}</div>
+                        <div>Options: ${activePoll.pollOptions?.length || 0}</div>
+                    </div>
+                `;
+            }
+            
+            // Show Event Details if No Active Poll
+            if (!hasActivePoll && !hasConsensusReached) {
+                content += `
+                    <div class="event-details">
+                        <h3>📅 Event Details</h3>
+                        <div>This should NOT be showing if there are active polls!</div>
+                        <div>Polls count: ${polls.length}</div>
+                        <div>Has active poll: ${hasActivePoll}</div>
+                        <div>Has consensus reached: ${hasConsensusReached}</div>
+                        ${currentHangout ? `
+                            <div>Title: ${currentHangout.title}</div>
+                            <div>Start Time: ${new Date(currentHangout.startTime).toLocaleString()}</div>
+                            <div>Location: ${currentHangout.location || 'Not specified'}</div>
+                        ` : '<div>No hangout data</div>'}
+                    </div>
+                `;
+            }
+            
+            // Show Decided Event and RSVP if Consensus Reached
+            if (hasConsensusReached && !hasActivePoll) {
+                content += `
+                    <div class="consensus">
+                        <h3>✅ Consensus Reached!</h3>
+                        <div>The group has decided on the final plan.</div>
+                    </div>
+                `;
+            }
+            
+            if (!content) {
+                content = '<div class="error">No content to display</div>';
+            }
+            
+            document.getElementById('planContent').innerHTML = content;
+        }
+        
+        // Auto-set auth on load
+        window.onload = function() {
+            setAuth();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+

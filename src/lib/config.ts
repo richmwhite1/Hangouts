@@ -6,13 +6,13 @@ export const config = {
     name: 'Hangouts 3.0',
     version: '1.0.0',
     description: 'Plan amazing hangouts with friends',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
     supportEmail: 'support@hangouts.app'
   },
 
   // API Configuration
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api'),
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}` : ''),
     timeout: 10000,
     retryAttempts: 3,
     retryDelay: 1000
@@ -20,14 +20,14 @@ export const config = {
 
   // Database Configuration
   database: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/hangouts_3_0",
     maxConnections: 10,
     connectionTimeout: 30000
   },
 
   // Authentication Configuration
   auth: {
-    jwtSecret: process.env.JWT_SECRET,
+    jwtSecret: process.env.JWT_SECRET || "your-super-secret-jwt-key-here-make-it-long-and-random",
     jwtExpiresIn: '7d',
     refreshTokenExpiresIn: '30d',
     passwordMinLength: 8,
@@ -96,7 +96,7 @@ export const config = {
     enableCSRF: true,
     enableXSSProtection: true,
     enableContentSecurityPolicy: true,
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001'],
     trustedProxies: process.env.TRUSTED_PROXIES?.split(',') || []
   },
 
