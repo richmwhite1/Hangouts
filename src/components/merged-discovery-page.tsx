@@ -127,6 +127,16 @@ const sortOptions = [
   { id: 'price-high', label: 'Price: High to Low' },
   { id: 'date-asc', label: 'Date: Soonest First' },
   { id: 'date-desc', label: 'Date: Latest First' },
+  { id: 'distance', label: 'Distance: Closest First' },
+]
+
+const distanceOptions = [
+  { id: '5', label: '5 miles' },
+  { id: '10', label: '10 miles' },
+  { id: '25', label: '25 miles' },
+  { id: '50', label: '50 miles' },
+  { id: '100', label: '100 miles' },
+  { id: 'unlimited', label: 'No limit' },
 ]
 
 export function MergedDiscoveryPage() {
@@ -146,6 +156,11 @@ export function MergedDiscoveryPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  
+  // Location filtering state
+  const [zipCode, setZipCode] = useState('')
+  const [maxDistance, setMaxDistance] = useState('unlimited')
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   
   // Bottom sheet for filters
   const filterBottomSheet = useBottomSheet()
@@ -169,6 +184,71 @@ export function MergedDiscoveryPage() {
     'fitness', 'yoga', 'dance', 'art', 'music', 'theater', 'comedy'
   ]
 
+  // Geocoding function to convert zip code to coordinates
+  const geocodeZipCode = async (zip: string): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      // Mock geocoding for common US zip codes (for demo purposes)
+      const mockZipCodes: { [key: string]: { lat: number; lng: number } } = {
+        '10001': { lat: 40.7505, lng: -73.9934 }, // NYC
+        '90210': { lat: 34.0901, lng: -118.4065 }, // Beverly Hills
+        '60601': { lat: 41.8781, lng: -87.6298 }, // Chicago
+        '33101': { lat: 25.7617, lng: -80.1918 }, // Miami
+        '98101': { lat: 47.6062, lng: -122.3321 }, // Seattle
+        '94102': { lat: 37.7749, lng: -122.4194 }, // San Francisco
+        '02101': { lat: 42.3601, lng: -71.0589 }, // Boston
+        '75201': { lat: 32.7767, lng: -96.7970 }, // Dallas
+        '30309': { lat: 33.7490, lng: -84.3880 }, // Atlanta
+        '85001': { lat: 33.4484, lng: -112.0740 }, // Phoenix
+      }
+      
+      if (mockZipCodes[zip]) {
+        return mockZipCodes[zip]
+      }
+      
+      // For other zip codes, use a simple approximation based on first 3 digits
+      const region = zip.substring(0, 3)
+      const baseLat = 39.8283 + (parseInt(region) - 100) * 0.1
+      const baseLng = -98.5795 + (parseInt(region) - 100) * 0.1
+      
+      return {
+        lat: baseLat + (Math.random() - 0.5) * 2, // Add some randomness
+        lng: baseLng + (Math.random() - 0.5) * 2
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error)
+      return null
+    }
+  }
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 3959 // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
+  }
+
+  // Get user's current location
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          })
+        },
+        (error) => {
+          console.error('Geolocation error:', error)
+        }
+      )
+    }
+  }
+
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
@@ -184,6 +264,9 @@ export function MergedDiscoveryPage() {
     setSelectedTags([])
     setPriceRange({ min: '', max: '' })
     setDateRange({ start: '', end: '' })
+    setZipCode('')
+    setMaxDistance('unlimited')
+    setUserLocation(null)
   }
 
   // Fetch events
@@ -318,9 +401,27 @@ export function MergedDiscoveryPage() {
       const matchesDate = (!dateRange.start || itemDate >= new Date(dateRange.start)) &&
                          (!dateRange.end || itemDate <= new Date(dateRange.end))
       
-      return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate
+      // Location filter
+      let matchesLocation = true
+      if (userLocation && maxDistance !== 'unlimited') {
+        const itemLat = item.latitude || item.lat
+        const itemLng = item.longitude || item.lng
+        if (itemLat && itemLng) {
+          const distance = calculateDistance(
+            userLocation.lat, 
+            userLocation.lng, 
+            itemLat, 
+            itemLng
+          )
+          matchesLocation = distance <= parseInt(maxDistance)
+        } else {
+          matchesLocation = false // Hide items without coordinates when location filtering is active
+        }
+      }
+      
+      return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate && matchesLocation
     })
-  }, [searchQuery, selectedCategory, selectedTags, priceRange, dateRange])
+  }, [searchQuery, selectedCategory, selectedTags, priceRange, dateRange, userLocation, maxDistance])
 
   // Merge and sort content (memoized)
   const mergeAndSortContent = useMemo(() => {
@@ -329,13 +430,19 @@ export function MergedDiscoveryPage() {
         ...event,
         type: 'event',
         sortDate: new Date(event.startDate),
-        sortPrice: event.price.min
+        sortPrice: event.price.min,
+        sortDistance: userLocation && event.latitude && event.longitude 
+          ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
+          : Infinity
       })),
       ...hangouts.map(hangout => ({
         ...hangout,
         type: 'hangout',
         sortDate: new Date(hangout.date),
-        sortPrice: 0
+        sortPrice: 0,
+        sortDistance: userLocation && hangout.latitude && hangout.longitude 
+          ? calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude)
+          : Infinity
       }))
     ]
 
@@ -366,10 +473,13 @@ export function MergedDiscoveryPage() {
       case 'date-desc':
         sortedContent.sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
         break
+      case 'distance':
+        sortedContent.sort((a, b) => a.sortDistance - b.sortDistance)
+        break
     }
 
     return sortedContent
-  }, [events, hangouts, filterContent, sortBy])
+  }, [events, hangouts, filterContent, sortBy, userLocation])
 
   // Update merged content when mergeAndSortContent changes
   useEffect(() => {
@@ -391,6 +501,21 @@ export function MergedDiscoveryPage() {
       fetchEvents()
     }
   }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, token])
+
+  // Handle zip code geocoding
+  useEffect(() => {
+    const handleZipCodeGeocoding = async () => {
+      if (zipCode && zipCode.length === 5 && /^\d{5}$/.test(zipCode)) {
+        const coords = await geocodeZipCode(zipCode)
+        if (coords) {
+          setUserLocation(coords)
+        }
+      }
+    }
+
+    const timeoutId = setTimeout(handleZipCodeGeocoding, 1000) // Debounce
+    return () => clearTimeout(timeoutId)
+  }, [zipCode])
 
   const formatPrice = (price: Event['price']) => {
     if (price.min === 0) return 'Free'
@@ -455,6 +580,16 @@ export function MergedDiscoveryPage() {
             </div>
           </div>
           
+          {/* Distance - Bottom Right (if location is set) */}
+          {userLocation && event.latitude && event.longitude && (
+            <div className="absolute bottom-1 right-1">
+              <div className="flex items-center text-white text-[10px] bg-black/50 rounded px-1.5 py-0.5">
+                <MapPin className="w-2 h-2 mr-0.5" />
+                {calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude).toFixed(1)}mi
+              </div>
+            </div>
+          )}
+          
           {/* Title Area - Bottom reserved space */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
             <h3 className="font-semibold text-white text-sm line-clamp-2 drop-shadow-lg">
@@ -516,6 +651,16 @@ export function MergedDiscoveryPage() {
               {formatDate(hangout.date)}
             </div>
           </div>
+          
+          {/* Distance - Bottom Right (if location is set) */}
+          {userLocation && hangout.latitude && hangout.longitude && (
+            <div className="absolute bottom-1 right-1">
+              <div className="flex items-center text-white text-[10px] bg-black/50 rounded px-1.5 py-0.5">
+                <MapPin className="w-2 h-2 mr-0.5" />
+                {calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude).toFixed(1)}mi
+              </div>
+            </div>
+          )}
           
           {/* Title Area - Bottom reserved space */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
@@ -580,9 +725,9 @@ export function MergedDiscoveryPage() {
             rippleEffect={true}
           >
             <Filter className="w-4 h-4" />
-            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end) && (
+            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end || zipCode || maxDistance !== 'unlimited') && (
               <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {[selectedCategory !== 'all' ? 1 : 0, selectedTags.length, priceRange.min ? 1 : 0, priceRange.max ? 1 : 0, dateRange.start ? 1 : 0, dateRange.end ? 1 : 0].reduce((a, b) => a + b, 0)}
+                {[selectedCategory !== 'all' ? 1 : 0, selectedTags.length, priceRange.min ? 1 : 0, priceRange.max ? 1 : 0, dateRange.start ? 1 : 0, dateRange.end ? 1 : 0, zipCode ? 1 : 0, maxDistance !== 'unlimited' ? 1 : 0].reduce((a, b) => a + b, 0)}
               </span>
             )}
           </TouchButton>
@@ -687,6 +832,48 @@ export function MergedDiscoveryPage() {
               </div>
             </div>
 
+            {/* Location Filter */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter zip code"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    className="flex-1 bg-gray-700 border-gray-600 text-white"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={getCurrentLocation}
+                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={maxDistance} onValueChange={setMaxDistance}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Max distance" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {distanceOptions.map(option => (
+                        <SelectItem key={option.id} value={option.id} className="text-white">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {userLocation && (
+                  <div className="text-xs text-gray-400">
+                    Location: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Time Filter */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">Quick Time Filter</label>
@@ -722,7 +909,7 @@ export function MergedDiscoveryPage() {
             </div>
 
             {/* Active Filters Display */}
-            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end) && (
+            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end || zipCode || maxDistance !== 'unlimited') && (
               <div className="pt-4 border-t border-gray-700">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Active Filters</label>
                 <div className="flex flex-wrap gap-2">
@@ -754,6 +941,16 @@ export function MergedDiscoveryPage() {
                   {dateRange.end && (
                     <Badge className="bg-orange-600 text-white">
                       To: {new Date(dateRange.end).toLocaleDateString()}
+                    </Badge>
+                  )}
+                  {zipCode && (
+                    <Badge className="bg-indigo-600 text-white">
+                      Zip: {zipCode}
+                    </Badge>
+                  )}
+                  {maxDistance !== 'unlimited' && (
+                    <Badge className="bg-indigo-600 text-white">
+                      Within: {distanceOptions.find(d => d.id === maxDistance)?.label}
                     </Badge>
                   )}
                 </div>
@@ -901,6 +1098,48 @@ export function MergedDiscoveryPage() {
                 onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                 className="bg-gray-700 border-gray-600 text-white"
               />
+            </div>
+          </div>
+
+          {/* Location Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Enter zip code"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  className="flex-1 bg-gray-700 border-gray-600 text-white"
+                />
+                <Button
+                  variant="outline"
+                  onClick={getCurrentLocation}
+                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                >
+                  <MapPin className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Select value={maxDistance} onValueChange={setMaxDistance}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue placeholder="Max distance" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    {distanceOptions.map(option => (
+                      <SelectItem key={option.id} value={option.id} className="text-white">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {userLocation && (
+                <div className="text-xs text-gray-400">
+                  Location: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
+                </div>
+              )}
             </div>
           </div>
 
