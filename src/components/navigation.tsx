@@ -48,13 +48,13 @@ export function Navigation() {
           {/* User Actions */}
           <div className="flex items-center space-x-2">
             <Link href="/friends">
-              <Button variant="ghost" size="sm">
-                <Users className="w-4 h-4" />
+              <Button variant="ghost" size="lg" className="min-h-[44px] min-w-[44px] p-2">
+                <Users className="w-5 h-5" />
               </Button>
             </Link>
             <Link href="/messages">
-              <Button variant="ghost" size="sm" className="relative">
-                <MessageSquare className="w-4 h-4" />
+              <Button variant="ghost" size="lg" className="relative min-h-[44px] min-w-[44px] p-2">
+                <MessageSquare className="w-5 h-5" />
                 {totalUnreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -68,11 +68,11 @@ export function Navigation() {
             <div className="relative">
               <Button
                 variant="ghost"
-                size="sm"
-                className="relative"
+                size="lg"
+                className="relative min-h-[44px] min-w-[44px] p-2"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
-                <Bell className="w-4 h-4" />
+                <Bell className="w-5 h-5" />
                 <Badge variant="destructive" className="absolute -top-1 -right-1 px-1 min-w-0 h-4 text-xs">
                   2
                 </Badge>
@@ -124,8 +124,8 @@ export function Navigation() {
             <div className="relative">
               <Button 
                 variant="ghost" 
-                size="sm" 
-                className="p-1"
+                size="lg" 
+                className="p-2 min-h-[44px] min-w-[44px]"
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
                 <Avatar className="w-8 h-8 rounded-md">

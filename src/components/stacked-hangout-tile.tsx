@@ -85,8 +85,8 @@ export function StackedHangoutTile({
   const yesCount = hangout.participants?.filter(p => p.rsvpStatus === "YES").length || 0
   const totalParticipants = hangout._count?.content_participants || hangout.participants?.length || 0
 
-  // Calculate stacking offset - each tile is slightly offset for the stacked effect
-  const stackOffset = index * 8 // 8px offset per tile
+  // Calculate stacking offset - less stacking on mobile for better touch interaction
+  const stackOffset = index * 4 // 4px offset per tile (reduced from 8px)
   const zIndex = totalCount - index // Higher z-index for tiles on top
 
   return (
@@ -158,7 +158,7 @@ export function StackedHangoutTile({
           {/* Bottom Content Overlay - Editorial Style */}
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             {/* Title - Large and Bold */}
-            <h3 className="text-2xl font-bold mb-3 line-clamp-2 group-hover:text-yellow-300 transition-colors drop-shadow-lg">
+            <h3 className="text-2xl md:text-2xl text-xl font-bold mb-3 line-clamp-2 group-hover:text-yellow-300 transition-colors drop-shadow-lg">
               {hangout.title}
             </h3>
             
@@ -181,23 +181,23 @@ export function StackedHangoutTile({
               </div>
             </div>
 
-            {/* Event Details - Horizontal Layout */}
-            <div className="flex items-center space-x-6 mb-4 text-sm">
+            {/* Event Details - Responsive Layout */}
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-6 mb-4 text-sm">
               {hangout.location && (
                 <div className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4 text-white/80" />
-                  <span className="text-white/90 line-clamp-1">{hangout.location}</span>
+                  <MapPin className="h-4 w-4 text-white/80 flex-shrink-0" />
+                  <span className="text-white/90 line-clamp-1 text-sm">{hangout.location}</span>
                 </div>
               )}
               
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-white/80" />
-                <span className="text-white/90">{formatDate(hangout.startTime)}</span>
+                <Calendar className="h-4 w-4 text-white/80 flex-shrink-0" />
+                <span className="text-white/90 text-sm">{formatDate(hangout.startTime)}</span>
               </div>
               
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-white/80" />
-                <span className="text-white/90">{formatTime(hangout.startTime)}</span>
+                <Clock className="h-4 w-4 text-white/80 flex-shrink-0" />
+                <span className="text-white/90 text-sm">{formatTime(hangout.startTime)}</span>
               </div>
             </div>
 
@@ -219,11 +219,11 @@ export function StackedHangoutTile({
               </div>
               
               <div className="flex items-center space-x-2">
-                <Button size="sm" variant="outline" className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30">
-                  <MessageSquare className="h-3 w-3 mr-1" />
+                <Button size="lg" variant="outline" className="text-sm bg-white/20 border-white/30 text-white hover:bg-white/30 min-h-[44px] px-4 py-2">
+                  <MessageSquare className="h-4 w-4 mr-2" />
                   Chat
                 </Button>
-                <Button size="sm" className="text-xs bg-white text-black hover:bg-white/90">
+                <Button size="lg" className="text-sm bg-white text-black hover:bg-white/90 min-h-[44px] px-4 py-2">
                   RSVP
                 </Button>
               </div>

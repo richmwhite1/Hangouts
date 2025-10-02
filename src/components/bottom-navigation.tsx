@@ -45,8 +45,8 @@ export function BottomNavigation() {
               <Link key={tab.id} href={tab.href}>
                 <TouchButton
                   variant={isActive ? "default" : "ghost"}
-                  size="sm"
-                  className="flex flex-col items-center space-y-1 h-auto py-2 px-3 min-w-0"
+                  size="lg"
+                  className="flex flex-col items-center space-y-1 h-auto py-3 px-4 min-w-0 min-h-[60px]"
                   hapticType="light"
                   rippleEffect={false}
                   touchScale={0.95}
@@ -66,7 +66,7 @@ export function BottomNavigation() {
                       </Badge>
                     )}
                   </div>
-                  <span className="text-xs font-medium">{tab.label}</span>
+                  <span className="text-sm font-medium">{tab.label}</span>
                 </TouchButton>
               </Link>
             )

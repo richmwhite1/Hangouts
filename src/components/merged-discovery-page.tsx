@@ -599,12 +599,12 @@ export function MergedDiscoveryPage() {
           
           {/* Hover overlay with quick actions */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-2">
-              <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
-                <Heart className="w-4 h-4" />
+            <div className="flex gap-3">
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
+                <Heart className="w-5 h-5" />
               </Button>
-              <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
-                <Share2 className="w-4 h-4" />
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
+                <Share2 className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -671,12 +671,12 @@ export function MergedDiscoveryPage() {
           
           {/* Hover overlay with quick actions */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-2">
-              <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
-                <Heart className="w-4 h-4" />
+            <div className="flex gap-3">
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
+                <Heart className="w-5 h-5" />
               </Button>
-              <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
-                <Share2 className="w-4 h-4" />
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
+                <Share2 className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -712,7 +712,7 @@ export function MergedDiscoveryPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search events, hangouts, venues, or tags..."
-              className="pl-10 bg-gray-800 border-gray-700 text-white"
+              className="pl-10 bg-gray-800 border-gray-700 text-white min-h-[44px] text-base"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -720,11 +720,11 @@ export function MergedDiscoveryPage() {
           <TouchButton
             variant="outline"
             onClick={() => filterBottomSheet.open(2)}
-            className="bg-gray-800 border-gray-700 text-white relative"
+            className="bg-gray-800 border-gray-700 text-white relative min-h-[44px] min-w-[44px] px-4 py-2"
             hapticType="light"
             rippleEffect={true}
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-5 h-5" />
             {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end || zipCode || maxDistance !== 'unlimited') && (
               <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {[selectedCategory !== 'all' ? 1 : 0, selectedTags.length, priceRange.min ? 1 : 0, priceRange.max ? 1 : 0, dateRange.start ? 1 : 0, dateRange.end ? 1 : 0, zipCode ? 1 : 0, maxDistance !== 'unlimited' ? 1 : 0].reduce((a, b) => a + b, 0)}

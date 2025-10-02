@@ -8,6 +8,8 @@ import { apiClient } from "@/lib/api-client"
 import { useAuth } from "@/contexts/auth-context"
 import { getHangoutActionStatus } from "@/hooks/use-hangout-actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
+import { useRouter } from "next/navigation"
 
 interface Hangout {
   id: string
@@ -52,11 +54,19 @@ interface Hangout {
 
 export default function HomePage() {
   const { isAuthenticated, isLoading: authLoading, token } = useAuth()
+  const router = useRouter()
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'recent-activity' | 'coming-up'>('recent-activity')
   const [isClient, setIsClient] = useState(false)
+
+  // Swipe gestures for mobile navigation
+  const swipeGestures = useSwipeGestures({
+    onSwipeLeft: () => router.push('/discover'),
+    onSwipeRight: () => router.push('/profile'),
+    threshold: 100
+  })
 
 
   // Calculate action status for all hangouts at the top level
@@ -172,7 +182,10 @@ export default function HomePage() {
   // Only show sign-in prompt if there are no hangouts to display
 
   return (
-    <div>
+    <div 
+      {...swipeGestures}
+      className="min-h-screen"
+    >
       <Navigation />
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
