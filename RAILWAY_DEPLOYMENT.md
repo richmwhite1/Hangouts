@@ -12,6 +12,11 @@
 2. **Connect Database to App**:
    - Railway will automatically set the `DATABASE_URL` environment variable
    - The app will use this to connect to PostgreSQL
+   - **VERIFY**: Check that `DATABASE_URL` appears in your app's environment variables
+
+3. **Test Database Connection**:
+   - After deployment, visit: `https://your-app.railway.app/api/health/db`
+   - Should return: `{"status": "healthy", "database": "connected"}`
 
 ## Environment Variables
 

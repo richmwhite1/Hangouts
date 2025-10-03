@@ -6,14 +6,15 @@ const globalForPrisma = globalThis as unknown as {
 
 // Create Prisma client with optimized configuration
 const createPrismaClient = () => {
+  const databaseUrl = process.env.DATABASE_URL
+  
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is required')
+  }
+  
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     errorFormat: 'pretty',
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL || 'file:./prisma/dev.db',
-      },
-    },
   })
 }
 

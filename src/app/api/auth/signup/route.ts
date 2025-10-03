@@ -79,7 +79,14 @@ export async function POST(request: NextRequest) {
     if (error.name === 'ZodError') {
       return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
+    
+    // Check for database connection errors
+    if (error.message?.includes('DATABASE_URL') || error.message?.includes('database')) {
+      console.error('Database connection error:', error)
+      return NextResponse.json(createErrorResponse('Database connection failed', 'Please check database configuration'), { status: 500 })
+    }
+    
     console.error('Sign up error:', error)
-    return NextResponse.json(createErrorResponse('Sign up failed', error.message), { status: 500 })
+    return NextResponse.json(createErrorResponse('Sign up failed', error.message || 'Unknown error'), { status: 500 })
   }
 }
