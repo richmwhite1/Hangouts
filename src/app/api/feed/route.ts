@@ -63,8 +63,8 @@ async function getFeedHandler(request: NextRequest) {
     // If contentType is 'all', don't filter by type
 
     // Privacy and access control
-    if (feedType === 'discover') {
-      // DISCOVER PAGE: Show public content + friends' content
+    if (feedType === 'discover' || contentType === 'events') {
+      // DISCOVER PAGE & EVENTS PAGE: Show public content + friends' content
       whereClause.OR = [
         // Public content (everyone can see)
         { privacyLevel: 'PUBLIC' },
@@ -77,7 +77,7 @@ async function getFeedHandler(request: NextRequest) {
         }] : [])
       ]
     } else {
-      // HOME FEED: Show content user created or was invited to
+      // HOME FEED: Show content user created, was invited to, or has saved/RSVP'd
       if (userId) {
         whereClause.OR = [
           // User's own content (all privacy levels)
@@ -88,10 +88,19 @@ async function getFeedHandler(request: NextRequest) {
               some: { userId: userId }
             }
           },
-          // Content user has saved
+          // Content user has saved (for events)
           {
             eventSaves: {
               some: { userId: userId }
+            }
+          },
+          // Content user has RSVP'd to (for events)
+          {
+            rsvps: {
+              some: { 
+                userId: userId,
+                status: { in: ['YES', 'MAYBE'] }
+              }
             }
           }
         ]

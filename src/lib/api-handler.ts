@@ -326,6 +326,7 @@ function withCORS(
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    process.env.RAILWAY_PUBLIC_DOMAIN || process.env.VERCEL_URL || 'https://your-app.railway.app',
     'https://hangouts-3-0.vercel.app'
   ]
 

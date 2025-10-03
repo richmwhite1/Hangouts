@@ -6,7 +6,9 @@ class WebSocketServer {
   constructor(server) {
     this.io = new SocketIOServer(server, {
       cors: {
-        origin: ['http://localhost:3000'],
+        origin: process.env.NODE_ENV === 'production' 
+          ? [process.env.RAILWAY_PUBLIC_DOMAIN || process.env.VERCEL_URL || 'https://your-app.railway.app']
+          : ['http://localhost:3000'],
         methods: ['GET', 'POST'],
         credentials: true
       }
