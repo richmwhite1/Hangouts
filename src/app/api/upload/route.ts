@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
 import sharp from 'sharp'
 import { filterPhotoContent } from '@/lib/content-filter'
 import { verifyToken } from '@/lib/auth'
+import { uploadImage } from '@/lib/cloudinary'
 
 export async function POST(request: NextRequest) {
   try {
@@ -194,16 +193,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'images')
-    await mkdir(uploadsDir, { recursive: true })
+    // Upload to Cloudinary
+    const uploadResult = await uploadImage(
+      new File([processedBuffer], filename, { type: 'image/webp' }),
+      `hangouts/${type}`
+    )
 
-    // Save file
-    const filepath = join(uploadsDir, filename)
-    await writeFile(filepath, processedBuffer)
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        { error: 'Cloud upload failed', details: uploadResult.error },
+        { status: 500 }
+      )
+    }
 
     // Return file info
-    const fileUrl = `/uploads/images/${filename}`
+    const fileUrl = uploadResult.url
     
     return NextResponse.json({
       success: true,
