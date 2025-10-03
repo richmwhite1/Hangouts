@@ -195,7 +195,9 @@ export async function POST(request: NextRequest) {
 
     // Upload to Cloudinary
     const uploadResult = await uploadImage(
-      new File([processedBuffer], filename, { type: 'image/webp' }),
+      processedBuffer,
+      filename,
+      'image/webp',
       `hangouts/${type}`
     )
 

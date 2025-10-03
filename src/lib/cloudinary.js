@@ -10,18 +10,16 @@ cloudinary.config({
 export default cloudinary;
 
 // Helper function to upload image
-export const uploadImage = async (file, folder = 'hangouts') => {
+export const uploadImage = async (buffer, filename, mimeType, folder = 'hangouts') => {
   try {
-    // Convert file to base64
-    const base64 = await file.arrayBuffer().then(buffer => 
-      Buffer.from(buffer).toString('base64')
-    );
-    
-    const dataURI = `data:${file.type};base64,${base64}`;
+    // Convert buffer to base64
+    const base64 = buffer.toString('base64');
+    const dataURI = `data:${mimeType};base64,${base64}`;
     
     // Upload to Cloudinary
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: folder,
+      public_id: filename.replace(/\.[^/.]+$/, ''), // Remove file extension
       resource_type: 'auto',
       quality: 'auto',
       fetch_format: 'auto',
