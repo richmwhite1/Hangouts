@@ -45,6 +45,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
+    "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^3.0.2",
@@ -78,6 +79,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.20.5",
     "use-places-autocomplete": "^4.0.1",
+    "uuid": "^13.0.0",
     "ws": "^8.18.3",
     "zod": "^4.1.5"
   },
