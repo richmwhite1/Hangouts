@@ -1,12 +1,25 @@
 # Railway Deployment Guide
 
+## Database Setup (REQUIRED)
+
+**IMPORTANT**: You must add a PostgreSQL database to your Railway project:
+
+1. **Add PostgreSQL Service**:
+   - In your Railway project dashboard
+   - Click "New Service" → "Database" → "PostgreSQL"
+   - Railway will automatically create a PostgreSQL database
+
+2. **Connect Database to App**:
+   - Railway will automatically set the `DATABASE_URL` environment variable
+   - The app will use this to connect to PostgreSQL
+
 ## Environment Variables
 
 Set these environment variables in your Railway project:
 
 ### Required
-- `DATABASE_URL`: SQLite database URL (Railway will provide this)
-- `JWT_SECRET`: Your JWT secret key for authentication
+- `DATABASE_URL`: PostgreSQL database URL (automatically set by Railway)
+- `JWT_SECRET`: Your JWT secret key for authentication (set this manually)
 
 ### Optional
 - `VITE_EVENTBRITE_TOKEN`: Eventbrite API token
@@ -14,10 +27,10 @@ Set these environment variables in your Railway project:
 - `VITE_EVENTBRITE_CLIENT_SECRET`: Eventbrite client secret
 - `VITE_EVENTBRITE_PUBLIC_TOKEN`: Eventbrite public token
 
-## Database Setup
+## Database Migration
 
-1. Railway will automatically create a SQLite database
-2. The app will run Prisma migrations on startup
+1. Railway will automatically run Prisma migrations on startup
+2. The app will create all necessary tables
 3. No manual database setup required
 
 ## Build Process

@@ -10,6 +10,7 @@
     "start:next": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
+    "db:migrate": "node prisma/migrate.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
