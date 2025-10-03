@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
-import { z } from 'zod'
+import { userSchemas } from '@/lib/validation'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-
-const SignUpSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  username: z.string().min(3, 'Username must be at least 3 characters').max(20, 'Username must be less than 20 characters'),
-  name: z.string().min(1, 'Name is required').max(50, 'Name must be less than 50 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Password confirmation is required')
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, username, name, password } = SignUpSchema.parse(body)
+    const { email, username, name, password } = userSchemas.signUp.parse(body)
 
     // Check if user already exists
     const existingUser = await db.user.findFirst({
@@ -87,7 +76,7 @@ export async function POST(request: NextRequest) {
     }, 'Sign up successful'))
 
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
+    if (error.name === 'ZodError') {
       return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
     console.error('Sign up error:', error)
