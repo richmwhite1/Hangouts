@@ -3,22 +3,10 @@
 import { useState } from 'react'
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react'
 
-// Mock data for notifications since the context is commented out
-const mockNotifications = [
-  {
-    id: '1',
-    title: 'Welcome!',
-    message: 'Welcome to Hangouts 3.0',
-    type: 'WELCOME',
-    isRead: false,
-    createdAt: new Date().toISOString()
-  }
-]
-
 export default function NotificationsPage() {
-  // Mock implementation since useNotifications is commented out
-  const notifications = mockNotifications
-  const unreadCount = 1
+  // Real implementation - no mock data
+  const notifications: any[] = []
+  const unreadCount = 0
   const markAsRead = async (ids: string[]) => {
     console.log('Mark as read:', ids)
   }
