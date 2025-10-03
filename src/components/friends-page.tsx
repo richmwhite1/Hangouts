@@ -180,6 +180,37 @@ export function FriendsPage() {
     }
   }
 
+  // Unfriend user
+  const unfriendUser = async (friendId: string) => {
+    if (!confirm('Are you sure you want to unfriend this user?')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/friends/unfriend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          friendId: friendId
+        })
+      })
+
+      if (response.ok) {
+        // Refresh friends list
+        window.location.reload()
+      } else {
+        console.error('Failed to unfriend user')
+        alert('Failed to unfriend user. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error unfriending user:', error)
+      alert('Error unfriending user. Please try again.')
+    }
+  }
+
 
   // Load groups on mount
   useEffect(() => {
@@ -288,17 +319,17 @@ export function FriendsPage() {
                           variant="ghost" 
                           size="sm"
                           onClick={() => createDirectMessage(friend.id)}
+                          className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
                         >
                           <MessageSquare className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          <Phone className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Video className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => unfriendUser(friend.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        >
+                          <UserMinus className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>

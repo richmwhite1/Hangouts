@@ -308,7 +308,8 @@ async function getContentHandler(request: NextRequest, { params }: { params: Pro
         isCoHost: p.isCoHost,
         invitedAt: p.invitedAt.toISOString(),
         joinedAt: p.joinedAt?.toISOString(),
-        user: p.users
+        user: p.users,
+        rsvpStatus: content.rsvps.find(rsvp => rsvp.userId === p.userId)?.status || 'PENDING'
       })),
       // Event-specific data
       ...(content.type === 'EVENT' && {
