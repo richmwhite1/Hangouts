@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
-import puppeteer from 'puppeteer'
-import * as cheerio from 'cheerio'
 
 export async function POST(request: NextRequest) {
   let browser = null
@@ -32,6 +30,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🔍 Scraping URL:', url)
+
+    // Dynamic imports to avoid build-time issues
+    const puppeteer = (await import('puppeteer')).default
+    const cheerio = await import('cheerio')
 
     // Launch Puppeteer
     browser = await puppeteer.launch({
