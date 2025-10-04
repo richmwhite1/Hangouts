@@ -593,67 +593,72 @@ export function MergedDiscoveryPage() {
     
     return (
       <Link href={`/event/${event.id}`} key={`event-${event.id}`}>
-        <div className="relative aspect-square bg-gray-700 overflow-hidden hover:opacity-90 transition-opacity cursor-pointer group">
-          {/* Event Image - fills most of the square, leaving space for title */}
+        <div className="relative w-full h-64 bg-gray-700 overflow-hidden hover:opacity-90 transition-opacity cursor-pointer group rounded-lg">
+          {/* Event Image - full width */}
           <OptimizedImage
             src={event.coverImage}
             alt={event.title}
-            className="w-full h-4/5 object-cover"
+            className="w-full h-full object-cover"
             placeholder="/placeholder-event.jpg"
-            sizes="(max-width: 768px) 33vw, 25vw"
+            sizes="100vw"
           />
           
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
           
-          {/* Type Badge - Top Left (smaller) */}
-          <div className="absolute top-1 left-1">
-            <Badge className="bg-purple-600/90 text-white text-[10px] px-1 py-0.5">
-              <CategoryIcon className="w-2 h-2 mr-0.5" />
+          {/* Distance Indicator - Top Right */}
+          {userLocation && event.latitude && event.longitude && (
+            <div className="absolute top-3 right-3">
+              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
+                <MapPin className="w-4 h-4 mr-1" />
+                {calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude).toFixed(1)} mi
+              </div>
+            </div>
+          )}
+          
+          {/* Type Badge - Top Left */}
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-purple-600/90 text-white text-sm px-3 py-1">
+              <CategoryIcon className="w-4 h-4 mr-1" />
               Event
             </Badge>
           </div>
           
           {/* Price Badge - Under Type Badge */}
-          <div className="absolute top-1 left-1 mt-5">
-            <Badge className="bg-green-600/90 text-white text-[10px] px-1 py-0.5">
+          <div className="absolute top-3 left-3 mt-8">
+            <Badge className="bg-green-600/90 text-white text-sm px-3 py-1">
               {formatPrice(event.price)}
             </Badge>
           </div>
           
-          {/* Date - Top Right */}
-          <div className="absolute top-1 right-1">
-            <div className="flex items-center text-white text-[10px] bg-black/50 rounded px-1.5 py-0.5">
-              <Calendar className="w-2 h-2 mr-0.5" />
-              {formatDate(event.startDate)}
-            </div>
-          </div>
-          
-          {/* Distance - Bottom Right (if location is set) */}
-          {userLocation && event.latitude && event.longitude && (
-            <div className="absolute bottom-1 right-1">
-              <div className="flex items-center text-white text-[10px] bg-black/50 rounded px-1.5 py-0.5">
-                <MapPin className="w-2 h-2 mr-0.5" />
-                {calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude).toFixed(1)}mi
+          {/* Date - Top Right (if no distance) */}
+          {(!userLocation || !event.latitude || !event.longitude) && (
+            <div className="absolute top-3 right-3">
+              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
+                <Calendar className="w-4 h-4 mr-1" />
+                {formatDate(event.startDate)}
               </div>
             </div>
           )}
           
-          {/* Title Area - Bottom reserved space */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-            <h3 className="font-semibold text-white text-sm line-clamp-2 drop-shadow-lg">
+          {/* Title Area - Bottom */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
+            <h3 className="font-bold text-white text-lg line-clamp-2 drop-shadow-lg mb-1">
               {event.title}
             </h3>
+            <p className="text-gray-200 text-sm line-clamp-1">
+              {event.venue && `${event.venue} • `}{formatDate(event.startDate)}
+            </p>
           </div>
           
           {/* Hover overlay with quick actions */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-3">
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
-                <Heart className="w-5 h-5" />
+            <div className="flex gap-4">
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
+                <Heart className="w-6 h-6" />
               </Button>
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
-                <Share2 className="w-5 h-5" />
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
+                <Share2 className="w-6 h-6" />
               </Button>
             </div>
           </div>
@@ -665,67 +670,72 @@ export function MergedDiscoveryPage() {
   const renderHangoutCard = (hangout: Hangout) => {
     return (
       <Link href={`/hangout/${hangout.id}`} key={`hangout-${hangout.id}`}>
-        <div className="relative aspect-square bg-gray-700 overflow-hidden hover:opacity-90 transition-opacity cursor-pointer group">
-          {/* Hangout Image - fills most of the square, leaving space for title */}
+        <div className="relative w-full h-64 bg-gray-700 overflow-hidden hover:opacity-90 transition-opacity cursor-pointer group rounded-lg">
+          {/* Hangout Image - full width */}
           <OptimizedImage
             src={hangout.image || '/placeholder-hangout.jpg'}
             alt={hangout.title || hangout.activity}
-            className="w-full h-4/5 object-cover"
+            className="w-full h-full object-cover"
             placeholder="/placeholder-hangout.jpg"
-            sizes="(max-width: 768px) 33vw, 25vw"
+            sizes="100vw"
           />
           
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
           
-          {/* Type Badge - Top Left (smaller) */}
-          <div className="absolute top-1 left-1">
-            <Badge className="bg-blue-600/90 text-white text-[10px] px-1 py-0.5">
-              <Users className="w-2 h-2 mr-0.5" />
+          {/* Distance Indicator - Top Right */}
+          {userLocation && hangout.latitude && hangout.longitude && (
+            <div className="absolute top-3 right-3">
+              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
+                <MapPin className="w-4 h-4 mr-1" />
+                {calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude).toFixed(1)} mi
+              </div>
+            </div>
+          )}
+          
+          {/* Type Badge - Top Left */}
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-blue-600/90 text-white text-sm px-3 py-1">
+              <Users className="w-4 h-4 mr-1" />
               Hangout
             </Badge>
           </div>
           
           {/* Participants Count - Under Type Badge */}
-          <div className="absolute top-1 left-1 mt-5">
-            <Badge className="bg-orange-600/90 text-white text-[10px] px-1 py-0.5">
-              {hangout.participants?.length || 0}
+          <div className="absolute top-3 left-3 mt-8">
+            <Badge className="bg-orange-600/90 text-white text-sm px-3 py-1">
+              {hangout.participants?.length || 0} people
             </Badge>
           </div>
           
-          {/* Date - Top Right */}
-          <div className="absolute top-1 right-1">
-            <div className="flex items-center text-white text-[10px] bg-black/50 rounded px-1.5 py-0.5">
-              <Calendar className="w-2 h-2 mr-0.5" />
-              {formatDate(hangout.date)}
-            </div>
-          </div>
-          
-          {/* Distance - Bottom Right (if location is set) */}
-          {userLocation && hangout.latitude && hangout.longitude && (
-            <div className="absolute bottom-1 right-1">
-              <div className="flex items-center text-white text-[10px] bg-black/50 rounded px-1.5 py-0.5">
-                <MapPin className="w-2 h-2 mr-0.5" />
-                {calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude).toFixed(1)}mi
+          {/* Date - Top Right (if no distance) */}
+          {(!userLocation || !hangout.latitude || !hangout.longitude) && (
+            <div className="absolute top-3 right-3">
+              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
+                <Calendar className="w-4 h-4 mr-1" />
+                {formatDate(hangout.date)}
               </div>
             </div>
           )}
           
-          {/* Title Area - Bottom reserved space */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-            <h3 className="font-semibold text-white text-sm line-clamp-2 drop-shadow-lg">
+          {/* Title Area - Bottom */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
+            <h3 className="font-bold text-white text-lg line-clamp-2 drop-shadow-lg mb-1">
               {hangout.title || hangout.activity}
             </h3>
+            <p className="text-gray-200 text-sm line-clamp-1">
+              {hangout.location && `${hangout.location} • `}{formatDate(hangout.date)}
+            </p>
           </div>
           
           {/* Hover overlay with quick actions */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-3">
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
-                <Heart className="w-5 h-5" />
+            <div className="flex gap-4">
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
+                <Heart className="w-6 h-6" />
               </Button>
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[44px] min-w-[44px]">
-                <Share2 className="w-5 h-5" />
+              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
+                <Share2 className="w-6 h-6" />
               </Button>
             </div>
           </div>
@@ -1081,9 +1091,9 @@ export function MergedDiscoveryPage() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div>
           {isLoading ? (
-            <div className="grid grid-cols-3 gap-0">
+            <div className="space-y-4">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="aspect-square bg-gray-700 animate-pulse" />
+                <div key={i} className="w-full h-64 bg-gray-700 animate-pulse rounded-lg" />
               ))}
             </div>
           ) : mergedContent.length === 0 ? (
@@ -1096,7 +1106,7 @@ export function MergedDiscoveryPage() {
               <CreateEventModal />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-0">
+            <div className="space-y-4">
               {mergedContent
                 .filter(item => {
                   if (activeTab === 'events') return item.type === 'event'
