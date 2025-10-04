@@ -590,10 +590,13 @@ export function MergedDiscoveryPage() {
 
   const renderEventCard = (event: Event) => {
     const CategoryIcon = getCategoryIcon(event.category)
+    const distance = userLocation && event.latitude && event.longitude 
+      ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
+      : null
     
     return (
       <Link href={`/event/${event.id}`} key={`event-${event.id}`}>
-        <div className="relative w-full h-64 bg-gray-700 overflow-hidden hover:opacity-90 transition-opacity cursor-pointer group rounded-lg">
+        <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:opacity-95 transition-opacity cursor-pointer group rounded-xl">
           {/* Event Image - full width */}
           <OptimizedImage
             src={event.coverImage}
@@ -604,55 +607,60 @@ export function MergedDiscoveryPage() {
           />
           
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           
           {/* Distance Indicator - Top Right */}
-          {userLocation && event.latitude && event.longitude && (
-            <div className="absolute top-3 right-3">
-              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                <MapPin className="w-4 h-4 mr-1" />
-                {calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude).toFixed(1)} mi
+          {distance && (
+            <div className="absolute top-4 right-4">
+              <div className="flex items-center text-white text-sm bg-black/80 rounded-full px-3 py-1.5 backdrop-blur-sm border border-white/20">
+                <MapPin className="w-3 h-3 mr-1" />
+                {distance.toFixed(1)}mi away
               </div>
             </div>
           )}
           
           {/* Type Badge - Top Left */}
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-purple-600/90 text-white text-sm px-3 py-1">
+          <div className="absolute top-4 left-4">
+            <Badge className="bg-purple-600/95 text-white text-sm px-3 py-1.5 font-medium">
               <CategoryIcon className="w-4 h-4 mr-1" />
               Event
             </Badge>
           </div>
           
           {/* Price Badge - Under Type Badge */}
-          <div className="absolute top-3 left-3 mt-8">
-            <Badge className="bg-green-600/90 text-white text-sm px-3 py-1">
+          <div className="absolute top-4 left-4 mt-10">
+            <Badge className="bg-green-600/95 text-white text-sm px-3 py-1.5 font-medium">
               {formatPrice(event.price)}
             </Badge>
           </div>
           
           {/* Date - Top Right (if no distance) */}
-          {(!userLocation || !event.latitude || !event.longitude) && (
-            <div className="absolute top-3 right-3">
-              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                <Calendar className="w-4 h-4 mr-1" />
+          {!distance && (
+            <div className="absolute top-4 right-4">
+              <div className="flex items-center text-white text-sm bg-black/80 rounded-full px-3 py-1.5 backdrop-blur-sm border border-white/20">
+                <Calendar className="w-3 h-3 mr-1" />
                 {formatDate(event.startDate)}
               </div>
             </div>
           )}
           
           {/* Title Area - Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
-            <h3 className="font-bold text-white text-lg line-clamp-2 drop-shadow-lg mb-1">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 to-transparent p-6">
+            <h3 className="font-bold text-white text-xl line-clamp-2 drop-shadow-lg mb-2 leading-tight">
               {event.title}
             </h3>
-            <p className="text-gray-200 text-sm line-clamp-1">
+            <p className="text-gray-200 text-base line-clamp-1 mb-1">
               {event.venue && `${event.venue} • `}{formatDate(event.startDate)}
             </p>
+            {distance && (
+              <p className="text-gray-300 text-sm">
+                {distance.toFixed(1)} miles away
+              </p>
+            )}
           </div>
           
           {/* Hover overlay with quick actions */}
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="flex gap-4">
               <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
                 <Heart className="w-6 h-6" />
@@ -668,9 +676,13 @@ export function MergedDiscoveryPage() {
   }
 
   const renderHangoutCard = (hangout: Hangout) => {
+    const distance = userLocation && hangout.latitude && hangout.longitude 
+      ? calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude)
+      : null
+    
     return (
       <Link href={`/hangout/${hangout.id}`} key={`hangout-${hangout.id}`}>
-        <div className="relative w-full h-64 bg-gray-700 overflow-hidden hover:opacity-90 transition-opacity cursor-pointer group rounded-lg">
+        <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:opacity-95 transition-opacity cursor-pointer group rounded-xl">
           {/* Hangout Image - full width */}
           <OptimizedImage
             src={hangout.image || '/placeholder-hangout.jpg'}
@@ -681,55 +693,60 @@ export function MergedDiscoveryPage() {
           />
           
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           
           {/* Distance Indicator - Top Right */}
-          {userLocation && hangout.latitude && hangout.longitude && (
-            <div className="absolute top-3 right-3">
-              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                <MapPin className="w-4 h-4 mr-1" />
-                {calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude).toFixed(1)} mi
+          {distance && (
+            <div className="absolute top-4 right-4">
+              <div className="flex items-center text-white text-sm bg-black/80 rounded-full px-3 py-1.5 backdrop-blur-sm border border-white/20">
+                <MapPin className="w-3 h-3 mr-1" />
+                {distance.toFixed(1)}mi away
               </div>
             </div>
           )}
           
           {/* Type Badge - Top Left */}
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-blue-600/90 text-white text-sm px-3 py-1">
+          <div className="absolute top-4 left-4">
+            <Badge className="bg-blue-600/95 text-white text-sm px-3 py-1.5 font-medium">
               <Users className="w-4 h-4 mr-1" />
               Hangout
             </Badge>
           </div>
           
           {/* Participants Count - Under Type Badge */}
-          <div className="absolute top-3 left-3 mt-8">
-            <Badge className="bg-orange-600/90 text-white text-sm px-3 py-1">
+          <div className="absolute top-4 left-4 mt-10">
+            <Badge className="bg-orange-600/95 text-white text-sm px-3 py-1.5 font-medium">
               {hangout.participants?.length || 0} people
             </Badge>
           </div>
           
           {/* Date - Top Right (if no distance) */}
-          {(!userLocation || !hangout.latitude || !hangout.longitude) && (
-            <div className="absolute top-3 right-3">
-              <div className="flex items-center text-white text-sm bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                <Calendar className="w-4 h-4 mr-1" />
+          {!distance && (
+            <div className="absolute top-4 right-4">
+              <div className="flex items-center text-white text-sm bg-black/80 rounded-full px-3 py-1.5 backdrop-blur-sm border border-white/20">
+                <Calendar className="w-3 h-3 mr-1" />
                 {formatDate(hangout.date)}
               </div>
             </div>
           )}
           
           {/* Title Area - Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
-            <h3 className="font-bold text-white text-lg line-clamp-2 drop-shadow-lg mb-1">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 to-transparent p-6">
+            <h3 className="font-bold text-white text-xl line-clamp-2 drop-shadow-lg mb-2 leading-tight">
               {hangout.title || hangout.activity}
             </h3>
-            <p className="text-gray-200 text-sm line-clamp-1">
+            <p className="text-gray-200 text-base line-clamp-1 mb-1">
               {hangout.location && `${hangout.location} • `}{formatDate(hangout.date)}
             </p>
+            {distance && (
+              <p className="text-gray-300 text-sm">
+                {distance.toFixed(1)} miles away
+              </p>
+            )}
           </div>
           
           {/* Hover overlay with quick actions */}
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="flex gap-4">
               <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
                 <Heart className="w-6 h-6" />
@@ -1027,13 +1044,13 @@ export function MergedDiscoveryPage() {
             <TabsTrigger value="saved" className="data-[state=active]:bg-purple-600">Saved</TabsTrigger>
           </TabsList>
 
-          {/* Discreet Sort and Filter Controls */}
-          <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
-            <div className="flex items-center gap-3">
+          {/* Discreet Sort and Filter Controls - Single Line */}
+          <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span>Sort:</span>
+                <span className="text-gray-400">Sort:</span>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-20 h-6 bg-gray-800 border-gray-700 text-white text-xs">
+                  <SelectTrigger className="w-20 h-6 bg-transparent border-0 text-gray-300 text-xs focus:ring-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
@@ -1046,9 +1063,9 @@ export function MergedDiscoveryPage() {
               </div>
               
               <div className="flex items-center gap-1">
-                <span>Within:</span>
+                <span className="text-gray-400">Within:</span>
                 <Select value={maxDistance} onValueChange={setMaxDistance}>
-                  <SelectTrigger className="w-16 h-6 bg-gray-800 border-gray-700 text-white text-xs">
+                  <SelectTrigger className="w-16 h-6 bg-transparent border-0 text-gray-300 text-xs focus:ring-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
@@ -1060,23 +1077,21 @@ export function MergedDiscoveryPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <MapPin className="w-3 h-3 text-gray-400" />
-              <span className="text-xs">
-                {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting...'}
-              </span>
               <div className="flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-gray-400" />
+                <span className="text-gray-300 text-xs">
+                  {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting...'}
+                </span>
                 <Input
                   placeholder="ZIP"
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
-                  className="w-16 h-6 bg-gray-800 border-gray-700 text-white text-xs"
+                  className="w-12 h-5 bg-gray-800 border-gray-700 text-white text-xs px-1"
                 />
                 <TouchButton
                   onClick={handleZipCodeSubmit}
-                  className="h-6 px-2 bg-gray-700 text-white text-xs"
+                  className="h-5 w-5 bg-gray-700 text-white text-xs p-0"
                   hapticType="light"
                 >
                   ✓
@@ -1106,7 +1121,7 @@ export function MergedDiscoveryPage() {
               <CreateEventModal />
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 px-4">
               {mergedContent
                 .filter(item => {
                   if (activeTab === 'events') return item.type === 'event'

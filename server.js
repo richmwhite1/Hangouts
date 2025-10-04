@@ -1,8 +1,6 @@
 const { createServer } = require('http')
 const { parse } = require('url')
 const next = require('next')
-const WebSocketServer = require('./src/lib/websocket.js')
-const { ReminderProcessor } = require('./src/lib/services/reminder-processor.js')
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -23,9 +21,6 @@ app.prepare().then(() => {
     }
   })
 
-  // Initialize WebSocket server
-  const wsServer = new WebSocketServer(server)
-
   server.once('error', (err) => {
     console.error(err)
     process.exit(1)
@@ -33,14 +28,6 @@ app.prepare().then(() => {
 
   server.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`)
-    console.log(`> WebSocket server initialized`)
-    
-          // Start reminder processor
-          try {
-            ReminderProcessor.start(60000) // Check every minute
-            console.log(`> Reminder processor started`)
-          } catch (error) {
-            console.error('Failed to start reminder processor:', error)
-          }
+    console.log(`> Development server started`)
   })
 })
