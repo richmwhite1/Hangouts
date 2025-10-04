@@ -151,7 +151,7 @@ export function MergedDiscoveryPage() {
   
   // Location filtering state
   const [zipCode, setZipCode] = useState('')
-  const [maxDistance, setMaxDistance] = useState('unlimited')
+  const [maxDistance, setMaxDistance] = useState('50')
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   
   // Filter modal state
@@ -213,6 +213,54 @@ export function MergedDiscoveryPage() {
               Math.sin(dLng/2) * Math.sin(dLng/2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
     return R * c
+  }
+
+  // Convert coordinates to city name
+  const getCityName = (lat: number, lng: number): string => {
+    // Simple approximation based on coordinates
+    // San Francisco area
+    if (lat >= 37.7 && lat <= 37.8 && lng >= -122.5 && lng <= -122.3) {
+      return 'San Francisco, CA'
+    }
+    // New York area
+    if (lat >= 40.6 && lat <= 40.8 && lng >= -74.1 && lng <= -73.9) {
+      return 'New York, NY'
+    }
+    // Los Angeles area
+    if (lat >= 34.0 && lat <= 34.1 && lng >= -118.3 && lng <= -118.2) {
+      return 'Los Angeles, CA'
+    }
+    // Chicago area
+    if (lat >= 41.8 && lat <= 41.9 && lng >= -87.7 && lng <= -87.6) {
+      return 'Chicago, IL'
+    }
+    // Boston area
+    if (lat >= 42.3 && lat <= 42.4 && lng >= -71.1 && lng <= -71.0) {
+      return 'Boston, MA'
+    }
+    // Seattle area
+    if (lat >= 47.6 && lat <= 47.7 && lng >= -122.4 && lng <= -122.2) {
+      return 'Seattle, WA'
+    }
+    // Miami area
+    if (lat >= 25.7 && lat <= 25.8 && lng >= -80.3 && lng <= -80.1) {
+      return 'Miami, FL'
+    }
+    // Denver area
+    if (lat >= 39.7 && lat <= 39.8 && lng >= -105.1 && lng <= -104.9) {
+      return 'Denver, CO'
+    }
+    // Austin area
+    if (lat >= 30.2 && lat <= 30.3 && lng >= -97.8 && lng <= -97.7) {
+      return 'Austin, TX'
+    }
+    // Portland area
+    if (lat >= 45.5 && lat <= 45.6 && lng >= -122.7 && lng <= -122.6) {
+      return 'Portland, OR'
+    }
+    
+    // Default fallback
+    return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`
   }
 
   // Get user's current location
@@ -308,6 +356,21 @@ export function MergedDiscoveryPage() {
       showSuccess('Content refreshed!')
     } catch (error) {
       showError('Failed to refresh content')
+    }
+  }
+
+  // Handle ZIP code submission
+  const handleZipCodeSubmit = async () => {
+    if (zipCode && zipCode.length === 5 && /^\d{5}$/.test(zipCode)) {
+      const coords = await geocodeZipCode(zipCode)
+      if (coords) {
+        setUserLocation(coords)
+        showSuccess(`Location updated to ${getCityName(coords.lat, coords.lng)}`)
+      } else {
+        showError('Invalid ZIP code')
+      }
+    } else {
+      showError('Please enter a valid 5-digit ZIP code')
     }
   }
 
@@ -716,6 +779,65 @@ export function MergedDiscoveryPage() {
               </span>
             )}
           </TouchButton>
+        </div>
+
+        {/* Sort and Location Controls */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-300 whitespace-nowrap">Sort by:</span>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="closest" className="text-white hover:bg-gray-700">Distance</SelectItem>
+                <SelectItem value="coming-up" className="text-white hover:bg-gray-700">Date</SelectItem>
+                <SelectItem value="newest" className="text-white hover:bg-gray-700">Newest</SelectItem>
+                <SelectItem value="popular" className="text-white hover:bg-gray-700">Popular</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Distance Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-300 whitespace-nowrap">Within:</span>
+            <Select value={maxDistance} onValueChange={setMaxDistance}>
+              <SelectTrigger className="w-[120px] bg-gray-800 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="10" className="text-white hover:bg-gray-700">10 miles</SelectItem>
+                <SelectItem value="25" className="text-white hover:bg-gray-700">25 miles</SelectItem>
+                <SelectItem value="50" className="text-white hover:bg-gray-700">50 miles</SelectItem>
+                <SelectItem value="100" className="text-white hover:bg-gray-700">100 miles</SelectItem>
+                <SelectItem value="unlimited" className="text-white hover:bg-gray-700">No limit</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Location Display and Override */}
+          <div className="flex items-center gap-2 flex-1">
+            <MapPin className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-300">
+              {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting location...'}
+            </span>
+            <div className="flex items-center gap-1 ml-auto">
+              <Input
+                placeholder="ZIP code"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                className="w-24 h-8 bg-gray-800 border-gray-700 text-white text-xs"
+              />
+              <TouchButton
+                onClick={handleZipCodeSubmit}
+                className="h-8 px-2 bg-gray-700 text-white text-xs"
+                hapticType="light"
+              >
+                Update
+              </TouchButton>
+            </div>
+          </div>
         </div>
 
         {/* Comprehensive Filters */}

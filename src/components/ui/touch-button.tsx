@@ -1,12 +1,12 @@
 "use client"
 
 import React, { useState, useRef } from 'react'
-import { Button, ButtonProps } from './button'
+import { Button } from './button'
 import { useHapticFeedback, HapticType } from '@/hooks/use-haptic-feedback'
 import { useButtonFeedback } from '@/hooks/use-visual-feedback'
 import { cn } from '@/lib/utils'
 
-interface TouchButtonProps extends ButtonProps {
+interface TouchButtonProps extends React.ComponentProps<"button"> {
   hapticType?: HapticType
   hapticEnabled?: boolean
   rippleEffect?: boolean
