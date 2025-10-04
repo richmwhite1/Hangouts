@@ -1,42 +1,29 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { TouchButton } from '@/components/ui/touch-button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BottomSheet } from '@/components/ui/bottom-sheet'
-import { useBottomSheet } from '@/components/ui/bottom-sheet'
-import { LoadingOverlay } from '@/components/ui/loading-states'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
 import { useVisualFeedback } from '@/hooks/use-visual-feedback'
-import { useCardHover } from '@/hooks/use-micro-interactions'
 import { OptimizedImage } from '@/components/ui/optimized-image'
-import { usePerformanceMonitor } from '@/hooks/use-performance-monitor'
-import { PerformanceMonitor } from '@/components/ui/performance-monitor'
-import { useCache } from '@/lib/cache'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
-import { SwipeableCard } from '@/components/ui/swipeable-card'
 import { 
   Search, 
   Filter, 
   MapPin, 
   Calendar, 
-  DollarSign, 
   Heart, 
   Share2, 
-  Plus,
   Users,
-  Clock,
-  Camera,
   Music,
   Coffee,
   Utensils,
   Mountain,
   Dumbbell,
-  Gamepad2,
   Palette,
   Building2,
   GraduationCap,
@@ -73,6 +60,8 @@ interface Event {
   }
   saveCount: number
   createdAt: string
+  latitude?: number
+  longitude?: number
 }
 
 interface Hangout {
@@ -94,6 +83,8 @@ interface Hangout {
     avatar: string
   }
   createdAt: string
+  latitude?: number
+  longitude?: number
 }
 
 const categories = [
@@ -141,13 +132,13 @@ const distanceOptions = [
 ]
 
 export function MergedDiscoveryPage() {
-  const { user, token, isAuthenticated } = useAuth()
+  const { token, isAuthenticated } = useAuth()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all')
   const [sortBy, setSortBy] = useState('closest')
-  const [showFilters, setShowFilters] = useState(false)
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
   const [hangouts, setHangouts] = useState<Hangout[]>([])
@@ -163,20 +154,11 @@ export function MergedDiscoveryPage() {
   const [maxDistance, setMaxDistance] = useState('unlimited')
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   
-  // Bottom sheet for filters
-  const filterBottomSheet = useBottomSheet()
+  // Filter modal state
   
   // Visual feedback
   const { showSuccess, showError, showLoading } = useVisualFeedback()
   
-  // Performance monitoring
-  const { measureAsyncOperation } = usePerformanceMonitor({
-    enableMemoryMonitoring: true
-  })
-  
-  // Caching
-  const hangoutsCache = useCache('hangouts', () => fetchHangouts(), { ttl: 5 * 60 * 1000 })
-  const eventsCache = useCache('events', () => fetchEvents(), { ttl: 5 * 60 * 1000 })
 
   const commonTags = [
     'concert', 'festival', 'workshop', 'networking', 'charity', 'fundraiser',
@@ -722,8 +704,7 @@ export function MergedDiscoveryPage() {
             />
           </div>
           <TouchButton
-            variant="outline"
-            onClick={() => filterBottomSheet.open(2)}
+            onClick={() => setIsFilterModalOpen(true)}
             className="bg-gray-800 border-gray-700 text-white relative min-h-[44px] min-w-[44px] px-4 py-2"
             hapticType="light"
             rippleEffect={true}
@@ -738,7 +719,7 @@ export function MergedDiscoveryPage() {
         </div>
 
         {/* Comprehensive Filters */}
-        {showFilters && (
+        {isFilterModalOpen && (
           <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Filters</h3>
@@ -1011,14 +992,11 @@ export function MergedDiscoveryPage() {
         </div>
       </PullToRefresh>
       
-      {/* Bottom Sheet for Filters */}
-      <BottomSheet
-        isOpen={filterBottomSheet.isOpen}
-        onClose={filterBottomSheet.close}
+      {/* Full Screen Filter Modal */}
+      <MobileFullScreenModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
         title="Filters"
-        snapPoints={[25, 50, 90]}
-        defaultSnapPoint={1}
-        hapticEnabled={true}
       >
         <div className="p-4 space-y-6">
           {/* Category Filter */}
@@ -1149,7 +1127,6 @@ export function MergedDiscoveryPage() {
 
           {/* Clear All Button */}
           <TouchButton
-            variant="outline"
             onClick={clearAllFilters}
             className="w-full bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
             hapticType="medium"
@@ -1158,7 +1135,7 @@ export function MergedDiscoveryPage() {
             Clear All Filters
           </TouchButton>
         </div>
-      </BottomSheet>
+      </MobileFullScreenModal>
     </div>
   )
 }
