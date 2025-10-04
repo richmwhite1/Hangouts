@@ -102,11 +102,6 @@ export function FriendsPage() {
 
   // Search users
   const searchUsers = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      return
-    }
-
     setIsSearching(true)
     try {
       const response = await apiClient.searchUsers(query, 20, 0)
@@ -218,6 +213,20 @@ export function FriendsPage() {
       loadGroups()
     }
   }, [isAuthenticated])
+
+  // Load all users when component mounts and when "Find People" tab is activated
+  useEffect(() => {
+    if (isAuthenticated && user?.token) {
+      searchUsers('') // Load all users
+    }
+  }, [isAuthenticated, user?.token])
+
+  // Load users when "Find People" tab is activated
+  useEffect(() => {
+    if (activeTab === 'find' && isAuthenticated && user?.token) {
+      searchUsers('') // Load all users
+    }
+  }, [activeTab, isAuthenticated, user?.token])
 
   if (!isAuthenticated) {
     return (

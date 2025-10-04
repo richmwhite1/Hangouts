@@ -316,18 +316,21 @@ export class FriendsSystem {
     isActive: boolean
     friendshipStatus?: 'FRIENDS' | 'PENDING_SENT' | 'PENDING_RECEIVED' | 'NONE'
   }>> {
+    // Build where clause - if query is empty, return all users
+    const whereClause: any = {
+      id: { not: currentUserId }
+    }
+    
+    // Only add search filters if query is provided
+    if (query && query.trim().length > 0) {
+      whereClause.OR = [
+        { name: { contains: query } },
+        { username: { contains: query } }
+      ]
+    }
+    
     const users = await db.user.findMany({
-      where: {
-        AND: [
-          { id: { not: currentUserId } },
-          {
-            OR: [
-              { name: { contains: query } },
-              { username: { contains: query } }
-            ]
-          }
-        ]
-      },
+      where: whereClause,
       select: {
         id: true,
         name: true,

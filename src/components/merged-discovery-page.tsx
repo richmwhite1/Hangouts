@@ -120,14 +120,15 @@ const timeFilters = [
 ]
 
 const sortOptions = [
+  { id: 'closest', label: 'Closest to me' },
+  { id: 'coming-up', label: 'Coming up next' },
   { id: 'newest', label: 'Newest First' },
-  { id: 'oldest', label: 'Oldest First' },
   { id: 'popular', label: 'Most Popular' },
-  { id: 'price-low', label: 'Price: Low to High' },
-  { id: 'price-high', label: 'Price: High to Low' },
+  { id: 'distance', label: 'Distance: Closest First' },
   { id: 'date-asc', label: 'Date: Soonest First' },
   { id: 'date-desc', label: 'Date: Latest First' },
-  { id: 'distance', label: 'Distance: Closest First' },
+  { id: 'price-low', label: 'Price: Low to High' },
+  { id: 'price-high', label: 'Price: High to Low' },
 ]
 
 const distanceOptions = [
@@ -145,7 +146,7 @@ export function MergedDiscoveryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('newest')
+  const [sortBy, setSortBy] = useState('closest')
   const [showFilters, setShowFilters] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
@@ -452,20 +453,20 @@ export function MergedDiscoveryPage() {
     // Apply sorting
     let sortedContent = [...filteredContent]
     switch (sortBy) {
+      case 'closest':
+        sortedContent.sort((a, b) => a.sortDistance - b.sortDistance)
+        break
+      case 'coming-up':
+        sortedContent.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime())
+        break
       case 'newest':
         sortedContent.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        break
-      case 'oldest':
-        sortedContent.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         break
       case 'popular':
         sortedContent.sort((a, b) => (b.saveCount || b.participants?.length || 0) - (a.saveCount || a.participants?.length || 0))
         break
-      case 'price-low':
-        sortedContent.sort((a, b) => a.sortPrice - b.sortPrice)
-        break
-      case 'price-high':
-        sortedContent.sort((a, b) => b.sortPrice - a.sortPrice)
+      case 'distance':
+        sortedContent.sort((a, b) => a.sortDistance - b.sortDistance)
         break
       case 'date-asc':
         sortedContent.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime())
@@ -473,8 +474,11 @@ export function MergedDiscoveryPage() {
       case 'date-desc':
         sortedContent.sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
         break
-      case 'distance':
-        sortedContent.sort((a, b) => a.sortDistance - b.sortDistance)
+      case 'price-low':
+        sortedContent.sort((a, b) => a.sortPrice - b.sortPrice)
+        break
+      case 'price-high':
+        sortedContent.sort((a, b) => b.sortPrice - a.sortPrice)
         break
     }
 

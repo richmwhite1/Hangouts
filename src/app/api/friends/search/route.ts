@@ -9,11 +9,8 @@ async function searchUsersHandler(request: AuthenticatedRequest) {
   const query = searchParams.get('q') || ''
   const limit = parseInt(searchParams.get('limit') || '20')
 
-  if (!query || query.length < 2) {
-    return createErrorResponse('Search query must be at least 2 characters', 'INVALID_QUERY')
-  }
-
   try {
+    // Always return users, even with empty query (for initial load)
     const users = await FriendsSystem.searchUsers(query, userId, limit)
     return createSuccessResponse({ users })
   } catch (error) {
