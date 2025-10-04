@@ -781,64 +781,6 @@ export function MergedDiscoveryPage() {
           </TouchButton>
         </div>
 
-        {/* Sort and Location Controls */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          {/* Sort Controls */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 whitespace-nowrap">Sort by:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="closest" className="text-white hover:bg-gray-700">Distance</SelectItem>
-                <SelectItem value="coming-up" className="text-white hover:bg-gray-700">Date</SelectItem>
-                <SelectItem value="newest" className="text-white hover:bg-gray-700">Newest</SelectItem>
-                <SelectItem value="popular" className="text-white hover:bg-gray-700">Popular</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Distance Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 whitespace-nowrap">Within:</span>
-            <Select value={maxDistance} onValueChange={setMaxDistance}>
-              <SelectTrigger className="w-[120px] bg-gray-800 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="10" className="text-white hover:bg-gray-700">10 miles</SelectItem>
-                <SelectItem value="25" className="text-white hover:bg-gray-700">25 miles</SelectItem>
-                <SelectItem value="50" className="text-white hover:bg-gray-700">50 miles</SelectItem>
-                <SelectItem value="100" className="text-white hover:bg-gray-700">100 miles</SelectItem>
-                <SelectItem value="unlimited" className="text-white hover:bg-gray-700">No limit</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Location Display and Override */}
-          <div className="flex items-center gap-2 flex-1">
-            <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-300">
-              {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting location...'}
-            </span>
-            <div className="flex items-center gap-1 ml-auto">
-              <Input
-                placeholder="ZIP code"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value)}
-                className="w-24 h-8 bg-gray-800 border-gray-700 text-white text-xs"
-              />
-              <TouchButton
-                onClick={handleZipCodeSubmit}
-                className="h-8 px-2 bg-gray-700 text-white text-xs"
-                hapticType="light"
-              >
-                Update
-              </TouchButton>
-            </div>
-          </div>
-        </div>
 
         {/* Comprehensive Filters */}
         {isFilterModalOpen && (
@@ -1074,6 +1016,64 @@ export function MergedDiscoveryPage() {
             <TabsTrigger value="hangouts" className="data-[state=active]:bg-purple-600">Hangouts</TabsTrigger>
             <TabsTrigger value="saved" className="data-[state=active]:bg-purple-600">Saved</TabsTrigger>
           </TabsList>
+
+          {/* Discreet Sort and Filter Controls */}
+          <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <span>Sort:</span>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-20 h-6 bg-gray-800 border-gray-700 text-white text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="closest" className="text-white hover:bg-gray-700 text-xs">Distance</SelectItem>
+                    <SelectItem value="coming-up" className="text-white hover:bg-gray-700 text-xs">Date</SelectItem>
+                    <SelectItem value="newest" className="text-white hover:bg-gray-700 text-xs">Newest</SelectItem>
+                    <SelectItem value="popular" className="text-white hover:bg-gray-700 text-xs">Popular</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <span>Within:</span>
+                <Select value={maxDistance} onValueChange={setMaxDistance}>
+                  <SelectTrigger className="w-16 h-6 bg-gray-800 border-gray-700 text-white text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="10" className="text-white hover:bg-gray-700 text-xs">10mi</SelectItem>
+                    <SelectItem value="25" className="text-white hover:bg-gray-700 text-xs">25mi</SelectItem>
+                    <SelectItem value="50" className="text-white hover:bg-gray-700 text-xs">50mi</SelectItem>
+                    <SelectItem value="100" className="text-white hover:bg-gray-700 text-xs">100mi</SelectItem>
+                    <SelectItem value="unlimited" className="text-white hover:bg-gray-700 text-xs">All</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3 h-3 text-gray-400" />
+              <span className="text-xs">
+                {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting...'}
+              </span>
+              <div className="flex items-center gap-1">
+                <Input
+                  placeholder="ZIP"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  className="w-16 h-6 bg-gray-800 border-gray-700 text-white text-xs"
+                />
+                <TouchButton
+                  onClick={handleZipCodeSubmit}
+                  className="h-6 px-2 bg-gray-700 text-white text-xs"
+                  hapticType="light"
+                >
+                  ✓
+                </TouchButton>
+              </div>
+            </div>
+          </div>
         </Tabs>
       </div>
 

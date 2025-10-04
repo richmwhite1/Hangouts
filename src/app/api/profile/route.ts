@@ -26,6 +26,8 @@ async function getProfileHandler(request: NextRequest) {
         enneagram: true,
         bigFive: true,
         loveLanguage: true,
+        favoriteActivities: true,
+        favoritePlaces: true,
         createdAt: true,
         _count: {
           select: {
@@ -137,6 +139,8 @@ async function getProfileHandler(request: NextRequest) {
       enneagram: user.enneagram,
       bigFive: user.bigFive,
       loveLanguage: user.loveLanguage,
+      favoriteActivities: user.favoriteActivities ? JSON.parse(user.favoriteActivities) : [],
+      favoritePlaces: user.favoritePlaces ? JSON.parse(user.favoritePlaces) : [],
       joinDate: user.createdAt.toISOString(),
       stats
     }

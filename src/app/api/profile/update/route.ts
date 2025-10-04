@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { avatar, backgroundImage, bio, location, name, zodiac, enneagram, bigFive, loveLanguage } = body
+    const { avatar, backgroundImage, bio, location, name, zodiac, enneagram, bigFive, loveLanguage, favoriteActivities, favoritePlaces } = body
 
     // Validate user exists
     const user = await db.user.findUnique({
@@ -42,6 +42,8 @@ export async function PUT(request: NextRequest) {
         ...(enneagram !== undefined && { enneagram }),
         ...(bigFive !== undefined && { bigFive }),
         ...(loveLanguage !== undefined && { loveLanguage }),
+        ...(favoriteActivities !== undefined && { favoriteActivities: JSON.stringify(favoriteActivities) }),
+        ...(favoritePlaces !== undefined && { favoritePlaces: JSON.stringify(favoritePlaces) }),
       },
       select: {
         id: true,
