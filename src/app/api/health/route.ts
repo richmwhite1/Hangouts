@@ -1,45 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
-    console.log('Health check started...')
+    console.log('🏥 Health check started...')
     console.log('NODE_ENV:', process.env.NODE_ENV)
-    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
     console.log('PORT:', process.env.PORT)
     console.log('HOSTNAME:', process.env.HOSTNAME)
+    console.log('Process uptime:', process.uptime())
     
-    // Test database connection
-    console.log('Testing database connection...')
-    await db.$queryRaw`SELECT 1`
-    console.log('Database connection successful')
+    const responseTime = Date.now() - startTime
     
-    return NextResponse.json({
+    const healthData = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      database: 'connected',
       uptime: process.uptime(),
+      responseTime: `${responseTime}ms`,
       environment: process.env.NODE_ENV,
       port: process.env.PORT,
-      hostname: process.env.HOSTNAME
+      hostname: process.env.HOSTNAME,
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+      }
+    }
+    
+    console.log('✅ Health check passed:', healthData)
+    
+    return NextResponse.json(healthData, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
+    
   } catch (error) {
-    console.error('Health check failed:', error)
+    const responseTime = Date.now() - startTime
+    
+    console.error('❌ Health check failed:', error)
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
+      name: error instanceof Error ? error.name : undefined,
+      responseTime: `${responseTime}ms`
     })
     
-    return NextResponse.json({
+    const errorData = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      database: 'disconnected',
       error: error instanceof Error ? error.message : 'Unknown error',
+      responseTime: `${responseTime}ms`,
       environment: process.env.NODE_ENV,
       port: process.env.PORT,
-      hostname: process.env.HOSTNAME
-    }, { status: 500 })
+      hostname: process.env.HOSTNAME,
+      uptime: process.uptime()
+    }
+    
+    return NextResponse.json(errorData, { 
+      status: 503,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   }
 }
 

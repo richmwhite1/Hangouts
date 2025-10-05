@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { db } from './db'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 
 function getJWTSecret(): string {
@@ -17,6 +17,7 @@ export interface JWTPayload {
   userId: string
   email: string
   username: string
+  role: string
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -33,9 +34,13 @@ export function generateToken(payload: JWTPayload): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, getJWTSecret())
+    const secret = getJWTSecret()
+    console.log('Auth verifyToken - Using secret:', secret)
+    const decoded = jwt.verify(token, secret)
+    console.log('Auth verifyToken - Decoded payload:', decoded)
     return decoded as JWTPayload
-  } catch {
+  } catch (error) {
+    console.log('Auth verifyToken - Error:', error instanceof Error ? error.message : 'Unknown error')
     return null
   }
 }

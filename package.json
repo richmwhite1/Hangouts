@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "node server.js",
     "dev:next": "next dev --turbopack",
-    "build": "prisma generate && next build --turbopack",
-    "start": "NODE_ENV=production node server-production.js",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "start:custom": "NODE_ENV=production node server-production.js",
     "start:next": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",

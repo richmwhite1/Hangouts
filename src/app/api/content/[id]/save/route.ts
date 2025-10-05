@@ -3,8 +3,8 @@ import { db } from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
 import { createApiHandler } from '@/lib/api-handler'
 
-async function saveContentHandler(request: NextRequest, { params }: { params: { id: string } }) {
-  const contentId = params.id
+async function saveContentHandler(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: contentId } = await params
   const { action } = await request.json() // 'save' or 'unsave'
   
   // Verify authentication
@@ -14,8 +14,11 @@ async function saveContentHandler(request: NextRequest, { params }: { params: { 
   }
   
   const token = authHeader.substring(7)
+  console.log('Save API - Token received:', token.substring(0, 20) + '...')
   const payload = verifyToken(token)
+  console.log('Save API - Token payload:', payload)
   if (!payload) {
+    console.log('Save API - Token verification failed')
     return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
   }
   
