@@ -27,12 +27,33 @@ export function TileActions({
 
   const handleSave = async () => {
     triggerHaptic('light')
-    setSaved(!saved)
     
-    if (saved && onUnsave) {
-      onUnsave(itemId, itemType)
-    } else if (!saved && onSave) {
-      onSave(itemId, itemType)
+    try {
+      const response = await fetch(`/api/content/${itemId}/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          action: saved ? 'unsave' : 'save'
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setSaved(!saved)
+        if (saved && onUnsave) {
+          onUnsave(itemId, itemType)
+        } else if (!saved && onSave) {
+          onSave(itemId, itemType)
+        }
+      } else {
+        console.error('Failed to save content:', data.error)
+      }
+    } catch (error) {
+      console.error('Error saving content:', error)
     }
   }
 
@@ -44,7 +65,8 @@ export function TileActions({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Check out this ${itemType}`,
+          title: `Are you coming to this ${itemType}?`,
+          text: `Check out this ${itemType} I found!`,
           url: url
         })
       } catch (err) {

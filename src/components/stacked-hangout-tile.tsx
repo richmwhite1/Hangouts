@@ -156,20 +156,34 @@ export function StackedHangoutTile({
             </div>
           </div>
 
-          {/* Action Buttons - Top Right */}
-          <div className="absolute top-4 right-4">
-            <TileActions
-              itemId={hangout.id}
-              itemType="hangout"
-              onSave={(id, type) => {
-                // TODO: Implement save functionality
-                console.log('Save hangout:', id, type)
+          {/* Discreet Action Buttons - Top Right */}
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-8 w-8 p-0 bg-black/20 hover:bg-black/40 text-white/80 hover:text-white"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                // TODO: Navigate to chat
+                console.log('Open chat for hangout:', hangout.id)
               }}
-              onUnsave={(id, type) => {
-                // TODO: Implement unsave functionality
-                console.log('Unsave hangout:', id, type)
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-8 w-8 p-0 bg-black/20 hover:bg-black/40 text-white/80 hover:text-white"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                // TODO: Handle RSVP
+                console.log('RSVP to hangout:', hangout.id)
               }}
-            />
+            >
+              <Users className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Bottom Content Overlay - Editorial Style */}
@@ -218,7 +232,7 @@ export function StackedHangoutTile({
               </div>
             </div>
 
-            {/* Bottom Row - Participants and Actions */}
+            {/* Bottom Row - Participants and Share Actions */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -235,14 +249,20 @@ export function StackedHangoutTile({
                 )}
               </div>
               
+              {/* Share Actions - Bottom Right */}
               <div className="flex items-center space-x-2">
-                <Button size="lg" variant="outline" className="text-sm bg-white/20 border-white/30 text-white hover:bg-white/30 min-h-[44px] px-4 py-2">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Chat
-                </Button>
-                <Button size="lg" className="text-sm bg-white text-black hover:bg-white/90 min-h-[44px] px-4 py-2">
-                  RSVP
-                </Button>
+                <TileActions
+                  itemId={hangout.id}
+                  itemType="hangout"
+                  onSave={(id, type) => {
+                    // TODO: Implement save functionality
+                    console.log('Save hangout:', id, type)
+                  }}
+                  onUnsave={(id, type) => {
+                    // TODO: Implement unsave functionality
+                    console.log('Unsave hangout:', id, type)
+                  }}
+                />
               </div>
             </div>
           </div>

@@ -121,6 +121,18 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
             }
           }
         },
+        photos: {
+          select: {
+            id: true,
+            originalUrl: true,
+            thumbnailUrl: true,
+            caption: true,
+            createdAt: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        },
         _count: {
           select: {
             content_participants: true,
@@ -136,7 +148,15 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
       skip: offset,
     })
 
-    return createSuccessResponse({ hangouts })
+    // Transform hangouts to use first photo as primary image
+    const transformedHangouts = hangouts.map(hangout => ({
+      ...hangout,
+      image: hangout.photos && hangout.photos.length > 0 
+        ? hangout.photos[0].originalUrl || hangout.photos[0].thumbnailUrl 
+        : hangout.image
+    }))
+
+    return createSuccessResponse({ hangouts: transformedHangouts })
   } catch (error) {
     console.error('Database error in getDiscoverHangoutsHandler:', error)
     return createErrorResponse('Database error', 'Failed to fetch discover hangouts', 500)

@@ -27,7 +27,7 @@ const createContentSchema = z.object({
   ticketUrl: z.string().url().optional(),
   attendeeCount: z.number().min(0).optional().default(0),
   externalEventId: z.string().optional(),
-  source: z.enum(['MANUAL', 'EVENTBRITE', 'FACEBOOK', 'MEETUP', 'OTHER']).optional().default('MANUAL'),
+  source: z.enum(['MANUAL', 'FACEBOOK', 'MEETUP', 'OTHER']).optional().default('MANUAL'),
   tags: z.array(z.string()).optional(),
   
   // Hangout-specific fields

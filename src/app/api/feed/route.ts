@@ -204,6 +204,19 @@ async function getFeedHandler(request: NextRequest) {
             orderIndex: 'asc'
           }
         },
+        // Photos (for hangouts)
+        photos: {
+          select: {
+            id: true,
+            originalUrl: true,
+            thumbnailUrl: true,
+            caption: true,
+            createdAt: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        },
         // Event saves
         eventSaves: {
           select: {
@@ -298,7 +311,9 @@ async function getFeedHandler(request: NextRequest) {
         type: item.type,
         title: item.title,
         description: item.description,
-        image: item.image,
+        image: item.type === 'HANGOUT' && item.photos && item.photos.length > 0 
+          ? item.photos[0].originalUrl || item.photos[0].thumbnailUrl 
+          : item.image,
         location: item.location,
         latitude: item.latitude,
         longitude: item.longitude,
