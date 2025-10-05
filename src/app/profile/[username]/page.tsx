@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
+import { TileActions } from '@/components/ui/tile-actions'
 import { 
   Users, 
   Calendar, 
@@ -173,8 +174,23 @@ export default function ProfilePage() {
               alt={hangout.title || hangout.activity}
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+            <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
               Hangout
+            </div>
+            {/* Action Buttons - Bottom Right */}
+            <div className="absolute bottom-2 right-2">
+              <TileActions
+                itemId={hangout.id}
+                itemType="hangout"
+                onSave={(id, type) => {
+                  // TODO: Implement save functionality
+                  console.log('Save hangout:', id, type)
+                }}
+                onUnsave={(id, type) => {
+                  // TODO: Implement unsave functionality
+                  console.log('Unsave hangout:', id, type)
+                }}
+              />
             </div>
           </div>
         )}
@@ -208,8 +224,23 @@ export default function ProfilePage() {
               alt={event.title}
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+            <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
               Event
+            </div>
+            {/* Action Buttons - Bottom Right */}
+            <div className="absolute bottom-2 right-2">
+              <TileActions
+                itemId={event.id}
+                itemType="event"
+                onSave={(id, type) => {
+                  // TODO: Implement save functionality
+                  console.log('Save event:', id, type)
+                }}
+                onUnsave={(id, type) => {
+                  // TODO: Implement unsave functionality
+                  console.log('Unsave event:', id, type)
+                }}
+              />
             </div>
           </div>
         )}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, Users, MessageSquare, Clock } from "lucide-react"
 import Link from "next/link"
 import { ActionIndicators, ActionDot } from "./hangout/action-indicators"
+import { TileActions } from "./ui/tile-actions"
 
 interface Hangout {
   id: string
@@ -153,6 +154,22 @@ export function StackedHangoutTile({
                 {index + 1}/{totalCount}
               </div>
             </div>
+          </div>
+
+          {/* Action Buttons - Top Right */}
+          <div className="absolute top-4 right-4">
+            <TileActions
+              itemId={hangout.id}
+              itemType="hangout"
+              onSave={(id, type) => {
+                // TODO: Implement save functionality
+                console.log('Save hangout:', id, type)
+              }}
+              onUnsave={(id, type) => {
+                // TODO: Implement unsave functionality
+                console.log('Unsave hangout:', id, type)
+              }}
+            />
           </div>
 
           {/* Bottom Content Overlay - Editorial Style */}

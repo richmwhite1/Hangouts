@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Search, Filter, MapPin, Calendar, DollarSign, Heart, Share2, Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
+import { TileActions } from '@/components/ui/tile-actions'
 
 interface Event {
   id: string
@@ -420,32 +421,20 @@ export default function EventsPage() {
                     <Calendar className="w-12 h-12" />
                   </div>
                   
-                  {/* Overlay Actions */}
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="secondary" 
-                      className="bg-black/50 hover:bg-black/70"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        // TODO: Handle like/favorite
+                  {/* Action Buttons - Bottom Right */}
+                  <div className="absolute bottom-2 right-2">
+                    <TileActions
+                      itemId={event.id}
+                      itemType="event"
+                      onSave={(id, type) => {
+                        // TODO: Implement save functionality
+                        console.log('Save event:', id, type)
                       }}
-                    >
-                      <Heart className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="secondary" 
-                      className="bg-black/50 hover:bg-black/70"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        // TODO: Handle share
+                      onUnsave={(id, type) => {
+                        // TODO: Implement unsave functionality
+                        console.log('Unsave event:', id, type)
                       }}
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
+                    />
                   </div>
                   
                   {/* Category Badge */}

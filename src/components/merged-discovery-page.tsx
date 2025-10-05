@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
+import { TileActions } from '@/components/ui/tile-actions'
 import Link from 'next/link'
 
 interface Event {
@@ -659,16 +660,20 @@ export function MergedDiscoveryPage() {
             )}
           </div>
           
-          {/* Hover overlay with quick actions */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-4">
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
-                <Heart className="w-6 h-6" />
-              </Button>
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
-                <Share2 className="w-6 h-6" />
-              </Button>
-            </div>
+          {/* Action Buttons - Bottom Right */}
+          <div className="absolute bottom-4 right-4">
+            <TileActions
+              itemId={event.id}
+              itemType="event"
+              onSave={(id, type) => {
+                // TODO: Implement save functionality
+                console.log('Save event:', id, type)
+              }}
+              onUnsave={(id, type) => {
+                // TODO: Implement unsave functionality
+                console.log('Unsave event:', id, type)
+              }}
+            />
           </div>
         </div>
       </Link>
@@ -745,16 +750,20 @@ export function MergedDiscoveryPage() {
             )}
           </div>
           
-          {/* Hover overlay with quick actions */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-4">
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
-                <Heart className="w-6 h-6" />
-              </Button>
-              <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30 min-h-[48px] min-w-[48px]">
-                <Share2 className="w-6 h-6" />
-              </Button>
-            </div>
+          {/* Action Buttons - Bottom Right */}
+          <div className="absolute bottom-4 right-4">
+            <TileActions
+              itemId={hangout.id}
+              itemType="hangout"
+              onSave={(id, type) => {
+                // TODO: Implement save functionality
+                console.log('Save hangout:', id, type)
+              }}
+              onUnsave={(id, type) => {
+                // TODO: Implement unsave functionality
+                console.log('Unsave hangout:', id, type)
+              }}
+            />
           </div>
         </div>
       </Link>
