@@ -234,7 +234,7 @@ export function MobileFullScreenModal({
       <div
         ref={modalRef}
         className={cn(
-          "bg-white dark:bg-gray-900 w-[95vw] h-[95vh] sm:w-[90vw] sm:h-[90vh] sm:max-w-2xl sm:max-h-[800px] flex flex-col shadow-xl rounded-lg",
+          "bg-gray-900 w-[95vw] h-[95vh] sm:w-[90vw] sm:h-[90vh] sm:max-w-2xl sm:max-h-[800px] flex flex-col shadow-xl rounded-lg",
           "animate-in zoom-in-95 duration-300",
           className
         )}
@@ -249,9 +249,9 @@ export function MobileFullScreenModal({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
             {title && (
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-white">
                 {title}
               </h2>
             )}
@@ -260,7 +260,7 @@ export function MobileFullScreenModal({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-gray-400 hover:text-gray-300"
               >
                 <X className="h-5 w-5" />
               </Button>
