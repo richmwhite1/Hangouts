@@ -73,53 +73,7 @@ export function Navigation() {
                 onClick={() => setShowNotifications(!showNotifications)}
               >
                 <Bell className="w-5 h-5" />
-                <Badge variant="destructive" className="absolute -top-1 -right-1 px-1 min-w-0 h-4 text-xs">
-                  2
-                </Badge>
               </Button>
-              {showNotifications && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-border">
-                    <h3 className="font-semibold text-sm">Notifications</h3>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    <div className="p-3 border-b border-border/50 hover:bg-muted/50 cursor-pointer">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">New comment on Weekend Coffee Meetup</p>
-                          <p className="text-xs text-muted-foreground mt-1">Sarah added: &quot;Looking forward to this!&quot;</p>
-                          <p className="text-xs text-muted-foreground mt-1">2 minutes ago</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-3 border-b border-border/50 hover:bg-muted/50 cursor-pointer">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">Reminder: Vote needed for Friday Gaming</p>
-                          <p className="text-xs text-muted-foreground mt-1">Mike is waiting for your RSVP</p>
-                          <p className="text-xs text-muted-foreground mt-1">1 hour ago</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-3 hover:bg-muted/50 cursor-pointer">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-2 h-2 bg-muted rounded-full mt-2 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-muted-foreground">David created Hiking Adventure</p>
-                          <p className="text-xs text-muted-foreground mt-1">3 hours ago</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-3 border-t border-border">
-                    <Button variant="ghost" size="sm" className="w-full text-xs">
-                      View All Notifications
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
             <div className="relative">
               <Button 
