@@ -1,6 +1,6 @@
 # Railway Deployment Guide
 
-## Quick Fix for Health Check Issues
+## ✅ FIXED: Database Configuration Issues
 
 ### 1. Environment Variables Required in Railway
 
@@ -11,7 +11,7 @@ Set these environment variables in your Railway project:
 DATABASE_URL=postgresql://... (Railway will provide this automatically)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=7d
-NEXTAUTH_URL=https://your-app-name.railway.app
+NEXTAUTH_URL=https://hangouts-production-adc4.up.railway.app
 NEXTAUTH_SECRET=your-nextauth-secret-change-this-in-production
 NODE_ENV=production
 PORT=3000
@@ -22,37 +22,47 @@ MAX_FILE_SIZE=5242880
 UPLOAD_DIR=public/uploads/images
 ```
 
-### 2. Health Check Configuration
+### 2. Database Configuration Fixed
 
-The health check endpoint `/api/health` has been simplified to avoid database operations that might cause timeouts.
+- ✅ Updated Prisma schema to use PostgreSQL instead of SQLite
+- ✅ Added automatic database migration on deployment
+- ✅ Added production seed script with test users
+- ✅ Fixed database connection issues
 
-### 3. Database Setup
+### 3. Test Users Created
 
-1. Add a PostgreSQL database to your Railway project
-2. Railway will automatically set the `DATABASE_URL` environment variable
-3. Run database migrations after deployment:
-   ```bash
-   npm run db:migrate
-   ```
+The following test users will be created automatically:
 
-### 4. Build Configuration
+| Email | Username | Password | Name |
+|-------|----------|----------|------|
+| richard@example.com | richard | Password1! | Richard White |
+| hillary@example.com | hillaryclinton | Password1! | Hillary Clinton |
+| ted@example.com | tedjohnson | Password1! | Ted Johnson |
+| bill@example.com | billbev | Password1! | Bill Beverly |
+| sarah@example.com | sarahsmith | Password1! | Sarah Smith |
+| mike@example.com | mikejones | Password1! | Mike Jones |
 
-The app now uses standard Next.js production mode (`next start`) instead of the custom server.
+### 4. Features to Test
 
-### 5. Troubleshooting
+1. **Sign In**: Use any of the test users above
+2. **Friends System**: Users can see each other and add/remove friends
+3. **Hangout Creation**: Create new hangouts
+4. **Polling**: Create and vote on polls
+5. **RSVP**: RSVP to hangouts
+6. **Messaging**: Send messages between users
 
-If the health check still fails:
+### 5. Deployment Process
 
-1. Check Railway logs for any startup errors
-2. Ensure all environment variables are set
-3. Verify the database connection is working
-4. Check if the app is listening on the correct port
+1. Railway automatically runs `prisma db push` to create tables
+2. Railway runs the seed script to create test users
+3. App starts with `next start`
+4. Health check at `/api/health` verifies deployment
 
 ### 6. Manual Health Check
 
-You can test the health check manually:
+Test the health check:
 ```bash
-curl https://your-app-name.railway.app/api/health
+curl https://hangouts-production-adc4.up.railway.app/api/health
 ```
 
 Expected response:
@@ -62,7 +72,7 @@ Expected response:
   "timestamp": "2024-01-01T00:00:00.000Z",
   "uptime": 123.456,
   "environment": "production",
-  "port": "3000",
-  "version": "v18.17.0"
+  "port": "8080",
+  "version": "v18.20.5"
 }
 ```
