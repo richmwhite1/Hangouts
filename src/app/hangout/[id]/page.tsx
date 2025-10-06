@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { HANGOUT_STATES, getVoteCount, hasUserVotedFor, categorizeAttendance, checkMandatoryRSVP } from '@/lib/hangout-flow'
-import { CheckCircle, XCircle, HelpCircle, MapPin, Clock, DollarSign, Camera, MessageSquare, Users, ChevronDown, ChevronUp, Calendar, Edit } from 'lucide-react'
+import { CheckCircle, XCircle, HelpCircle, MapPin, Clock, DollarSign, Camera, MessageSquare, Users, ChevronDown, ChevronUp, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
@@ -98,6 +98,113 @@ export default function HangoutDetailPage() {
   const [isChatExpanded, setIsChatExpanded] = useState(true)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false)
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [friends, setFriends] = useState<any[]>([])
+  const [isLoadingFriends, setIsLoadingFriends] = useState(false)
+
+  const loadFriends = async () => {
+    if (!token) return
+    
+    setIsLoadingFriends(true)
+    try {
+      const response = await fetch('/api/friends', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setFriends(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error loading friends:', error)
+      toast.error('Failed to load friends')
+    } finally {
+      setIsLoadingFriends(false)
+    }
+  }
+
+  const handleInviteUser = async (friendId: string) => {
+    if (!token || !hangoutId) return
+    
+    try {
+      const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: friendId })
+      })
+      
+      if (response.ok) {
+        toast.success('User invited successfully!')
+        setIsInviteModalOpen(false)
+        // Refresh hangout data
+        await fetchHangout()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Failed to invite user')
+      }
+    } catch (error) {
+      console.error('Error inviting user:', error)
+      toast.error('Failed to invite user')
+    }
+  }
+
+  const handleRemoveUser = async (participantId: string) => {
+    if (!token || !hangoutId) return
+    
+    try {
+      const response = await fetch(`/api/hangouts/${hangoutId}/participants/${participantId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        toast.success('User removed successfully!')
+        // Refresh hangout data
+        await fetchHangout()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Failed to remove user')
+      }
+    } catch (error) {
+      console.error('Error removing user:', error)
+      toast.error('Failed to remove user')
+    }
+  }
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/hangout/${hangoutId}`
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Are you coming to ${hangout?.title}?`,
+          text: `Check out this hangout I found!`,
+          url: url
+        })
+        toast.success('Shared successfully!')
+      } catch (err) {
+        console.log('Share cancelled or failed:', err)
+        toast.error('Failed to share.')
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(url)
+      toast.success('Link copied to clipboard!')
+    }
+  }
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/hangout/${hangoutId}`
+    await navigator.clipboard.writeText(url)
+    toast.success('Link copied to clipboard!')
+  }
 
   const fetchHangout = async () => {
     if (!token || !hangoutId) return
@@ -692,7 +799,17 @@ export default function HangoutDetailPage() {
         
         
         {/* Participant Status Section - Always show if has participants */}
-        <ParticipantStatusSection hangout={hangout} currentUser={user} />
+        <ParticipantStatusSection 
+          hangout={hangout} 
+          currentUser={user}
+          onOpenInviteModal={() => {
+            loadFriends()
+            setIsInviteModalOpen(true)
+          }}
+          onRemoveUser={handleRemoveUser}
+          onShare={handleShare}
+          onCopyLink={handleCopyLink}
+        />
         
         {/* Chat Section - Always show */}
         <ChatSection 
@@ -1002,14 +1119,70 @@ function RSVPSection({ hangout, currentUser, onRSVP, isUpdating, userRSVP }: {
 }
 
 // Participant Status Section - Professional Enterprise-Grade Design
-function ParticipantStatusSection({ hangout, currentUser }: { hangout: Hangout, currentUser: any }) {
+function ParticipantStatusSection({ 
+  hangout, 
+  currentUser, 
+  onOpenInviteModal, 
+  onRemoveUser, 
+  onShare, 
+  onCopyLink 
+}: { 
+  hangout: Hangout, 
+  currentUser: any,
+  onOpenInviteModal: () => void,
+  onRemoveUser: (participantId: string) => void,
+  onShare: () => void,
+  onCopyLink: () => void
+}) {
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const participants = hangout.participants || []
+  const isCreator = currentUser?.id === hangout.creatorId
+  const isHost = isCreator || participants?.some(p => p.userId === currentUser?.id && p.role === 'CO_HOST')
   
   if (participants.length === 0) return null
   
   return (
     <div className="px-4 py-3">
+      {/* Header with Add People and Action Buttons */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-white font-semibold text-sm">
+          Participants ({participants.length})
+        </h3>
+        <div className="flex items-center gap-2">
+          {/* Add People Button */}
+          {isHost && (
+            <Button
+              onClick={onOpenInviteModal}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 h-7"
+            >
+              <UserPlus className="w-3 h-3 mr-1" />
+              Add People
+            </Button>
+          )}
+          
+          {/* Share Button */}
+          <Button
+            onClick={onShare}
+            size="sm"
+            variant="outline"
+            className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
+          >
+            <Share2 className="w-3 h-3" />
+          </Button>
+          
+          {/* Copy Link Button */}
+          <Button
+            onClick={onCopyLink}
+            size="sm"
+            variant="outline"
+            className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
+          >
+            <LinkIcon className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+      
       {/* Large Square Profile Icons Grid with Names and Status */}
       <div className="grid grid-cols-4 gap-3">
         {participants.slice(0, 8).map((participant) => {
@@ -1022,8 +1195,10 @@ function ParticipantStatusSection({ hangout, currentUser }: { hangout: Hangout, 
           const userRSVP = hangout.rsvps?.find(rsvp => rsvp.userId === participant.user.id)
           const rsvpStatus = userRSVP?.status || 'PENDING'
           
+          const canRemove = isHost && participant.user.id !== currentUser?.id
+          
           return (
-            <div key={participant.id} className="flex flex-col items-center text-center">
+            <div key={participant.id} className="flex flex-col items-center text-center group relative">
               {/* Large Square Profile Picture */}
               <div className="relative mb-2">
                 <img
@@ -1041,6 +1216,17 @@ function ParticipantStatusSection({ hangout, currentUser }: { hangout: Hangout, 
                     'bg-gray-500'
                   }`}></div>
                 </div>
+                
+                {/* Remove Button */}
+                {canRemove && (
+                  <button
+                    onClick={() => onRemoveUser(participant.id)}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove user"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                )}
               </div>
               
               {/* Name */}
@@ -1590,6 +1776,60 @@ function EditPlanModal({ hangout, onClose, onSave }: {
           </form>
         </div>
       </div>
+      
+      {/* Invite Users Modal */}
+      {isInviteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-white font-semibold">Invite People</h3>
+                <button
+                  onClick={() => setIsInviteModalOpen(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 max-h-96 overflow-y-auto">
+              {isLoadingFriends ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : friends.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No friends available to invite</p>
+              ) : (
+                <div className="space-y-2">
+                  {friends.map((friend) => (
+                    <div key={friend.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={friend.avatar || '/placeholder-avatar.png'}
+                          alt={friend.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="text-white font-medium">{friend.name}</p>
+                          <p className="text-gray-400 text-sm">@{friend.username}</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleInviteUser(friend.id)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        Invite
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
