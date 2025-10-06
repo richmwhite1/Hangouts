@@ -83,7 +83,11 @@ export const userSchemas = {
     email: commonSchemas.email,
     username: commonSchemas.username,
     name: commonSchemas.name,
-    password: commonSchemas.password
+    password: commonSchemas.password,
+    confirmPassword: z.string().min(8, 'Confirm password must be at least 8 characters')
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"]
   }),
   
   signIn: z.object({

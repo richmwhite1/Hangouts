@@ -76,6 +76,13 @@ export async function POST(request: NextRequest) {
     }, 'Sign up successful'))
 
   } catch (error: any) {
+    console.error('Sign up error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    })
+    
     if (error.name === 'ZodError') {
       return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
