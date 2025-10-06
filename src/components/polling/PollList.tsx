@@ -62,8 +62,8 @@ export function PollList({ hangoutId, onCreatePoll, onPollClick }: PollListProps
       setError(null)
       
       const url = hangoutId 
-        ? `http://localhost:3000/api/polls/test?hangoutId=${hangoutId}`
-        : 'http://localhost:3000/api/polls/test'
+        ? `/api/polls?hangoutId=${hangoutId}`
+        : '/api/polls'
       
       const response = await fetch(url)
       
@@ -73,7 +73,7 @@ export function PollList({ hangoutId, onCreatePoll, onPollClick }: PollListProps
       
       const data = await response.json()
       
-      if (data.success) {
+      if (data.polls) {
         setPolls(data.polls)
       } else {
         throw new Error(data.error || 'Failed to fetch polls')

@@ -39,10 +39,11 @@ export default function PollingPage() {
   // Fetch stats
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/polls/test')
+      // Use the proper API endpoint
+      const response = await fetch('/api/polls')
       const data = await response.json()
       
-      if (data.success && data.polls) {
+      if (data.polls) {
         const activePolls = data.polls.filter((poll: any) => poll.status === 'ACTIVE').length
         const totalParticipants = data.polls.reduce((sum: number, poll: any) => 
           sum + (poll.participants?.length || 0), 0)
@@ -60,6 +61,13 @@ export default function PollingPage() {
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
+      // Set default stats on error
+      setStats({
+        activePolls: 0,
+        totalParticipants: 0,
+        totalVotes: 0,
+        consensusReached: 0
+      })
     } finally {
       setStatsLoading(false)
     }
