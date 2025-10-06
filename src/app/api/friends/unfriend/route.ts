@@ -58,3 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(createErrorResponse('Internal Server Error', 'Failed to unfriend user'), { status: 500 })
   }
 }
+
+
+
+

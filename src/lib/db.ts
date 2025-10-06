@@ -12,9 +12,16 @@ const createPrismaClient = () => {
     throw new Error('DATABASE_URL environment variable is required')
   }
   
+  console.log('🔗 Database URL configured:', databaseUrl.replace(/\/\/.*@/, '//***:***@'))
+  
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     errorFormat: 'pretty',
+    datasources: {
+      db: {
+        url: databaseUrl
+      }
+    }
   })
 }
 
