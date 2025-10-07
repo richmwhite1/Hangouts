@@ -164,17 +164,17 @@ export async function GET(
     }
 
     // Get votes for polls if they exist
-    let votes = {}
-    let userVotes = {}
-    let userPreferred = {}
+    let votes: Record<string, string> = {}
+    let userVotes: Record<string, string[]> = {}
+    let userPreferred: Record<string, string> = {}
     
     if (hangout.polls?.length > 0) {
       const pollVotes = await db.pollVote.findMany({
-        where: { pollId: hangout.polls[0].id }
+        where: { pollId: hangout.polls[0]?.id || '' }
       })
       
       // Process votes for consensus checking (first vote per user)
-      votes = pollVotes.reduce((acc, vote) => {
+      votes = pollVotes.reduce((acc: Record<string, string>, vote) => {
         if (!acc[vote.userId]) {
           acc[vote.userId] = vote.option
         }
@@ -186,11 +186,11 @@ export async function GET(
         if (!userVotes[vote.userId]) {
           userVotes[vote.userId] = []
         }
-        userVotes[vote.userId].push(vote.option)
+        userVotes[vote.userId]?.push(vote.option || '')
         
         // Track preferred votes
         if (vote.isPreferred) {
-          userPreferred[vote.userId] = vote.option
+          userPreferred[vote.userId] = vote.option || ''
         }
       })
     }
@@ -203,7 +203,6 @@ export async function GET(
       participants: hangout.content_participants.map(p => ({
         id: p.id,
         user: p.users,
-        rsvpStatus: p.rsvpStatus,
         role: p.role,
         canEdit: p.canEdit
       })),
@@ -252,36 +251,36 @@ export async function GET(
         participants: hangout._count.content_participants
       },
       // Transform polls to options
-      options: hangout.polls?.length > 0 ? (hangout.polls[0].options as any[] || []).map((option, index) => ({
-        id: option.id || `option_${index}`,
-        title: option.title || '',
-        description: option.description || '',
-        location: option.location || '',
-        dateTime: option.dateTime || '',
-        price: option.price || 0,
-        eventImage: option.eventImage || ''
+      options: hangout.polls?.length > 0 ? (hangout.polls[0]?.options as any[] || []).map((option, index) => ({
+        id: option?.id || `option_${index}`,
+        title: option?.title || '',
+        description: option?.description || '',
+        location: option?.location || '',
+        dateTime: option?.dateTime || '',
+        price: option?.price || 0,
+        eventImage: option?.eventImage || ''
       })) : [],
       // Add hangout state and voting info
-      state: hangout.polls?.length > 0 && hangout.polls[0].status === 'ACTIVE' ? 'polling' : 'confirmed',
-      requiresVoting: hangout.polls?.length > 0 && hangout.polls[0].status === 'ACTIVE' && (hangout.polls[0].options as any[] || []).length > 1,
-      requiresRSVP: (hangout.polls?.length > 0 && hangout.polls[0].status === 'CONSENSUS_REACHED') || hangout.polls?.length === 0,
+      state: hangout.polls?.length > 0 && hangout.polls[0]?.status === 'ACTIVE' ? 'polling' : 'confirmed',
+      requiresVoting: hangout.polls?.length > 0 && hangout.polls[0]?.status === 'ACTIVE' && (hangout.polls[0]?.options as any[] || []).length > 1,
+      requiresRSVP: (hangout.polls?.length > 0 && hangout.polls[0]?.status === 'CONSENSUS_REACHED') || hangout.polls?.length === 0,
       votes: votes,
       userVotes: userVotes,
       userPreferred: userPreferred,
       finalizedOption: hangout.finalPlans?.length > 0 
         ? {
-            id: hangout.finalPlans[0].optionId,
-            title: hangout.finalPlans[0].title,
-            description: hangout.finalPlans[0].description,
-            optionText: hangout.finalPlans[0].optionText,
-            optionDescription: hangout.finalPlans[0].optionDescription,
-            metadata: hangout.finalPlans[0].metadata,
-            consensusLevel: hangout.finalPlans[0].consensusLevel,
-            totalVotes: hangout.finalPlans[0].totalVotes,
-            finalizedAt: hangout.finalPlans[0].finalizedAt
+            id: hangout.finalPlans[0]?.optionId,
+            title: hangout.finalPlans[0]?.title,
+            description: hangout.finalPlans[0]?.description,
+            optionText: hangout.finalPlans[0]?.optionText,
+            optionDescription: hangout.finalPlans[0]?.optionDescription,
+            metadata: hangout.finalPlans[0]?.metadata,
+            consensusLevel: hangout.finalPlans[0]?.consensusLevel,
+            totalVotes: hangout.finalPlans[0]?.totalVotes,
+            finalizedAt: hangout.finalPlans[0]?.finalizedAt
           }
-        : (hangout.polls?.length > 0 && (hangout.polls[0].options as any[] || []).length === 1 
-          ? (hangout.polls[0].options as any[])[0] 
+        : (hangout.polls?.length > 0 && (hangout.polls[0]?.options as any[] || []).length === 1 
+          ? (hangout.polls[0]?.options as any[])[0] 
           : (hangout.polls?.length === 0 
             ? {
                 id: 'hangout_basic',
@@ -307,10 +306,12 @@ export async function GET(
 
     } catch (error) {
       console.error('Error fetching hangout:', error)
-      console.error('Error details:', error.message)
-      console.error('Error stack:', error.stack)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorStack = error instanceof Error ? error.stack : 'No stack trace'
+      console.error('Error details:', errorMessage)
+      console.error('Error stack:', errorStack)
       return NextResponse.json(
-        { error: 'Failed to fetch hangout', details: error.message },
+        { error: 'Failed to fetch hangout', details: errorMessage },
         { status: 500 }
       )
     }
@@ -321,8 +322,9 @@ export async function GET(
     return await Promise.race([mainLogic(), timeoutPromise])
   } catch (error) {
     console.error('Hangout API timeout or error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Request timeout or server error', details: error.message },
+      { error: 'Request timeout or server error', details: errorMessage },
       { status: 504 }
     )
   }
@@ -369,7 +371,7 @@ export async function PATCH(
         content_participants: {
           where: {
             userId: payload.userId,
-            role: { in: ['HOST', 'CO_HOST'] }
+            role: { in: ['HOST', 'CO_HOST'] as any }
           }
         }
       }
@@ -382,7 +384,7 @@ export async function PATCH(
       )
     }
 
-    if (hangout.content_participants.length === 0) {
+    if (hangout.content_participants?.length === 0) {
       return NextResponse.json(
         { error: 'Only hosts and co-hosts can edit plan details' },
         { status: 403 }
@@ -396,7 +398,7 @@ export async function PATCH(
         title: data.title,
         description: data.description,
         location: data.location,
-        startTime: data.dateTime ? new Date(data.dateTime) : undefined,
+        startTime: data.dateTime ? new Date(data.dateTime) : null,
         priceMin: data.price,
         priceMax: data.price,
         ticketUrl: data.hangoutUrl
