@@ -58,6 +58,11 @@ async function startProduction() {
         execSync('node scripts/fix-database-schema.js', { stdio: 'inherit' });
         console.log('✅ Database schema fixed');
 
+        // Fix friends system
+        console.log('👥 Fixing friends system...');
+        execSync('node scripts/fix-friends-system.js', { stdio: 'inherit' });
+        console.log('✅ Friends system fixed');
+
         if (userCount === 0) {
           console.log('🌱 No users found, running seed script...');
           execSync('node scripts/seed-production.js', { stdio: 'inherit' });

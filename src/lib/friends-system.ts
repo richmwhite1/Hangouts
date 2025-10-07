@@ -176,22 +176,11 @@ export class FriendsSystem {
   }>> {
     const friendships = await db.friendship.findMany({
       where: {
-        OR: [
-          { userId, status: 'ACTIVE' },
-          { friendId: userId, status: 'ACTIVE' }
-        ]
+        userId,
+        status: 'ACTIVE'
       },
       include: {
         friend: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-            isActive: true
-          }
-        },
-        user: {
           select: {
             id: true,
             name: true,
@@ -206,27 +195,15 @@ export class FriendsSystem {
       }
     })
 
-    // Map friendships and deduplicate by friend ID
-    const friendsMap = new Map()
-    
-    friendships.forEach(f => {
-      // Determine which user is the friend (not the current user)
-      const friend = f.userId === userId ? f.friend : f.user
-      
-      // Only add if we haven't seen this friend before
-      if (!friendsMap.has(friend.id)) {
-        friendsMap.set(friend.id, {
-          id: friend.id,
-          name: friend.name,
-          username: friend.username,
-          avatar: friend.avatar,
-          isActive: friend.isActive,
-          friendshipCreatedAt: f.createdAt
-        })
-      }
-    })
-    
-    return Array.from(friendsMap.values())
+    // Map friendships to friend data
+    return friendships.map(f => ({
+      id: f.friend.id,
+      name: f.friend.name,
+      username: f.friend.username,
+      avatar: f.friend.avatar,
+      isActive: f.friend.isActive,
+      friendshipCreatedAt: f.createdAt
+    }))
   }
 
   // Get pending friend requests (sent and received)

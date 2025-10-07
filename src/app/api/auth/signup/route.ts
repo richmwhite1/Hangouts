@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, username, name, password } = userSchemas.signUp.parse(body)
+    const { email, username, name, password, confirmPassword } = userSchemas.signUp.parse(body)
 
     // Check if user already exists
     const existingUser = await db.user.findFirst({

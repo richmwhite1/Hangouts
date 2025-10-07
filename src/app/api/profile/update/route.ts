@@ -58,6 +58,8 @@ export async function PUT(request: NextRequest) {
         enneagram: true,
         bigFive: true,
         loveLanguage: true,
+        favoriteActivities: true,
+        favoritePlaces: true,
         isActive: true,
         lastSeen: true,
         createdAt: true,
