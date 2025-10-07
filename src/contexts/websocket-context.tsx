@@ -27,6 +27,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const typingTimeouts = useRef<{ [conversationId: string]: NodeJS.Timeout }>({})
 
   useEffect(() => {
+    // Temporarily disable WebSocket connections due to Railway deployment issues
+    console.log('🔌 WebSocket connection disabled for Railway deployment')
+    return
+    
     if (isAuthenticated && token) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
         auth: {

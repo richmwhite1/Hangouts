@@ -6,18 +6,28 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id: hangoutId } = await params
-    
-    if (!hangoutId) {
-      return NextResponse.json(
-        { error: 'Hangout ID is required' },
-        { status: 400 }
-      )
-    }
+  // Add timeout wrapper to prevent 502 errors
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), 25000) // 25 second timeout
+  })
 
-    // Get hangout with all related data
-    const hangout = await db.content.findUnique({
+  const mainLogic = async () => {
+    try {
+      console.log('🔍 Hangout API: GET request received')
+      const { id: hangoutId } = await params
+      console.log('🔍 Hangout ID:', hangoutId)
+      
+      if (!hangoutId) {
+        console.log('❌ Hangout ID is required')
+        return NextResponse.json(
+          { error: 'Hangout ID is required' },
+          { status: 400 }
+        )
+      }
+
+      // Get hangout with all related data
+      console.log('🔍 Querying database for hangout...')
+      const hangout = await db.content.findUnique({
       where: { 
         id: hangoutId,
         type: 'HANGOUT'
@@ -75,11 +85,14 @@ export async function GET(
     })
 
     if (!hangout) {
+      console.log('❌ Hangout not found:', hangoutId)
       return NextResponse.json(
         { error: 'Hangout not found' },
         { status: 404 }
       )
     }
+    
+    console.log('✅ Hangout found:', hangout.title)
 
     // Fetch RSVP data separately since it's linked to content.id
     const rsvps = await db.rsvp.findMany({
@@ -261,13 +274,25 @@ export async function GET(
       hangout: transformedHangout
     })
 
+    } catch (error) {
+      console.error('Error fetching hangout:', error)
+      console.error('Error details:', error.message)
+      console.error('Error stack:', error.stack)
+      return NextResponse.json(
+        { error: 'Failed to fetch hangout', details: error.message },
+        { status: 500 }
+      )
+    }
+  }
+
+  // Use Promise.race to add timeout protection
+  try {
+    return await Promise.race([mainLogic(), timeoutPromise])
   } catch (error) {
-    console.error('Error fetching hangout:', error)
-    console.error('Error details:', error.message)
-    console.error('Error stack:', error.stack)
+    console.error('Hangout API timeout or error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch hangout', details: error.message },
-      { status: 500 }
+      { error: 'Request timeout or server error', details: error.message },
+      { status: 504 }
     )
   }
 }

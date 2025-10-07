@@ -93,10 +93,10 @@ async function startProduction() {
       await prisma.$disconnect();
     }
     
-    console.log('🚀 Starting Next.js production server...');
-    
-    // Start Next.js
-    execSync('npx next start', { stdio: 'inherit' });
+        console.log('🚀 Starting Next.js production server...');
+
+        // Start Next.js with standalone mode
+        execSync('node .next/standalone/server.js', { stdio: 'inherit' });
     
   } catch (error) {
     console.error('❌ Production startup failed:', error.message);
