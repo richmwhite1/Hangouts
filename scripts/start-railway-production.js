@@ -37,6 +37,11 @@ async function startProduction() {
         execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
         console.log('✅ Database migration completed');
         
+        // Fix database schema (add missing columns)
+        console.log('🔧 Fixing database schema...');
+        execSync('node scripts/fix-database-schema.js', { stdio: 'inherit' });
+        console.log('✅ Database schema fixed');
+
         // Run seed script
         console.log('🌱 Running seed script...');
         execSync('node scripts/seed-production.js', { stdio: 'inherit' });
@@ -48,6 +53,11 @@ async function startProduction() {
         const userCount = await prisma.user.count();
         console.log('👥 Users in database:', userCount);
         
+        // Always run schema fix for existing databases
+        console.log('🔧 Fixing database schema...');
+        execSync('node scripts/fix-database-schema.js', { stdio: 'inherit' });
+        console.log('✅ Database schema fixed');
+
         if (userCount === 0) {
           console.log('🌱 No users found, running seed script...');
           execSync('node scripts/seed-production.js', { stdio: 'inherit' });
@@ -62,6 +72,11 @@ async function startProduction() {
       try {
         execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
         console.log('✅ Database schema created');
+        
+        // Fix database schema (add missing columns)
+        console.log('🔧 Fixing database schema...');
+        execSync('node scripts/fix-database-schema.js', { stdio: 'inherit' });
+        console.log('✅ Database schema fixed');
         
         execSync('node scripts/seed-production.js', { stdio: 'inherit' });
         console.log('✅ Database seeded successfully');
