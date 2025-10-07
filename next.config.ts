@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
+  // output: 'standalone', // Temporarily disabled for Railway compatibility
   serverExternalPackages: ['@prisma/client', 'bcryptjs'],
   webpack: (config, { isServer }) => {
     if (isServer) {

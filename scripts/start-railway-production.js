@@ -95,8 +95,8 @@ async function startProduction() {
     
         console.log('🚀 Starting Next.js production server...');
 
-        // Start Next.js with standalone mode
-        execSync('node .next/standalone/server.js', { stdio: 'inherit' });
+        // Start Next.js production server
+        execSync('npx next start', { stdio: 'inherit' });
     
   } catch (error) {
     console.error('❌ Production startup failed:', error.message);
