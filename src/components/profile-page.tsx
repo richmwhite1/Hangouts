@@ -60,6 +60,25 @@ export function ProfilePage() {
         bigFive: profile.bigFive || '',
         loveLanguage: profile.loveLanguage || ''
       })
+      
+      // Initialize favorite activities and places from profile data
+      if (profile.favoriteActivities && Array.isArray(profile.favoriteActivities)) {
+        const activities = profile.favoriteActivities.map((activity, index) => ({
+          id: `activity_${index}`,
+          name: activity,
+          isCustom: true
+        }))
+        setUserPreferences(activities)
+      }
+      
+      if (profile.favoritePlaces && Array.isArray(profile.favoritePlaces)) {
+        const places = profile.favoritePlaces.map((place, index) => ({
+          id: `place_${index}`,
+          title: place,
+          mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
+        }))
+        setFavoritePlaces(places)
+      }
     }
   }, [profile])
 
@@ -231,7 +250,9 @@ export function ProfilePage() {
         zodiac: editForm.zodiac,
         enneagram: editForm.enneagram,
         bigFive: editForm.bigFive,
-        loveLanguage: editForm.loveLanguage
+        loveLanguage: editForm.loveLanguage,
+        favoriteActivities: userPreferences.map(p => p.name),
+        favoritePlaces: favoritePlaces.map(p => p.title)
       })
 
       if (updatedUser) {
