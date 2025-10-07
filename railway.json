@@ -8,8 +8,5 @@
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
-  },
-  "postdeploy": {
-    "command": "npm run postdeploy"
   }
 }
