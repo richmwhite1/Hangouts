@@ -6,13 +6,14 @@
     "dev": "node server.js",
     "dev:next": "next dev --turbopack",
     "build": "prisma generate && next build",
-    "start": "node scripts/start-railway-production.js",
+    "start": "node scripts/start-railway-simple.js",
     "start:custom": "NODE_ENV=production node server-production.js",
     "start:legacy": "node start-production.js",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "db:migrate": "node prisma/migrate.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "postdeploy": "node scripts/post-deploy-fixes.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
