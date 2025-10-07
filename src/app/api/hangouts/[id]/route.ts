@@ -25,8 +25,31 @@ export async function GET(
         )
       }
 
+      // First check if hangout exists with a simple query to avoid complex joins
+      console.log('🔍 Checking if hangout exists...')
+      const hangoutExists = await db.content.findUnique({
+        where: { 
+          id: hangoutId,
+          type: 'HANGOUT'
+        },
+        select: { id: true, status: true, title: true }
+      })
+
+      if (!hangoutExists) {
+        console.log('❌ Hangout not found:', hangoutId)
+        return NextResponse.json(
+          { 
+            error: 'Hangout not found',
+            message: 'The requested hangout does not exist or has been removed',
+            hangoutId: hangoutId
+          },
+          { status: 404 }
+        )
+      }
+
+      console.log('✅ Hangout exists, fetching full data...')
+      
       // Get hangout with all related data
-      console.log('🔍 Querying database for hangout...')
       const hangout = await db.content.findUnique({
       where: { 
         id: hangoutId,
@@ -85,16 +108,21 @@ export async function GET(
     })
 
     if (!hangout) {
-      console.log('❌ Hangout not found:', hangoutId)
+      console.log('❌ Hangout data fetch failed:', hangoutId)
       return NextResponse.json(
-        { error: 'Hangout not found' },
-        { status: 404 }
+        { 
+          error: 'Hangout data unavailable',
+          message: 'The hangout exists but data could not be retrieved',
+          hangoutId: hangoutId
+        },
+        { status: 500 }
       )
     }
     
     console.log('✅ Hangout found:', hangout.title)
 
     // Fetch RSVP data separately since it's linked to content.id
+    console.log('🔍 Fetching RSVP data...')
     const rsvps = await db.rsvp.findMany({
       where: { contentId: hangout.id },
       include: {
@@ -107,6 +135,9 @@ export async function GET(
           }
         }
       }
+    }).catch(error => {
+      console.error('❌ Error fetching RSVPs:', error)
+      return []
     })
 
 
