@@ -183,34 +183,6 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div className="py-20 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Start planning better hangouts today
-          </h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Join the community and never miss out on the fun again
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
-              onClick={onSignUp}
-            >
-              Get Started Free
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-gray-600 text-white hover:bg-gray-700 px-8 py-3 text-lg"
-              onClick={onSignIn}
-            >
-              Sign In
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

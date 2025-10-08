@@ -47,6 +47,25 @@ export function ProfilePage() {
     setMounted(true)
   }, [])
 
+  // Redirect non-authenticated users to home page
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      window.location.href = '/'
+    }
+  }, [isAuthenticated, authLoading])
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Please sign in to view your profile</h2>
+          <p className="text-gray-400 mb-6">Redirecting to home page...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+        </div>
+      </div>
+    )
+  }
+
   // Initialize edit form when profile loads
   useEffect(() => {
     if (profile) {

@@ -3,6 +3,7 @@
 import { Navigation } from "@/components/navigation"
 import { HangoutCalendar } from "@/components/hangout-calendar"
 import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
+import { GuestLanding } from "@/components/guest-landing"
 import { useEffect, useState, useMemo } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { getHangoutActionStatus } from "@/hooks/use-hangout-actions"
@@ -177,8 +178,15 @@ export default function HomePage() {
   }, [authLoading])
   
 
-  // Show hangouts even when not authenticated (public hangouts)
-  // Only show sign-in prompt if there are no hangouts to display
+  // Show guest landing for non-authenticated users
+  if (!isAuthenticated) {
+    return (
+      <GuestLanding 
+        onSignIn={() => window.location.href = '/signin'}
+        onSignUp={() => window.location.href = '/signup'}
+      />
+    )
+  }
 
   return (
     <div 

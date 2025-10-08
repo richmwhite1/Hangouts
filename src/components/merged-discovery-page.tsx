@@ -783,13 +783,57 @@ export function MergedDiscoveryPage() {
   //   )
   // }
 
-  // Show guest landing for non-authenticated users
+  // Show public content for non-authenticated users with subtle guest landing
   if (!isAuthenticated) {
     return (
-      <GuestLanding 
-        onSignIn={() => window.location.href = '/signin'}
-        onSignUp={() => window.location.href = '/signup'}
-      />
+      <div className="min-h-screen bg-black">
+        {/* Subtle Guest Landing Banner */}
+        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="text-center">
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">
+                Discover Amazing Events & Hangouts
+              </h1>
+              <p className="text-gray-300 mb-4">
+                Browse public events and hangouts. Sign up to create your own!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => window.location.href = '/signup'}
+                >
+                  Get Started Free
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="border-gray-600 text-white hover:bg-gray-700"
+                  onClick={() => window.location.href = '/signin'}
+                >
+                  Sign In
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Public Content Display */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Public Events & Hangouts</h2>
+            <p className="text-gray-400">Discover what's happening in your community</p>
+          </div>
+          
+          {/* Content will be loaded here - same as authenticated users but only public content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* This will be populated by the same content loading logic but filtered for public only */}
+            <div className="text-center text-gray-400 py-12">
+              <p>Loading public events and hangouts...</p>
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
