@@ -221,21 +221,31 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
 
     // Create poll for all hangouts with options (both quick_plan and multi_option)
     if (flowData.options.length > 0) {
-      await db.polls.create({
-        data: {
-          id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          contentId: hangout.id,
-          creatorId: userId,
-          title: data.title,
-          description: data.description || '',
-          options: flowData.options,
-          allowMultiple: false,
-          isAnonymous: false,
-          status: flowResult.requiresVoting ? 'ACTIVE' : 'CONSENSUS_REACHED',
-          consensusPercentage: 70,
-          expiresAt: flowResult.votingDeadline
-        }
-      });
+      console.log('🔍 Creating poll for hangout:', hangout.id)
+      console.log('🔍 Poll options:', flowData.options)
+      console.log('🔍 Requires voting:', flowResult.requiresVoting)
+      
+      try {
+        const poll = await db.polls.create({
+          data: {
+            id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            contentId: hangout.id,
+            creatorId: userId,
+            title: data.title,
+            description: data.description || '',
+            options: flowData.options,
+            allowMultiple: false,
+            isAnonymous: false,
+            status: flowResult.requiresVoting ? 'ACTIVE' : 'CONSENSUS_REACHED',
+            consensusPercentage: 70,
+            expiresAt: flowResult.votingDeadline
+          }
+        });
+        console.log('✅ Poll created successfully:', poll.id)
+      } catch (error) {
+        console.error('❌ Error creating poll:', error)
+        throw error
+      }
     }
 
     // Add flow-specific data to hangout
