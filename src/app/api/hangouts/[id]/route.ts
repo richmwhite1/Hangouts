@@ -127,16 +127,19 @@ export async function GET(
       }
 
       // Get poll data for voting information
+      console.log('🔍 Looking for poll with contentId:', hangoutId)
       const poll = await db.polls.findFirst({
         where: { contentId: hangoutId },
         include: {
-          pollOptions: {
-            include: {
-              votes: true
-            }
-          }
+          votes: true
         }
       })
+      console.log('🔍 Poll found:', poll ? 'Yes' : 'No')
+      if (poll) {
+        console.log('🔍 Poll status:', poll.status)
+        console.log('🔍 Poll options (JSON):', poll.options)
+        console.log('🔍 Poll votes count:', poll.votes?.length || 0)
+      }
 
       // Determine hangout state based on poll status
       let hangoutState = 'confirmed'
@@ -147,12 +150,15 @@ export async function GET(
       let votingDeadline = null
 
       if (poll) {
-        if (poll.status === 'ACTIVE' && poll.pollOptions.length > 1) {
+        const pollOptions = Array.isArray(poll.options) ? poll.options : []
+        console.log('🔍 Poll options array:', pollOptions)
+        
+        if (poll.status === 'ACTIVE' && pollOptions.length > 1) {
           hangoutState = 'polling'
           requiresVoting = true
-          options = poll.pollOptions.map(option => ({
+          options = pollOptions.map(option => ({
             id: option.id,
-            title: option.text,
+            title: option.title,
             description: option.description,
             location: option.location,
             dateTime: option.dateTime,
@@ -162,30 +168,38 @@ export async function GET(
           }))
           votingDeadline = poll.expiresAt
           
-          // Build votes object from poll data
+          // Build votes object from poll votes
           votes = {}
-          poll.pollOptions.forEach(option => {
-            option.votes.forEach(vote => {
-              if (!votes[vote.userId]) {
-                votes[vote.userId] = []
-              }
-              votes[vote.userId].push(option.id)
-            })
+          poll.votes.forEach(vote => {
+            if (!votes[vote.userId]) {
+              votes[vote.userId] = []
+            }
+            votes[vote.userId].push(vote.optionId || vote.option)
           })
-        } else if (poll.status === 'CONSENSUS_REACHED' && poll.pollOptions.length > 0) {
-          // Find the winning option
-          const winningOption = poll.pollOptions.reduce((max, current) => 
-            current.votes.length > max.votes.length ? current : max
+        } else if (poll.status === 'CONSENSUS_REACHED' && pollOptions.length > 0) {
+          // Find the winning option based on votes
+          const optionVoteCounts = {}
+          poll.votes.forEach(vote => {
+            const optionId = vote.optionId || vote.option
+            optionVoteCounts[optionId] = (optionVoteCounts[optionId] || 0) + 1
+          })
+          
+          const winningOptionId = Object.keys(optionVoteCounts).reduce((a, b) => 
+            optionVoteCounts[a] > optionVoteCounts[b] ? a : b
           )
-          finalizedOption = {
-            id: winningOption.id,
-            title: winningOption.text,
-            description: winningOption.description,
-            location: winningOption.location,
-            dateTime: winningOption.dateTime,
-            price: winningOption.price,
-            hangoutUrl: winningOption.hangoutUrl,
-            eventImage: winningOption.eventImage
+          
+          const winningOption = pollOptions.find(opt => opt.id === winningOptionId)
+          if (winningOption) {
+            finalizedOption = {
+              id: winningOption.id,
+              title: winningOption.title,
+              description: winningOption.description,
+              location: winningOption.location,
+              dateTime: winningOption.dateTime,
+              price: winningOption.price,
+              hangoutUrl: winningOption.hangoutUrl,
+              eventImage: winningOption.eventImage
+            }
           }
         }
       }

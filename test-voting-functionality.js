@@ -146,19 +146,27 @@ async function testVotingFunctionality() {
       console.log(`✅ Successfully navigated to hangout: ${currentUrl}`);
       
       // Check for voting interface elements
-      const votingSection = await page.$('[data-testid="voting-section"], .voting-section, h2:has-text("Vote for Your Options")');
+      const votingSection = await page.$('h2');
       if (votingSection) {
-        console.log('✅ Voting section found on page');
-      } else {
-        console.log('⚠️ Voting section not found - checking for voting buttons');
-        
-        // Look for vote buttons
-        const voteButtons = await page.$$('button:has-text("Vote"), button:has-text("Tap to Vote")');
-        if (voteButtons.length > 0) {
-          console.log(`✅ Found ${voteButtons.length} vote buttons`);
+        const votingText = await votingSection.evaluate(el => el.textContent);
+        if (votingText && votingText.includes('Vote')) {
+          console.log('✅ Voting section found on page');
         } else {
-          console.log('❌ No vote buttons found');
+          console.log('⚠️ Voting section not found - checking for voting buttons');
         }
+      } else {
+        console.log('⚠️ No h2 elements found - checking for voting buttons');
+      }
+      
+      // Look for vote buttons
+      const voteButtons = await page.$$('button');
+      const voteButtonTexts = await Promise.all(voteButtons.map(btn => btn.evaluate(el => el.textContent)));
+      const actualVoteButtons = voteButtonTexts.filter(text => text && (text.includes('Vote') || text.includes('Tap')));
+      
+      if (actualVoteButtons.length > 0) {
+        console.log(`✅ Found ${actualVoteButtons.length} vote buttons:`, actualVoteButtons);
+      } else {
+        console.log('❌ No vote buttons found');
       }
       
       // Check for options display
