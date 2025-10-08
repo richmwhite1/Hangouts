@@ -152,7 +152,7 @@ export default function HomePage() {
           headers['Authorization'] = `Bearer ${token}`
         }
         
-        const response = await fetch('/api/feed?type=home&contentType=hangouts', {
+        const response = await fetch('/api/feed-simple?type=home&contentType=hangouts', {
           headers
         })
         const data = await response.json()

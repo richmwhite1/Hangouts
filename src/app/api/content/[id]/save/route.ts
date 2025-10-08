@@ -50,7 +50,7 @@ export async function POST(
     }
 
     // Check if user has already saved this content
-    const existingSave = await db.content_saves.findFirst({
+    const existingSave = await db.eventSave.findFirst({
       where: {
         contentId,
         userId: payload.userId
@@ -66,11 +66,10 @@ export async function POST(
       }
 
       // Save the content
-      await db.content_saves.create({
+      await db.eventSave.create({
         data: {
           contentId,
-          userId: payload.userId,
-          savedAt: new Date()
+          userId: payload.userId
         }
       })
 
@@ -87,7 +86,7 @@ export async function POST(
       }
 
       // Remove the save
-      await db.content_saves.delete({
+      await db.eventSave.delete({
         where: {
           contentId_userId: {
             contentId,
@@ -134,18 +133,18 @@ export async function GET(
     const { id: contentId } = await params
 
     // Check if user has saved this content
-    const savedContent = await db.content_saves.findFirst({
+    const savedContent = await db.eventSave.findFirst({
       where: {
         contentId,
         userId: payload.userId
       },
       select: {
-        savedAt: true
+        createdAt: true
       }
     })
 
     return NextResponse.json(createSuccessResponse(
-      { saved: !!savedContent, savedAt: savedContent?.savedAt },
+      { saved: !!savedContent, savedAt: savedContent?.createdAt },
       'Save status retrieved successfully'
     ))
 

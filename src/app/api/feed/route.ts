@@ -130,6 +130,17 @@ async function getFeedHandler(request: NextRequest) {
     console.log('Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2))
     console.log('Feed API: User ID:', userId)
     console.log('Feed API: Feed type:', feedType)
+    
+    // Debug: Check if hangout exists
+    const debugHangout = await db.content.findFirst({
+      where: { 
+        creatorId: userId,
+        type: 'HANGOUT'
+      },
+      select: { id: true, title: true, creatorId: true }
+    })
+    console.log('Feed API: Debug hangout found:', debugHangout)
+    // Simplified query for debugging
     const content = await db.content.findMany({
       where: whereClause,
       select: {
@@ -295,16 +306,20 @@ async function getFeedHandler(request: NextRequest) {
       skip: offset,
     })
 
+    console.log('Feed API: Raw content found:', content.length, 'items')
+    console.log('Feed API: First content item:', content[0] ? { id: content[0].id, title: content[0].title } : 'None')
+
     // Transform the data for frontend consumption
     const transformedContent = content.map(item => {
-      // Find current user's RSVP status
-      let myRsvpStatus = 'PENDING'
-      if (userId && item.rsvps) {
-        const userRsvp = item.rsvps.find(rsvp => rsvp.userId === userId)
-        if (userRsvp) {
-          myRsvpStatus = userRsvp.status
+      try {
+        // Find current user's RSVP status
+        let myRsvpStatus = 'PENDING'
+        if (userId && item.rsvps && Array.isArray(item.rsvps)) {
+          const userRsvp = item.rsvps.find(rsvp => rsvp.userId === userId)
+          if (userRsvp) {
+            myRsvpStatus = userRsvp.status
+          }
         }
-      }
       
       return {
         id: item.id,
@@ -324,7 +339,7 @@ async function getFeedHandler(request: NextRequest) {
         updatedAt: item.updatedAt.toISOString(),
         creator: item.users,
         myRsvpStatus: myRsvpStatus,
-        participants: item.content_participants.map(p => ({
+        participants: (item.content_participants || []).map(p => ({
           id: p.id,
           contentId: p.contentId,
           userId: p.userId,
@@ -332,8 +347,8 @@ async function getFeedHandler(request: NextRequest) {
           canEdit: p.canEdit,
           isMandatory: p.isMandatory,
           isCoHost: p.isCoHost,
-          invitedAt: p.invitedAt.toISOString(),
-          joinedAt: p.joinedAt?.toISOString(),
+          invitedAt: p.invitedAt?.toISOString() || null,
+          joinedAt: p.joinedAt?.toISOString() || null,
           user: p.users
         })),
         // Event-specific data
@@ -389,17 +404,21 @@ async function getFeedHandler(request: NextRequest) {
           user: rsvp.users
         })),
         counts: {
-          participants: item._count.content_participants,
-          comments: item._count.comments,
-          likes: item._count.content_likes,
-          shares: item._count.content_shares,
-          messages: item._count.messages,
-          photos: item._count.photos,
-          rsvps: item._count.rsvps,
-          saves: item._count.eventSaves
+          participants: item._count?.content_participants || 0,
+          comments: item._count?.comments || 0,
+          likes: item._count?.content_likes || 0,
+          shares: item._count?.content_shares || 0,
+          messages: item._count?.messages || 0,
+          photos: item._count?.photos || 0,
+          rsvps: item._count?.rsvps || 0,
+          saves: item._count?.eventSaves || 0
         }
       }
-    })
+      } catch (transformError) {
+        console.error('Error transforming content item:', item.id, transformError);
+        return null;
+      }
+    }).filter(item => item !== null)
 
     return NextResponse.json({ 
       success: true,
@@ -426,3 +445,4 @@ async function getFeedHandler(request: NextRequest) {
 }
 
 export const GET = getFeedHandler
+

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { HANGOUT_STATES, getVoteCount, hasUserVotedFor, categorizeAttendance, checkMandatoryRSVP } from '@/lib/hangout-flow'
-import { CheckCircle, XCircle, HelpCircle, MapPin, Clock, DollarSign, Camera, MessageSquare, Users, ChevronDown, ChevronUp, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X } from 'lucide-react'
+import { CheckCircle, XCircle, HelpCircle, MapPin, Clock, DollarSign, Camera, MessageSquare, Users, ChevronDown, ChevronUp, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
@@ -63,6 +63,18 @@ interface Hangout {
     senderName: string
     createdAt: string
   }>
+  rsvps?: Array<{
+    id: string
+    userId: string
+    status: 'PENDING' | 'YES' | 'NO' | 'MAYBE'
+    respondedAt?: string
+    user: {
+      id: string
+      name: string
+      username: string
+      avatar?: string
+    }
+  }>
   _count: {
     content_participants: number
     comments: number
@@ -76,7 +88,12 @@ interface Hangout {
   requiresVoting: boolean
   requiresRSVP: boolean
   votes: Record<string, string>
+  userVotes?: Record<string, string[]>
+  userPreferred?: Record<string, string>
   votingDeadline?: string
+  type?: string
+  priceMin?: number
+  ticketUrl?: string
   options: Array<{
     id: string
     title: string
@@ -85,11 +102,13 @@ interface Hangout {
     dateTime?: string
     price?: number
     hangoutUrl?: string
+    eventImage?: string
   }>
 }
 
 export default function HangoutDetailPage() {
-  const { id: hangoutId } = useParams()
+  const params = useParams()
+  const hangoutId = params?.id as string
   const { token, user } = useAuth()
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -103,6 +122,8 @@ export default function HangoutDetailPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [friends, setFriends] = useState<any[]>([])
   const [isLoadingFriends, setIsLoadingFriends] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const loadFriends = async () => {
     if (!token) return
@@ -218,11 +239,63 @@ export default function HangoutDetailPage() {
       if (!response.ok) throw new Error('Failed to fetch hangout')
       const data = await response.json()
       setHangout(data.hangout || data)
+      
+      // Check if hangout is saved (only for authenticated users)
+      if (token) {
+        await checkSaveStatus()
+      }
     } catch (error) {
       console.error('Error fetching hangout:', error)
       setError('Failed to load hangout')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const checkSaveStatus = async () => {
+    if (!token || !hangoutId) return
+    
+    try {
+      const response = await fetch(`/api/content/${hangoutId}/save`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setIsSaved(data.data?.saved || false)
+      }
+    } catch (error) {
+      console.error('Error checking save status:', error)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!token || !hangoutId) return
+    
+    try {
+      setIsSaving(true)
+      const action = isSaved ? 'unsave' : 'save'
+      
+      const response = await fetch(`/api/content/${hangoutId}/save`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action, type: 'hangout' })
+      })
+      
+      if (response.ok) {
+        setIsSaved(!isSaved)
+        toast.success(isSaved ? 'Removed from saved' : 'Added to saved')
+      } else {
+        toast.error('Failed to update save status')
+      }
+    } catch (error) {
+      console.error('Error saving hangout:', error)
+      toast.error('Failed to save hangout')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -235,6 +308,8 @@ export default function HangoutDetailPage() {
       
       // Optimistic UI update based on action
       setHangout(prev => {
+        if (!prev) return prev
+        
         const currentUserVotes = prev.userVotes?.[user.id] || []
         const currentUserPreferred = prev.userPreferred?.[user.id]
         
@@ -441,6 +516,16 @@ export default function HangoutDetailPage() {
     )
   }
 
+  // Check for public access first before requiring authentication
+  if (!token && hangout && hangout.privacyLevel === 'PUBLIC') {
+    return (
+      <PublicHangoutViewer 
+        hangoutId={hangoutId as string}
+        onSignInRequired={() => window.location.href = '/signin'}
+      />
+    )
+  }
+
   if (!token) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -462,16 +547,6 @@ export default function HangoutDetailPage() {
           </p>
         </div>
       </div>
-    )
-  }
-
-  // Show public viewer for non-authenticated users with public hangouts
-  if (!user && hangout && hangout.privacyLevel === 'PUBLIC') {
-    return (
-      <PublicHangoutViewer 
-        hangoutId={hangoutId as string}
-        onSignInRequired={() => window.location.href = '/signin'}
-      />
     )
   }
 
@@ -523,9 +598,52 @@ export default function HangoutDetailPage() {
         {/* Status Header - Always Visible */}
         <HangoutStatusHeader hangout={hangout} state={currentState} />
         
-        {/* Hangout Title - Above photo */}
+        {/* Hangout Title and Action Buttons - Above photo */}
         <div className="px-4 py-2">
-          <h1 className="text-2xl font-bold text-white text-center">{hangout.title}</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold text-white flex-1 text-center">{hangout.title}</h1>
+            <div className="flex items-center gap-2 ml-4">
+              {/* Save/Heart Button */}
+              {token && (
+                <Button
+                  onClick={handleSave}
+                  size="sm"
+                  variant="outline"
+                  disabled={isSaving}
+                  className={`border-gray-600 text-xs px-2 py-1 h-7 ${
+                    isSaved 
+                      ? 'text-red-400 border-red-500 hover:bg-red-900/20' 
+                      : 'text-gray-300 hover:bg-gray-700'
+                  }`}
+                  title={isSaved ? 'Remove from saved' : 'Save hangout'}
+                >
+                  <Heart className={`w-3 h-3 ${isSaved ? 'fill-current' : ''}`} />
+                </Button>
+              )}
+              
+              {/* Share Button */}
+              <Button
+                onClick={handleShare}
+                size="sm"
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
+                title="Share hangout"
+              >
+                <Share2 className="w-3 h-3" />
+              </Button>
+              
+              {/* Copy Link Button */}
+              <Button
+                onClick={handleCopyLink}
+                size="sm"
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
+                title="Copy link"
+              >
+                <LinkIcon className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
         </div>
         
         {/* Primary Photo - Always show when it exists */}

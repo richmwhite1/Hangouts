@@ -184,9 +184,11 @@ export async function GET(
             optionVoteCounts[optionId] = (optionVoteCounts[optionId] || 0) + 1
           })
           
-          const winningOptionId = Object.keys(optionVoteCounts).reduce((a, b) => 
-            optionVoteCounts[a] > optionVoteCounts[b] ? a : b
-          )
+          const winningOptionId = Object.keys(optionVoteCounts).length > 0 
+            ? Object.keys(optionVoteCounts).reduce((a, b) => 
+                optionVoteCounts[a] > optionVoteCounts[b] ? a : b
+              )
+            : null
           
           const winningOption = pollOptions.find(opt => opt.id === winningOptionId)
           if (winningOption) {
