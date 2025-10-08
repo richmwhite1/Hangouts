@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
     console.log('SIGNIN API - Parsed email:', email, 'password length:', password.length)
 
     // Find user by email
+    console.log('SIGNIN API - Looking for user with email:', email.toLowerCase())
+    console.log('SIGNIN API - Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set')
+    
     const user = await db.user.findUnique({
       where: { email: email.toLowerCase() },
       select: {
@@ -46,6 +49,12 @@ export async function POST(request: NextRequest) {
         updatedAt: true
       }
     })
+    
+    console.log('SIGNIN API - User found:', user ? 'Yes' : 'No')
+    if (user) {
+      console.log('SIGNIN API - User ID:', user.id)
+      console.log('SIGNIN API - Username:', user.username)
+    }
 
     if (!user) {
       return NextResponse.json(createErrorResponse('Invalid credentials', 'Email or password is incorrect'), { status: 401 })
