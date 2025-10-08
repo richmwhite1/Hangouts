@@ -329,6 +329,7 @@ function withCORS(
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     process.env.RAILWAY_PUBLIC_DOMAIN || process.env.VERCEL_URL || 'https://your-app.railway.app',
+    'https://hangouts-production-adc4.up.railway.app',
     'https://hangouts-3-0.vercel.app',
     'https://hangouts-3-0-git-main-richardwhite.vercel.app',
     'https://hangouts-3-0-git-develop-richardwhite.vercel.app'

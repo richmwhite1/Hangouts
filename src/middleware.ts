@@ -8,10 +8,29 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin')
   
   // Set CORS headers - be more permissive in development
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'https://hangouts-production-adc4.up.railway.app',
+    'https://hangouts-3-0.vercel.app',
+    'https://hangouts-3-0-git-main-richardwhite.vercel.app',
+    'https://hangouts-3-0-git-develop-richardwhite.vercel.app'
+  ]
+
   if (process.env.NODE_ENV === 'development') {
     response.headers.set('Access-Control-Allow-Origin', origin || '*')
   } else {
-    response.headers.set('Access-Control-Allow-Origin', origin || '*')
+    // In production, check if origin is allowed
+    if (origin && allowedOrigins.includes(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+    } else if (!origin) {
+      response.headers.set('Access-Control-Allow-Origin', '*')
+    } else {
+      // Origin not allowed, but still set headers for preflight
+      response.headers.set('Access-Control-Allow-Origin', origin)
+    }
   }
   
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
