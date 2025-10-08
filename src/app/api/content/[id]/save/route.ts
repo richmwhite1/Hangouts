@@ -26,12 +26,12 @@ export async function POST(
 
     const { id: contentId } = await params
     const body = await request.json()
-    const { action, type = 'hangout' } = saveContentSchema.parse(body)
+    const { action } = saveContentSchema.parse(body)
 
     // Check if content exists
     const content = await db.content.findUnique({
       where: { id: contentId },
-      select: { id: true, type: true, title: true, privacyLevel: true }
+      select: { id: true, type: true, title: true, privacyLevel: true, creatorId: true }
     })
 
     if (!content) {

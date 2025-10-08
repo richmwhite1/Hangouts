@@ -4,7 +4,6 @@ import { Navigation } from "@/components/navigation"
 import { HangoutCalendar } from "@/components/hangout-calendar"
 import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
 import { useEffect, useState, useMemo } from "react"
-import { apiClient } from "@/lib/api-client"
 import { useAuth } from "@/contexts/auth-context"
 import { getHangoutActionStatus } from "@/hooks/use-hangout-actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -81,7 +80,7 @@ export default function HomePage() {
   const sortedHangouts = useMemo(() => {
     if (!hangouts.length) return []
     
-    const now = new Date()
+    // const now = new Date()
     const sorted = [...hangoutActions].sort((a, b) => {
       const aActions = a.actions
       const bActions = b.actions
@@ -253,9 +252,9 @@ export default function HomePage() {
                   hangout={hangout} 
                   index={index}
                   totalCount={sortedHangouts.length}
-                  showActivityIndicator={hangout.hasRecentActivity}
-                  activityType={hangout.activityType}
-                  activityCount={hangout.activityCount}
+                  showActivityIndicator={!!hangout.hasRecentActivity}
+                  activityType={hangout.activityType || 'comment'}
+                  activityCount={hangout.activityCount || 0}
                 />
               ))}
             </div>

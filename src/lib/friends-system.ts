@@ -200,7 +200,7 @@ export class FriendsSystem {
       id: f.friend.id,
       name: f.friend.name,
       username: f.friend.username,
-      avatar: f.friend.avatar,
+      ...(f.friend.avatar && { avatar: f.friend.avatar }),
       isActive: f.friend.isActive,
       friendshipCreatedAt: f.createdAt
     }))
@@ -273,12 +273,22 @@ export class FriendsSystem {
     return {
       sent: sent.map(r => ({
         id: r.id,
-        receiver: r.receiver,
+        receiver: {
+          id: r.receiver.id,
+          name: r.receiver.name,
+          username: r.receiver.username,
+          ...(r.receiver.avatar ? { avatar: r.receiver.avatar } : {})
+        },
         createdAt: r.createdAt
       })),
       received: received.map(r => ({
         id: r.id,
-        sender: r.sender,
+        sender: {
+          id: r.sender.id,
+          name: r.sender.name,
+          username: r.sender.username,
+          ...(r.sender.avatar ? { avatar: r.sender.avatar } : {})
+        },
         createdAt: r.createdAt
       }))
     }
@@ -349,7 +359,11 @@ export class FriendsSystem {
     const receivedRequestIds = new Set(receivedRequests.map(r => r.senderId))
 
     return users.map(user => ({
-      ...user,
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      isActive: user.isActive,
+      ...(user.avatar ? { avatar: user.avatar } : {}),
       friendshipStatus: friendIds.has(user.id) ? 'FRIENDS' as const :
                        sentRequestIds.has(user.id) ? 'PENDING_SENT' as const :
                        receivedRequestIds.has(user.id) ? 'PENDING_RECEIVED' as const :
@@ -375,6 +389,8 @@ export class FriendsSystem {
       for (let j = i + 1; j < users.length; j++) {
         const user1 = users[i]
         const user2 = users[j]
+
+        if (!user1 || !user2) continue
 
         // Check if friendship already exists
         const existingFriendship = await db.friendship.findFirst({

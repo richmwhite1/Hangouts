@@ -13,7 +13,6 @@ import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, 
 import Image from "next/image"
 
 export function ProfilePage() {
-  const [currentHangoutIndex, setCurrentHangoutIndex] = useState(0)
   const [mounted, setMounted] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState<'profile' | 'background' | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
@@ -63,7 +62,7 @@ export function ProfilePage() {
       
       // Initialize favorite activities and places from profile data
       if (profile.favoriteActivities && Array.isArray(profile.favoriteActivities)) {
-        const activities = profile.favoriteActivities.map((activity, index) => ({
+        const activities = profile.favoriteActivities.map((activity: string, index: number) => ({
           id: `activity_${index}`,
           name: activity,
           isCustom: true
@@ -72,7 +71,7 @@ export function ProfilePage() {
       }
       
       if (profile.favoritePlaces && Array.isArray(profile.favoritePlaces)) {
-        const places = profile.favoritePlaces.map((place, index) => ({
+        const places = profile.favoritePlaces.map((place: string, index: number) => ({
           id: `place_${index}`,
           title: place,
           mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
@@ -285,15 +284,6 @@ export function ProfilePage() {
     setShowEditModal(false)
   }
 
-  const nextHangout = () => {
-    setCurrentHangoutIndex((prev) => (prev + 1) % recentHangouts.length)
-  }
-
-  const prevHangout = () => {
-    setCurrentHangoutIndex((prev) => (prev - 1 + recentHangouts.length) % recentHangouts.length)
-  }
-
-  const currentHangout = recentHangouts.length > 0 ? recentHangouts[currentHangoutIndex] : null
 
   return (
     <div className="space-y-6">

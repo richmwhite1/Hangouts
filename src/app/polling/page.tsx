@@ -5,9 +5,7 @@ import { RealtimeProvider } from '@/contexts/realtime-context'
 import { PollList } from '@/components/polling/PollList'
 import { CreatePollModal } from '@/components/polling/CreatePollModal'
 import { PollDetails } from '@/components/polling/PollDetails'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { 
   BarChart3, 
   Users, 
@@ -27,7 +25,7 @@ interface PollStats {
 
 export default function PollingPage() {
   const [selectedPollId, setSelectedPollId] = useState<string | null>(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [, setShowCreateModal] = useState(false)
   const [stats, setStats] = useState<PollStats>({
     activePolls: 0,
     totalParticipants: 0,

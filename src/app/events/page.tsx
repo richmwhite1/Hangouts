@@ -5,9 +5,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Search, Filter, MapPin, Calendar, DollarSign, Heart, Share2, Plus } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { Card, CardContent } from '@/components/ui/card'
+import { Search, Filter, MapPin, Calendar, DollarSign, Plus } from 'lucide-react'
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 
@@ -21,11 +20,7 @@ interface Event {
   city: string
   startDate: string
   startTime: string
-  price: {
-    min: number
-    max?: number
-    currency: string
-  }
+  price: { min: number; max?: number; currency: string }
   coverImage: string
   tags: string[]
   attendeeCount: number
@@ -35,7 +30,6 @@ interface Event {
 }
 
 export default function EventsPage() {
-  const { user, isAuthenticated } = useAuth()
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -46,55 +40,18 @@ export default function EventsPage() {
   const [showFilters, setShowFilters] = useState(false)
 
   const categories = [
-    'Music', 'Sports', 'Food', 'Nightlife', 'Arts', 'Outdoors', 
-    'Technology', 'Business', 'Education', 'Health', 'Family'
+    'Music', 'Food', 'Sports', 'Art', 'Technology', 'Business', 'Education',
+    'Health', 'Fitness', 'Entertainment', 'Travel', 'Fashion', 'Photography',
+    'Gaming', 'Books', 'Movies', 'Theater', 'Dance', 'Comedy', 'Networking'
   ]
 
   const commonTags = [
-    'concert', 'festival', 'workshop', 'networking', 'charity', 'fundraiser',
+    'free', 'paid', 'outdoor', 'indoor', 'family', 'adults', 'kids', 'seniors',
+    'beginner', 'intermediate', 'advanced', 'professional', 'casual', 'formal',
+    'networking', 'educational', 'entertainment', 'social', 'charity', 'volunteer',
     'conference', 'seminar', 'exhibition', 'tournament', 'competition', 'show',
     'party', 'gala', 'dinner', 'lunch', 'brunch', 'meetup', 'social',
     'fitness', 'yoga', 'dance', 'art', 'music', 'theater', 'comedy'
-  ]
-
-  // Mock data for now - will be replaced with API calls
-  const mockEvents: Event[] = [
-    {
-      id: '1',
-      title: 'Arctic Monkeys Concert',
-      description: 'Experience the legendary Arctic Monkeys live in concert with their latest album tour.',
-      category: 'Music',
-      venue: 'Madison Square Garden',
-      address: '4 Pennsylvania Plaza, New York, NY 10001',
-      city: 'New York',
-      startDate: '2024-02-15',
-      startTime: '20:00',
-      price: { min: 75, max: 150, currency: 'USD' },
-      coverImage: '/placeholder-event-1.jpg',
-      tags: ['rock', 'concert', 'live music'],
-      attendeeCount: 15000,
-      isPublic: true,
-      createdBy: 'user1',
-      createdAt: '2024-01-15T10:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Food Truck Festival',
-      description: 'Join us for a day of amazing food from local food trucks and live entertainment.',
-      category: 'Food',
-      venue: 'Central Park',
-      address: 'Central Park, New York, NY',
-      city: 'New York',
-      startDate: '2024-02-20',
-      startTime: '12:00',
-      price: { min: 0, currency: 'USD' },
-      coverImage: '/placeholder-event-2.jpg',
-      tags: ['food', 'festival', 'family'],
-      attendeeCount: 5000,
-      isPublic: true,
-      createdBy: 'user2',
-      createdAt: '2024-01-10T14:30:00Z'
-    }
   ]
 
   useEffect(() => {
@@ -104,18 +61,17 @@ export default function EventsPage() {
         console.log('EventsPage: Starting to fetch events')
         const response = await fetch('/api/events')
         console.log('EventsPage: Response status:', response.status)
+        
         if (response.ok) {
           const data = await response.json()
           console.log('EventsPage: Fetched events data:', data)
-          setEvents(data.events || data || [])
-          console.log('EventsPage: Set events:', data.events || data || [])
+          setEvents(data.events || [])
+          console.log('EventsPage: Set events:', data.events || [])
         } else {
-          console.error('EventsPage: Failed to fetch events, status:', response.status)
-          setEvents([])
+          console.error('EventsPage: Failed to fetch events:', response.status)
         }
       } catch (error) {
         console.error('EventsPage: Error fetching events:', error)
-        setEvents([])
       } finally {
         console.log('EventsPage: Setting isLoading to false')
         setIsLoading(false)
@@ -125,55 +81,23 @@ export default function EventsPage() {
     fetchEvents()
   }, [])
 
-  console.log('EventsPage: Current events state:', events)
-  console.log('EventsPage: Current isLoading state:', isLoading)
-  
   const filteredEvents = events.filter(event => {
-    // Search filter
-    const matchesSearch = !searchQuery || 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         event.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         event.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     
-    // Category filter
     const matchesCategory = !selectedCategory || event.category === selectedCategory
+    const matchesTags = selectedTags.length === 0 || selectedTags.some(tag => event.tags.includes(tag))
     
-    // Tags filter
-    const matchesTags = selectedTags.length === 0 || 
-      selectedTags.some(tag => event.tags.some(eventTag => 
-        eventTag.toLowerCase().includes(tag.toLowerCase())
-      ))
+    const matchesPrice = (!priceRange.min || event.price.min >= parseFloat(priceRange.min)) &&
+                        (!priceRange.max || (event.price.max || event.price.min) <= parseFloat(priceRange.max))
     
-    // Price filter
-    const matchesPrice = (!priceRange.min || event.price.min >= parseInt(priceRange.min)) &&
-                        (!priceRange.max || event.price.min <= parseInt(priceRange.max))
-    
-    // Date filter
-    const eventDate = new Date(event.startDate)
-    const matchesDate = (!dateRange.start || eventDate >= new Date(dateRange.start)) &&
-                       (!dateRange.end || eventDate <= new Date(dateRange.end))
+    const matchesDate = (!dateRange.start || new Date(event.startDate) >= new Date(dateRange.start)) &&
+                       (!dateRange.end || new Date(event.startDate) <= new Date(dateRange.end))
     
     return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate
   })
-
-  const formatPrice = (price: Event['price']) => {
-    if (price.min === 0) return 'Free'
-    if (price.max && price.max !== price.min) {
-      return `$${price.min}-${price.max}`
-    }
-    return `$${price.min}`
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
-    })
-  }
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => 
@@ -191,17 +115,22 @@ export default function EventsPage() {
     setDateRange({ start: '', end: '' })
   }
 
-  // Remove authentication requirement for viewing public events
-  // if (!isAuthenticated) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="text-center">
-  //         <h1 className="text-2xl font-bold text-white mb-4">Please sign in to view events</h1>
-  //         <p className="text-gray-400">Sign in to discover and create amazing events</p>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatPrice = (price: { min: number; max?: number; currency: string }) => {
+    if (price.min === 0) return 'Free'
+    if (price.max && price.max !== price.min) {
+      return `$${price.min} - $${price.max}`
+    }
+    return `$${price.min}`
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -228,10 +157,11 @@ export default function EventsPage() {
             onClick={() => setShowFilters(!showFilters)}
             className="bg-gray-800 border-gray-700 text-white relative"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
             {(selectedCategory || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end) && (
-              <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {[selectedCategory, selectedTags.length, priceRange.min, priceRange.max, dateRange.start, dateRange.end].filter(Boolean).length}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                !
               </span>
             )}
           </Button>
@@ -239,125 +169,124 @@ export default function EventsPage() {
 
         {/* Comprehensive Filters */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Filters</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllFilters}
-                className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              >
-                Clear All
-              </Button>
-            </div>
-
-            {/* Category Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-              <div className="flex flex-wrap gap-2">
+          <div className="mt-4 bg-gray-800 rounded-lg border border-gray-700 max-h-[70vh] overflow-y-auto">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Filters</h3>
                 <Button
-                  variant={selectedCategory === '' ? 'default' : 'outline'}
+                  variant="outline"
                   size="sm"
-                  onClick={() => setSelectedCategory('')}
+                  onClick={clearAllFilters}
                   className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
                 >
-                  All
+                  Clear All
                 </Button>
-                {categories.map(category => (
+              </div>
+
+              {/* Category Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    key={category}
-                    variant={selectedCategory === category ? 'default' : 'outline'}
+                    variant={selectedCategory === '' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => setSelectedCategory('')}
                     className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
                   >
-                    {category}
+                    All
                   </Button>
-                ))}
+                  {categories.map(category => (
+                    <Button
+                      key={category}
+                      variant={selectedCategory === category ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category)}
+                      className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                    >
+                      {category}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Tags Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {commonTags.map(tag => (
-                  <Button
-                    key={tag}
-                    variant={selectedTags.includes(tag) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleTag(tag)}
-                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    {tag}
-                  </Button>
-                ))}
+              {/* Tags Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tags</label>
+                <div className="flex flex-wrap gap-2">
+                  {commonTags.map(tag => (
+                    <Button
+                      key={tag}
+                      variant={selectedTags.includes(tag) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleTag(tag)}
+                      className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                    >
+                      {tag}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Price Range Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min Price"
-                  value={priceRange.min}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-                <Input
-                  type="number"
-                  placeholder="Max Price"
-                  value={priceRange.max}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
+              {/* Price Range Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Min Price"
+                    value={priceRange.min}
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Max Price"
+                    value={priceRange.max}
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Date Range Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
-              <div className="flex gap-2">
-                <Input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-                <Input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
+              {/* Date Range Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                  <Input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Active Filters Display */}
-            {(selectedCategory || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end) && (
+              {/* Active Filters Display */}
               <div className="pt-4 border-t border-gray-700">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Active Filters</label>
                 <div className="flex flex-wrap gap-2">
                   {selectedCategory && (
-                    <Badge className="bg-purple-600 text-white">
+                    <Badge className="bg-blue-600 text-white">
                       Category: {selectedCategory}
                     </Badge>
                   )}
                   {selectedTags.map(tag => (
-                    <Badge key={tag} className="bg-blue-600 text-white">
+                    <Badge key={tag} className="bg-green-600 text-white">
                       {tag}
                     </Badge>
                   ))}
                   {priceRange.min && (
-                    <Badge className="bg-green-600 text-white">
+                    <Badge className="bg-yellow-600 text-white">
                       Min: ${priceRange.min}
                     </Badge>
                   )}
                   {priceRange.max && (
-                    <Badge className="bg-green-600 text-white">
+                    <Badge className="bg-yellow-600 text-white">
                       Max: ${priceRange.max}
                     </Badge>
                   )}
@@ -373,7 +302,17 @@ export default function EventsPage() {
                   )}
                 </div>
               </div>
-            )}
+            </div>
+            
+            {/* Done Button */}
+            <div className="sticky bottom-0 bg-gray-800 border-t border-gray-700 p-4">
+              <Button
+                onClick={() => setShowFilters(false)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Done
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -406,102 +345,108 @@ export default function EventsPage() {
             {filteredEvents.map(event => (
               <Link key={event.id} href={`/event/${event.id}`}>
                 <Card className="bg-gray-800 border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                {/* Event Image */}
-                <div className="relative h-48 bg-gray-700">
-                  <img
-                    src={event.coverImage}
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      e.currentTarget.nextElementSibling.style.display = 'flex'
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
-                    <Calendar className="w-12 h-12" />
-                  </div>
-                  
-                  {/* Action Buttons - Bottom Right */}
-                  <div className="absolute bottom-2 right-2">
-                    <TileActions
-                      itemId={event.id}
-                      itemType="event"
-                      onSave={(id, type) => {
-                        // TODO: Implement save functionality
-                        console.log('Save event:', id, type)
-                      }}
-                      onUnsave={(id, type) => {
-                        // TODO: Implement unsave functionality
-                        console.log('Unsave event:', id, type)
+                  {/* Event Image */}
+                  <div className="relative h-48 bg-gray-700">
+                    <img
+                      src={event.coverImage}
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                        if (nextElement) {
+                          nextElement.style.display = 'flex'
+                        }
                       }}
                     />
+                    <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
+                      <Calendar className="w-12 h-12" />
+                    </div>
+                    
+                    {/* Action Buttons - Bottom Right */}
+                    <div className="absolute bottom-2 right-2">
+                      <TileActions
+                        itemId={event.id}
+                        itemType="event"
+                        itemTitle={event.title}
+                        itemDescription={event.description || ''}
+                        itemImage={event.coverImage || ''}
+                        privacyLevel={event.isPublic ? 'PUBLIC' : 'PRIVATE'}
+                        onSave={(id, type) => {
+                          console.log('Save event:', id, type)
+                        }}
+                        onUnsave={(id, type) => {
+                          console.log('Unsave event:', id, type)
+                        }}
+                        className="scale-75"
+                      />
+                    </div>
+                    
+                    {/* Category Badge */}
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-purple-600 text-white">
+                        {event.category}
+                      </Badge>
+                    </div>
                   </div>
-                  
-                  {/* Category Badge */}
-                  <div className="absolute top-2 left-2">
-                    <Badge className="bg-purple-600 text-white">
-                      {event.category}
-                    </Badge>
-                  </div>
-                </div>
 
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-white text-lg line-clamp-2">
-                      {event.title}
-                    </h3>
-                    
-                    <div className="flex items-center text-gray-300 text-sm">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {formatDate(event.startDate)} at {event.startTime}
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-white text-lg line-clamp-2">
+                        {event.title}
+                      </h3>
+                      
+                      <div className="flex items-center text-gray-300 text-sm">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {formatDate(event.startDate)} at {event.startTime}
+                      </div>
+                      
+                      <div className="flex items-center text-gray-300 text-sm">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        {event.venue}, {event.city}
+                      </div>
+                      
+                      <div className="flex items-center text-gray-300 text-sm">
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        {formatPrice(event.price)}
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {event.tags.slice(0, 3).map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs bg-gray-700 border-gray-600 text-gray-300">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                     
-                    <div className="flex items-center text-gray-300 text-sm">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {event.venue}, {event.city}
+                    <div className="mt-4 flex gap-2">
+                      <Button 
+                        className="flex-1 bg-purple-600 hover:bg-purple-700"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          // TODO: Implement create hangout functionality
+                          console.log('Create hangout for event:', event.id)
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Hangout
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="bg-gray-700 border-gray-600 text-white"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          window.location.href = `/event/${event.id}`
+                        }}
+                      >
+                        View Details
+                      </Button>
                     </div>
-                    
-                    <div className="flex items-center text-gray-300 text-sm">
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      {formatPrice(event.price)}
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {event.tags.slice(0, 3).map(tag => (
-                        <Badge key={tag} variant="outline" className="text-xs bg-gray-700 border-gray-600 text-gray-300">
-                          #{tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 flex gap-2">
-                    <Button 
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        // TODO: Navigate to event detail or create hangout
-                        console.log('Create hangout for event:', event.id)
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Hangout
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="bg-gray-700 border-gray-600 text-white"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        window.location.href = `/event/${event.id}`
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               </Link>
             ))}
           </div>

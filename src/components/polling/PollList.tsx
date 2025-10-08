@@ -5,7 +5,6 @@ import { PollCard } from './PollCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, Filter, Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { usePolling } from '@/contexts/realtime-context'
 
@@ -134,51 +133,6 @@ export function PollList({ hangoutId, onCreatePoll, onPollClick }: PollListProps
   // Real-time updates
   useEffect(() => {
     if (!isConnected) return
-
-    const handlePollUpdate = (data: any) => {
-      setPolls(prevPolls => 
-        prevPolls.map(poll => 
-          poll.id === data.pollId ? { ...poll, ...data.poll } : poll
-        )
-      )
-    }
-
-    const handleVoteCast = (data: any) => {
-      setPolls(prevPolls => 
-        prevPolls.map(poll => {
-          if (poll.id === data.pollId) {
-            // Update consensus data
-            const updatedConsensus = {
-              ...poll.consensus,
-              level: data.consensusLevel,
-              totalVotes: data.voteCount,
-              leadingOption: data.leadingOption
-            }
-            return { ...poll, consensus: updatedConsensus }
-          }
-          return poll
-        })
-      )
-    }
-
-    const handleConsensusReached = (data: any) => {
-      setPolls(prevPolls => 
-        prevPolls.map(poll => {
-          if (poll.id === data.pollId) {
-            return {
-              ...poll,
-              status: 'CONSENSUS_REACHED',
-              consensus: {
-                ...poll.consensus,
-                level: data.consensusLevel,
-                isConsensusReached: true
-              }
-            }
-          }
-          return poll
-        })
-      )
-    }
 
     // Note: In a real implementation, these would be set up with the polling context
     // For now, we'll just show the static data
@@ -318,7 +272,7 @@ export function PollList({ hangoutId, onCreatePoll, onPollClick }: PollListProps
               key={poll.id}
               poll={poll}
               onVote={handleVote}
-              onViewDetails={onPollClick}
+              onViewDetails={onPollClick || (() => {})}
             />
           ))}
         </div>

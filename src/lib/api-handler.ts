@@ -64,7 +64,8 @@ function generateRequestId(): string {
 
 function getClientId(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
+  const realIp = request.headers.get('x-real-ip')
+  const ip = forwarded ? forwarded.split(',')[0] || 'unknown' : realIp || 'unknown'
   return ip
 }
 
@@ -96,7 +97,7 @@ function createSuccessResponse<T>(
   return NextResponse.json<ApiResponse<T>>({
     success: true,
     data,
-    message,
+    ...(message && { message }),
     timestamp: new Date().toISOString(),
     requestId
   })
@@ -113,7 +114,7 @@ function createErrorResponse(
     success: false,
     error,
     message,
-    code,
+    ...(code && { code }),
     timestamp: new Date().toISOString(),
     requestId
   }, { status })
@@ -394,14 +395,14 @@ export function createApiHandler<T = unknown>(
       const corsResponse = withCORS(request, config)
       if (corsResponse) {
         console.log('createApiHandler: CORS response returned')
-        return corsResponse
+        return corsResponse as NextResponse<ApiResponse<T>>
       }
 
       // Handle rate limiting
       const rateLimitResponse = await withRateLimit(request, config)
       if (rateLimitResponse) {
         console.log('createApiHandler: Rate limit response returned')
-        return rateLimitResponse
+        return rateLimitResponse as NextResponse<ApiResponse<T>>
       }
 
       // Handle authentication
@@ -410,16 +411,16 @@ export function createApiHandler<T = unknown>(
       console.log('createApiHandler: Auth result:', { authResponse: !!authResponse, user: !!user, userType: typeof user })
       if (authResponse) {
         console.log('createApiHandler: Auth response returned')
-        return authResponse
+        return authResponse as NextResponse<ApiResponse<T>>
       }
 
       // Handle authorization
       const { response: authzResponse } = await withAuthorization(request, user!, config)
-      if (authzResponse) return authzResponse
+      if (authzResponse) return authzResponse as NextResponse<ApiResponse<T>>
 
       // Handle input validation
       const { response: validationResponse, validatedData } = await withValidation(request, config)
-      if (validationResponse) return validationResponse
+      if (validationResponse) return validationResponse as NextResponse<ApiResponse<T>>
 
       // Add user to request
       const authenticatedRequest = request as AuthenticatedRequest
@@ -434,12 +435,12 @@ export function createApiHandler<T = unknown>(
       if (pathSegments.includes('hangouts') && pathSegments.length > 1) {
         const hangoutIndex = pathSegments.indexOf('hangouts')
         if (hangoutIndex !== -1 && pathSegments[hangoutIndex + 1]) {
-          params.id = pathSegments[hangoutIndex + 1]
+          params.id = pathSegments[hangoutIndex + 1]!
         }
         if (pathSegments.includes('polls') && pathSegments.length > hangoutIndex + 2) {
           const pollIndex = pathSegments.indexOf('polls')
           if (pollIndex !== -1 && pathSegments[pollIndex + 1]) {
-            params.pollId = pathSegments[pollIndex + 1]
+            params.pollId = pathSegments[pollIndex + 1]!
           }
         }
       }
@@ -466,7 +467,7 @@ export function createApiHandler<T = unknown>(
       )
 
       await withLogging(request, errorResponse, requestId, config)
-      return errorResponse
+      return errorResponse as NextResponse<ApiResponse<T>>
     }
   }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -84,7 +84,7 @@ export function StackedHangoutTile({
   // Use the specific default image you requested
   const hangoutImage = hangout.image || hangout.photos?.[0] || "/default-hangout-friends.png"
   const yesCount = hangout.participants?.filter(p => p.rsvpStatus === "YES").length || 0
-  const totalParticipants = hangout._count?.content_participants || hangout.participants?.length || 0
+  const totalParticipants = hangout._count?.participants || hangout.participants?.length || 0
 
   // Calculate stacking offset - less stacking on mobile for better touch interaction
   const stackOffset = index * 4 // 4px offset per tile (reduced from 8px)
@@ -255,9 +255,9 @@ export function StackedHangoutTile({
                   itemId={hangout.id}
                   itemType="hangout"
                   itemTitle={hangout.title}
-                  itemDescription={hangout.description}
-                  itemImage={hangout.image}
-                  privacyLevel={hangout.privacyLevel}
+                  itemDescription={hangout.description || ''}
+                  itemImage={hangout.image || ''}
+                  privacyLevel={hangout.privacyLevel || 'PUBLIC'}
                   onSave={(id, type) => {
                     console.log('Save hangout:', id, type)
                   }}

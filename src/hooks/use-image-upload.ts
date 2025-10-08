@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { apiClient } from '@/lib/api-client'
+import { useAuth } from '@/contexts/auth-context'
 
 interface UploadResult {
   url: string
@@ -14,6 +14,7 @@ interface UploadResult {
 export function useImageUpload() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { token } = useAuth()
 
   const uploadImage = async (file: File, type: 'profile' | 'background' | 'hangout', hangoutId?: string): Promise<UploadResult | null> => {
     try {
@@ -32,7 +33,7 @@ export function useImageUpload() {
       const response = await fetch('/api/upload', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiClient.token}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       })
@@ -66,6 +67,8 @@ export function useImageUpload() {
     enneagram?: string
     bigFive?: string
     loveLanguage?: string
+    favoriteActivities?: string[]
+    favoritePlaces?: string[]
   }) => {
     try {
       setIsUploading(true)
@@ -75,7 +78,7 @@ export function useImageUpload() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiClient.token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updates)
       })

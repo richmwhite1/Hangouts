@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Clock, Users, Calendar, Lock, UserPlus } from 'lucide-react'
+import { MapPin, Clock, Users, Calendar, Lock, UserPlus, Share2, Link as LinkIcon, Heart } from 'lucide-react'
 import { format } from 'date-fns'
-import { useAuth } from '@/contexts/auth-context'
 import { sharingService } from '@/lib/services/sharing-service'
+import { CalendarButtons } from '@/components/ui/calendar-buttons'
 // import { toast } from 'sonner'
 
 interface PublicHangoutViewerProps {
@@ -160,7 +160,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white overflow-y-auto">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
         <div className="max-w-4xl mx-auto">
@@ -174,7 +174,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6 pb-20">
         {/* Image */}
         {hangout.image && (
           <div className="mb-6">
@@ -274,6 +274,21 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
                 {hangout.finalizedOption.price && (
                   <p className="text-gray-400 text-sm">💰 ${hangout.finalizedOption.price}</p>
                 )}
+                
+                {/* Calendar Buttons for Finalized Plans */}
+                <div className="mt-4 pt-4 border-t border-green-700">
+                  <p className="text-green-300 text-sm mb-3">Add to your calendar:</p>
+                  <CalendarButtons
+                    event={{
+                      title: hangout.title,
+                      description: hangout.description || hangout.finalizedOption.description,
+                      location: hangout.finalizedOption.location || hangout.location,
+                      startTime: hangout.finalizedOption.dateTime || hangout.startTime,
+                      endTime: hangout.endTime,
+                      url: window.location.href
+                    }}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -286,6 +301,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
             className="flex-1 bg-blue-600 hover:bg-blue-700"
             size="lg"
           >
+            <UserPlus className="w-5 h-5 mr-2" />
             Sign In to Join
           </Button>
           
@@ -293,15 +309,19 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
             <Button
               onClick={handleShare}
               variant="outline"
-              className="flex-1"
+              className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+              title="Share this hangout"
             >
+              <Share2 className="w-5 h-5 mr-2" />
               Share
             </Button>
             <Button
               onClick={handleCopyLink}
               variant="outline"
-              className="flex-1"
+              className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+              title="Copy link to hangout"
             >
+              <LinkIcon className="w-5 h-5 mr-2" />
               Copy Link
             </Button>
           </div>

@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-handler'
-import { HangoutQueries, TransactionQueries } from '@/lib/db-queries'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import { createHangoutFlow, HANGOUT_STATES } from '@/lib/hangout-flow'
+import { createHangoutFlow } from '@/lib/hangout-flow'
+import { TransactionQueries } from '@/lib/db-queries'
 
 const createHangoutSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
@@ -51,7 +50,7 @@ async function getHangoutsHandler(request: AuthenticatedRequest) {
     if (discover) {
       // DISCOVER LOGIC: Show all public hangouts
       whereClause = {
-        privacyLevel: 'PUBLIC'
+        privacyLevel: 'PUBLIC' as const
       }
     } else {
       // HOME FEED LOGIC: Only show hangouts user created or was invited to
@@ -62,7 +61,7 @@ async function getHangoutsHandler(request: AuthenticatedRequest) {
           // Private hangouts where user is a participant (invited)
           {
             AND: [
-              { privacyLevel: 'PRIVATE' },
+              { privacyLevel: 'PRIVATE' as const },
               {
                 content_participants: {
                   some: { userId: userId }
@@ -159,10 +158,10 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
     let startTime: Date
     let endTime: Date
     
-    if (data.options && data.options.length > 0 && data.options[0].dateTime) {
+    if (data && data.options && data.options.length > 0 && data.options[0]?.dateTime) {
       startTime = new Date(data.options[0].dateTime)
       endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000) // 2 hours later
-    } else if (data.startTime && data.endTime) {
+    } else if (data && data.startTime && data.endTime) {
       startTime = new Date(data.startTime)
       endTime = new Date(data.endTime)
     } else {
@@ -176,68 +175,63 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
 
     // Determine hangout flow
     const flowData = {
-      type: data.type,
-      options: (data.options || []).map(option => ({
+      type: data?.type || 'SINGLE',
+      options: ((data?.options || [])).map(option => ({
         id: option.id || `option_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: option.title,
         description: option.description,
         location: option.location,
         dateTime: option.dateTime,
         price: option.price,
-        eventImage: option.eventImage
+        eventImage: (option as any).eventImage
       })),
-      participants: data.participants || []
+      participants: data?.participants || []
     };
 
     const flowResult = await createHangoutFlow(flowData);
 
     // For single option hangouts, use the option data for the hangout's basic fields
-    const firstOption = data.options && data.options.length > 0 ? data.options[0] : null;
-    const hangoutLocation = firstOption?.location || data.location;
-    const hangoutPrice = firstOption?.price || 0;
-    const hangoutUrl = firstOption?.hangoutUrl || '';
+    const firstOption = data?.options && data.options.length > 0 ? data.options[0] : null;
+    const hangoutLocation = firstOption?.location || data?.location;
 
     // Create hangout with creator as participant using transaction
     const hangout = await TransactionQueries.createHangoutWithParticipant({
-      title: data.title,
-      description: data.description,
-      location: hangoutLocation,
-      latitude: data.latitude,
-      longitude: data.longitude,
+      title: data?.title || '',
+      description: data?.description || null,
+      location: hangoutLocation || null,
+      latitude: data?.latitude || null,
+      longitude: data?.longitude || null,
       startTime,
       endTime,
-      privacyLevel: data.privacyLevel,
-      weatherEnabled: data.weatherEnabled ?? false,
-      image: data.image,
+      privacyLevel: data?.privacyLevel || 'PUBLIC',
+      weatherEnabled: data?.weatherEnabled ?? false,
+      image: data?.image || null,
       creatorId: userId,
-      maxParticipants: data.maxParticipants,
-      participants: data.participants,
-      mandatoryParticipants: data.mandatoryParticipants || [],
-      coHosts: data.coHosts || [],
-      priceMin: hangoutPrice,
-      priceMax: hangoutPrice,
-      ticketUrl: hangoutUrl,
+      maxParticipants: data?.maxParticipants || null,
+      participants: data?.participants || [],
+      mandatoryParticipants: data?.mandatoryParticipants || [],
+      coHosts: data?.coHosts || [],
     });
 
     // Create poll for all hangouts with options (both quick_plan and multi_option)
     if (flowData.options.length > 0) {
-      console.log('🔍 Creating poll for hangout:', hangout.id)
+      console.log('🔍 Creating poll for hangout:', hangout?.id)
       console.log('🔍 Poll options:', flowData.options)
       console.log('🔍 Requires voting:', flowResult.requiresVoting)
       
       try {
         const pollData = {
           id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          contentId: hangout.id,
+          contentId: hangout?.id || '',
           creatorId: userId,
-          title: data.title,
-          description: data.description || '',
+          title: data?.title || '',
+          description: data?.description || '',
           options: flowData.options,
           allowMultiple: false,
           isAnonymous: false,
           status: flowResult.requiresVoting ? 'ACTIVE' : 'CONSENSUS_REACHED',
           consensusPercentage: 70,
-          expiresAt: flowResult.votingDeadline
+          expiresAt: flowResult.votingDeadline || null
         };
         
         console.log('🔍 Poll data to create:', JSON.stringify(pollData, null, 2));
@@ -249,9 +243,9 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
       } catch (error) {
         console.error('❌ Error creating poll:', error)
         console.error('❌ Error details:', {
-          message: error.message,
-          code: error.code,
-          meta: error.meta
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          meta: (error as any)?.meta
         });
         // Don't throw error, just log it and continue
         console.log('⚠️ Continuing without poll creation...');
@@ -274,23 +268,21 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
   } catch (error) {
     console.error('Error in createHangoutHandler:', error)
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
     })
-    return createErrorResponse('Internal error', `Failed to create hangout: ${error.message}`, 500)
+    return createErrorResponse('Internal error', `Failed to create hangout: ${error instanceof Error ? error.message : 'Unknown error'}`, 500)
   }
 }
 
 // Export handlers with middleware
 export const GET = createApiHandler(getHangoutsHandler, {
   requireAuth: true,
-  enableRateLimit: true,
   enableCORS: true
 })
 
 export const POST = createApiHandler(createHangoutHandler, {
   requireAuth: true,
-  enableRateLimit: false,
   enableCORS: true
 })

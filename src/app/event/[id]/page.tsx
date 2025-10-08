@@ -9,6 +9,9 @@ import { Calendar, MapPin, DollarSign, Users, Clock, Share2, Heart, CheckCircle,
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useAuth } from '@/contexts/auth-context'
 import { toast } from 'sonner'
+import { TileActions } from '@/components/ui/tile-actions'
+import { EventMeta } from '@/components/seo/event-meta'
+import { CalendarButtons } from '@/components/ui/calendar-buttons'
 
 interface Event {
   id: string
@@ -203,7 +206,9 @@ export default function EventDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <>
+      <EventMeta event={event} isPublic={true} />
+      <div className="min-h-screen bg-black">
       {/* Event Image */}
       <div className="relative h-64 md:h-96">
         <OptimizedImage
@@ -352,20 +357,44 @@ export default function EventDetailPage() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            className={`flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 ${
-              isSaved ? 'bg-green-700 border-green-600' : ''
-            }`}
-            onClick={handleSaveEvent}
-            disabled={isSaving || isSaved}
-          >
-            {isSaved ? 'Saved' : 'Save Event'}
-          </Button>
+        <div className="flex justify-center">
+          <TileActions
+            itemId={event.id}
+            itemType="event"
+            itemTitle={event.title}
+            itemDescription={event.description || ''}
+            itemImage={event.image || ''}
+            privacyLevel={event.privacyLevel || 'PUBLIC'}
+            isSaved={isSaved}
+            onSave={(id, type) => {
+              console.log('Save event:', id, type)
+            }}
+            onUnsave={(id, type) => {
+              console.log('Unsave event:', id, type)
+            }}
+          />
         </div>
+
+        {/* Calendar Buttons for Non-Authenticated Users */}
+        {!isAuthenticated && (
+          <div className="mt-6 p-4 bg-gray-800 rounded-lg">
+            <h3 className="text-white font-medium mb-3 text-center">Add to Calendar</h3>
+            <CalendarButtons
+              event={{
+                title: event.title,
+                description: event.description,
+                location: event.venue ? `${event.venue}${event.city ? `, ${event.city}` : ''}` : '',
+                startTime: event.startDate ? `${event.startDate}T${event.startTime || '00:00'}` : new Date().toISOString(),
+                endTime: event.startDate ? `${event.startDate}T${event.startTime || '00:00'}` : new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                url: window.location.href
+              }}
+              className="justify-center"
+            />
+          </div>
+        )}
       </div>
 
     </div>
+    </>
   )
 }

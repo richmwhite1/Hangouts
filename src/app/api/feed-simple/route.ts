@@ -215,8 +215,10 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Simple Feed API: Database error:', error)
-    console.error('Simple Feed API: Error stack:', error.stack)
-    console.error('Simple Feed API: Error message:', error.message)
+    if (error instanceof Error) {
+      console.error('Simple Feed API: Error stack:', error.stack)
+      console.error('Simple Feed API: Error message:', error.message)
+    }
     return NextResponse.json({ 
       success: false, 
       error: 'Database error',

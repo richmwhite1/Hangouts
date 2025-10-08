@@ -41,8 +41,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         forceNew: true,
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        maxReconnectionAttempts: 5
+        reconnectionAttempts: 5
       })
 
       newSocket.on('connect', () => {
@@ -97,7 +96,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       if (socket) {
-        socket.close()
+        socket!.close()
         setSocket(null)
         setIsConnected(false)
       }

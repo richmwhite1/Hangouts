@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 async function getFeedHandler(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -24,12 +25,12 @@ async function getFeedHandler(request: NextRequest) {
   }
 
   try {
-    console.log('Feed API: Starting request processing')
+    logger.debug('Starting feed request processing', { feedType, contentType, userId }, 'FEED')
     let friendIds: string[] = []
     
     // If user is authenticated, get their friends for FRIENDS_ONLY content
     if (userId) {
-      console.log('Feed API: Getting friends for user:', userId)
+      logger.debug('Getting friends for user', { userId }, 'FEED')
       const userFriends = await db.friendship.findMany({
         where: {
           OR: [
@@ -46,7 +47,7 @@ async function getFeedHandler(request: NextRequest) {
       friendIds = userFriends.map(friend => 
         friend.userId === userId ? friend.friendId : friend.userId
       )
-      console.log('Feed API: Found friends:', friendIds.length)
+      logger.debug('Found friends', { count: friendIds.length }, 'FEED')
     }
 
     // Build where clause based on feed type
@@ -104,7 +105,7 @@ async function getFeedHandler(request: NextRequest) {
             }
           }
         ]
-        console.log('Feed API: Using OR filter for user:', userId)
+        logger.debug('Using OR filter for user', { userId }, 'FEED')
       } else {
         // If no user, show nothing for home feed
         whereClause.id = 'nonexistent'
@@ -127,19 +128,17 @@ async function getFeedHandler(request: NextRequest) {
       }
     }
 
-    console.log('Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2))
-    console.log('Feed API: User ID:', userId)
-    console.log('Feed API: Feed type:', feedType)
+    logger.debug('Executing content query', { whereClause, userId, feedType }, 'FEED')
     
     // Debug: Check if hangout exists
-    const debugHangout = await db.content.findFirst({
+    const debugHangout = userId ? await db.content.findFirst({
       where: { 
         creatorId: userId,
         type: 'HANGOUT'
       },
       select: { id: true, title: true, creatorId: true }
-    })
-    console.log('Feed API: Debug hangout found:', debugHangout)
+    }) : null
+    logger.debug('Debug hangout found', { hangout: debugHangout }, 'FEED')
     // Simplified query for debugging
     const content = await db.content.findMany({
       where: whereClause,
@@ -213,19 +212,6 @@ async function getFeedHandler(request: NextRequest) {
           },
           orderBy: {
             orderIndex: 'asc'
-          }
-        },
-        // Photos (for hangouts)
-        photos: {
-          select: {
-            id: true,
-            originalUrl: true,
-            thumbnailUrl: true,
-            caption: true,
-            createdAt: true
-          },
-          orderBy: {
-            createdAt: 'asc'
           }
         },
         // Event saves
@@ -306,8 +292,7 @@ async function getFeedHandler(request: NextRequest) {
       skip: offset,
     })
 
-    console.log('Feed API: Raw content found:', content.length, 'items')
-    console.log('Feed API: First content item:', content[0] ? { id: content[0].id, title: content[0].title } : 'None')
+    logger.debug('Raw content found', { count: content.length, firstItem: content[0] ? { id: content[0].id, title: content[0].title } : null }, 'FEED')
 
     // Transform the data for frontend consumption
     const transformedContent = content.map(item => {
@@ -327,7 +312,7 @@ async function getFeedHandler(request: NextRequest) {
         title: item.title,
         description: item.description,
         image: item.type === 'HANGOUT' && item.photos && item.photos.length > 0 
-          ? item.photos[0].originalUrl || item.photos[0].thumbnailUrl 
+          ? item.photos[0]?.originalUrl || item.photos[0]?.thumbnailUrl 
           : item.image,
         location: item.location,
         latitude: item.latitude,
@@ -434,8 +419,10 @@ async function getFeedHandler(request: NextRequest) {
     })
   } catch (error) {
     console.error('Database error in getFeedHandler:', error)
-    console.error('Error stack:', error.stack)
-    console.error('Error message:', error.message)
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack)
+      console.error('Error message:', error.message)
+    }
     return NextResponse.json({ 
       success: false, 
       error: 'Database error',

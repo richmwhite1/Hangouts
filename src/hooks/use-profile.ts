@@ -14,6 +14,8 @@ interface UserProfile {
   enneagram?: string
   bigFive?: string
   loveLanguage?: string
+  favoriteActivities?: string[]
+  favoritePlaces?: string[]
   joinDate: string
   stats: {
     hangoutsHosted: number

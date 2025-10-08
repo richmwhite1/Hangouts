@@ -63,10 +63,10 @@ export class SharingService {
       // Check if native sharing is supported
       if (navigator.share && navigator.canShare) {
         const sharePayload: any = {
-          title: customMessage || `Check out this ${type}!`,
+          title: customMessage || `Interested in coming to ${title}?`,
           text: includeDescription && description 
-            ? `${title}\n\n${description}` 
-            : title,
+            ? `${title}\n\n${description}\n\nJoin us for this ${type}!` 
+            : `Interested in coming to ${title}? Join us for this ${type}!`,
           url: url
         }
 
@@ -173,7 +173,7 @@ export class SharingService {
    * Copy to clipboard with fallback
    */
   private async copyToClipboard(url: string, title: string): Promise<void> {
-    const text = `${title}\n\n${url}`
+    const text = `Interested in coming to ${title}?\n\n${url}`
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text)

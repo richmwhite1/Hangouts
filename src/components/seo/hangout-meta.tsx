@@ -1,5 +1,3 @@
-'use client'
-
 import Head from 'next/head'
 
 interface HangoutMetaProps {
@@ -9,117 +7,83 @@ interface HangoutMetaProps {
     description?: string
     image?: string
     location?: string
-    startTime: string
-    endTime: string
-    privacyLevel: 'PUBLIC' | 'FRIENDS_ONLY' | 'PRIVATE'
-    creator: {
+    startTime?: string
+    endTime?: string
+    privacyLevel: string
+    creator?: {
       name: string
       username: string
     }
   }
-  baseUrl?: string
+  isPublic?: boolean
 }
 
-export function HangoutMeta({ hangout, baseUrl }: HangoutMetaProps) {
-  const url = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
-  const hangoutUrl = `${url}/hangout/${hangout.id}`
-  const imageUrl = hangout.image || `${url}/og-hangout-default.jpg`
+export function HangoutMeta({ hangout, isPublic = false }: HangoutMetaProps) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hangouts-production-adc4.up.railway.app'
+  const hangoutUrl = `${baseUrl}/hangout/${hangout.id}`
+  const imageUrl = hangout.image || `${baseUrl}/api/placeholder/1200/630`
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     })
   }
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    })
-  }
-
-  const eventDate = formatDate(hangout.startTime)
-  const eventTime = `${formatTime(hangout.startTime)} - ${formatTime(hangout.endTime)}`
-  
+  const title = `${hangout.title}${hangout.location ? ` at ${hangout.location}` : ''}`
   const description = hangout.description || 
-    `Join ${hangout.creator.name} for ${hangout.title} on ${eventDate} at ${eventTime}${hangout.location ? ` in ${hangout.location}` : ''}.`
+    `Join ${hangout.creator?.name || 'us'} for this hangout${hangout.startTime ? ` on ${formatDate(hangout.startTime)}` : ''}. ${isPublic ? 'Open to everyone!' : 'Sign in to join this hangout.'}`
 
   return (
     <Head>
       {/* Basic Meta Tags */}
-      <title>{hangout.title} | Hangouts 3.0</title>
+      <title>{title}</title>
       <meta name="description" content={description} />
-      <meta name="keywords" content="hangout, event, social, friends, meetup, planning" />
+      <meta name="keywords" content="hangout, event, social, meetup, friends, planning" />
       
       {/* Open Graph Meta Tags */}
       <meta property="og:type" content="website" />
-      <meta property="og:title" content={hangout.title} />
+      <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={imageUrl} />
       <meta property="og:url" content={hangoutUrl} />
+      <meta property="og:image" content={imageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={hangout.title} />
       <meta property="og:site_name" content="Hangouts 3.0" />
-      <meta property="og:locale" content="en_US" />
-      
-      {/* Event-specific Open Graph tags */}
-      <meta property="event:start_time" content={hangout.startTime} />
-      <meta property="event:end_time" content={hangout.endTime} />
-      <meta property="event:location" content={hangout.location || ''} />
-      <meta property="event:creator" content={hangout.creator.name} />
       
       {/* Twitter Card Meta Tags */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={hangout.title} />
+      <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={imageUrl} />
-      <meta name="twitter:url" content={hangoutUrl} />
-      <meta name="twitter:site" content="@hangouts3" />
-      <meta name="twitter:creator" content={`@${hangout.creator.username}`} />
+      <meta name="twitter:image:alt" content={hangout.title} />
       
       {/* Additional Meta Tags */}
       <meta name="robots" content="index, follow" />
-      <meta name="author" content={hangout.creator.name} />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="author" content={hangout.creator?.name || 'Hangouts 3.0'} />
+      
+      {/* Event Specific Meta Tags */}
+      {hangout.startTime && (
+        <meta property="event:start_time" content={new Date(hangout.startTime).toISOString()} />
+      )}
+      {hangout.endTime && (
+        <meta property="event:end_time" content={new Date(hangout.endTime).toISOString()} />
+      )}
+      {hangout.location && (
+        <meta property="event:location" content={hangout.location} />
+      )}
+      
+      {/* Privacy Level */}
+      <meta property="hangout:privacy" content={hangout.privacyLevel} />
       
       {/* Canonical URL */}
       <link rel="canonical" href={hangoutUrl} />
-      
-      {/* Favicon */}
-      <link rel="icon" href="/favicon.ico" />
-      <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-      
-      {/* Structured Data (JSON-LD) */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Event",
-            "name": hangout.title,
-            "description": description,
-            "startDate": hangout.startTime,
-            "endDate": hangout.endTime,
-            "location": hangout.location ? {
-              "@type": "Place",
-              "name": hangout.location
-            } : undefined,
-            "organizer": {
-              "@type": "Person",
-              "name": hangout.creator.name,
-              "url": `${url}/profile/${hangout.creator.username}`
-            },
-            "url": hangoutUrl,
-            "image": imageUrl,
-            "eventStatus": "EventScheduled",
-            "eventAttendanceMode": "OfflineEventAttendanceMode"
-          })
-        }}
-      />
     </Head>
   )
 }

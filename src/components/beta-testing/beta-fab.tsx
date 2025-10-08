@@ -17,7 +17,7 @@ interface BetaFabProps {
 export function BetaFab({ context }: BetaFabProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [feedbackType, setFeedbackType] = useState<'general' | 'bug' | 'feature'>('general')
+  const [, setFeedbackType] = useState<'general' | 'bug' | 'feature'>('general')
 
   const handleFeedbackClick = (type: 'general' | 'bug' | 'feature') => {
     setFeedbackType(type)
@@ -92,11 +92,11 @@ export function BetaFab({ context }: BetaFabProps) {
       </div>
 
       {/* Feedback Modal */}
-      <BetaFeedbackModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        context={context}
-      />
+        <BetaFeedbackModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          context={context || {}}
+        />
     </>
   )
 }

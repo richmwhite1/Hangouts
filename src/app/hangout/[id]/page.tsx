@@ -4,17 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Input } from '@/components/ui/input'
-import { HANGOUT_STATES, getVoteCount, hasUserVotedFor, categorizeAttendance, checkMandatoryRSVP } from '@/lib/hangout-flow'
-import { CheckCircle, XCircle, HelpCircle, MapPin, Clock, DollarSign, Camera, MessageSquare, Users, ChevronDown, ChevronUp, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
+import { HANGOUT_STATES, getVoteCount, checkMandatoryRSVP } from '@/lib/hangout-flow'
+import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
 import { HangoutMeta } from '@/components/seo/hangout-meta'
+import { TileActions } from '@/components/ui/tile-actions'
 
 interface Hangout {
   id: string
@@ -117,64 +114,11 @@ export default function HangoutDetailPage() {
   const [isVoting, setIsVoting] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const [isChatExpanded, setIsChatExpanded] = useState(true)
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false)
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
-  const [friends, setFriends] = useState<any[]>([])
-  const [isLoadingFriends, setIsLoadingFriends] = useState(false)
+  const [, setSelectedOption] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  const loadFriends = async () => {
-    if (!token) return
-    
-    setIsLoadingFriends(true)
-    try {
-      const response = await fetch('/api/friends', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setFriends(data.data || [])
-      }
-    } catch (error) {
-      console.error('Error loading friends:', error)
-      toast.error('Failed to load friends')
-    } finally {
-      setIsLoadingFriends(false)
-    }
-  }
 
-  const handleInviteUser = async (friendId: string) => {
-    if (!token || !hangoutId) return
-    
-    try {
-      const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId: friendId })
-      })
-      
-      if (response.ok) {
-        toast.success('User invited successfully!')
-        setIsInviteModalOpen(false)
-        // Refresh hangout data
-        await fetchHangout()
-      } else {
-        const error = await response.json()
-        toast.error(error.message || 'Failed to invite user')
-      }
-    } catch (error) {
-      console.error('Error inviting user:', error)
-      toast.error('Failed to invite user')
-    }
-  }
 
   const handleRemoveUser = async (participantId: string) => {
     if (!token || !hangoutId) return
@@ -321,7 +265,7 @@ export default function HangoutDetailPage() {
             // Toggle off - remove vote
             newUserVotes = newUserVotes.filter(id => id !== optionId)
             if (newUserPreferred === optionId) {
-              newUserPreferred = null
+              newUserPreferred = undefined
             }
           } else {
             // Toggle on - add vote
@@ -330,10 +274,10 @@ export default function HangoutDetailPage() {
         } else if (action === 'remove') {
           newUserVotes = newUserVotes.filter(id => id !== optionId)
           if (newUserPreferred === optionId) {
-            newUserPreferred = null
+            newUserPreferred = undefined
           }
         } else if (action === 'preferred') {
-          newUserPreferred = newUserPreferred === optionId ? null : optionId
+          newUserPreferred = newUserPreferred === optionId ? undefined : optionId
         }
         
         return {
@@ -388,13 +332,13 @@ export default function HangoutDetailPage() {
       // Optimistic UI update
       setHangout(prev => {
         if (!prev) return prev
-        const existingRSVP = prev.rsvps?.find(r => r.userId === user?.id)
+        const existingRSVP = prev.rsvps?.find(r => r.user.id === user?.id)
         if (existingRSVP) {
           // Update existing RSVP
           return {
             ...prev,
             rsvps: prev.rsvps?.map(r => 
-              r.userId === user?.id 
+              r.user.id === user?.id 
                 ? { ...r, status, respondedAt: new Date().toISOString() }
                 : r
             ) || []
@@ -448,30 +392,6 @@ export default function HangoutDetailPage() {
     }
   }
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !token || !hangoutId) return
-
-    try {
-      const response = await fetch(`/api/hangouts/${hangoutId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content: newMessage })
-      })
-
-      if (response.ok) {
-        setNewMessage('')
-        await fetchHangout() // Refresh hangout data
-      } else {
-        toast.error('Failed to send message')
-      }
-    } catch (error) {
-      console.error('Error sending message:', error)
-      toast.error('Failed to send message')
-    }
-  }
 
   const addToCalendar = (type: 'google' | 'apple') => {
     if (!hangout) return
@@ -575,8 +495,8 @@ export default function HangoutDetailPage() {
 
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const isCreator = user?.id === hangout.creatorId
-  const isHost = isCreator || hangout.participants?.some(p => p.userId === user?.id && p.role === 'CO_HOST')
-  const userRSVP = hangout.rsvps?.find(r => r.userId === user?.id)?.status || 'PENDING'
+  const isHost = isCreator || hangout.participants?.some(p => p.user.id === user?.id && p.role === 'CO_HOST')
+  const userRSVP = hangout.rsvps?.find(r => r.user.id === user?.id)?.status || 'PENDING'
   
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
@@ -603,45 +523,22 @@ export default function HangoutDetailPage() {
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold text-white flex-1 text-center">{hangout.title}</h1>
             <div className="flex items-center gap-2 ml-4">
-              {/* Save/Heart Button */}
-              {token && (
-                <Button
-                  onClick={handleSave}
-                  size="sm"
-                  variant="outline"
-                  disabled={isSaving}
-                  className={`border-gray-600 text-xs px-2 py-1 h-7 ${
-                    isSaved 
-                      ? 'text-red-400 border-red-500 hover:bg-red-900/20' 
-                      : 'text-gray-300 hover:bg-gray-700'
-                  }`}
-                  title={isSaved ? 'Remove from saved' : 'Save hangout'}
-                >
-                  <Heart className={`w-3 h-3 ${isSaved ? 'fill-current' : ''}`} />
-                </Button>
-              )}
-              
-              {/* Share Button */}
-              <Button
-                onClick={handleShare}
-                size="sm"
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
-                title="Share hangout"
-              >
-                <Share2 className="w-3 h-3" />
-              </Button>
-              
-              {/* Copy Link Button */}
-              <Button
-                onClick={handleCopyLink}
-                size="sm"
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
-                title="Copy link"
-              >
-                <LinkIcon className="w-3 h-3" />
-              </Button>
+              <TileActions
+                itemId={hangout.id}
+                itemType="hangout"
+                itemTitle={hangout.title}
+                itemDescription={hangout.description || ''}
+                itemImage={hangout.image || ''}
+                privacyLevel={hangout.privacyLevel}
+                isSaved={isSaved}
+                onSave={(id, type) => {
+                  console.log('Save hangout:', id, type)
+                }}
+                onUnsave={(id, type) => {
+                  console.log('Unsave hangout:', id, type)
+                }}
+                className="scale-75"
+              />
             </div>
           </div>
         </div>
@@ -670,7 +567,7 @@ export default function HangoutDetailPage() {
         )}
         
         {/* Additional Photos Section - Show below primary photo */}
-        <PhotosSection hangout={hangout} currentUser={user} />
+        <PhotosSection hangout={hangout} />
         
         {/* Stage 1: Polling Interface - Show for poll hangouts */}
         {(currentState === HANGOUT_STATES.POLLING || (hangout.options && hangout.options.length > 1)) && (
@@ -679,7 +576,6 @@ export default function HangoutDetailPage() {
             currentUser={user} 
             onVote={handleVote} 
             isVoting={isVoting}
-            selectedOption={selectedOption}
           />
         )}
         
@@ -716,11 +612,11 @@ export default function HangoutDetailPage() {
                   </div>
                   {/* Edit button for hosts/co-hosts */}
                   {hangout.participants?.some(p => 
-                    p.userId === user?.id && 
+                    p.user.id === user?.id && 
                     (p.role === 'HOST' || p.role === 'CO_HOST')
                   ) && (
                     <button
-                      onClick={() => setIsEditPlanModalOpen(true)}
+                      onClick={() => {}}
                       className="text-gray-400 hover:text-white transition-colors p-1 rounded"
                       title="Edit plan details"
                     >
@@ -833,39 +729,39 @@ export default function HangoutDetailPage() {
                           <>
                             {/* Option Title and Description */}
                             <div>
-                              <h3 className="text-lg font-medium text-white mb-2">{firstOption.title}</h3>
-                              {firstOption.description && (
-                                <p className="text-gray-300 text-sm">{firstOption.description}</p>
+                              <h3 className="text-lg font-medium text-white mb-2">{firstOption?.title}</h3>
+                              {firstOption?.description && (
+                                <p className="text-gray-300 text-sm">{firstOption?.description}</p>
                               )}
                             </div>
 
                             {/* Option Date & Time */}
-                            {firstOption.dateTime && (
+                            {firstOption?.dateTime && (
                               <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-gray-400" />
                                 <span className="text-gray-300 text-sm">
-                                  {format(new Date(firstOption.dateTime), 'EEEE, MMMM d, yyyy')}
+                                  {format(new Date(firstOption?.dateTime!), 'EEEE, MMMM d, yyyy')}
                                 </span>
                               </div>
                             )}
 
                             {/* Option Time */}
-                            {firstOption.dateTime && (
+                            {firstOption?.dateTime && (
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-gray-400" />
                                 <span className="text-gray-300 text-sm">
-                                  {format(new Date(firstOption.dateTime), 'h:mm a')}
+                                  {format(new Date(firstOption?.dateTime!), 'h:mm a')}
                                 </span>
                               </div>
                             )}
 
                             {/* Option Location with Map Icon */}
-                            {firstOption.location && (
+                            {firstOption?.location && (
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-300 text-sm flex-1">{firstOption.location}</span>
+                                <span className="text-gray-300 text-sm flex-1">{firstOption?.location}</span>
                                 <a
-                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstOption.location)}`}
+                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstOption?.location!)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-400 hover:text-blue-300 p-1 rounded"
@@ -877,20 +773,20 @@ export default function HangoutDetailPage() {
                             )}
 
                             {/* Option Price */}
-                            {firstOption.price && firstOption.price > 0 && (
+                            {firstOption?.price && firstOption?.price > 0 && (
                               <div className="flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-gray-400" />
                                 <span className="text-gray-300 text-sm">
-                                  ${firstOption.price.toFixed(2)}
+                                  ${firstOption?.price?.toFixed(2)}
                                 </span>
                               </div>
                             )}
 
                             {/* Option Hangout URL */}
-                            {firstOption.hangoutUrl && (
+                            {firstOption?.hangoutUrl && (
                               <div className="flex items-center gap-2">
                                 <a
-                                  href={firstOption.hangoutUrl}
+                                  href={firstOption?.hangoutUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-2"
@@ -910,11 +806,9 @@ export default function HangoutDetailPage() {
             )}
             
             <RSVPSection 
-              hangout={hangout} 
-              currentUser={user} 
               onRSVP={handleRSVP} 
-              isUpdating={isUpdatingRSVP} 
-              userRSVP={userRSVP} 
+              isUpdating={isUpdatingRSVP}
+              userRSVP={userRSVP}
             />
             
             {/* Calendar Buttons - Smaller and more discreet */}
@@ -956,8 +850,7 @@ export default function HangoutDetailPage() {
           hangout={hangout} 
           currentUser={user}
           onOpenInviteModal={() => {
-            loadFriends()
-            setIsInviteModalOpen(true)
+            // Modal functionality removed
           }}
           onRemoveUser={handleRemoveUser}
           onShare={handleShare}
@@ -967,10 +860,8 @@ export default function HangoutDetailPage() {
         {/* Chat Section - Always show */}
         <ChatSection 
           hangout={hangout} 
-          currentUser={user} 
           newMessage={newMessage} 
           setNewMessage={setNewMessage} 
-          onSendMessage={sendMessage}
           isExpanded={isChatExpanded}
           setIsExpanded={setIsChatExpanded}
         />
@@ -1009,6 +900,17 @@ function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: stri
           textColor: 'text-gray-300',
           iconColor: 'text-gray-400'
         }
+        
+      default:
+        return {
+          icon: '📅',
+          title: 'Hangout',
+          subtitle: 'Event in progress',
+          bgColor: 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20',
+          borderColor: 'border-blue-500/30',
+          textColor: 'text-white',
+          iconColor: 'text-blue-400'
+        }
     }
   }
   
@@ -1029,12 +931,11 @@ function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: stri
 }
 
 // Voting Section Component (Stage 1) - REDESIGNED
-function VotingSection({ hangout, currentUser, onVote, isVoting, selectedOption }: { 
+function VotingSection({ hangout, currentUser, onVote, isVoting }: { 
   hangout: Hangout, 
   currentUser: any, 
   onVote: (optionId: string) => void,
-  isVoting: boolean,
-  selectedOption: string | null
+  isVoting: boolean
 }) {
   const votedCount = Object.keys(hangout.votes || {}).length
   const totalParticipants = hangout.participants?.length || 0
@@ -1055,7 +956,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, selectedOption 
       </div>
       
       {/* Voting Options */}
-      {hangout.options?.map((option, index) => {
+      {hangout.options?.map((option) => {
         const voteCount = getVoteCount(hangout.votes, option.id)
         const hasUserVoted = userVotes.includes(option.id)
         const isPreferred = userPreferred === option.id
@@ -1147,7 +1048,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, selectedOption 
                 
                 <div className="flex gap-2 ml-4">
                   <button
-                    onClick={() => onVote(option.id, 'toggle')}
+                    onClick={() => onVote(option.id)}
                     disabled={isVoting}
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
                       hasUserVoted 
@@ -1161,7 +1062,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, selectedOption 
                   
                   {hasUserVoted && (
                     <button
-                      onClick={() => onVote(option.id, 'preferred')}
+                      onClick={() => onVote(option.id)}
                       disabled={isVoting}
                       className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
                         isPreferred 
@@ -1215,9 +1116,7 @@ function VotingProgressSummary({ hangout }: { hangout: Hangout }) {
 
 
 // RSVP Section - REDESIGNED with visual feedback
-function RSVPSection({ hangout, currentUser, onRSVP, isUpdating, userRSVP }: {
-  hangout: Hangout,
-  currentUser: any,
+function RSVPSection({ onRSVP, isUpdating, userRSVP }: {
   onRSVP: (status: 'YES' | 'NO' | 'MAYBE') => void,
   isUpdating: boolean,
   userRSVP: string
@@ -1290,7 +1189,7 @@ function ParticipantStatusSection({
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const participants = hangout.participants || []
   const isCreator = currentUser?.id === hangout.creatorId
-  const isHost = isCreator || participants?.some(p => p.userId === currentUser?.id && p.role === 'CO_HOST')
+  const isHost = isCreator || participants?.some(p => p.user.id === currentUser?.id && p.role === 'CO_HOST')
   
   if (participants.length === 0) return null
   
@@ -1314,25 +1213,16 @@ function ParticipantStatusSection({
             </Button>
           )}
           
-          {/* Share Button */}
-          <Button
-            onClick={onShare}
-            size="sm"
-            variant="outline"
-            className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
-          >
-            <Share2 className="w-3 h-3" />
-          </Button>
-          
-          {/* Copy Link Button */}
-          <Button
-            onClick={onCopyLink}
-            size="sm"
-            variant="outline"
-            className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-7"
-          >
-            <LinkIcon className="w-3 h-3" />
-          </Button>
+          {/* Action Buttons */}
+          <TileActions
+            itemId={hangout.id}
+            itemType="hangout"
+            itemTitle={hangout.title}
+            itemDescription={hangout.description || ''}
+            itemImage={hangout.image || ''}
+            privacyLevel={hangout.privacyLevel}
+            className="scale-75"
+          />
         </div>
       </div>
       
@@ -1340,12 +1230,11 @@ function ParticipantStatusSection({
       <div className="grid grid-cols-4 gap-3">
         {participants.slice(0, 8).map((participant) => {
           const userVotes = hangout.userVotes?.[participant.user.id] || []
-          const userPreferred = hangout.userPreferred?.[participant.user.id]
           const hasVoted = userVotes.length > 0
           const isVotingPhase = currentState === HANGOUT_STATES.POLLING
           
           // Get RSVP status from hangout.rsvps array
-          const userRSVP = hangout.rsvps?.find(rsvp => rsvp.userId === participant.user.id)
+          const userRSVP = hangout.rsvps?.find(rsvp => rsvp.user.id === participant.user.id)
           const rsvpStatus = userRSVP?.status || 'PENDING'
           
           const canRemove = isHost && participant.user.id !== currentUser?.id
@@ -1414,12 +1303,10 @@ function ParticipantStatusSection({
 }
 
 // Chat Section - Professional Enterprise-Grade Design
-function ChatSection({ hangout, currentUser, newMessage, setNewMessage, onSendMessage, isExpanded, setIsExpanded }: {
+function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpanded }: {
   hangout: Hangout,
-  currentUser: any,
   newMessage: string,
   setNewMessage: (msg: string) => void,
-  onSendMessage: () => void,
   isExpanded: boolean,
   setIsExpanded: (expanded: boolean) => void
 }) {
@@ -1621,7 +1508,7 @@ function ChatSection({ hangout, currentUser, newMessage, setNewMessage, onSendMe
 
 
 // Photos Section - REDESIGNED
-function PhotosSection({ hangout, currentUser }: { hangout: Hangout, currentUser: any }) {
+function PhotosSection({ hangout }: { hangout: Hangout }) {
   const [photos, setPhotos] = useState<any[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(false)
@@ -1794,195 +1681,6 @@ function PhotosSection({ hangout, currentUser }: { hangout: Hangout, currentUser
           </div>
         </div>
       ) : null}
-    </div>
-  )
-}
-
-// Edit Plan Modal Component
-function EditPlanModal({ hangout, onClose, onSave }: {
-  hangout: Hangout | null
-  onClose: () => void
-  onSave: (data: any) => void
-}) {
-  const [formData, setFormData] = useState({
-    title: hangout?.finalizedOption?.optionText || hangout?.title || '',
-    description: hangout?.finalizedOption?.optionDescription || hangout?.description || '',
-    location: hangout?.finalizedOption?.metadata?.location || hangout?.location || '',
-    dateTime: hangout?.finalizedOption?.metadata?.dateTime || hangout?.startTime || '',
-    price: hangout?.finalizedOption?.metadata?.price || hangout?.priceMin || 0,
-    hangoutUrl: hangout?.finalizedOption?.metadata?.hangoutUrl || hangout?.ticketUrl || ''
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-  }
-
-  if (!hangout) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Edit Plan Details</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white"
-            >
-              <XCircle className="w-6 h-6" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Plan Title
-              </label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="bg-gray-800 border-gray-600 text-white"
-                placeholder="Enter plan title"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2"
-                placeholder="Enter plan description"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Location
-              </label>
-              <Input
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                className="bg-gray-800 border-gray-600 text-white"
-                placeholder="Enter location"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Date & Time
-              </label>
-              <Input
-                type="datetime-local"
-                value={formData.dateTime ? new Date(formData.dateTime).toISOString().slice(0, 16) : ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
-                className="bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Price ($)
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                className="bg-gray-800 border-gray-600 text-white"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Hangout URL
-              </label>
-              <Input
-                value={formData.hangoutUrl}
-                onChange={(e) => setFormData(prev => ({ ...prev, hangoutUrl: e.target.value }))}
-                className="bg-gray-800 border-gray-600 text-white"
-                placeholder="https://..."
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                onClick={onClose}
-                variant="outline"
-                className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-      
-      {/* Invite Users Modal */}
-      {isInviteModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Invite People</h3>
-                <button
-                  onClick={() => setIsInviteModalOpen(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-4 max-h-96 overflow-y-auto">
-              {isLoadingFriends ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                </div>
-              ) : friends.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No friends available to invite</p>
-              ) : (
-                <div className="space-y-2">
-                  {friends.map((friend) => (
-                    <div key={friend.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={friend.avatar || '/placeholder-avatar.png'}
-                          alt={friend.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="text-white font-medium">{friend.name}</p>
-                          <p className="text-gray-400 text-sm">@{friend.username}</p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => handleInviteUser(friend.id)}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        Invite
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
