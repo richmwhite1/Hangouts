@@ -13,6 +13,8 @@ import { CheckCircle, XCircle, HelpCircle, MapPin, Clock, DollarSign, Camera, Me
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
+import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
+import { HangoutMeta } from '@/components/seo/hangout-meta'
 
 interface Hangout {
   id: string
@@ -207,12 +209,11 @@ export default function HangoutDetailPage() {
   }
 
   const fetchHangout = async () => {
-    if (!token || !hangoutId) return
+    if (!hangoutId) return
 
     try {
-      const response = await fetch(`/api/hangouts/${hangoutId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+      const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
 
       if (!response.ok) throw new Error('Failed to fetch hangout')
       const data = await response.json()
@@ -424,10 +425,10 @@ export default function HangoutDetailPage() {
   }
 
   useEffect(() => {
-    if (token && hangoutId) {
+    if (hangoutId) {
       fetchHangout()
     }
-  }, [token, hangoutId])
+  }, [hangoutId])
 
   if (isLoading) {
     return (
@@ -464,6 +465,39 @@ export default function HangoutDetailPage() {
     )
   }
 
+  // Show public viewer for non-authenticated users with public hangouts
+  if (!user && hangout && hangout.privacyLevel === 'PUBLIC') {
+    return (
+      <PublicHangoutViewer 
+        hangoutId={hangoutId as string}
+        onSignInRequired={() => window.location.href = '/signin'}
+      />
+    )
+  }
+
+  // Show sign-in prompt for non-authenticated users with private hangouts
+  if (!user && hangout && hangout.privacyLevel !== 'PUBLIC') {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-4">
+          <div className="text-red-500 mb-4">
+            <Lock className="h-12 w-12 mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+          <p className="text-gray-400 mb-6">
+            {hangout.privacyLevel === 'FRIENDS_ONLY' 
+              ? 'This is a friends-only hangout. Sign in and make sure you are friends with the host to join this event.'
+              : 'This is a private hangout. You need to be invited to view this event.'
+            }
+          </p>
+          <Button onClick={() => window.location.href = '/signin'} className="w-full">
+            Sign In to Continue
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const isCreator = user?.id === hangout.creatorId
   const isHost = isCreator || hangout.participants?.some(p => p.userId === user?.id && p.role === 'CO_HOST')
@@ -484,6 +518,7 @@ export default function HangoutDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
+      <HangoutMeta hangout={hangout} />
       <div className="max-w-md mx-auto pb-20">
         {/* Status Header - Always Visible */}
         <HangoutStatusHeader hangout={hangout} state={currentState} />

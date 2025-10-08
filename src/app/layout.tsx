@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { WebSocketProvider } from '@/contexts/websocket-context'
 import { BottomNavigation } from '@/components/bottom-navigation'
+import { BetaFab } from '@/components/beta-testing/beta-fab'
 import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -32,6 +33,7 @@ export default function RootLayout({
                   {children}
                 </main>
                 <BottomNavigation />
+                <BetaFab />
               </div>
               <Toaster position="top-right" richColors />
             </WebSocketProvider>

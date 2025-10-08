@@ -1,83 +1,159 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
-import { createApiHandler } from '@/lib/api-handler'
+import { db } from '@/lib/db'
+import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { z } from 'zod'
 
-async function saveContentHandler(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: contentId } = await params
-  const { action } = await request.json() // 'save' or 'unsave'
-  
-  // Verify authentication
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-  }
-  
-  const token = authHeader.substring(7)
-  console.log('Save API - Token received:', token.substring(0, 20) + '...')
-  const payload = verifyToken(token)
-  console.log('Save API - Token payload:', payload)
-  if (!payload) {
-    console.log('Save API - Token verification failed')
-    return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
-  }
-  
-  const userId = payload.userId
-  
+const saveContentSchema = z.object({
+  action: z.enum(['save', 'unsave']),
+  type: z.enum(['hangout', 'event', 'content']).optional()
+})
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
+    }
+
+    const payload = verifyToken(token)
+    if (!payload) {
+      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+    }
+
+    const { id: contentId } = await params
+    const body = await request.json()
+    const { action, type = 'hangout' } = saveContentSchema.parse(body)
+
+    // Check if content exists
+    const content = await db.content.findUnique({
+      where: { id: contentId },
+      select: { id: true, type: true, title: true, privacyLevel: true }
+    })
+
+    if (!content) {
+      return NextResponse.json(createErrorResponse('Content not found', 'Content does not exist'), { status: 404 })
+    }
+
+    // Check if user has access to the content
+    const hasAccess = content.privacyLevel === 'PUBLIC' || 
+                     content.creatorId === payload.userId ||
+                     (await db.content_participants.findFirst({
+                       where: { contentId, userId: payload.userId }
+                     })) !== null
+
+    if (!hasAccess) {
+      return NextResponse.json(createErrorResponse('Forbidden', 'You do not have access to this content'), { status: 403 })
+    }
+
+    // Check if user has already saved this content
+    const existingSave = await db.content_saves.findFirst({
+      where: {
+        contentId,
+        userId: payload.userId
+      }
+    })
+
     if (action === 'save') {
-      // Save content to user's feed
-      await db.eventSave.upsert({
+      if (existingSave) {
+        return NextResponse.json(createSuccessResponse(
+          { saved: true, message: 'Content already saved' },
+          'Content is already saved'
+        ))
+      }
+
+      // Save the content
+      await db.content_saves.create({
+        data: {
+          contentId,
+          userId: payload.userId,
+          savedAt: new Date()
+        }
+      })
+
+      return NextResponse.json(createSuccessResponse(
+        { saved: true, message: 'Content saved successfully' },
+        'Content saved successfully'
+      ))
+    } else {
+      if (!existingSave) {
+        return NextResponse.json(createSuccessResponse(
+          { saved: false, message: 'Content not saved' },
+          'Content is not saved'
+        ))
+      }
+
+      // Remove the save
+      await db.content_saves.delete({
         where: {
           contentId_userId: {
-            contentId: contentId,
-            userId: userId
+            contentId,
+            userId: payload.userId
           }
-        },
-        update: {
-          createdAt: new Date()
-        },
-        create: {
-          userId: userId,
-          contentId: contentId,
-          createdAt: new Date()
         }
       })
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Content saved to your feed',
-        saved: true 
-      })
-    } else if (action === 'unsave') {
-      // Remove from user's feed
-      await db.eventSave.deleteMany({
-        where: {
-          userId: userId,
-          contentId: contentId
-        }
-      })
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Content removed from your feed',
-        saved: false 
-      })
-    } else {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid action. Use "save" or "unsave"' 
-      }, { status: 400 })
+
+      return NextResponse.json(createSuccessResponse(
+        { saved: false, message: 'Content unsaved successfully' },
+        'Content unsaved successfully'
+      ))
     }
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('Error saving content:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to save content' 
-    }, { status: 500 })
+    
+    if (error.name === 'ZodError') {
+      return NextResponse.json(createErrorResponse('Invalid request', 'Invalid request data'), { status: 400 })
+    }
+
+    return NextResponse.json(createErrorResponse(
+      'Internal server error',
+      'Failed to save content'
+    ), { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  return await saveContentHandler(request, { params })
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
+    }
+
+    const payload = verifyToken(token)
+    if (!payload) {
+      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+    }
+
+    const { id: contentId } = await params
+
+    // Check if user has saved this content
+    const savedContent = await db.content_saves.findFirst({
+      where: {
+        contentId,
+        userId: payload.userId
+      },
+      select: {
+        savedAt: true
+      }
+    })
+
+    return NextResponse.json(createSuccessResponse(
+      { saved: !!savedContent, savedAt: savedContent?.savedAt },
+      'Save status retrieved successfully'
+    ))
+
+  } catch (error: any) {
+    console.error('Error checking save status:', error)
+    return NextResponse.json(createErrorResponse(
+      'Internal server error',
+      'Failed to check save status'
+    ), { status: 500 })
+  }
 }

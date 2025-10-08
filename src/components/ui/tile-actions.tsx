@@ -1,13 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, Share2, Link2 } from 'lucide-react'
+import { Heart, Share2, Link2, Lock } from 'lucide-react'
 import { TouchButton } from './touch-button'
 import { useVisualFeedback } from '@/hooks/use-visual-feedback'
+import { useAuth } from '@/contexts/auth-context'
+import { sharingService, ShareData } from '@/lib/services/sharing-service'
+import { toast } from 'sonner'
 
 interface TileActionsProps {
   itemId: string
   itemType: 'event' | 'hangout' | 'content'
+  itemTitle?: string
+  itemDescription?: string
+  itemImage?: string
+  privacyLevel?: 'PUBLIC' | 'FRIENDS_ONLY' | 'PRIVATE'
   isSaved?: boolean
   onSave?: (itemId: string, itemType: string) => void
   onUnsave?: (itemId: string, itemType: string) => void
@@ -17,40 +24,36 @@ interface TileActionsProps {
 export function TileActions({ 
   itemId, 
   itemType, 
+  itemTitle = '',
+  itemDescription = '',
+  itemImage = '',
+  privacyLevel = 'PUBLIC',
   isSaved = false, 
   onSave, 
   onUnsave,
   className = '' 
 }: TileActionsProps) {
   const [saved, setSaved] = useState(isSaved)
-  const { triggerHaptic } = useVisualFeedback()
+  const { showFeedback } = useVisualFeedback()
+  const { isAuthenticated } = useAuth()
 
   const handleSave = async () => {
-    triggerHaptic('light')
+    showFeedback('success', 'Saving...')
     
+    if (!isAuthenticated) {
+      toast.error('Please sign in to save content')
+      return
+    }
+
     try {
-      const response = await fetch(`/api/content/${itemId}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          action: saved ? 'unsave' : 'save'
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
+      const success = await sharingService.toggleInterest(itemId, itemType, saved)
+      if (success) {
         setSaved(!saved)
         if (saved && onUnsave) {
           onUnsave(itemId, itemType)
         } else if (!saved && onSave) {
           onSave(itemId, itemType)
         }
-      } else {
-        console.error('Failed to save content:', data.error)
       }
     } catch (error) {
       console.error('Error saving content:', error)
@@ -58,51 +61,65 @@ export function TileActions({
   }
 
   const handleShare = async () => {
-    triggerHaptic('light')
+    showFeedback('success', 'Sharing...')
     
-    const url = `${window.location.origin}/${itemType}/${itemId}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Are you coming to this ${itemType}?`,
-          text: `Check out this ${itemType} I found!`,
-          url: url
-        })
-      } catch (err) {
-        console.log('Share cancelled or failed:', err)
-      }
-    } else {
-      // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(url)
-      // You could show a toast notification here
+    if (!sharingService.canSharePublicly(privacyLevel)) {
+      toast.error(sharingService.getPrivacyMessage(privacyLevel))
+      return
+    }
+
+    const shareData: ShareData = {
+      title: itemTitle || `Check out this ${itemType}!`,
+      description: itemDescription,
+      image: itemImage,
+      url: sharingService.generateShareUrl(itemId, itemType),
+      type: itemType,
+      privacyLevel
+    }
+
+    try {
+      await sharingService.shareContent(shareData, {
+        includeImage: true,
+        includeDescription: true,
+        customMessage: `Check out this ${itemType}!`
+      })
+    } catch (error) {
+      console.error('Share failed:', error)
     }
   }
 
   const handleCopyLink = async () => {
-    triggerHaptic('light')
+    showFeedback('success', 'Copying...')
     
-    const url = `${window.location.origin}/${itemType}/${itemId}`
-    
+    if (!sharingService.canSharePublicly(privacyLevel)) {
+      toast.error(sharingService.getPrivacyMessage(privacyLevel))
+      return
+    }
+
     try {
-      await navigator.clipboard.writeText(url)
-      // You could show a toast notification here
-    } catch (err) {
-      console.error('Failed to copy link:', err)
+      await sharingService.copyLink(itemId, itemType)
+    } catch (error) {
+      console.error('Copy link failed:', error)
     }
   }
+
+  const canInteract = isAuthenticated || privacyLevel === 'PUBLIC'
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       {/* Heart/Save Button */}
       <TouchButton
         onClick={handleSave}
+        disabled={!canInteract}
         className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
-          saved 
-            ? 'bg-red-500 text-white' 
-            : 'bg-black/20 text-white hover:bg-black/40'
+          !canInteract 
+            ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+            : saved 
+              ? 'bg-red-500 text-white' 
+              : 'bg-black/20 text-white hover:bg-black/40'
         }`}
         hapticType="light"
+        title={!canInteract ? 'Sign in to save content' : saved ? 'Remove from saved' : 'Save content'}
       >
         <Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
       </TouchButton>
@@ -110,19 +127,39 @@ export function TileActions({
       {/* Share Button */}
       <TouchButton
         onClick={handleShare}
-        className="h-8 w-8 rounded-full bg-black/20 text-white hover:bg-black/40 flex items-center justify-center transition-colors"
+        disabled={!canInteract}
+        className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+          !canInteract 
+            ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+            : 'bg-black/20 text-white hover:bg-black/40'
+        }`}
         hapticType="light"
+        title={!canInteract ? sharingService.getPrivacyMessage(privacyLevel) : 'Share content'}
       >
-        <Share2 className="h-4 w-4" />
+        {!canInteract ? (
+          <Lock className="h-4 w-4" />
+        ) : (
+          <Share2 className="h-4 w-4" />
+        )}
       </TouchButton>
 
       {/* Copy Link Button */}
       <TouchButton
         onClick={handleCopyLink}
-        className="h-8 w-8 rounded-full bg-black/20 text-white hover:bg-black/40 flex items-center justify-center transition-colors"
+        disabled={!canInteract}
+        className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+          !canInteract 
+            ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+            : 'bg-black/20 text-white hover:bg-black/40'
+        }`}
         hapticType="light"
+        title={!canInteract ? sharingService.getPrivacyMessage(privacyLevel) : 'Copy link'}
       >
-        <Link2 className="h-4 w-4" />
+        {!canInteract ? (
+          <Lock className="h-4 w-4" />
+        ) : (
+          <Link2 className="h-4 w-4" />
+        )}
       </TouchButton>
     </div>
   )

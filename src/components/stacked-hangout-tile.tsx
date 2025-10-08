@@ -254,12 +254,14 @@ export function StackedHangoutTile({
                 <TileActions
                   itemId={hangout.id}
                   itemType="hangout"
+                  itemTitle={hangout.title}
+                  itemDescription={hangout.description}
+                  itemImage={hangout.image}
+                  privacyLevel={hangout.privacyLevel}
                   onSave={(id, type) => {
-                    // TODO: Implement save functionality
                     console.log('Save hangout:', id, type)
                   }}
                   onUnsave={(id, type) => {
-                    // TODO: Implement unsave functionality
                     console.log('Unsave hangout:', id, type)
                   }}
                 />
