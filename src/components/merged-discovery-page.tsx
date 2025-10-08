@@ -34,6 +34,7 @@ import {
 import { useAuth } from '@/contexts/auth-context'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
+import { GuestLanding } from '@/components/guest-landing'
 import Link from 'next/link'
 
 interface Event {
@@ -781,6 +782,16 @@ export function MergedDiscoveryPage() {
   //     </div>
   //   )
   // }
+
+  // Show guest landing for non-authenticated users
+  if (!isAuthenticated) {
+    return (
+      <GuestLanding 
+        onSignIn={() => window.location.href = '/signin'}
+        onSignUp={() => window.location.href = '/signup'}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black">

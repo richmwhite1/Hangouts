@@ -12,6 +12,7 @@ import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
 import { HangoutMeta } from '@/components/seo/hangout-meta'
 import { TileActions } from '@/components/ui/tile-actions'
+import { sharingService } from '@/lib/services/sharing-service'
 
 interface Hangout {
   id: string
@@ -146,31 +147,30 @@ export default function HangoutDetailPage() {
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/hangout/${hangoutId}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Are you coming to ${hangout?.title}?`,
-          text: `Check out this hangout I found!`,
-          url: url
-        })
-        toast.success('Shared successfully!')
-      } catch (err) {
-        console.log('Share cancelled or failed:', err)
-        toast.error('Failed to share.')
-      }
-    } else {
-      // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(url)
-      toast.success('Link copied to clipboard!')
+    if (!hangout) return
+
+    const shareData = {
+      title: hangout.title,
+      description: hangout.description || '',
+      image: hangout.image || '',
+      url: `${window.location.origin}/hangout/${hangoutId}`,
+      type: 'hangout' as const,
+      privacyLevel: hangout.privacyLevel
+    }
+
+    try {
+      await sharingService.shareContent(shareData, {
+        includeImage: false, // Rich previews handled by meta tags
+        includeDescription: true
+      })
+    } catch (error) {
+      console.error('Share failed:', error)
     }
   }
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/hangout/${hangoutId}`
-    await navigator.clipboard.writeText(url)
-    toast.success('Link copied to clipboard!')
+    if (!hangout) return
+    await sharingService.copyLink(hangoutId, 'hangout')
   }
 
   const fetchHangout = async () => {
@@ -324,7 +324,15 @@ export default function HangoutDetailPage() {
   }
 
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
-    if (!token || !hangoutId) return
+    if (!token || !hangoutId) {
+      toast.error('Please sign in to RSVP', {
+        action: {
+          label: 'Sign In',
+          onClick: () => window.location.href = '/signin'
+        }
+      })
+      return
+    }
 
     try {
       setIsUpdatingRSVP(true)

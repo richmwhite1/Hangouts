@@ -27,67 +27,23 @@ export function BetaFab({ context }: BetaFabProps) {
 
   return (
     <>
-      {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <div className={`flex flex-col items-end gap-3 transition-all duration-300 ${
-          isExpanded ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0 pointer-events-none'
-        }`}>
-          {/* Feedback Options */}
-          <div className="flex flex-col gap-2">
-            <Button
-              onClick={() => handleFeedbackClick('bug')}
-              size="sm"
-              variant="outline"
-              className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all"
-            >
-              <Bug className="h-4 w-4 mr-2 text-red-500" />
-              Report Bug
-            </Button>
-            
-            <Button
-              onClick={() => handleFeedbackClick('feature')}
-              size="sm"
-              variant="outline"
-              className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all"
-            >
-              <Lightbulb className="h-4 w-4 mr-2 text-yellow-500" />
-              Suggest Feature
-            </Button>
-            
-            <Button
-              onClick={() => handleFeedbackClick('general')}
-              size="sm"
-              variant="outline"
-              className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all"
-            >
-              <MessageSquare className="h-4 w-4 mr-2 text-blue-500" />
-              General Feedback
-            </Button>
-          </div>
-        </div>
-
+      {/* Floating Action Button - Top Left */}
+      <div className="fixed top-4 left-4 z-40">
         {/* Main FAB */}
         <Button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className={`w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ${
-            isExpanded 
-              ? 'bg-red-500 hover:bg-red-600' 
-              : 'bg-blue-500 hover:bg-blue-600'
-          }`}
+          onClick={() => setIsModalOpen(true)}
+          className="w-8 h-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-blue-500 hover:bg-blue-600 p-0"
+          title="Beta Feedback"
         >
-          {isExpanded ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <div className="relative">
-              <Star className="h-6 w-6" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
-              >
-                β
-              </Badge>
-            </div>
-          )}
+          <div className="relative">
+            <Star className="h-4 w-4" />
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-3 w-3 p-0 flex items-center justify-center text-xs"
+            >
+              β
+            </Badge>
+          </div>
         </Button>
       </div>
 

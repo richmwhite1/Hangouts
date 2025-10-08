@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { TileActions } from '@/components/ui/tile-actions'
 import { EventMeta } from '@/components/seo/event-meta'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
+import { sharingService } from '@/lib/services/sharing-service'
 
 interface Event {
   id: string
@@ -105,7 +106,12 @@ export default function EventDetailPage() {
 
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
     if (!isAuthenticated || !token) {
-      toast.error('Please sign in to RSVP')
+      toast.error('Please sign in to RSVP', {
+        action: {
+          label: 'Sign In',
+          onClick: () => window.location.href = '/signin'
+        }
+      })
       return
     }
 
@@ -167,16 +173,25 @@ export default function EventDetailPage() {
   }
 
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: event?.title,
-        text: event?.description,
-        url: window.location.href
+  const handleShare = async () => {
+    if (!event) return
+
+    const shareData = {
+      title: event.title,
+      description: event.description || '',
+      image: event.coverImage || '',
+      url: window.location.href,
+      type: 'event' as const,
+      privacyLevel: event.privacyLevel || 'PUBLIC'
+    }
+
+    try {
+      await sharingService.shareContent(shareData, {
+        includeImage: false, // Rich previews handled by meta tags
+        includeDescription: true
       })
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-      toast.success('Event link copied to clipboard!')
+    } catch (error) {
+      console.error('Share failed:', error)
     }
   }
 

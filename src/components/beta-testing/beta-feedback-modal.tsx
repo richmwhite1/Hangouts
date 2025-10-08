@@ -59,11 +59,21 @@ export function BetaFeedbackModal({ isOpen, onClose, context }: BetaFeedbackModa
         }
       }
 
-      // TODO: Send to backend API
-      console.log('Beta feedback submitted:', feedbackData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Send to backend API
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback')
+      }
+
+      const result = await response.json()
+      console.log('Feedback submitted successfully:', result)
       
       toast.success('Thank you for your feedback!')
       handleClose()

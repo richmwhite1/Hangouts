@@ -41,7 +41,12 @@ export function TileActions({
     showFeedback('success', 'Saving...')
     
     if (!isAuthenticated) {
-      toast.error('Please sign in to save content')
+      toast.error('Please sign in to save content', {
+        action: {
+          label: 'Sign In',
+          onClick: () => window.location.href = '/signin'
+        }
+      })
       return
     }
 
@@ -64,7 +69,16 @@ export function TileActions({
     showFeedback('success', 'Sharing...')
     
     if (!sharingService.canSharePublicly(privacyLevel)) {
-      toast.error(sharingService.getPrivacyMessage(privacyLevel))
+      if (!isAuthenticated) {
+        toast.error('Please sign in to share this content', {
+          action: {
+            label: 'Sign In',
+            onClick: () => window.location.href = '/signin'
+          }
+        })
+      } else {
+        toast.error(sharingService.getPrivacyMessage(privacyLevel))
+      }
       return
     }
 

@@ -174,13 +174,13 @@ export async function GET(
             if (!votes[vote.userId]) {
               votes[vote.userId] = []
             }
-            votes[vote.userId].push(vote.optionId || vote.option)
+            votes[vote.userId].push(vote.option)
           })
         } else if (poll.status === 'CONSENSUS_REACHED' && pollOptions.length > 0) {
           // Find the winning option based on votes
           const optionVoteCounts = {}
           poll.votes.forEach(vote => {
-            const optionId = vote.optionId || vote.option
+            const optionId = vote.option
             optionVoteCounts[optionId] = (optionVoteCounts[optionId] || 0) + 1
           })
           

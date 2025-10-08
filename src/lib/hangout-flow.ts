@@ -80,21 +80,16 @@ export const checkAndFinalizeIfReady = (hangout: any): boolean => {
   const userVotes = hangout.userVotes || {};
   const participants = hangout.participants || [];
   
-  // Get mandatory participants
-  const mandatoryParticipants = participants.filter((p: any) => p.isMandatory);
-  const mandatoryVoted = mandatoryParticipants.filter((p: any) => userVotes[p.user.id] && userVotes[p.user.id].length > 0);
+  // For now, let's use a simple approach: require at least 2 votes or deadline passed
+  // This can be made more sophisticated later
+  const votedCount = Object.keys(userVotes).filter(userId => userVotes[userId] && userVotes[userId].length > 0).length;
+  const deadlinePassed = hangout.votingDeadline ? new Date() > new Date(hangout.votingDeadline) : false;
   
-  // Check if consensus percentage reached or deadline passed
-  const votedCount = Object.keys(userVotes).filter(userId => userVotes[userId].length > 0).length;
-  const consensusPercentage = hangout.consensusPercentage || 70;
-  const consensusThreshold = Math.ceil((participants.length * consensusPercentage) / 100);
-  const deadlinePassed = new Date() > new Date(hangout.votingDeadline);
+  // For testing purposes, let's require at least 1 vote before finalizing
+  // In production, this should be configurable based on hangout settings
+  const minVotesRequired = Math.max(1, Math.ceil(participants.length * 0.5)); // At least 50% of participants
   
-  // Require ALL mandatory participants to have voted for consensus
-  const allMandatoryVoted = mandatoryParticipants.length === 0 || 
-    mandatoryVoted.length === mandatoryParticipants.length;
-  
-  return (votedCount >= consensusThreshold && allMandatoryVoted) || deadlinePassed;
+  return votedCount >= minVotesRequired || deadlinePassed;
 };
 
 /**

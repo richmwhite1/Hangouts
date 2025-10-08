@@ -70,17 +70,8 @@ export class SharingService {
           url: url
         }
 
-        // Add image if supported and available
-        if (includeImage && image && navigator.canShare({ ...sharePayload, files: [new File([], 'image.jpg')] })) {
-          try {
-            const response = await fetch(image)
-            const blob = await response.blob()
-            const file = new File([blob], 'hangout-image.jpg', { type: 'image/jpeg' })
-            sharePayload.files = [file]
-          } catch (error) {
-            console.warn('Could not include image in share:', error)
-          }
-        }
+        // Note: We don't include image files in native sharing
+        // Rich previews are handled by Open Graph meta tags instead
 
         if (navigator.canShare(sharePayload)) {
           await navigator.share(sharePayload)
