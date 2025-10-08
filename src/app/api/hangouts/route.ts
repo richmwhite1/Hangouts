@@ -242,7 +242,7 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
     const hangoutWithFlow = {
       ...hangout,
       state: flowResult.state,
-      finalizedOption: flowResult.finalizedOption,
+      finalizedOption: flowResult.requiresVoting ? null : flowResult.finalizedOption, // Don't set finalized option if voting is required
       requiresVoting: flowResult.requiresVoting,
       requiresRSVP: flowResult.requiresRSVP,
       votes: flowResult.votes || {},

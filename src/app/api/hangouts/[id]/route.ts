@@ -126,7 +126,71 @@ export async function GET(
         }
       }
 
-      // Transform the data to match frontend expectations (simplified)
+      // Get poll data for voting information
+      const poll = await db.polls.findFirst({
+        where: { contentId: hangoutId },
+        include: {
+          pollOptions: {
+            include: {
+              votes: true
+            }
+          }
+        }
+      })
+
+      // Determine hangout state based on poll status
+      let hangoutState = 'confirmed'
+      let requiresVoting = false
+      let finalizedOption = null
+      let options = []
+      let votes = {}
+      let votingDeadline = null
+
+      if (poll) {
+        if (poll.status === 'ACTIVE' && poll.pollOptions.length > 1) {
+          hangoutState = 'polling'
+          requiresVoting = true
+          options = poll.pollOptions.map(option => ({
+            id: option.id,
+            title: option.text,
+            description: option.description,
+            location: option.location,
+            dateTime: option.dateTime,
+            price: option.price,
+            hangoutUrl: option.hangoutUrl,
+            eventImage: option.eventImage
+          }))
+          votingDeadline = poll.expiresAt
+          
+          // Build votes object from poll data
+          votes = {}
+          poll.pollOptions.forEach(option => {
+            option.votes.forEach(vote => {
+              if (!votes[vote.userId]) {
+                votes[vote.userId] = []
+              }
+              votes[vote.userId].push(option.id)
+            })
+          })
+        } else if (poll.status === 'CONSENSUS_REACHED' && poll.pollOptions.length > 0) {
+          // Find the winning option
+          const winningOption = poll.pollOptions.reduce((max, current) => 
+            current.votes.length > max.votes.length ? current : max
+          )
+          finalizedOption = {
+            id: winningOption.id,
+            title: winningOption.text,
+            description: winningOption.description,
+            location: winningOption.location,
+            dateTime: winningOption.dateTime,
+            price: winningOption.price,
+            hangoutUrl: winningOption.hangoutUrl,
+            eventImage: winningOption.eventImage
+          }
+        }
+      }
+
+      // Transform the data to match frontend expectations
       const transformedHangout = {
         ...hangout,
         creator: hangout.users,
@@ -139,16 +203,16 @@ export async function GET(
           content_shares: 0,
           messages: 0
         },
-        // Simplified options
-        options: [],
         // Add hangout state and voting info
-        state: 'confirmed',
-        requiresVoting: false,
+        state: hangoutState,
+        requiresVoting: requiresVoting,
         requiresRSVP: true,
-        votes: {},
+        votes: votes,
         userVotes: {},
         userPreferred: {},
-        finalizedOption: {
+        options: options,
+        votingDeadline: votingDeadline,
+        finalizedOption: finalizedOption || (hangoutState === 'confirmed' ? {
           id: 'hangout_basic',
           title: hangout.title,
           description: hangout.description,
@@ -158,7 +222,7 @@ export async function GET(
           dateTime: hangout.startTime?.toISOString(),
           price: hangout.priceMin || 0,
           eventImage: hangout.image
-        }
+        } : null)
       }
 
       return NextResponse.json({
