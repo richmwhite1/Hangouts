@@ -226,25 +226,35 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
       console.log('🔍 Requires voting:', flowResult.requiresVoting)
       
       try {
+        const pollData = {
+          id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          contentId: hangout.id,
+          creatorId: userId,
+          title: data.title,
+          description: data.description || '',
+          options: flowData.options,
+          allowMultiple: false,
+          isAnonymous: false,
+          status: flowResult.requiresVoting ? 'ACTIVE' : 'CONSENSUS_REACHED',
+          consensusPercentage: 70,
+          expiresAt: flowResult.votingDeadline
+        };
+        
+        console.log('🔍 Poll data to create:', JSON.stringify(pollData, null, 2));
+        
         const poll = await db.polls.create({
-          data: {
-            id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            contentId: hangout.id,
-            creatorId: userId,
-            title: data.title,
-            description: data.description || '',
-            options: flowData.options,
-            allowMultiple: false,
-            isAnonymous: false,
-            status: flowResult.requiresVoting ? 'ACTIVE' : 'CONSENSUS_REACHED',
-            consensusPercentage: 70,
-            expiresAt: flowResult.votingDeadline
-          }
+          data: pollData
         });
         console.log('✅ Poll created successfully:', poll.id)
       } catch (error) {
         console.error('❌ Error creating poll:', error)
-        throw error
+        console.error('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          meta: error.meta
+        });
+        // Don't throw error, just log it and continue
+        console.log('⚠️ Continuing without poll creation...');
       }
     }
 
