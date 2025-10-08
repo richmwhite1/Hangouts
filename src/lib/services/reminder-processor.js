@@ -1,10 +1,15 @@
-const { PrismaClient } = require('@prisma/client')
-const db = new PrismaClient()
+const { db } = require('../../db')
 
 class ReminderProcessor {
   static intervalId = null
 
   static start(intervalMs = 60000) {
+    // Disable reminder processor in production to prevent memory leaks
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Reminder processor disabled in production to prevent memory issues')
+      return
+    }
+
     if (this.intervalId) {
       console.log('Reminder processor already running')
       return

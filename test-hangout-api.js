@@ -32,8 +32,8 @@ async function testHangoutAPI() {
     }
 
     const signInData = await signInResponse.json();
-    const token = signInData.token;
-    console.log('✅ Sign in successful, got token');
+    const token = signInData.data?.token || signInData.token;
+    console.log('✅ Sign in successful, got token, length:', token?.length || 0);
 
     // Test 3: Test with non-existent hangout ID (the one causing 502 error)
     console.log('\n🔍 Test 3: Test with non-existent hangout ID');

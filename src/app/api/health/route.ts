@@ -5,13 +5,20 @@ export async function GET() {
     console.log('🏥 Health check requested')
     
     // Simple health check without database operations for Railway
+    const memoryUsage = process.memoryUsage()
     const healthData = {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
       port: process.env.PORT || '3000',
-      version: process.version
+      version: process.version,
+      memory: {
+        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024), // MB
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
+        rss: Math.round(memoryUsage.rss / 1024 / 1024), // MB
+        external: Math.round(memoryUsage.external / 1024 / 1024) // MB
+      }
     }
     
     console.log('✅ Health check response:', healthData)

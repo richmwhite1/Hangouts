@@ -10,6 +10,10 @@ export async function GET(
   const { id: hangoutId } = await params
   console.log('🔍 Hangout ID:', hangoutId)
   
+  // Log memory usage at start of request
+  const memoryUsage = process.memoryUsage()
+  console.log(`🧠 Memory usage - Heap: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB, RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB`)
+  
   if (!hangoutId) {
     console.log('❌ Hangout ID is required')
     return NextResponse.json(
