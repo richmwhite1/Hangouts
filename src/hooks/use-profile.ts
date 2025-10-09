@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { apiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/auth-context'
+import { clerkApiClient } from '@/lib/clerk-api-client'
+import { useAuth, useUser } from '@clerk/nextjs'
 
 interface UserProfile {
   id: string
@@ -63,7 +63,8 @@ interface UserHangout {
 }
 
 export function useProfile() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded: authLoading, getToken } = useAuth()
+  const { user } = useUser()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userHangouts, setUserHangouts] = useState<UserHangout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -72,7 +73,7 @@ export function useProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       // Don't fetch if auth is still loading or user is not authenticated
-      if (authLoading || !isAuthenticated) {
+      if (authLoading || !isSignedIn || !user) {
         setIsLoading(authLoading)
         return
       }
@@ -81,16 +82,11 @@ export function useProfile() {
         setIsLoading(true)
         setError(null)
         
-        // Get current user to get username
-        const { user } = await apiClient.getCurrentUser()
+        // Get username from Clerk user (use email as fallback if no username)
+        const username = user.username || user.primaryEmailAddress?.emailAddress?.split('@')[0] || 'user'
         
-        // Fetch full profile data using the profile API
-        const response = await fetch(`/api/profile?username=${user.username}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile')
-        }
-        
-        const data = await response.json()
+        // Fetch full profile data using the Clerk API client
+        const data = await clerkApiClient.getProfile(username, getToken)
         if (!data.success) {
           throw new Error(data.error || 'Failed to fetch profile')
         }
@@ -124,11 +120,11 @@ export function useProfile() {
     }
     
     fetchProfile()
-  }, [isAuthenticated, authLoading])
+  }, [isSignedIn, authLoading, getToken, user])
 
   const refetch = async () => {
     // Don't refetch if user is not authenticated
-    if (!isAuthenticated) {
+    if (!isSignedIn || !user) {
       return
     }
 
@@ -136,16 +132,11 @@ export function useProfile() {
       setIsLoading(true)
       setError(null)
       
-      // Get current user to get username
-      const { user } = await apiClient.getCurrentUser()
+      // Get username from Clerk user (use email as fallback if no username)
+      const username = user.username || user.primaryEmailAddress?.emailAddress?.split('@')[0] || 'user'
       
-      // Fetch full profile data using the profile API
-      const response = await fetch(`/api/profile?username=${user.username}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile')
-      }
-      
-      const data = await response.json()
+      // Fetch full profile data using the Clerk API client
+      const data = await clerkApiClient.getProfile(username, getToken)
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch profile')
       }

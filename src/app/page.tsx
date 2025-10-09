@@ -3,13 +3,13 @@
 import { Navigation } from "@/components/navigation"
 import { HangoutCalendar } from "@/components/hangout-calendar"
 import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
-import { GuestLanding } from "@/components/guest-landing"
 import { useEffect, useState, useMemo } from "react"
-import { useAuth } from "@/contexts/auth-context"
+import { useUser, useAuth, SignedIn, SignedOut } from "@clerk/nextjs"
 import { getHangoutActionStatus } from "@/hooks/use-hangout-actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
 import { useRouter } from "next/navigation"
+import { AuthWrapper } from "@/components/auth-wrapper"
 
 interface Hangout {
   id: string
@@ -53,7 +53,8 @@ interface Hangout {
 }
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading: authLoading, token } = useAuth()
+  const { isSignedIn, isLoaded: authLoaded, getToken } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [loading, setLoading] = useState(true)
@@ -136,7 +137,7 @@ export default function HomePage() {
     
     const fetchHangouts = async () => {
       // Don't fetch if auth is still loading
-      if (authLoading) {
+      if (!authLoaded) {
         setLoading(true)
         return
       }
@@ -148,8 +149,12 @@ export default function HomePage() {
           'Content-Type': 'application/json'
         }
         
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
+        if (user) {
+          // Get the session token from Clerk
+          const token = await getToken()
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+          }
         }
         
         const response = await fetch('/api/feed-simple?type=home&contentType=hangouts', {
@@ -175,26 +180,55 @@ export default function HomePage() {
     }
 
     fetchHangouts()
-  }, [authLoading])
+  }, [authLoaded, user, getToken])
   
 
   // Show guest landing for non-authenticated users
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
-      <GuestLanding 
-        onSignIn={() => window.location.href = '/signin'}
-        onSignUp={() => window.location.href = '/signup'}
-      />
+      <div className="min-h-screen bg-background text-foreground dark flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#6c47ff] to-[#00BFFF] bg-clip-text text-transparent">
+              Hangout
+            </h1>
+            <p className="text-xl text-gray-300 mb-2">Welcome to Hangouts 3.0</p>
+            <p className="text-gray-400">
+              Plan amazing hangouts with friends. Sign in to get started!
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            <a 
+              href="/login" 
+              className="w-full bg-[#6c47ff] text-white px-6 py-3 rounded-lg hover:bg-[#5a3fd4] transition-colors font-medium block text-center"
+            >
+              Sign In
+            </a>
+            <a 
+              href="/signup" 
+              className="w-full border border-[#6c47ff] text-[#6c47ff] px-6 py-3 rounded-lg hover:bg-[#6c47ff] hover:text-white transition-colors font-medium block text-center"
+            >
+              Sign Up
+            </a>
+          </div>
+          
+          <div className="mt-8 text-sm text-gray-500">
+            <p>Secure authentication powered by Clerk</p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div 
-      {...swipeGestures}
-      className="min-h-screen"
-    >
-      <Navigation />
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+    <AuthWrapper>
+      <div 
+        {...swipeGestures}
+        className="min-h-screen"
+      >
+        <Navigation />
+        <main className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
           <HangoutCalendar hangouts={hangouts} events={[]} />
         </div>
@@ -234,12 +268,12 @@ export default function HomePage() {
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold mb-4">Welcome to Hangouts 3.0</h2>
               <p className="text-gray-600 mb-6">
-                {!isAuthenticated 
+                {!isSignedIn 
                   ? "Please sign in to view your hangouts and create new ones." 
                   : "No hangouts found. Create your first hangout!"
                 }
               </p>
-              {!isAuthenticated && (
+              {!isSignedIn && (
                 <div className="space-x-4">
                   <a href="/login" className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
                     Sign In
@@ -268,7 +302,8 @@ export default function HomePage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AuthWrapper>
   )
 }

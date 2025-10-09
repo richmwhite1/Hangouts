@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar, Download, ExternalLink } from 'lucide-react'
-import { calendarService, CalendarEvent } from '@/lib/services/calendar-service'
+import { calendarService, CalendarService, CalendarEvent } from '@/lib/services/calendar-service'
 import { toast } from 'sonner'
 
 interface CalendarButtonsProps {
@@ -40,7 +40,7 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
     }
   }
 
-  if (!calendarService.isCalendarSupported()) {
+  if (!CalendarService.isCalendarSupported()) {
     return null
   }
 
@@ -72,3 +72,5 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
     </div>
   )
 }
+
+

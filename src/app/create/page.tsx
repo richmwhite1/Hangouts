@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth, useUser } from '@clerk/nextjs'
 import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHangoutForm'
-import { apiClient } from '@/lib/api-client'
+import { clerkApiClient } from '@/lib/clerk-api-client'
 import { toast } from 'sonner'
 
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isAuthenticated, user, token } = useAuth()
+  const { isSignedIn, getToken } = useAuth()
+  const { user } = useUser()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -18,10 +19,10 @@ export default function CreateHangoutPage() {
   }, [])
 
   useEffect(() => {
-    if (isClient && (!isAuthenticated || !user || !token)) {
+    if (isClient && !isSignedIn) {
       router.push('/login')
     }
-  }, [isClient, isAuthenticated, user, token, router])
+  }, [isClient, isSignedIn, router])
 
   if (!isClient) {
     return (
@@ -34,7 +35,7 @@ export default function CreateHangoutPage() {
     )
   }
 
-  if (!isAuthenticated || !user || !token) {
+  if (!isSignedIn || !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -64,7 +65,7 @@ export default function CreateHangoutPage() {
           uploadFormData.append('file', formData.image)
           uploadFormData.append('type', 'hangout')
 
-          const token = localStorage.getItem('auth_token')
+          const token = await getToken()
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: {
@@ -106,13 +107,13 @@ export default function CreateHangoutPage() {
             location: option.location || '',
             dateTime: option.dateTime || new Date().toISOString(),
             price: option.price || 0,
-            eventImage: option.eventImage || ''
+            eventImage: (option as any).eventImage || ''
           }))
       }
 
       console.log('Creating hangout with data:', hangoutData)
 
-      const response = await apiClient.createHangout(hangoutData)
+      const response = await clerkApiClient.createHangout(hangoutData, getToken) as any
       
       if (response.success) {
         toast.success('Hangout created successfully!')

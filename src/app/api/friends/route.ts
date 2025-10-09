@@ -1,41 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
+import { auth } from '@clerk/nextjs/server'
 import { FriendsSystem } from '@/lib/friends-system'
 
 // Get user's friends
-async function getFriendsHandler(request: AuthenticatedRequest) {
-  const userId = request.user.userId
+async function getFriendsHandler(request: NextRequest) {
+  const { userId } = auth()
+  
+  if (!userId) {
+    return NextResponse.json({
+      success: false,
+      error: 'Authentication required'
+    }, { status: 401 })
+  }
 
   try {
     const friends = await FriendsSystem.getUserFriends(userId)
-    return createSuccessResponse({ friends })
+    return NextResponse.json({
+      success: true,
+      data: { friends }
+    })
   } catch (error) {
     console.error('Error fetching friends:', error)
-    return createErrorResponse('Failed to fetch friends', error instanceof Error ? error.message : 'Unknown error')
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch friends',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
 // Send friend request
-async function sendFriendRequestHandler(request: AuthenticatedRequest) {
-  const userId = request.user.userId
+async function sendFriendRequestHandler(request: NextRequest) {
+  const { userId } = auth()
+  
+  if (!userId) {
+    return NextResponse.json({
+      success: false,
+      error: 'Authentication required'
+    }, { status: 401 })
+  }
+
   const { receiverId } = await request.json()
 
   if (!receiverId) {
-    return createErrorResponse('Receiver ID is required', 'MISSING_RECEIVER_ID')
+    return NextResponse.json({
+      success: false,
+      error: 'Receiver ID is required',
+      message: 'MISSING_RECEIVER_ID'
+    }, { status: 400 })
   }
 
   if (userId === receiverId) {
-    return createErrorResponse('Cannot send friend request to yourself', 'INVALID_RECEIVER')
+    return NextResponse.json({
+      success: false,
+      error: 'Cannot send friend request to yourself',
+      message: 'INVALID_RECEIVER'
+    }, { status: 400 })
   }
 
   try {
     const friendRequest = await FriendsSystem.sendFriendRequest(userId, receiverId)
-    return createSuccessResponse({ friendRequest }, 'Friend request sent successfully')
+    return NextResponse.json({
+      success: true,
+      data: { friendRequest },
+      message: 'Friend request sent successfully'
+    })
   } catch (error) {
     console.error('Error sending friend request:', error)
-    return createErrorResponse('Failed to send friend request', error instanceof Error ? error.message : 'Unknown error')
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to send friend request',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
-export const GET = createApiHandler(getFriendsHandler)
-export const POST = createApiHandler(sendFriendRequestHandler)
+export const GET = getFriendsHandler
+export const POST = sendFriendRequestHandler

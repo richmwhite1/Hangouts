@@ -25,6 +25,12 @@ export function useSwipeGestures(options: SwipeGestureOptions = {}) {
   const minSwipeDistance = threshold
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
+    // Don't prevent default on interactive elements
+    const target = e.target as HTMLElement
+    if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('button') || target.closest('input') || target.closest('textarea')) {
+      return
+    }
+    
     if (preventDefault) {
       e.preventDefault()
     }
@@ -36,6 +42,12 @@ export function useSwipeGestures(options: SwipeGestureOptions = {}) {
   }, [preventDefault])
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
+    // Don't prevent default on interactive elements
+    const target = e.target as HTMLElement
+    if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('button') || target.closest('input') || target.closest('textarea')) {
+      return
+    }
+    
     if (preventDefault) {
       e.preventDefault()
     }

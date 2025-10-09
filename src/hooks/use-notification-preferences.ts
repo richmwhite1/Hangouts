@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 
 interface NotificationPreferences {
   id: string
@@ -21,10 +21,10 @@ export function useNotificationPreferences() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated, token } = useAuth()
+  const { isSignedIn, getToken } = useAuth()
 
   const fetchPreferences = useCallback(async () => {
-    if (!isAuthenticated || !token) {
+    if (!isSignedIn) {
       setPreferences(null)
       return
     }
@@ -33,6 +33,7 @@ export function useNotificationPreferences() {
       setIsLoading(true)
       setError(null)
       
+      const token = await getToken()
       const response = await fetch('/api/notifications/preferences', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -57,15 +58,16 @@ export function useNotificationPreferences() {
     } finally {
       setIsLoading(false)
     }
-  }, [isAuthenticated, token])
+  }, [isSignedIn, getToken])
 
   const updatePreferences = useCallback(async (updates: Partial<NotificationPreferences>) => {
-    if (!token) return false
+    if (!isSignedIn) return false
 
     try {
       setIsSaving(true)
       setError(null)
       
+      const token = await getToken()
       const response = await fetch('/api/notifications/preferences', {
         method: 'PUT',
         headers: {
@@ -94,7 +96,7 @@ export function useNotificationPreferences() {
     } finally {
       setIsSaving(false)
     }
-  }, [token])
+  }, [isSignedIn, getToken])
 
   const togglePreference = useCallback(async (key: keyof NotificationPreferences) => {
     if (!preferences) return false

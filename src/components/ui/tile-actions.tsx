@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Heart, Share2, Link2, Lock } from 'lucide-react'
 import { TouchButton } from './touch-button'
 import { useVisualFeedback } from '@/hooks/use-visual-feedback'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { sharingService, ShareData } from '@/lib/services/sharing-service'
 import { toast } from 'sonner'
 
@@ -35,12 +35,12 @@ export function TileActions({
 }: TileActionsProps) {
   const [saved, setSaved] = useState(isSaved)
   const { showFeedback } = useVisualFeedback()
-  const { isAuthenticated } = useAuth()
+  const { isSignedIn } = useAuth()
 
   const handleSave = async () => {
     showFeedback('success', 'Saving...')
     
-    if (!isAuthenticated) {
+    if (!isSignedIn) {
       toast.error('Please sign in to save content', {
         action: {
           label: 'Sign In',
@@ -69,7 +69,7 @@ export function TileActions({
     showFeedback('success', 'Sharing...')
     
     if (!sharingService.canSharePublicly(privacyLevel)) {
-      if (!isAuthenticated) {
+      if (!isSignedIn) {
         toast.error('Please sign in to share this content', {
           action: {
             label: 'Sign In',
@@ -117,7 +117,7 @@ export function TileActions({
     }
   }
 
-  const canInteract = isAuthenticated || privacyLevel === 'PUBLIC'
+  const canInteract = isSignedIn || privacyLevel === 'PUBLIC'
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>

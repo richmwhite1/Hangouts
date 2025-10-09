@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { apiClient, User } from '@/lib/api-client'
-import { useAuth } from '@/contexts/auth-context'
+import { User } from '@/lib/api-client'
+import { useAuth } from '@clerk/nextjs'
 
 interface FriendRequest {
   id: string
@@ -27,7 +27,7 @@ interface UseFriendsReturn {
 }
 
 export const useFriends = (): UseFriendsReturn => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded: authLoading, getToken } = useAuth()
   const [friends, setFriends] = useState<User[]>([])
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -36,7 +36,7 @@ export const useFriends = (): UseFriendsReturn => {
 
   const fetchData = async () => {
     // Don't fetch if auth is still loading or user is not authenticated
-    if (authLoading || !isAuthenticated) {
+    if (authLoading || !isSignedIn) {
       setFriends([])
       setSentRequests([])
       setReceivedRequests([])
@@ -48,14 +48,27 @@ export const useFriends = (): UseFriendsReturn => {
       setIsLoading(true)
       setError(null)
       
-      const [friendsData, requestsData] = await Promise.all([
-        apiClient.getFriends(),
-        apiClient.getFriendRequests()
+      const token = await getToken()
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+      
+      const [friendsResponse, requestsResponse] = await Promise.all([
+        fetch('/api/friends', { headers }),
+        fetch('/api/friends/requests', { headers })
       ])
       
-      setFriends(friendsData.friends)
-      setSentRequests(requestsData.sent)
-      setReceivedRequests(requestsData.received)
+      if (!friendsResponse.ok || !requestsResponse.ok) {
+        throw new Error('Failed to fetch friends data')
+      }
+      
+      const friendsData = await friendsResponse.json()
+      const requestsData = await requestsResponse.json()
+      
+      setFriends(friendsData.data?.friends || [])
+      setSentRequests(requestsData.data?.requests?.sent || [])
+      setReceivedRequests(requestsData.data?.requests?.received || [])
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch friends data'
       setError(errorMessage)
@@ -67,7 +80,19 @@ export const useFriends = (): UseFriendsReturn => {
 
   const sendFriendRequest = async (userId: string, message?: string) => {
     try {
-      await apiClient.sendFriendRequest(userId, message)
+      const token = await getToken()
+      const response = await fetch('/api/friends', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ receiverId: userId, message })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to send friend request')
+      }
       await fetchData() // Refresh data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send friend request'
@@ -85,7 +110,19 @@ export const useFriends = (): UseFriendsReturn => {
 
   const respondToFriendRequest = async (requestId: string, status: 'ACCEPTED' | 'DECLINED') => {
     try {
-      await apiClient.respondToFriendRequest(requestId, status)
+      const token = await getToken()
+      const response = await fetch('/api/friends/requests', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ requestId, status })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to respond to friend request')
+      }
       await fetchData() // Refresh data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to respond to friend request'
@@ -96,7 +133,7 @@ export const useFriends = (): UseFriendsReturn => {
 
   useEffect(() => {
     fetchData()
-  }, [isAuthenticated, authLoading])
+  }, [isSignedIn, authLoading, getToken])
 
   return {
     friends,

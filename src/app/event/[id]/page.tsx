@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, MapPin, DollarSign, Users, Clock, Share2, Heart, CheckCircle, XCircle, HelpCircle } from 'lucide-react'
 import { OptimizedImage } from '@/components/ui/optimized-image'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner'
 import { TileActions } from '@/components/ui/tile-actions'
 import { EventMeta } from '@/components/seo/event-meta'
@@ -45,7 +45,7 @@ interface Event {
 export default function EventDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { isAuthenticated, user, token } = useAuth()
+  const { isSignedIn, user, getToken } = useAuth()
   const [event, setEvent] = useState<Event | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,6 +63,7 @@ export default function EventDetailPage() {
   const fetchEvent = async () => {
     try {
       setLoading(true)
+      const token = await getToken()
       const response = await fetch(`/api/events/${params.id}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       })
@@ -105,11 +106,11 @@ export default function EventDetailPage() {
   }
 
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
-    if (!isAuthenticated || !token) {
+    if (!isSignedIn) {
       toast.error('Please sign in to RSVP', {
         action: {
           label: 'Sign In',
-          onClick: () => window.location.href = '/signin'
+          onClick: () => window.location.href = '/login'
         }
       })
       return
@@ -117,6 +118,7 @@ export default function EventDetailPage() {
 
     try {
       setIsRsvping(true)
+      const token = await getToken()
       const response = await fetch(`/api/events/${params.id}/rsvp`, {
         method: 'POST',
         headers: {
@@ -142,13 +144,14 @@ export default function EventDetailPage() {
   }
 
   const handleSaveEvent = async () => {
-    if (!isAuthenticated || !token) {
+    if (!isSignedIn) {
       toast.error('Please sign in to save events')
       return
     }
 
     try {
       setIsSaving(true)
+      const token = await getToken()
       const response = await fetch(`/api/events/${params.id}/save`, {
         method: 'POST',
         headers: {
@@ -322,7 +325,7 @@ export default function EventDetailPage() {
         </Card>
 
         {/* RSVP Section */}
-        {isAuthenticated && (
+        {isSignedIn && (
           <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-4">
               <h3 className="text-lg font-semibold text-white mb-4">Are you going?</h3>
@@ -391,7 +394,7 @@ export default function EventDetailPage() {
         </div>
 
         {/* Calendar Buttons for Non-Authenticated Users */}
-        {!isAuthenticated && (
+        {!isSignedIn && (
           <div className="mt-6 p-4 bg-gray-800 rounded-lg">
             <h3 className="text-white font-medium mb-3 text-center">Add to Calendar</h3>
             <CalendarButtons

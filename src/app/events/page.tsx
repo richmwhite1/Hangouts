@@ -421,29 +421,43 @@ export default function EventsPage() {
                     </div>
                     
                     <div className="mt-4 flex gap-2">
-                      <Button 
-                        className="flex-1 bg-purple-600 hover:bg-purple-700"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          // TODO: Implement create hangout functionality
-                          console.log('Create hangout for event:', event.id)
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Hangout
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="bg-gray-700 border-gray-600 text-white"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          window.location.href = `/event/${event.id}`
-                        }}
-                      >
-                        View Details
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            console.log('Going to event:', event.id)
+                          }}
+                        >
+                          Going
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-xs border-yellow-600"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            console.log('Maybe going to event:', event.id)
+                          }}
+                        >
+                          Maybe
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-xs border-red-600"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            console.log('Not going to event:', event.id)
+                          }}
+                        >
+                          Not Going
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

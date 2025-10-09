@@ -101,3 +101,5 @@ async function testDatabaseConnection() {
 }
 
 testDatabaseConnection();
+
+

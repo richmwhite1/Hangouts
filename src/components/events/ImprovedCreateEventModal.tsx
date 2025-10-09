@@ -75,7 +75,7 @@ const commonTags = [
 ]
 
 export function ImprovedCreateEventModal() {
-  const { user, token } = useAuth()
+  const { user, getToken } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isScraping, setIsScraping] = useState(false)
@@ -217,10 +217,11 @@ export function ImprovedCreateEventModal() {
   }
 
   const handleScrapeUrl = async () => {
-    if (!formData.eventUrl.trim() || !token) return
+    if (!formData.eventUrl.trim()) return
 
     setIsScraping(true)
     try {
+      const token = await getToken()
       const response = await fetch('/api/scrape-event', {
         method: 'POST',
         headers: {
@@ -306,10 +307,9 @@ export function ImprovedCreateEventModal() {
   }
 
   const handleSubmit = async () => {
-    if (!token) return
-
     setIsLoading(true)
     try {
+      const token = await getToken()
       // Upload cover image if provided
       let coverImageUrl = formData.coverImagePreview
       if (formData.coverImage) {

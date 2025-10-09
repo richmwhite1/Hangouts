@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth, useUser } from '@clerk/nextjs'
 import { apiClient } from '@/lib/api-client'
 
 interface UnreadCount {
@@ -17,10 +17,11 @@ export function useUnreadCounts() {
   const [totalUnreadCount, setTotalUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated, token } = useAuth()
+  const { isSignedIn, getToken } = useAuth()
+  const { user } = useUser()
 
   const fetchUnreadCounts = useCallback(async () => {
-    if (!isAuthenticated || !token) {
+    if (!isSignedIn || !user) {
       setUnreadCounts([])
       setTotalUnreadCount(0)
       return
@@ -30,6 +31,7 @@ export function useUnreadCounts() {
       setIsLoading(true)
       setError(null)
       
+      const token = await getToken()
       const response = await fetch('/api/conversations/unread-counts', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -55,12 +57,13 @@ export function useUnreadCounts() {
     } finally {
       setIsLoading(false)
     }
-  }, [isAuthenticated, token])
+  }, [isSignedIn, user, getToken])
 
   const markConversationAsRead = useCallback(async (conversationId: string) => {
-    if (!token) return
+    if (!isSignedIn || !user) return
 
     try {
+      const token = await getToken()
       const response = await fetch(`/api/conversations/${conversationId}/mark-read`, {
         method: 'POST',
         headers: {
@@ -93,7 +96,7 @@ export function useUnreadCounts() {
     } catch (err) {
       console.error('Error marking conversation as read:', err)
     }
-  }, [token])
+  }, [isSignedIn, user, getToken])
 
   const getUnreadCount = useCallback((conversationId: string) => {
     const conversation = unreadCounts.find(conv => conv.conversationId === conversationId)

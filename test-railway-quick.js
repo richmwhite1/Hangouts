@@ -65,3 +65,5 @@ console.log('⏰ Waiting 5 minutes for new Railway deployment...');
 setTimeout(() => {
   quickRailwayTest().catch(console.error);
 }, 5 * 60 * 1000);
+
+

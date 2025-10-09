@@ -27,7 +27,7 @@ import {
   Globe
 } from "lucide-react"
 import { useFriends } from "@/hooks/use-friends"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { apiClient, User } from "@/lib/api-client"
 import Link from "next/link"
 
@@ -64,7 +64,7 @@ export function FriendsPage() {
   const [groups, setGroups] = useState<Group[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(false)
   
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isSignedIn, isLoaded: authLoading, getToken } = useAuth()
   const { 
     friends, 
     sentRequests, 
@@ -78,13 +78,14 @@ export function FriendsPage() {
 
   // Load group conversations
   const loadGroups = async () => {
-    if (!user?.token) return
+    if (!user) return
     
     setIsLoadingGroups(true)
     try {
+      const token = await getToken()
       const response = await fetch('/api/conversations', {
         headers: {
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${token}`
         }
       })
       if (response.ok) {
@@ -152,11 +153,12 @@ export function FriendsPage() {
   // Create direct message
   const createDirectMessage = async (friendId: string) => {
     try {
+      const token = await getToken()
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           type: 'DIRECT',
@@ -186,7 +188,7 @@ export function FriendsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${await getToken()}`
         },
         body: JSON.stringify({
           friendId: friendId
@@ -209,26 +211,26 @@ export function FriendsPage() {
 
   // Load groups on mount
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isSignedIn) {
       loadGroups()
     }
-  }, [isAuthenticated])
+  }, [isSignedIn])
 
   // Load all users when component mounts and when "Find People" tab is activated
   useEffect(() => {
-    if (isAuthenticated && user?.token) {
+    if (isSignedIn && user) {
       searchUsers('') // Load all users
     }
-  }, [isAuthenticated, user?.token])
+  }, [isSignedIn, user])
 
   // Load users when "Find People" tab is activated
   useEffect(() => {
-    if (activeTab === 'find' && isAuthenticated && user?.token) {
+    if (activeTab === 'find' && isSignedIn && user) {
       searchUsers('') // Load all users
     }
-  }, [activeTab, isAuthenticated, user?.token])
+  }, [activeTab, isSignedIn, user])
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-center">

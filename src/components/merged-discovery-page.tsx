@@ -31,7 +31,7 @@ import {
   Home,
   TrendingUp
 } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { GuestLanding } from '@/components/guest-landing'
@@ -134,7 +134,7 @@ const distanceOptions = [
 ]
 
 export function MergedDiscoveryPage() {
-  const { token, isAuthenticated } = useAuth()
+  const { isSignedIn, getToken } = useAuth()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -337,6 +337,7 @@ export function MergedDiscoveryPage() {
       if (dateRange.start) params.append('dateFrom', new Date(dateRange.start).toISOString())
       if (dateRange.end) params.append('dateTo', new Date(dateRange.end).toISOString())
 
+      const token = await getToken()
       const response = await fetch(`/api/events?${params}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       })
@@ -379,6 +380,7 @@ export function MergedDiscoveryPage() {
   // Fetch hangouts
   const fetchHangouts = async () => {
     try {
+      const token = await getToken()
       const response = await fetch('/api/discover', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       })
@@ -538,20 +540,20 @@ export function MergedDiscoveryPage() {
   }, [mergeAndSortContent])
 
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (isSignedIn) {
       setIsLoading(true)
       Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
         setIsLoading(false)
       })
     }
-  }, [isAuthenticated, token])
+  }, [isSignedIn, getToken])
 
 
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (isSignedIn) {
       fetchEvents()
     }
-  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, token])
+  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, isSignedIn, getToken])
 
   // Handle zip code geocoding
   useEffect(() => {
@@ -662,7 +664,13 @@ export function MergedDiscoveryPage() {
           </div>
           
           {/* Action Buttons - Bottom Right */}
-          <div className="absolute bottom-4 right-4">
+          <div 
+            className="absolute bottom-4 right-4"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+          >
             <TileActions
               itemId={event.id}
               itemType="event"
@@ -752,7 +760,13 @@ export function MergedDiscoveryPage() {
           </div>
           
           {/* Action Buttons - Bottom Right */}
-          <div className="absolute bottom-4 right-4">
+          <div 
+            className="absolute bottom-4 right-4"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+          >
             <TileActions
               itemId={hangout.id}
               itemType="hangout"
@@ -784,7 +798,7 @@ export function MergedDiscoveryPage() {
   // }
 
   // Show public content for non-authenticated users with subtle guest landing
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-black">
         {/* Subtle Guest Landing Banner */}

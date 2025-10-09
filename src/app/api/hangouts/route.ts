@@ -1,4 +1,5 @@
-import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-handler'
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createHangoutFlow } from '@/lib/hangout-flow'
@@ -10,8 +11,8 @@ const createHangoutSchema = z.object({
   location: z.string().max(200, 'Location too long').optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  startTime: z.string().datetime('Invalid start time'),
-  endTime: z.string().datetime('Invalid end time'),
+  startTime: z.string().datetime('Invalid start time').optional(),
+  endTime: z.string().datetime('Invalid end time').optional(),
   privacyLevel: z.enum(['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC']).default('PUBLIC'),
   maxParticipants: z.number().min(2, 'Must allow at least 2 participants').max(100, 'Too many participants').optional(),
   weatherEnabled: z.boolean().default(false),
@@ -34,11 +35,14 @@ const createHangoutSchema = z.object({
   })).min(1, 'At least one option is required'),
 })
 
-async function getHangoutsHandler(request: AuthenticatedRequest) {
-  const userId = request.user?.userId
+async function getHangoutsHandler(request: NextRequest) {
+  const { userId } = await auth()
   
   if (!userId) {
-    return createErrorResponse('Authentication required', 'User ID not provided', 401)
+    return NextResponse.json({
+      success: false,
+      error: 'Authentication required'
+    }, { status: 401 })
   }
 
   try {
@@ -130,18 +134,28 @@ async function getHangoutsHandler(request: AuthenticatedRequest) {
       skip: 0,
     })
 
-    return createSuccessResponse({ hangouts })
+    return NextResponse.json({
+      success: true,
+      data: { hangouts }
+    })
   } catch (error) {
     console.error('Database error in getHangoutsHandler:', error)
-    return createErrorResponse('Database error', 'Failed to fetch hangouts', 500)
+    return NextResponse.json({
+      success: false,
+      error: 'Database error',
+      message: 'Failed to fetch hangouts'
+    }, { status: 500 })
   }
 }
 
-async function createHangoutHandler(request: AuthenticatedRequest, validatedData?: z.infer<typeof createHangoutSchema>) {
+async function createHangoutHandler(request: NextRequest, validatedData?: z.infer<typeof createHangoutSchema>) {
   try {
-    const userId = request.user?.userId
+    const { userId } = await auth()
     if (!userId) {
-      return createErrorResponse('Authentication required', 'User ID not provided', 401)
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required'
+      }, { status: 401 })
     }
 
     // Get data from request body if validation is disabled
@@ -150,7 +164,11 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
       try {
         data = await request.json()
       } catch (error) {
-        return createErrorResponse('Invalid request', 'Could not parse request body', 400)
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid request',
+          message: 'Could not parse request body'
+        }, { status: 400 })
       }
     }
 
@@ -170,7 +188,11 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
     }
     
     if (endTime <= startTime) {
-      return createErrorResponse('Invalid time range', 'End time must be after start time', 400)
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid time range',
+        message: 'End time must be after start time'
+      }, { status: 400 })
     }
 
     // Determine hangout flow
@@ -264,7 +286,11 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
       options: flowData.options
     };
 
-    return createSuccessResponse(hangoutWithFlow, 'Hangout created successfully')
+    return NextResponse.json({
+      success: true,
+      data: hangoutWithFlow,
+      message: 'Hangout created successfully'
+    })
   } catch (error) {
     console.error('Error in createHangoutHandler:', error)
     console.error('Error details:', {
@@ -272,17 +298,36 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
       stack: error instanceof Error ? error.stack : undefined,
       name: error instanceof Error ? error.name : 'Unknown'
     })
-    return createErrorResponse('Internal error', `Failed to create hangout: ${error instanceof Error ? error.message : 'Unknown error'}`, 500)
+    return NextResponse.json({
+      success: false,
+      error: 'Internal error',
+      message: `Failed to create hangout: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }, { status: 500 })
   }
 }
 
-// Export handlers with middleware
-export const GET = createApiHandler(getHangoutsHandler, {
-  requireAuth: true,
-  enableCORS: true
-})
+// Export handlers
+export async function GET(request: NextRequest) {
+  return getHangoutsHandler(request)
+}
 
-export const POST = createApiHandler(createHangoutHandler, {
-  requireAuth: true,
-  enableCORS: true
-})
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const validatedData = createHangoutSchema.parse(body)
+    return createHangoutHandler(request, validatedData)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        success: false,
+        error: 'Validation error',
+        message: error.issues.map(e => e.message).join(', ')
+      }, { status: 400 })
+    }
+    return NextResponse.json({
+      success: false,
+      error: 'Invalid request',
+      message: 'Failed to parse request body'
+    }, { status: 400 })
+  }
+}

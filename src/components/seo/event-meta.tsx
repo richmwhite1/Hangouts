@@ -101,3 +101,5 @@ export function EventMeta({ event, isPublic = false }: EventMetaProps) {
     </Head>
   )
 }
+
+

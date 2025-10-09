@@ -4,11 +4,10 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Bell, User, Users, LogOut, Settings, MessageSquare } from "lucide-react"
+import { Search, Bell, Users, MessageSquare } from "lucide-react"
 import Link from "next/link"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { useAuth } from "@/contexts/auth-context"
-import { useUnreadCounts } from "@/hooks/use-unread-counts"
+import { UserButton } from "@clerk/nextjs"
+// import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { NotificationSettings } from "@/components/notifications/notification-settings"
 import { NotificationHistory } from "@/components/notifications/notification-history"
@@ -18,9 +17,8 @@ export function Navigation() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showNotificationSettings, setShowNotificationSettings] = useState(false)
   const [showNotificationHistory, setShowNotificationHistory] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const { user, isAuthenticated, signOut } = useAuth()
-  const { totalUnreadCount } = useUnreadCounts()
+  // const { totalUnreadCount } = useUnreadCounts()
+  const totalUnreadCount = 0 // Temporarily disabled
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -75,81 +73,31 @@ export function Navigation() {
                 <Bell className="w-5 h-5" />
               </Button>
             </div>
-            <div className="relative">
-              <Button 
-                variant="ghost" 
-                size="lg" 
-                className="p-2 min-h-[44px] min-w-[44px]"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-              >
-                <Avatar className="w-8 h-8 rounded-md">
-                  <AvatarImage 
-                    src={isAuthenticated && user?.avatar ? user.avatar : "/placeholder-avatar.png"} 
-                    alt={isAuthenticated && user?.name ? user.name : "Profile"} 
-                  />
-                  <AvatarFallback className="rounded-md">
-                    {isAuthenticated && user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-              
-              {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage 
-                          src={isAuthenticated && user?.avatar ? user.avatar : "/placeholder-avatar.png"} 
-                          alt={isAuthenticated && user?.name ? user.name : "Profile"} 
-                        />
-                        <AvatarFallback>
-                          {isAuthenticated && user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold text-sm">{isAuthenticated && user?.name ? user.name : "User"}</p>
-                        <p className="text-xs text-muted-foreground">{isAuthenticated && user?.email ? user.email : ""}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="py-2">
-                    <Link href="/profile">
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <User className="w-4 h-4 mr-2" />
-                        Profile
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start"
-                      onClick={() => setShowNotificationSettings(true)}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Notification Settings
-                    </Button>
-                    <div className="border-t border-border my-2"></div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        signOut()
-                        setShowUserMenu(false)
-                      }}
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: {
+                    width: '40px',
+                    height: '40px'
+                  },
+                  userButtonPopoverCard: {
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #333333'
+                  },
+                  userButtonPopoverActionButton: {
+                    color: '#FFFFFF'
+                  },
+                  userButtonPopoverActionButton__signOut: {
+                    color: '#FF4444'
+                  }
+                }
+              }}
+              afterSignOutUrl="/login"
+            />
           </div>
         </div>
       </div>
       {showNotifications && <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />}
-      {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
       
       {/* Notification Center */}
       <NotificationCenter 
@@ -159,17 +107,17 @@ export function Navigation() {
         onOpenHistory={() => setShowNotificationHistory(true)}
       />
       
-      {/* Notification Settings */}
-      <NotificationSettings 
+      {/* Notification Settings - Temporarily disabled */}
+      {/* <NotificationSettings 
         isOpen={showNotificationSettings} 
         onClose={() => setShowNotificationSettings(false)} 
-      />
+      /> */}
       
-      {/* Notification History */}
-      <NotificationHistory 
+      {/* Notification History - Temporarily disabled */}
+      {/* <NotificationHistory 
         isOpen={showNotificationHistory} 
         onClose={() => setShowNotificationHistory(false)} 
-      />
+      /> */}
     </nav>
   )
 }

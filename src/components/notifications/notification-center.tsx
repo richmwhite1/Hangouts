@@ -20,7 +20,7 @@ import {
   Settings,
   BarChart3
 } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 
 interface Notification {
   id: string
@@ -43,23 +43,22 @@ interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHistory }: NotificationCenterProps) {
-  const { token } = useAuth()
+  const { getToken } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    if (isOpen && token) {
+    if (isOpen) {
       fetchNotifications()
     }
-  }, [isOpen, token])
+  }, [isOpen])
 
   const fetchNotifications = async () => {
-    if (!token) return
-
     try {
       setIsLoading(true)
+      const token = await getToken()
       const response = await fetch('/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -81,9 +80,8 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
   }
 
   const markAsRead = async (notificationId: string) => {
-    if (!token) return
-
     try {
+      const token = await getToken()
       const response = await fetch(`/api/notifications/${notificationId}`, {
         method: 'PATCH',
         headers: {
@@ -109,9 +107,8 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
   }
 
   const markAllAsRead = async () => {
-    if (!token) return
-
     try {
+      const token = await getToken()
       const response = await fetch('/api/notifications/mark-all-read', {
         method: 'POST',
         headers: {
@@ -131,9 +128,8 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
   }
 
   const dismissNotification = async (notificationId: string) => {
-    if (!token) return
-
     try {
+      const token = await getToken()
       const response = await fetch(`/api/notifications/${notificationId}`, {
         method: 'PATCH',
         headers: {

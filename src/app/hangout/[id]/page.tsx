@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { HANGOUT_STATES, getVoteCount, checkMandatoryRSVP } from '@/lib/hangout-flow'
 import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
@@ -107,7 +107,7 @@ interface Hangout {
 export default function HangoutDetailPage() {
   const params = useParams()
   const hangoutId = params?.id as string
-  const { token, user } = useAuth()
+  const { getToken, user } = useAuth()
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -122,9 +122,10 @@ export default function HangoutDetailPage() {
 
 
   const handleRemoveUser = async (participantId: string) => {
-    if (!token || !hangoutId) return
+    if (!hangoutId) return
     
     try {
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/participants/${participantId}`, {
         method: 'DELETE',
         headers: {
@@ -177,6 +178,7 @@ export default function HangoutDetailPage() {
     if (!hangoutId) return
 
     try {
+      const token = await getToken()
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
       const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
 
@@ -197,9 +199,10 @@ export default function HangoutDetailPage() {
   }
 
   const checkSaveStatus = async () => {
-    if (!token || !hangoutId) return
+    if (!hangoutId) return
     
     try {
+      const token = await getToken()
       const response = await fetch(`/api/content/${hangoutId}/save`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -214,10 +217,11 @@ export default function HangoutDetailPage() {
   }
 
   const handleSave = async () => {
-    if (!token || !hangoutId) return
+    if (!hangoutId) return
     
     try {
       setIsSaving(true)
+      const token = await getToken()
       const action = isSaved ? 'unsave' : 'save'
       
       const response = await fetch(`/api/content/${hangoutId}/save`, {
@@ -244,10 +248,11 @@ export default function HangoutDetailPage() {
   }
 
   const handleVote = async (optionId: string, action: 'add' | 'remove' | 'preferred' | 'toggle' = 'add') => {
-    if (!token || !hangout) return
+    if (!hangout) return
 
     try {
       setIsVoting(true)
+      const token = await getToken()
       setSelectedOption(optionId)
       
       // Optimistic UI update based on action
@@ -324,11 +329,11 @@ export default function HangoutDetailPage() {
   }
 
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
-    if (!token || !hangoutId) {
+    if (!hangoutId) {
       toast.error('Please sign in to RSVP', {
         action: {
           label: 'Sign In',
-          onClick: () => window.location.href = '/signin'
+          onClick: () => window.location.href = '/login'
         }
       })
       return
@@ -372,6 +377,7 @@ export default function HangoutDetailPage() {
         }
       })
       
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/rsvp`, {
         method: 'POST',
         headers: {
@@ -445,16 +451,16 @@ export default function HangoutDetailPage() {
   }
 
   // Check for public access first before requiring authentication
-  if (!token && hangout && hangout.privacyLevel === 'PUBLIC') {
+  if (!user && hangout && hangout.privacyLevel === 'PUBLIC') {
     return (
       <PublicHangoutViewer 
         hangoutId={hangoutId as string}
-        onSignInRequired={() => window.location.href = '/signin'}
+        onSignInRequired={() => window.location.href = '/login'}
       />
     )
   }
 
-  if (!token) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -1356,7 +1362,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
     
     setIsLoadingMessages(true)
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangout.id}/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -1378,7 +1384,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
     if (!newMessage.trim()) return
     
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangout.id}/messages`, {
         method: 'POST',
         headers: {
@@ -1534,7 +1540,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
     
     setIsLoadingPhotos(true)
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangout.id}/photos`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -1563,7 +1569,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
         formData.append('photos', file)
       })
 
-      const token = localStorage.getItem('auth_token')
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangout.id}/photos`, {
         method: 'POST',
         headers: {
