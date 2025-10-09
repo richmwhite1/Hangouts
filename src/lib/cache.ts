@@ -237,3 +237,61 @@ export function useCache<T>(key: string, fetcher: () => Promise<T>, options: Cac
   return { get, invalidate, clear, has: () => cache.has(key) }
 }
 
+// Additional exports for services
+export const CACHE_TTL = {
+  SHORT: 5 * 60 * 1000, // 5 minutes
+  MEDIUM: 30 * 60 * 1000, // 30 minutes
+  LONG: 24 * 60 * 60 * 1000, // 24 hours
+  VERY_LONG: 7 * 24 * 60 * 60 * 1000 // 7 days
+}
+
+export const CACHE_TAGS = {
+  USER: 'user',
+  HANGOUT: 'hangout',
+  EVENT: 'event',
+  FRIEND: 'friend',
+  GROUP: 'group',
+  COMMENT: 'comment',
+  POLL: 'poll'
+}
+
+// Query cache service
+export class QueryCacheService {
+  private cache = new Cache<any>({ ttl: CACHE_TTL.MEDIUM })
+
+  set(key: string, value: any, ttl?: number) {
+    this.cache.set(key, value, ttl)
+  }
+
+  get(key: string) {
+    return this.cache.get(key)
+  }
+
+  invalidate(pattern?: string) {
+    if (pattern) {
+      const keys = this.cache.keys().filter(key => key.includes(pattern))
+      keys.forEach(key => this.cache.delete(key))
+    } else {
+      this.cache.clear()
+    }
+  }
+}
+
+// Cache utilities
+export class CacheUtils {
+  static generateKey(prefix: string, ...parts: (string | number)[]): string {
+    return `${prefix}:${parts.join(':')}`
+  }
+
+  static generateUserKey(userId: string, suffix: string): string {
+    return this.generateKey('user', userId, suffix)
+  }
+
+  static generateHangoutKey(hangoutId: string, suffix: string): string {
+    return this.generateKey('hangout', hangoutId, suffix)
+  }
+}
+
+// Default query cache instance
+export const queryCache = new QueryCacheService()
+

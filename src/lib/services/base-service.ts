@@ -1,8 +1,5 @@
 import { db } from '@/lib/db'
-import { auditLogger } from '@/lib/audit-logger'
-import { rbac } from '@/lib/rbac'
 import { UserRole, PrivacyLevel } from '@prisma/client'
-import { QueryCacheService, CacheUtils, CacheKeys, CACHE_TTL, CACHE_TAGS } from '@/lib/cache'
 
 export interface ServiceContext {
   userId: string
@@ -41,93 +38,21 @@ export interface ServiceResult<T> {
 
 export abstract class BaseService {
   protected db = db
-  protected auditLogger = auditLogger
-  protected rbac = rbac
 
   constructor(protected context: ServiceContext) {}
 
   /**
    * Check if user has permission for an action
    */
-  protected async checkPermission(permission: string): Promise<boolean> {
-    try {
-      return await this.rbac.hasPermission(this.context.userId, permission as any)
-    } catch (error) {
-      console.error('Permission check failed:', error)
-      return false
-    }
+  protected hasPermission(action: string, resource?: string): boolean {
+    // Basic permission check - can be extended
+    return this.context.userRole !== 'USER' || action === 'read'
   }
 
   /**
-   * Check if user has any of the specified permissions
+   * Create success result
    */
-  protected async checkAnyPermission(permissions: string[]): Promise<boolean> {
-    try {
-      return await this.rbac.hasAnyPermission(this.context.userId, permissions as any[])
-    } catch (error) {
-      console.error('Permission check failed:', error)
-      return false
-    }
-  }
-
-  /**
-   * Log data access for audit purposes
-   */
-  protected async logDataAccess(
-    action: 'read' | 'create' | 'update' | 'delete',
-    entityType: string,
-    entityId: string,
-    details?: any
-  ): Promise<void> {
-    try {
-      await this.auditLogger.logDataAccess(
-        action,
-        entityType,
-        this.context.userId,
-        entityId,
-        this.context.ipAddress || 'unknown',
-        this.context.userAgent,
-        details
-      )
-    } catch (error) {
-      console.error('Failed to log data access:', error)
-    }
-  }
-
-  /**
-   * Log user action for audit purposes
-   */
-  protected async logAction(
-    action: string,
-    entityType: string,
-    entityId: string,
-    oldValues?: any,
-    newValues?: any
-  ): Promise<void> {
-    try {
-      await this.auditLogger.logAction(
-        action,
-        entityType,
-        entityId,
-        oldValues,
-        newValues,
-        this.context.userId,
-        this.context.ipAddress || 'unknown',
-        this.context.userAgent
-      )
-    } catch (error) {
-      console.error('Failed to log action:', error)
-    }
-  }
-
-  /**
-   * Create a success result
-   */
-  protected createSuccessResult<T>(
-    data: T,
-    message?: string,
-    pagination?: any
-  ): ServiceResult<T> {
+  protected success<T>(data: T, message?: string, pagination?: any): ServiceResult<T> {
     return {
       success: true,
       data,
@@ -137,289 +62,86 @@ export abstract class BaseService {
   }
 
   /**
-   * Create an error result
+   * Create error result
    */
-  protected createErrorResult(error: string, message?: string): ServiceResult<never> {
+  protected error(message: string, error?: string): ServiceResult<never> {
     return {
       success: false,
-      error,
+      error: error || message,
       message
     }
   }
 
   /**
-   * Calculate pagination metadata
+   * Validate pagination options
    */
-  protected calculatePagination(
-    page: number,
-    limit: number,
-    total: number
-  ): { page: number; limit: number; total: number; totalPages: number } {
-    const totalPages = Math.ceil(total / limit)
-    return {
-      page,
-      limit,
-      total,
-      totalPages
-    }
+  protected validatePagination(options: PaginationOptions) {
+    const page = Math.max(1, options.page || 1)
+    const limit = Math.min(100, Math.max(1, options.limit || 20))
+    const offset = (page - 1) * limit
+
+    return { page, limit, offset }
   }
 
   /**
-   * Apply privacy filtering based on user relationship
+   * Check if user is friend with another user
    */
-  protected async applyPrivacyFilter<T extends { privacyLevel: PrivacyLevel; creatorId: string }>(
-    items: T[],
-    userId: string
-  ): Promise<T[]> {
-    // Get user's friends for privacy filtering
-    const friendships = await this.db.friendship.findMany({
+  protected async isFriend(userId1: string, userId2: string): Promise<boolean> {
+    const friendship = await this.db.friendship.findFirst({
       where: {
         OR: [
-          { user1Id: userId },
-          { user2Id: userId }
-        ]
+          { userId: userId1, friendId: userId2 },
+          { userId: userId2, friendId: userId1 }
+        ],
+        status: 'ACCEPTED'
       }
     })
 
-    const friendIds = new Set(
-      friendships.map(f => f.user1Id === userId ? f.user2Id : f.user1Id)
-    )
+    return !!friendship
+  }
 
-    return items.filter(item => {
-      switch (item.privacyLevel) {
-        case 'PUBLIC':
-          return true
-        case 'FRIENDS_ONLY':
-          return item.creatorId === userId || friendIds.has(item.creatorId)
-        case 'PRIVATE':
-          return item.creatorId === userId
-        default:
-          return false
+  /**
+   * Check if user is participant in hangout
+   */
+  protected async isParticipant(hangoutId: string, userId: string): Promise<boolean> {
+    const participant = await this.db.content_participants.findFirst({
+      where: {
+        contentId: hangoutId,
+        userId: userId
       }
     })
+
+    return !!participant
   }
 
   /**
-   * Execute a database transaction
+   * Check if content is accessible to user
    */
-  protected async executeTransaction<T>(
-    operation: (tx: any) => Promise<T>
-  ): Promise<T> {
-    return await this.db.$transaction(operation)
-  }
-
-  /**
-   * Validate input data using a schema
-   */
-  protected validateInput<T>(data: any, schema: any): T {
-    try {
-      return schema.parse(data)
-    } catch (error) {
-      throw new Error(`Validation failed: ${error}`)
-    }
-  }
-
-  /**
-   * Handle service errors consistently
-   */
-  protected handleError(error: any, operation: string): ServiceResult<never> {
-    console.error(`${operation} error:`, error)
-    
-    if (error instanceof Error) {
-      return this.createErrorResult(
-        error.message,
-        `Failed to ${operation.toLowerCase()}`
-      )
-    }
-
-    return this.createErrorResult(
-      'Unknown error occurred',
-      `Failed to ${operation.toLowerCase()}`
-    )
-  }
-
-  /**
-   * Check if user can access a specific resource
-   */
-  protected async canAccessResource(
-    resourceType: 'hangout' | 'user' | 'group' | 'comment' | 'poll',
-    resourceId: string,
-    action: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
-  ): Promise<boolean> {
-    try {
-      const access = await this.rbac.canAccessResource(
-        this.context.userId,
-        resourceType,
-        resourceId,
-        action
-      )
-      return access.granted
-    } catch (error) {
-      console.error('Resource access check failed:', error)
-      return false
-    }
-  }
-
-  /**
-   * Get user's friends for relationship-based filtering
-   */
-  protected async getUserFriends(userId: string): Promise<string[]> {
-    try {
-      const friendships = await this.db.friendship.findMany({
-        where: {
-          OR: [
-            { user1Id: userId },
-            { user2Id: userId }
-          ]
-        }
-      })
-
-      return friendships.map(f => 
-        f.user1Id === userId ? f.user2Id : f.user1Id
-      )
-    } catch (error) {
-      console.error('Failed to get user friends:', error)
-      return []
-    }
-  }
-
-  /**
-   * Check if two users are friends
-   */
-  protected async areFriends(userId1: string, userId2: string): Promise<boolean> {
-    try {
-      const friendship = await this.db.friendship.findFirst({
-        where: {
-          OR: [
-            { user1Id: userId1, user2Id: userId2 },
-            { user1Id: userId2, user2Id: userId1 }
-          ]
-        }
-      })
-
-      return !!friendship
-    } catch (error) {
-      console.error('Failed to check friendship:', error)
-      return false
-    }
-  }
-
-  // ============================================================================
-  // CACHING METHODS
-  // ============================================================================
-
-  /**
-   * Cache a query result
-   */
-  protected async cacheQuery<T>(
-    key: string,
-    queryFn: () => Promise<T>,
-    options: { ttl?: number; tags?: string[] } = {}
-  ): Promise<T> {
-    return await QueryCacheService.cacheQuery(key, queryFn, options)
-  }
-
-  /**
-   * Cache user-related query
-   */
-  protected async cacheUserQuery<T>(
+  protected async isContentAccessible(
+    contentId: string,
     userId: string,
-    queryType: string,
-    queryFn: () => Promise<T>,
-    options: { ttl?: number; tags?: string[] } = {}
-  ): Promise<T> {
-    return await QueryCacheService.cacheUserQuery(userId, queryType, queryFn, options)
-  }
+    privacyLevel: PrivacyLevel
+  ): Promise<boolean> {
+    if (privacyLevel === 'PUBLIC') return true
 
-  /**
-   * Cache hangout-related query
-   */
-  protected async cacheHangoutQuery<T>(
-    hangoutId: string,
-    queryType: string,
-    queryFn: () => Promise<T>,
-    options: { ttl?: number; tags?: string[] } = {}
-  ): Promise<T> {
-    return await QueryCacheService.cacheHangoutQuery(hangoutId, queryType, queryFn, options)
-  }
+    const content = await this.db.content.findUnique({
+      where: { id: contentId },
+      select: { creatorId: true }
+    })
 
-  /**
-   * Cache search query
-   */
-  protected async cacheSearchQuery<T>(
-    searchType: string,
-    searchParams: Record<string, any>,
-    queryFn: () => Promise<T>,
-    options: { ttl?: number; tags?: string[] } = {}
-  ): Promise<T> {
-    return await QueryCacheService.cacheSearchQuery(searchType, searchParams, queryFn, options)
-  }
+    if (!content) return false
 
-  /**
-   * Cache paginated query
-   */
-  protected async cachePaginatedQuery<T>(
-    baseKey: string,
-    page: number,
-    limit: number,
-    queryFn: () => Promise<T>,
-    options: { ttl?: number; tags?: string[] } = {}
-  ): Promise<T> {
-    return await QueryCacheService.cachePaginatedQuery(baseKey, page, limit, queryFn, options)
-  }
+    // Creator can always access
+    if (content.creatorId === userId) return true
 
-  /**
-   * Invalidate user cache
-   */
-  protected async invalidateUserCache(userId: string): Promise<void> {
-    await CacheUtils.invalidateUser(userId)
-    await QueryCacheService.invalidateUserQueries(userId)
-  }
+    if (privacyLevel === 'FRIENDS_ONLY') {
+      return this.isFriend(userId, content.creatorId)
+    }
 
-  /**
-   * Invalidate hangout cache
-   */
-  protected async invalidateHangoutCache(hangoutId: string): Promise<void> {
-    await CacheUtils.invalidateHangout(hangoutId)
-    await QueryCacheService.invalidateHangoutQueries(hangoutId)
-  }
+    if (privacyLevel === 'PRIVATE') {
+      return this.isParticipant(contentId, userId)
+    }
 
-  /**
-   * Invalidate poll cache
-   */
-  protected async invalidatePollCache(pollId: string): Promise<void> {
-    await CacheUtils.invalidatePoll(pollId)
-  }
-
-  /**
-   * Invalidate group cache
-   */
-  protected async invalidateGroupCache(groupId: string): Promise<void> {
-    await CacheUtils.invalidateGroup(groupId)
-  }
-
-  /**
-   * Invalidate friends cache
-   */
-  protected async invalidateFriendsCache(userId: string): Promise<void> {
-    await CacheUtils.invalidateFriends(userId)
-  }
-
-  /**
-   * Warm cache with data
-   */
-  protected async warmCache(key: string, data: any, ttl: number = CACHE_TTL.MEDIUM): Promise<void> {
-    await CacheUtils.getOrSet(key, async () => data, { ttl })
-  }
-
-  /**
-   * Get cached data or compute
-   */
-  protected async getCachedOrCompute<T>(
-    key: string,
-    computeFn: () => Promise<T>,
-    options: { ttl?: number; tags?: string[] } = {}
-  ): Promise<T> {
-    return await CacheUtils.getOrSet(key, computeFn, options)
+    return false
   }
 }
