@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Force all pages to be dynamic to avoid Clerk build issues
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
   // output: 'standalone', // Temporarily disabled for Railway compatibility
   serverExternalPackages: ['@prisma/client', 'bcryptjs'],
   webpack: (config, { isServer }) => {

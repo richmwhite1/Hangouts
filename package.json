@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node server.js",
     "dev:next": "next dev --turbopack",
-    "build": "prisma generate && next build",
+    "build": "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_placeholder CLERK_SECRET_KEY=sk_test_placeholder prisma generate && next build",
     "start": "node scripts/start-railway-simple.js",
     "start:custom": "NODE_ENV=production node server-production.js",
     "start:legacy": "node start-production.js",

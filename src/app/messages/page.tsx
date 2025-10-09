@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"

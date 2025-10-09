@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic'
 import { useParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'

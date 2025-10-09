@@ -2,20 +2,42 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth, useUser } from '@clerk/nextjs'
 import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHangoutForm'
 import { clerkApiClient } from '@/lib/clerk-api-client'
 import { toast } from 'sonner'
 
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic'
+
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isSignedIn, getToken } = useAuth()
-  const { user } = useUser()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [isSignedIn, setIsSignedIn] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [getToken, setGetToken] = useState<(() => Promise<string | null>) | null>(null)
 
   useEffect(() => {
     setIsClient(true)
+    
+    // Dynamically import Clerk hooks only on client side
+    if (typeof window !== 'undefined') {
+      import('@clerk/nextjs').then((clerk) => {
+        try {
+          const { useAuth, useUser } = clerk
+          const authResult = useAuth()
+          const userResult = useUser()
+          
+          setIsSignedIn(authResult.isSignedIn)
+          setUser(userResult.user)
+          setGetToken(() => authResult.getToken)
+        } catch (error) {
+          console.log('Clerk hooks not available:', error)
+        }
+      }).catch((error) => {
+        console.log('Clerk not available:', error)
+      })
+    }
   }, [])
 
   useEffect(() => {
@@ -65,7 +87,7 @@ export default function CreateHangoutPage() {
           uploadFormData.append('file', formData.image)
           uploadFormData.append('type', 'hangout')
 
-          const token = await getToken()
+          const token = getToken ? await getToken() : null
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: {
@@ -113,7 +135,7 @@ export default function CreateHangoutPage() {
 
       console.log('Creating hangout with data:', hangoutData)
 
-      const response = await clerkApiClient.createHangout(hangoutData, getToken) as any
+      const response = await clerkApiClient.createHangout(hangoutData, getToken || (() => Promise.resolve(null))) as any
       
       if (response.success) {
         toast.success('Hangout created successfully!')

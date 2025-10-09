@@ -11,6 +11,9 @@ import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
 import { useRouter } from "next/navigation"
 import { AuthWrapper } from "@/components/auth-wrapper"
 
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic'
+
 interface Hangout {
   id: string
   title: string
