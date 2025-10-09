@@ -27,3 +27,7 @@ console.log('CLERK_SECRET_KEY=your_secret_key_here\n');
 
 console.log('Then run: npm run dev');
 console.log('And visit http://localhost:3000 to test the authentication!');
+
+
+
+

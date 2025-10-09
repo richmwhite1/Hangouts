@@ -74,3 +74,7 @@ console.log('- NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
 console.log('- CLERK_SECRET_KEY\n');
 
 console.log('🎉 Ready to test! Update your .env.local file and run: npm run dev');
+
+
+
+

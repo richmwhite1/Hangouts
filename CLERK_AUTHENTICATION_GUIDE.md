@@ -154,3 +154,7 @@ NEXTAUTH_SECRET=your_random_secret
 5. **Monitor user adoption**
 
 Your app now has enterprise-grade authentication that will scale with your user base!
+
+
+
+

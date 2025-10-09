@@ -67,3 +67,7 @@ console.log('3. Come back here when you have your keys');
 console.log('4. I\'ll help you update the .env.local file\n');
 
 console.log('💡 Pro Tip: The whole process takes less than 2 minutes!');
+
+
+
+

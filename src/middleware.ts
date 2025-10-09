@@ -1,14 +1,38 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
+
+// Define public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/login(.*)',
+  '/signup(.*)',
+  '/api/health',
+  '/api/webhooks(.*)',
+])
+
+// Define protected routes that require authentication
+const isProtectedRoute = createRouteMatcher([
+  '/create(.*)',
+  '/hangouts(.*)',
+  '/profile(.*)',
+  '/messages(.*)',
+  '/friends(.*)',
+  '/discover(.*)',
+])
 
 export default clerkMiddleware((auth, req) => {
-  // Force dynamic rendering for all pages
-  const response = NextResponse.next();
-  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  response.headers.set('Pragma', 'no-cache');
-  response.headers.set('Expires', '0');
-  return response;
-});
+  // Handle public routes
+  if (isPublicRoute(req)) {
+    return NextResponse.next()
+  }
+
+  // Handle protected routes
+  if (isProtectedRoute(req)) {
+    auth.protect()
+  }
+
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: [
@@ -17,4 +41,4 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
-};
+}
