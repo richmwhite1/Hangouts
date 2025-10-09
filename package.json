@@ -1,0 +1,13 @@
+{
+  "name": "hangout-app",
+  "version": "1.0.0",
+  "description": "Hangout 3.0 Application",
+  "scripts": {
+    "build": "cd hangouts-3.0 && npm run build",
+    "start": "cd hangouts-3.0 && npm run start",
+    "dev": "cd hangouts-3.0 && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

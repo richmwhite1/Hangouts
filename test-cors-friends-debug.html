@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS and Friends Debug Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #111;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            color: #8b5cf6;
+        }
+        .test-button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #7c3aed;
+        }
+        .test-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #222;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #10b981; }
+        .error { border-left: 4px solid #ef4444; }
+        .info { border-left: 4px solid #3b82f6; }
+        input, textarea {
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        input[type="text"] { width: 200px; }
+        textarea { width: 100%; height: 100px; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 CORS and Friends Debug Test</h1>
+        
+        <div class="test-section">
+            <h3>1. CORS Test - Hangout Creation</h3>
+            <p>Test creating a hangout to check for CORS errors</p>
+            <input type="text" id="authToken" placeholder="Enter auth token" />
+            <button class="test-button" onclick="testHangoutCreation()">Test Hangout Creation</button>
+            <div id="hangoutResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Friends Search Test</h3>
+            <p>Test searching for friends to check if users are visible</p>
+            <input type="text" id="searchQuery" placeholder="Search query (leave empty for all users)" />
+            <button class="test-button" onclick="testFriendsSearch()">Test Friends Search</button>
+            <div id="friendsResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. API Health Check</h3>
+            <p>Test basic API connectivity and CORS headers</p>
+            <button class="test-button" onclick="testApiHealth()">Test API Health</button>
+            <div id="healthResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Authentication Test</h3>
+            <p>Test token validation and user authentication</p>
+            <button class="test-button" onclick="testAuthentication()">Test Authentication</button>
+            <div id="authResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Database Connection Test</h3>
+            <p>Test database connectivity and user data retrieval</p>
+            <button class="test-button" onclick="testDatabase()">Test Database</button>
+            <div id="dbResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+        
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = content;
+        }
+
+        async function testHangoutCreation() {
+            const token = document.getElementById('authToken').value;
+            if (!token) {
+                showResult('hangoutResult', 'Please enter an auth token first', 'error');
+                return;
+            }
+
+            showResult('hangoutResult', 'Testing hangout creation...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/hangouts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Hangout',
+                        description: 'Debug test hangout',
+                        location: 'Test Location',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        privacyLevel: 'PUBLIC',
+                        type: 'quick_plan',
+                        options: [{
+                            title: 'Test Option',
+                            description: 'Test option description',
+                            location: 'Test Location',
+                            dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                        }]
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('hangoutResult', `✅ Hangout creation successful!\n\nResponse: ${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult('hangoutResult', `❌ Hangout creation failed!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('hangoutResult', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFriendsSearch() {
+            const token = document.getElementById('authToken').value;
+            const query = document.getElementById('searchQuery').value;
+            
+            if (!token) {
+                showResult('friendsResult', 'Please enter an auth token first', 'error');
+                return;
+            }
+
+            showResult('friendsResult', 'Testing friends search...', 'info');
+
+            try {
+                const url = `${API_BASE}/friends/search?q=${encodeURIComponent(query)}&limit=20`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const userCount = result.data?.users?.length || 0;
+                    showResult('friendsResult', `✅ Friends search successful!\n\nFound ${userCount} users\n\nResponse: ${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult('friendsResult', `❌ Friends search failed!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('friendsResult', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testApiHealth() {
+            showResult('healthResult', 'Testing API health...', 'info');
+
+            try {
+                // Test CORS preflight
+                const preflightResponse = await fetch(`${API_BASE}/hangouts`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type, Authorization'
+                    }
+                });
+
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': preflightResponse.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': preflightResponse.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': preflightResponse.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': preflightResponse.headers.get('Access-Control-Allow-Credentials')
+                };
+
+                showResult('healthResult', `✅ API Health Check Complete!\n\nCORS Headers:\n${JSON.stringify(corsHeaders, null, 2)}\n\nPreflight Status: ${preflightResponse.status}`, 'success');
+            } catch (error) {
+                showResult('healthResult', `❌ API Health Check Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthentication() {
+            const token = document.getElementById('authToken').value;
+            
+            if (!token) {
+                showResult('authResult', 'Please enter an auth token first', 'error');
+                return;
+            }
+
+            showResult('authResult', 'Testing authentication...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('authResult', `✅ Authentication successful!\n\nUser: ${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult('authResult', `❌ Authentication failed!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('authResult', `❌ Authentication error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabase() {
+            const token = document.getElementById('authToken').value;
+            
+            if (!token) {
+                showResult('dbResult', 'Please enter an auth token first', 'error');
+                return;
+            }
+
+            showResult('dbResult', 'Testing database connection...', 'info');
+
+            try {
+                // Test discover endpoint which queries the database
+                const response = await fetch(`${API_BASE}/discover`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const hangoutCount = result.data?.hangouts?.length || 0;
+                    const eventCount = result.data?.events?.length || 0;
+                    showResult('dbResult', `✅ Database connection successful!\n\nFound ${hangoutCount} hangouts and ${eventCount} events\n\nResponse: ${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult('dbResult', `❌ Database query failed!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('dbResult', `❌ Database error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-fill token from localStorage if available
+        window.addEventListener('load', () => {
+            const savedToken = localStorage.getItem('authToken');
+            if (savedToken) {
+                document.getElementById('authToken').value = savedToken;
+            }
+        });
+
+        // Save token to localStorage
+        document.getElementById('authToken').addEventListener('input', (e) => {
+            localStorage.setItem('authToken', e.target.value);
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
