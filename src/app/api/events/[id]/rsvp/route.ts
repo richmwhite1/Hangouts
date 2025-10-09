@@ -150,7 +150,7 @@ export async function POST(
       rsvp = await db.rsvp.create({
         data: {
           contentId: eventId,
-          userId: payload.userId,
+          userId: userId,
           status: validatedData.status,
           respondedAt: validatedData.status !== 'PENDING' ? new Date() : null
         },

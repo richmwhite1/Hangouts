@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
@@ -9,23 +9,12 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20')
   const offset = parseInt(searchParams.get('offset') || '0')
 
-  // Get user ID for friend context (optional for discover page)
-  let userId: string | null = null
-  const authHeader = request.headers.get('authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    console.log('Simple Feed API: Token received:', token.substring(0, 50) + '...')
-    const payload = verifyToken(token)
-    console.log('Simple Feed API: Token payload:', payload)
-    if (payload) {
-      userId = payload.userId
-    }
-  }
+  // Get user ID from Clerk auth
+  const { userId } = await auth()
   
-  // For debugging, hardcode the user ID
-  if (!userId) {
-    userId = 'cmghg3l8w0000jps4yaoolo0s'
-    console.log('Simple Feed API: Using hardcoded user ID for debugging:', userId)
+  // For discover page, userId can be null
+  if (feedType === 'home' && !userId) {
+    return NextResponse.json({ error: 'Authentication required for home feed' }, { status: 401 })
   }
 
   try {
@@ -45,6 +34,7 @@ export async function GET(request: NextRequest) {
     } else if (contentType === 'events') {
       whereClause.type = 'EVENT'
     }
+    // For 'all' content type, don't filter by type
 
     // Privacy and access control
     if (feedType === 'discover' || contentType === 'events') {
@@ -95,14 +85,9 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // For debugging, let's use a simpler approach
+    // Use the proper OR clause for home feed
     if (userId && feedType === 'home') {
-      whereClause = {
-        status: 'PUBLISHED',
-        type: 'HANGOUT',
-        creatorId: userId
-      }
-      console.log('Simple Feed API: Using simplified where clause for debugging')
+      console.log('Simple Feed API: Using comprehensive OR filter for home feed')
     }
 
     console.log('Simple Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2))
