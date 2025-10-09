@@ -10,6 +10,9 @@ import { Search, Filter, MapPin, Calendar, DollarSign, Plus } from 'lucide-react
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 
+// Force dynamic rendering to prevent prerendering issues
+export const dynamic = 'force-dynamic'
+
 interface Event {
   id: string
   title: string
