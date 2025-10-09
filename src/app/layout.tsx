@@ -34,8 +34,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  
+  // Debug logging for Railway
+  if (typeof window === 'undefined') {
+    console.log('Clerk publishableKey length:', publishableKey?.length)
+    console.log('Clerk publishableKey starts with:', publishableKey?.substring(0, 20))
+  }
+  
   return (
-    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider publishableKey={publishableKey}>
       <html lang="en">
         <body className={inter.className}>
           <div className="min-h-screen bg-background text-foreground dark">
