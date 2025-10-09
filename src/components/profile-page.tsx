@@ -16,8 +16,20 @@ export function ProfilePage() {
   const { isSignedIn, isLoaded: authLoading } = useAuth()
   const { signOut } = useClerk()
 
+  // Show loading state while auth is loading
+  if (!authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   // Early return for non-authenticated users - must be before other hooks
-  if (!authLoading && !isSignedIn) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
