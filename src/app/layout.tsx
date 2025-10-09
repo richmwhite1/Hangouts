@@ -61,18 +61,53 @@ export default function RootLayout({
                   appearance={{
                     elements: {
                       avatarBox: {
-                        width: '40px',
-                        height: '40px'
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        border: '2px solid #333333',
+                        transition: 'all 0.2s ease'
                       },
                       userButtonPopoverCard: {
-                        backgroundColor: '#1a1a1a',
-                        border: '1px solid #333333'
+                        backgroundColor: '#0a0a0a',
+                        border: '1px solid #222222',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)',
+                        backdropFilter: 'blur(20px)'
                       },
                       userButtonPopoverActionButton: {
-                        color: '#FFFFFF'
+                        color: '#e0e0e0',
+                        backgroundColor: 'transparent',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: '#1a1a1a',
+                          color: '#ffffff'
+                        }
                       },
                       userButtonPopoverActionButton__signOut: {
-                        color: '#FF4444'
+                        color: '#ff6b6b',
+                        '&:hover': {
+                          backgroundColor: '#2a1a1a',
+                          color: '#ff4444'
+                        }
+                      },
+                      userButtonPopoverHeader: {
+                        backgroundColor: '#111111',
+                        borderBottom: '1px solid #222222',
+                        padding: '12px 16px'
+                      },
+                      userButtonPopoverFooter: {
+                        backgroundColor: '#0a0a0a',
+                        borderTop: '1px solid #222222',
+                        padding: '8px 16px'
+                      },
+                      userButtonPopoverMain: {
+                        padding: '8px'
+                      },
+                      userButtonPopoverActionButtonText: {
+                        fontSize: '14px',
+                        fontWeight: '500'
                       }
                     }
                   }}

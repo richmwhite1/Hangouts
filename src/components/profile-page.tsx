@@ -7,12 +7,40 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { PreferencesAndPlaces } from "@/components/profile/preferences-and-places"
 import { useState, useEffect, useRef } from "react"
 import { useProfile } from "@/hooks/use-profile"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useClerk } from "@clerk/nextjs"
 import { useImageUpload } from "@/hooks/use-image-upload"
 import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2 } from "lucide-react"
 import Image from "next/image"
 
 export function ProfilePage() {
+  const { isSignedIn, isLoaded: authLoading } = useAuth()
+  const { signOut } = useClerk()
+
+  // Early return for non-authenticated users - must be before other hooks
+  if (!authLoading && !isSignedIn) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Please sign in to view your profile</h2>
+          <p className="text-gray-400 mb-6">Redirecting to home page...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
   const [mounted, setMounted] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState<'profile' | 'background' | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
@@ -38,7 +66,6 @@ export function ProfilePage() {
     { id: 'place_2', title: 'Blue Bottle Coffee', mapLink: 'https://www.google.com/maps/search/?api=1&query=Blue+Bottle+Coffee' },
     { id: 'place_3', title: 'Brooklyn Bridge', mapLink: 'https://www.google.com/maps/search/?api=1&query=Brooklyn+Bridge' }
   ])
-  const { isSignedIn, isLoaded: authLoading, signOut } = useAuth()
   const { profile, userHangouts, isLoading, error, refetch } = useProfile()
   const { uploadImage, updateProfile, isUploading, error: uploadError, clearError } = useImageUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -46,25 +73,6 @@ export function ProfilePage() {
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  // Redirect non-authenticated users to home page
-  useEffect(() => {
-    if (!authLoading && !isSignedIn) {
-      window.location.href = '/'
-    }
-  }, [isSignedIn, authLoading])
-
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Please sign in to view your profile</h2>
-          <p className="text-gray-400 mb-6">Redirecting to home page...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-        </div>
-      </div>
-    )
-  }
 
   // Initialize edit form when profile loads
   useEffect(() => {
