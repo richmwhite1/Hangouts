@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
 const RSVPSchema = z.object({
   status: z.enum(['PENDING', 'YES', 'NO', 'MAYBE'])
@@ -14,14 +13,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const { userId } = await auth()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const { id: eventId } = await params
@@ -50,8 +44,9 @@ export async function GET(
       }
     })
 
-    return NextResponse.json(createSuccessResponse(
-      rsvps.map(rsvp => ({
+    return NextResponse.json({
+      success: true,
+      data: rsvps.map(rsvp => ({
         id: rsvp.id,
         eventId: eventId,
         userId: rsvp.userId,
@@ -61,15 +56,16 @@ export async function GET(
         updatedAt: rsvp.updatedAt.toISOString(),
         user: rsvp.users
       })),
-      'RSVPs fetched successfully'
-    ))
+      message: 'RSVPs fetched successfully'
+    })
 
   } catch (error) {
     console.error('❌ Error fetching RSVPs:', error)
-    return NextResponse.json(createErrorResponse(
-      'Failed to fetch RSVPs',
-      error instanceof Error ? error.message : 'Unknown error'
-    ), { status: 500 })
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch RSVPs',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -79,14 +75,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const { userId } = await auth()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const { id: eventId } = await params
@@ -106,7 +97,7 @@ export async function POST(
     let participant = await db.content_participants.findFirst({
       where: {
         contentId: eventId,
-        userId: payload.userId,
+        userId: userId,
       },
     });
 
@@ -116,7 +107,7 @@ export async function POST(
         data: {
           id: `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           contentId: eventId,
-          userId: payload.userId,
+          userId: userId,
           role: 'MEMBER',
           canEdit: false,
           isMandatory: false,
@@ -130,7 +121,7 @@ export async function POST(
     const existingRSVP = await db.rsvp.findFirst({
       where: { 
         contentId: eventId, 
-        userId: payload.userId 
+        userId: userId 
       }
     })
 
@@ -176,22 +167,27 @@ export async function POST(
       })
     }
 
-    return NextResponse.json(createSuccessResponse({
-      id: rsvp.id,
-      eventId: eventId,
-      userId: rsvp.userId,
-      status: rsvp.status,
-      respondedAt: rsvp.respondedAt,
-      createdAt: rsvp.createdAt.toISOString(),
-      updatedAt: rsvp.updatedAt.toISOString(),
-      user: rsvp.users
-    }, 'RSVP updated successfully'))
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: rsvp.id,
+        eventId: eventId,
+        userId: rsvp.userId,
+        status: rsvp.status,
+        respondedAt: rsvp.respondedAt,
+        createdAt: rsvp.createdAt.toISOString(),
+        updatedAt: rsvp.updatedAt.toISOString(),
+        user: rsvp.users
+      },
+      message: 'RSVP updated successfully'
+    })
 
   } catch (error) {
     console.error('❌ Error updating RSVP:', error)
-    return NextResponse.json(createErrorResponse(
-      'Failed to update RSVP',
-      error instanceof Error ? error.message : 'Unknown error'
-    ), { status: 500 })
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to update RSVP',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

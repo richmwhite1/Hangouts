@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import { verifyToken } from '@/lib/auth'
 
 // GET /api/events - List events
 export async function GET(request: NextRequest) {
@@ -18,15 +18,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Available db models:', Object.keys(db))
     
     // Get user ID for friend context (optional for discover page)
-    let userId: string | null = null
-    const authHeader = request.headers.get('authorization')
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7)
-      const payload = verifyToken(token)
-      if (payload) {
-        userId = payload.userId
-      }
-    }
+    const { userId } = await auth()
 
     let friendIds: string[] = []
     
@@ -164,16 +156,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('📊 Request body:', JSON.stringify(body, null, 2))
 
-    // Get user ID from token
-    const authHeader = request.headers.get('authorization')
-    let userId = 'cmfyi6rmm0000jp4yv9r4nq8c' // Default fallback
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7)
-      const payload = verifyToken(token)
-      if (payload) {
-        userId = payload.userId
-      }
+    // Get user ID from Clerk auth
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const event = await db.content.create({

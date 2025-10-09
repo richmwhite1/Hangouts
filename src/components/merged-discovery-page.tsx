@@ -540,19 +540,15 @@ export function MergedDiscoveryPage() {
   }, [mergeAndSortContent])
 
   useEffect(() => {
-    if (isSignedIn) {
-      setIsLoading(true)
-      Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
-        setIsLoading(false)
-      })
-    }
+    setIsLoading(true)
+    Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
+      setIsLoading(false)
+    })
   }, [isSignedIn, getToken])
 
 
   useEffect(() => {
-    if (isSignedIn) {
-      fetchEvents()
-    }
+    fetchEvents()
   }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, isSignedIn, getToken])
 
   // Handle zip code geocoding

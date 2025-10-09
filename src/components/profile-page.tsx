@@ -21,9 +21,16 @@ export function ProfilePage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Please sign in to view your profile</h2>
-          <p className="text-gray-400 mb-6">Redirecting to home page...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+          <h2 className="text-2xl font-bold text-white mb-4">Welcome to Hangouts 3.0</h2>
+          <p className="text-gray-400 mb-6">Please sign in to view your profile and manage your hangouts.</p>
+          <div className="space-x-4">
+            <a href="/login" className="bg-[#6c47ff] text-white px-4 py-2 rounded-md hover:bg-[#6c47ff]/90">
+              Sign In
+            </a>
+            <a href="/signup" className="border border-gray-300 text-white px-4 py-2 rounded-md hover:bg-gray-800">
+              Sign Up
+            </a>
+          </div>
         </div>
       </div>
     )

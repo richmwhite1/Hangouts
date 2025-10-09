@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
 // POST /api/events/[id]/save - Save event to user's saved events
 export async function POST(
@@ -9,14 +8,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const { userId } = await auth()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const { id: eventId } = await params
@@ -34,37 +28,43 @@ export async function POST(
     const existingSave = await db.eventSave.findFirst({
       where: { 
         contentId: eventId, 
-        userId: payload.userId 
+        userId: userId 
       }
     })
 
     if (existingSave) {
-      return NextResponse.json(createSuccessResponse({
-        message: 'Event already saved'
-      }, 'Event already saved'))
+    return NextResponse.json({
+      success: true,
+      message: 'Event already saved'
+    })
     }
 
     // Save event
     const savedEvent = await db.eventSave.create({
       data: {
         contentId: eventId,
-        userId: payload.userId
+        userId: userId
       }
     })
 
-    return NextResponse.json(createSuccessResponse({
-      id: savedEvent.id,
-      contentId: eventId,
-      userId: payload.userId,
-      savedAt: savedEvent.createdAt.toISOString()
-    }, 'Event saved successfully'))
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: savedEvent.id,
+        contentId: eventId,
+        userId: userId,
+        savedAt: savedEvent.createdAt.toISOString()
+      },
+      message: 'Event saved successfully'
+    })
 
   } catch (error) {
     console.error('❌ Error saving event:', error)
-    return NextResponse.json(createErrorResponse(
-      'Failed to save event',
-      error instanceof Error ? error.message : 'Unknown error'
-    ), { status: 500 })
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to save event',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -74,14 +74,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const { userId } = await auth()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const { id: eventId } = await params
@@ -90,20 +85,22 @@ export async function DELETE(
     await db.eventSave.deleteMany({
       where: { 
         contentId: eventId, 
-        userId: payload.userId 
+        userId: userId 
       }
     })
 
-    return NextResponse.json(createSuccessResponse({
+    return NextResponse.json({
+      success: true,
       message: 'Event removed from saved events'
-    }, 'Event unsaved successfully'))
+    })
 
   } catch (error) {
     console.error('❌ Error unsaving event:', error)
-    return NextResponse.json(createErrorResponse(
-      'Failed to unsave event',
-      error instanceof Error ? error.message : 'Unknown error'
-    ), { status: 500 })
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to unsave event',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
