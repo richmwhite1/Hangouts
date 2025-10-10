@@ -823,6 +823,60 @@ export default function HangoutDetailPage() {
           isExpanded={isChatExpanded}
           setIsExpanded={setIsChatExpanded}
         />
+
+        {/* Invite Modal */}
+        {showInviteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-xl font-bold text-white mb-4">Invite Friends</h3>
+              <div className="space-y-4 max-h-60 overflow-y-auto">
+                {friends.map((friend: any) => (
+                  <div key={friend.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={friend.avatar || '/placeholder-avatar.png'}
+                        alt={friend.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <div className="text-white font-medium">{friend.name}</div>
+                        <div className="text-gray-400 text-sm">@{friend.username}</div>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedFriends.includes(friend.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedFriends([...selectedFriends, friend.id])
+                        } else {
+                          setSelectedFriends(selectedFriends.filter((id: string) => id !== friend.id))
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button
+                  onClick={() => setShowInviteModal(false)}
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInviteFriends}
+                  disabled={isInviting || selectedFriends.length === 0}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isInviting ? 'Inviting...' : `Invite ${selectedFriends.length} Friend${selectedFriends.length !== 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1573,60 +1627,6 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
           </div>
         </div>
       ) : null}
-
-      {/* Invite Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">Invite Friends</h3>
-            <div className="space-y-4 max-h-60 overflow-y-auto">
-              {friends.map((friend: any) => (
-                <div key={friend.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={friend.avatar || '/placeholder-avatar.png'}
-                      alt={friend.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <div className="text-white font-medium">{friend.name}</div>
-                      <div className="text-gray-400 text-sm">@{friend.username}</div>
-                    </div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={selectedFriends.includes(friend.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedFriends([...selectedFriends, friend.id])
-                      } else {
-                        setSelectedFriends(selectedFriends.filter((id: string) => id !== friend.id))
-                      }
-                    }}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end space-x-2 mt-6">
-              <Button
-                onClick={() => setShowInviteModal(false)}
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleInviteFriends}
-                disabled={isInviting || selectedFriends.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {isInviting ? 'Inviting...' : `Invite ${selectedFriends.length} Friend${selectedFriends.length !== 1 ? 's' : ''}`}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
