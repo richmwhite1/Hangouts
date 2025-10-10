@@ -12,27 +12,28 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
 
-    if (!query || query.trim().length < 2) {
-      return NextResponse.json({
-        success: true,
-        users: []
-      })
+    // Allow empty query to show all users for discovery
+    let whereClause: any = {
+      id: { not: user.id } // Exclude current user
+    }
+
+    // Add search filters if query is provided
+    if (query && query.trim().length > 0) {
+      whereClause.AND = [
+        { id: { not: user.id } },
+        {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { username: { contains: query, mode: 'insensitive' } },
+            { email: { contains: query, mode: 'insensitive' } }
+          ]
+        }
+      ]
     }
 
     // Search for users by name or username
     const users = await db.user.findMany({
-      where: {
-        AND: [
-          { id: { not: user.id } }, // Exclude current user
-          {
-            OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { username: { contains: query, mode: 'insensitive' } },
-              { email: { contains: query, mode: 'insensitive' } }
-            ]
-          }
-        ]
-      },
+      where: whereClause,
       select: {
         id: true,
         username: true,

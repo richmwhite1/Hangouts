@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's friends
+    // Get user's friends using the correct schema (userId/friendId)
     const friendships = await db.friendship.findMany({
       where: {
         userId: user.id,
@@ -30,9 +30,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Transform friendships to match expected format
+    const friends = friendships.map(friendship => ({
+      id: friendship.id,
+      friend: friendship.friend,
+      status: friendship.status,
+      createdAt: friendship.createdAt
+    }))
+
     return NextResponse.json({
       success: true,
-      friends: friendships
+      friends: friends
     })
   } catch (error) {
     console.error('Error fetching friends:', error)

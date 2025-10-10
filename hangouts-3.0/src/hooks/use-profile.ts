@@ -100,6 +100,30 @@ export function useProfile() {
           throw new Error(data.error || 'Failed to fetch profile')
         }
         
+        // Parse favorite activities and places from JSON strings
+        let favoriteActivities: string[] = []
+        let favoritePlaces: string[] = []
+        
+        try {
+          if (data.data.profile.favoriteActivities) {
+            favoriteActivities = typeof data.data.profile.favoriteActivities === 'string' 
+              ? JSON.parse(data.data.profile.favoriteActivities) 
+              : data.data.profile.favoriteActivities
+          }
+        } catch (e) {
+          console.warn('Failed to parse favoriteActivities:', e)
+        }
+        
+        try {
+          if (data.data.profile.favoritePlaces) {
+            favoritePlaces = typeof data.data.profile.favoritePlaces === 'string' 
+              ? JSON.parse(data.data.profile.favoritePlaces) 
+              : data.data.profile.favoritePlaces
+          }
+        } catch (e) {
+          console.warn('Failed to parse favoritePlaces:', e)
+        }
+
         // Use the profile data from the API
         const userProfile: UserProfile = {
           id: data.data.profile.id,
@@ -113,6 +137,8 @@ export function useProfile() {
           enneagram: data.data.profile.enneagram,
           bigFive: data.data.profile.bigFive,
           loveLanguage: data.data.profile.loveLanguage,
+          favoriteActivities: favoriteActivities,
+          favoritePlaces: favoritePlaces,
           joinDate: data.data.profile.joinDate,
           stats: data.data.profile.stats
         }
@@ -160,6 +186,30 @@ export function useProfile() {
         throw new Error(data.error || 'Failed to fetch profile')
       }
       
+      // Parse favorite activities and places from JSON strings
+      let favoriteActivities: string[] = []
+      let favoritePlaces: string[] = []
+      
+      try {
+        if (data.data.profile.favoriteActivities) {
+          favoriteActivities = typeof data.data.profile.favoriteActivities === 'string' 
+            ? JSON.parse(data.data.profile.favoriteActivities) 
+            : data.data.profile.favoriteActivities
+        }
+      } catch (e) {
+        console.warn('Failed to parse favoriteActivities:', e)
+      }
+      
+      try {
+        if (data.data.profile.favoritePlaces) {
+          favoritePlaces = typeof data.data.profile.favoritePlaces === 'string' 
+            ? JSON.parse(data.data.profile.favoritePlaces) 
+            : data.data.profile.favoritePlaces
+        }
+      } catch (e) {
+        console.warn('Failed to parse favoritePlaces:', e)
+      }
+
       // Use the profile data from the API
       const userProfile: UserProfile = {
         id: data.data.profile.id,
@@ -173,6 +223,8 @@ export function useProfile() {
         enneagram: data.data.profile.enneagram,
         bigFive: data.data.profile.bigFive,
         loveLanguage: data.data.profile.loveLanguage,
+        favoriteActivities: favoriteActivities,
+        favoritePlaces: favoritePlaces,
         joinDate: data.data.profile.joinDate,
         stats: data.data.profile.stats
       }
