@@ -15,7 +15,8 @@ import {
   UserX, 
   Search,
   MessageCircle,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -461,7 +462,7 @@ export default function FriendsPage() {
                       >
                         {pendingRequests.has(user.id) ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                            <Clock className="w-4 h-4 mr-2" />
                             Pending
                           </>
                         ) : (

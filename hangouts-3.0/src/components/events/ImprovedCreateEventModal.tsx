@@ -70,7 +70,7 @@ const commonTags = [
   'dance', 'art', 'food', 'drinks', 'sports', 'fitness'
 ]
 export function ImprovedCreateEventModal() {
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isScraping, setIsScraping] = useState(false)
@@ -257,8 +257,9 @@ export function ImprovedCreateEventModal() {
     }
   }
   const handleLocationSelect = (location: any) => {
-    const address = location.display_name
-    const parts = address.split(', ')
+    const address = location.display_name || ''
+    const parts = address ? address.split(', ') : []
+    
     setFormData(prev => ({
       ...prev,
       venue: location.name || parts[0] || '',
@@ -269,6 +270,7 @@ export function ImprovedCreateEventModal() {
       latitude: parseFloat(location.lat),
       longitude: parseFloat(location.lon)
     }))
+    
     setLocationSearch('')
     setLocationResults([])
     setShowLocationResults(false)

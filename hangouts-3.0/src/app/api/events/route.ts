@@ -151,10 +151,10 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Events API Error:', error)
-    console.error('Error details:', error.message)
-    console.error('Error stack:', error.stack)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch events', details: error.message },
+      { success: false, error: 'Failed to fetch events', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -168,16 +168,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('📊 Request body:', JSON.stringify(body, null, 2))
 
-    // Get user ID from token
-    const authHeader = request.headers.get('authorization')
-    let userId = 'cmfyi6rmm0000jp4yv9r4nq8c' // Default fallback
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7)
-      const payload = verifyToken(token)
-      if (payload) {
-        userId = user.id
-      }
+    // Get user ID from Clerk auth
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const event = await db.content.create({
@@ -233,7 +227,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Events API Error:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create event', details: error.message },
+      { success: false, error: 'Failed to create event', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

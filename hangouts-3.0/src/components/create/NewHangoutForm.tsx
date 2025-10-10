@@ -32,7 +32,7 @@ export interface NewHangoutFormData {
   description: string
   location: string
   privacyLevel: 'PUBLIC' | 'FRIENDS_ONLY' | 'PRIVATE'
-  image?: File
+  image?: File | undefined
   participants: string[]
   mandatoryParticipants: string[]
   coHosts: string[]
@@ -118,10 +118,19 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
         if (friendsResponse.ok) {
           const friendsData = await friendsResponse.json()
-          const friends = friendsData.data?.friends || []
+          const friends = friendsData.friends || []
           console.log('Friends fetched:', friends.length, friends)
-          setAllFriends(friends)
-          setRecentFriends(friends.slice(0, 10)) // Show 10 most recent
+          // Transform friends to match expected format
+          const transformedFriends = friends.map((friendship: any) => ({
+            id: friendship.friend.id,
+            name: friendship.friend.name,
+            username: friendship.friend.username,
+            avatar: friendship.friend.avatar,
+            bio: friendship.friend.bio,
+            location: friendship.friend.location
+          }))
+          setAllFriends(transformedFriends)
+          setRecentFriends(transformedFriends.slice(0, 10)) // Show 10 most recent
         } else {
           console.error('Friends fetch failed:', friendsResponse.status)
         }
@@ -209,7 +218,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
     // Only allow adding options for multi_option type
     if (formData.type !== 'multi_option') return
     
-    const newOption = {
+    const newOption: NewHangoutFormData['options'][0] = {
       id: `option_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title: '',
       description: '',
@@ -686,10 +695,10 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                       >
                         <img
                           src={friend.avatar || '/placeholder-avatar.png'}
-                          alt={friend.name}
+                          alt={friend.name || friend.username}
                           className="w-6 h-6 rounded-full"
                         />
-                        <span className="text-white text-sm">{friend.name}</span>
+                        <span className="text-white text-sm">{friend.name || friend.username}</span>
                       </button>
                       
                       {isSelected && (

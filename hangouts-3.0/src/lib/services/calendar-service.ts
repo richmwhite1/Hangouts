@@ -46,13 +46,33 @@ export class CalendarService {
    * Add event to Apple Calendar
    */
   static async addToAppleCalendar(event: CalendarEvent): Promise<void> {
-    const url = this.generateAppleCalendarUrl(event)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    // For iOS devices, use the calendar:// URL scheme to open Calendar app directly
+    if (this.isIOSDevice()) {
+      const startDate = new Date(event.startTime)
+      const endDate = new Date(event.endTime)
+      
+      const formatDate = (date: Date) => {
+        return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+      }
+
+      const title = encodeURIComponent(event.title)
+      const location = encodeURIComponent(event.location || '')
+      const notes = encodeURIComponent(event.description || '')
+      
+      const calendarUrl = `calendar://event?title=${title}&location=${location}&notes=${notes}&startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`
+      
+      // Try to open Calendar app directly
+      window.location.href = calendarUrl
+    } else {
+      // For other devices, download ICS file
+      const url = this.generateAppleCalendarUrl(event)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
 
   /**
