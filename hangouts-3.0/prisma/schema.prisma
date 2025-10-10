@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -548,7 +547,7 @@ model photos {
   photo_likes    photo_likes[]
   photo_tags     photo_tags[]
   users          User             @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  content        content?         @relation(fields: [contentId], references: [id])
+  content        content?          @relation(fields: [contentId], references: [id])
 
   @@index([contentId])
   @@index([createdAt])
@@ -571,7 +570,7 @@ model polls {
   consensusType       String            @default("percentage")
   status              String            @default("ACTIVE")
   allowDelegation     Boolean           @default(false)
-  allowAbstention     Boolean           @default(true)
+  allowAbstention      Boolean           @default(true)
   allowAddOptions     Boolean           @default(true)
   isPublic            Boolean           @default(false)
   visibility          PollVisibility    @default(PRIVATE)
@@ -745,6 +744,29 @@ model TypingIndicator {
   @@map("typing_indicators")
 }
 
+model Reminder {
+  id            String        @id @default(cuid())
+  userId        String
+  contentId     String?       // Reference to hangout or event
+  type          ReminderType
+  title         String
+  message       String
+  scheduledFor  DateTime      // When to send the reminder
+  isSent        Boolean       @default(false)
+  isDismissed   Boolean       @default(false)
+  sentAt        DateTime?
+  dismissedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       content?      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([scheduledFor])
+  @@index([isSent])
+  @@index([isDismissed])
+  @@map("reminders")
+}
 
 enum FriendRequestStatus {
   PENDING
@@ -880,30 +902,6 @@ enum AttachmentType {
   CONTACT
   STICKER
   GIF
-}
-
-model Reminder {
-  id            String        @id @default(cuid())
-  userId        String
-  contentId     String?       // Reference to hangout or event
-  type          ReminderType
-  title         String
-  message       String
-  scheduledFor  DateTime      // When to send the reminder
-  isSent        Boolean       @default(false)
-  isDismissed   Boolean       @default(false)
-  sentAt        DateTime?
-  dismissedAt   DateTime?
-  createdAt     DateTime      @default(now())
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content       content?      @relation(fields: [contentId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@index([scheduledFor])
-  @@index([isSent])
-  @@index([isDismissed])
-  @@map("reminders")
 }
 
 enum ReminderType {

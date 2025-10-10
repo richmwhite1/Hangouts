@@ -12,7 +12,7 @@ const bcrypt = require('bcryptjs');
 const localDb = new PrismaClient({
   datasources: {
     db: {
-      url: 'file:./dev.db'
+      url: 'file:./prisma/dev.db'
     }
   }
 });
@@ -47,21 +47,81 @@ const users = [
     role: 'USER'
   },
   {
-    clerkId: 'user_test1',
-    email: 'test1@example.com',
-    username: 'testuser1',
-    name: 'Test User 1',
+    clerkId: 'user_alex_johnson',
+    email: 'alex.johnson@example.com',
+    username: 'alexjohnson',
+    name: 'Alex Johnson',
     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
     isActive: true,
     isVerified: true,
     role: 'USER'
   },
   {
-    clerkId: 'user_test2',
-    email: 'test2@example.com',
-    username: 'testuser2',
-    name: 'Test User 2',
+    clerkId: 'user_sarah_chen',
+    email: 'sarah.chen@example.com',
+    username: 'sarahchen',
+    name: 'Sarah Chen',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_mike_rodriguez',
+    email: 'mike.rodriguez@example.com',
+    username: 'mikerodriguez',
+    name: 'Mike Rodriguez',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_emma_wilson',
+    email: 'emma.wilson@example.com',
+    username: 'emmawilson',
+    name: 'Emma Wilson',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_david_kim',
+    email: 'david.kim@example.com',
+    username: 'davidkim',
+    name: 'David Kim',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_lisa_garcia',
+    email: 'lisa.garcia@example.com',
+    username: 'lisagarcia',
+    name: 'Lisa Garcia',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_james_brown',
+    email: 'james.brown@example.com',
+    username: 'jamesbrown',
+    name: 'James Brown',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_olivia_taylor',
+    email: 'olivia.taylor@example.com',
+    username: 'oliviataylor',
+    name: 'Olivia Taylor',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
     isActive: true,
     isVerified: true,
     role: 'USER'
@@ -111,42 +171,69 @@ async function createFriendships(db, dbName) {
   console.log(`\n🔗 Creating friendships in ${dbName} database...`);
   
   try {
-    // Get the two main users
-    const user1 = await db.user.findFirst({ where: { email: 'richmwhite@gmail.com' } });
-    const user2 = await db.user.findFirst({ where: { email: 'rwhite@victig.com' } });
-    
-    if (!user1 || !user2) {
-      console.log(`⚠️ Could not find users for friendship creation in ${dbName}`);
-      return;
-    }
-
-    // Check if friendship already exists
-    const existingFriendship = await db.friendship.findFirst({
+    // Get all users
+    const allUsers = await db.user.findMany({
       where: {
-        OR: [
-          { userId1: user1.id, userId2: user2.id },
-          { userId1: user2.id, userId2: user1.id }
-        ]
+        email: {
+          in: users.map(u => u.email)
+        }
       }
     });
 
-    if (existingFriendship) {
-      console.log(`✅ Friendship already exists between ${user1.email} and ${user2.email} in ${dbName}`);
+    if (allUsers.length < 2) {
+      console.log(`⚠️ Need at least 2 users for friendship creation in ${dbName}`);
       return;
     }
 
-    // Create friendship
-    await db.friendship.create({
-      data: {
-        userId1: user1.id,
-        userId2: user2.id,
-        status: 'ACCEPTED',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    });
+    console.log(`Found ${allUsers.length} users in ${dbName}`);
 
-    console.log(`✅ Created friendship between ${user1.email} and ${user2.email} in ${dbName}`);
+    // Create friendships between all users (everyone is friends with everyone)
+    let friendshipCount = 0;
+    for (let i = 0; i < allUsers.length; i++) {
+      for (let j = i + 1; j < allUsers.length; j++) {
+        const user1 = allUsers[i];
+        const user2 = allUsers[j];
+
+        // Check if friendship already exists
+        const existingFriendship = await db.friendship.findFirst({
+          where: {
+            OR: [
+              { userId: user1.id, friendId: user2.id },
+              { userId: user2.id, friendId: user1.id }
+            ]
+          }
+        });
+
+        if (!existingFriendship) {
+          // Create friendship (bidirectional)
+          await db.friendship.createMany({
+            data: [
+              {
+                userId: user1.id,
+                friendId: user2.id,
+                status: 'ACTIVE',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              },
+              {
+                userId: user2.id,
+                friendId: user1.id,
+                status: 'ACTIVE',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }
+            ]
+          });
+
+          friendshipCount++;
+          console.log(`✅ Created friendship between ${user1.name} and ${user2.name} in ${dbName}`);
+        } else {
+          console.log(`✅ Friendship already exists between ${user1.name} and ${user2.name} in ${dbName}`);
+        }
+      }
+    }
+
+    console.log(`✅ Created ${friendshipCount} new friendships in ${dbName}`);
   } catch (error) {
     console.error(`❌ Error creating friendships in ${dbName}:`, error.message);
   }

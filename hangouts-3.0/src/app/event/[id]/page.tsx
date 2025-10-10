@@ -10,7 +10,6 @@ import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useAuth } from '@/contexts/auth-context'
 import { toast } from 'sonner'
 import { TileActions } from '@/components/ui/tile-actions'
-import { EventMeta } from '@/components/seo/event-meta'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
 import { sharingService } from '@/lib/services/sharing-service'
 
@@ -214,7 +213,6 @@ export default function EventDetailPage() {
 
   return (
     <>
-      <EventMeta event={event} isPublic={true} />
       <div className="min-h-screen bg-black">
       {/* Event Image */}
       <div className="relative h-64 md:h-96">

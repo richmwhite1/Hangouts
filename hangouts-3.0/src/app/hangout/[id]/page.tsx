@@ -9,7 +9,6 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
-import { HangoutMeta } from '@/components/seo/hangout-meta'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
 interface Hangout {
@@ -442,7 +441,6 @@ export default function HangoutDetailPage() {
   })
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <HangoutMeta hangout={hangout} />
       <div className="max-w-md mx-auto pb-20">
         {/* Status Header - Always Visible */}
         <HangoutStatusHeader hangout={hangout} state={currentState} />
