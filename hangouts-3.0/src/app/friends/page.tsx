@@ -54,6 +54,7 @@ export default function FriendsPage() {
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -108,6 +109,9 @@ export default function FriendsPage() {
 
   const sendFriendRequest = async (userId: string) => {
     try {
+      // Add to pending requests immediately for UI feedback
+      setPendingRequests(prev => new Set(prev).add(userId))
+      
       const response = await fetch('/api/friends/request', {
         method: 'POST',
         headers: {
@@ -120,10 +124,22 @@ export default function FriendsPage() {
         toast.success('Friend request sent!')
         searchUsers(searchQuery) // Refresh search results
       } else {
+        // Remove from pending if request failed
+        setPendingRequests(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(userId)
+          return newSet
+        })
         const error = await response.json()
         toast.error(error.message || 'Failed to send friend request')
       }
     } catch (error) {
+      // Remove from pending if request failed
+      setPendingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
       console.error('Error sending friend request:', error)
       toast.error('Failed to send friend request')
     }
@@ -440,9 +456,20 @@ export default function FriendsPage() {
                       <Button 
                         size="sm"
                         onClick={() => sendFriendRequest(user.id)}
+                        disabled={pendingRequests.has(user.id)}
+                        variant={pendingRequests.has(user.id) ? "secondary" : "default"}
                       >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Friend
+                        {pendingRequests.has(user.id) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                            Pending
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Add Friend
+                          </>
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
