@@ -105,6 +105,66 @@ export async function GET(
       
       console.log('✅ Hangout found:', hangout.title)
 
+      // Get participants and RSVPs
+      const participants = await db.content_participants.findMany({
+        where: { contentId: hangoutId },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true
+            }
+          }
+        },
+        orderBy: { joinedAt: 'asc' }
+      })
+
+      // Get RSVPs
+      const rsvps = await db.rsvp.findMany({
+        where: { contentId: hangoutId },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true
+            }
+          }
+        }
+      })
+
+      // Ensure host is always included in participants
+      const hostParticipant = participants.find(p => p.userId === hangout.creatorId)
+      if (!hostParticipant) {
+        // Add host as participant if not already included
+        const hostUser = await db.user.findUnique({
+          where: { id: hangout.creatorId },
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true
+          }
+        })
+        
+        if (hostUser) {
+          participants.unshift({
+            id: `host_${hangout.creatorId}`,
+            contentId: hangoutId,
+            userId: hangout.creatorId,
+            role: 'CREATOR',
+            canEdit: true,
+            isMandatory: false,
+            isCoHost: false,
+            joinedAt: hangout.createdAt,
+            users: hostUser
+          })
+        }
+      }
+
       // Check if hangout is public (for unauthenticated access)
       if (hangout.privacyLevel !== 'PUBLIC') {
         // Check if user is authenticated
@@ -218,10 +278,10 @@ export async function GET(
       const transformedHangout = {
         ...hangout,
         creator: hangout.users,
-        participants: [], // Empty for now to reduce memory usage
-        rsvps: [], // Empty for now to reduce memory usage
+        participants: participants,
+        rsvps: rsvps,
         _count: {
-          participants: 0,
+          participants: participants.length,
           comments: 0,
           content_likes: 0,
           content_shares: 0,

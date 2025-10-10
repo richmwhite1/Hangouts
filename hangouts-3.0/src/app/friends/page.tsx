@@ -234,14 +234,10 @@ export default function FriendsPage() {
         </div>
 
         <Tabs defaultValue="friends" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">
               <Users className="w-4 h-4 mr-2" />
               Friends ({friends.length})
-            </TabsTrigger>
-            <TabsTrigger value="requests">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Requests ({pendingFriendRequests.length})
             </TabsTrigger>
             <TabsTrigger value="sent">
               <UserCheck className="w-4 h-4 mr-2" />
@@ -307,65 +303,6 @@ export default function FriendsPage() {
                         >
                           <UserX className="w-4 h-4 mr-2" />
                           Remove
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="requests" className="mt-6">
-            <div className="grid gap-4">
-              {pendingFriendRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <UserPlus className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
-                    <p className="text-muted-foreground">
-                      Friend requests will appear here
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                pendingFriendRequests.map((request) => (
-                  <Card key={request.id}>
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center space-x-3">
-                        <Avatar>
-                          <AvatarImage src={request.sender.avatar} />
-                          <AvatarFallback>
-                            {request.sender.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{request.sender.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            @{request.sender.username}
-                          </p>
-                          {request.message && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              "{request.message}"
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button 
-                          size="sm"
-                          onClick={() => respondToFriendRequest(request.id, 'ACCEPTED')}
-                        >
-                          <UserCheck className="w-4 h-4 mr-2" />
-                          Accept
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => respondToFriendRequest(request.id, 'DECLINED')}
-                        >
-                          <UserX className="w-4 h-4 mr-2" />
-                          Decline
                         </Button>
                       </div>
                     </CardContent>

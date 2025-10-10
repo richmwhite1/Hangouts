@@ -211,6 +211,31 @@ export default function HangoutDetailPage() {
     if (!hangout) return
     await sharingService.copyLink(hangoutId, 'hangout')
   }
+
+  const handleJoinHangout = async (hangoutId: string) => {
+    if (!user) return
+    
+    try {
+      const response = await fetch(`/api/hangouts/${hangoutId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        toast.success('Successfully joined the hangout!')
+        // Refresh hangout data to show updated participants
+        await fetchHangout()
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to join hangout')
+      }
+    } catch (error) {
+      console.error('Error joining hangout:', error)
+      toast.error('Failed to join hangout')
+    }
+  }
   const fetchHangout = async () => {
     if (!hangoutId) return
     try {
@@ -1196,6 +1221,17 @@ function ParticipantStatusSection({
               Add People
             </Button>
           )}
+          {/* Join Button for non-participants on public hangouts */}
+          {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
+            <Button
+              onClick={() => handleJoinHangout(hangout.id)}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
+            >
+              <UserPlus className="w-3 h-3 mr-1" />
+              Join Hangout
+            </Button>
+          )}
           {/* Action Buttons */}
           <TileActions
             itemId={hangout.id}
@@ -1291,7 +1327,21 @@ function ParticipantStatusSection({
             </div>
           )
         })}
-        </div>
+        
+        {/* Add People Icon - Show if host and there's space */}
+        {isHost && participants.length < 8 && (
+          <div className="flex flex-col items-center text-center">
+            <button
+              onClick={onOpenInviteModal}
+              className="w-16 h-16 rounded-md border-2 border-dashed border-gray-500 bg-gray-800/50 hover:bg-gray-700/50 hover:border-gray-400 transition-colors flex items-center justify-center group"
+              title="Add more people"
+            >
+              <UserPlus className="w-6 h-6 text-gray-400 group-hover:text-gray-300" />
+            </button>
+            <p className="text-gray-400 font-medium text-xs mt-2">Add People</p>
+          </div>
+        )}
+      </div>
       )}
     </div>
   )

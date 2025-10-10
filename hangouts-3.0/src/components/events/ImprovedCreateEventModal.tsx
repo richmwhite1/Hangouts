@@ -196,16 +196,23 @@ export function ImprovedCreateEventModal() {
     }))
   }
   const handleScrapeUrl = async () => {
-    if (!formData.eventUrl.trim() || !token) return
+    if (!formData.eventUrl.trim()) return
+    
     setIsScraping(true)
     try {
+      const token = await getToken()
       const response = await fetch('/api/scrape-event', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ url: formData.eventUrl })
       })
+      
       if (response.ok) {
         const { data } = await response.json()
+        
         // Populate form with scraped data
         setFormData(prev => ({
           ...prev,
