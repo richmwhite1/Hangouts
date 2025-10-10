@@ -219,7 +219,7 @@ export default function FriendsPage() {
     )
   }
 
-  const pendingRequests = friendRequests.filter(req => req.status === 'PENDING')
+    const pendingFriendRequests = friendRequests.filter(req => req.status === 'PENDING')
   const sentRequests = friendRequests.filter(req => req.sender.id === user?.id)
 
   return (
@@ -240,7 +240,7 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger value="requests">
               <UserPlus className="w-4 h-4 mr-2" />
-              Requests ({pendingRequests.length})
+              Requests ({pendingFriendRequests.length})
             </TabsTrigger>
             <TabsTrigger value="sent">
               <UserCheck className="w-4 h-4 mr-2" />
@@ -317,7 +317,7 @@ export default function FriendsPage() {
 
           <TabsContent value="requests" className="mt-6">
             <div className="grid gap-4">
-              {pendingRequests.length === 0 ? (
+              {pendingFriendRequests.length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-8">
                     <UserPlus className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -328,7 +328,7 @@ export default function FriendsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                pendingRequests.map((request) => (
+                pendingFriendRequests.map((request) => (
                   <Card key={request.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center space-x-3">
