@@ -43,13 +43,10 @@ export function BottomNavigation() {
 
             return (
               <Link key={tab.id} href={tab.href}>
-                <TouchButton
+                <Button
                   variant={isActive ? "default" : "ghost"}
                   size="lg"
                   className="flex flex-col items-center space-y-1 h-auto py-3 px-4 min-w-0 min-h-[60px]"
-                  hapticType="light"
-                  rippleEffect={false}
-                  touchScale={0.95}
                   onClick={() => {
                     if (isActive) {
                       hapticLight()
@@ -67,7 +64,7 @@ export function BottomNavigation() {
                     )}
                   </div>
                   <span className="text-sm font-medium">{tab.label}</span>
-                </TouchButton>
+                </Button>
               </Link>
             )
           })}
