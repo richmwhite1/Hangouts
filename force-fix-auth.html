@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Fix Authentication</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 8px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+        button { background-color: #dc3545; color: white; padding: 20px 40px; border: none; border-radius: 8px; cursor: pointer; font-size: 20px; margin: 20px 0; width: 100%; }
+        button:hover { background-color: #c82333; }
+        .code { background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; word-break: break-all; }
+        .step { margin: 20px 0; padding: 20px; border-left: 4px solid #dc3545; background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <h1>🚨 FORCE FIX AUTHENTICATION</h1>
+    
+    <div class="warning">
+        <strong>⚠️ CRITICAL ISSUE:</strong> The frontend is still using the old invalid token even after the previous fix. This is causing all API calls to fail with "Foreign key constraint violated" errors.
+    </div>
+    
+    <div class="step">
+        <h3>🔧 FORCE OVERRIDE AUTHENTICATION</h3>
+        <p>This will completely override any existing authentication data and force the correct token to be used.</p>
+        <button id="forceFixButton">🚨 FORCE FIX AUTHENTICATION NOW</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="step">
+        <h3>📋 What This Will Do:</h3>
+        <ul>
+            <li>Clear ALL existing authentication data</li>
+            <li>Set the correct valid token: <span class="code">cmfyi6rmm0000jp4yv9r4nq8c</span></li>
+            <li>Force the frontend to use the valid user</li>
+            <li>Enable both hangout and event creation</li>
+        </ul>
+    </div>
+
+    <script>
+        // Valid user data that actually exists in the database
+        const validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ5aTZybW0wMDAwanA0eXY5cjRucThjIiwiZW1haWwiOiJrYXJsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoia2FybCIsImlhdCI6MTc1ODc0OTc0MywiZXhwIjoxNzU5MzU0NTQzfQ.2Q3vFE250O6shvjjlDuF9mRHPZW_7du5xzLXsBUmGDM";
+        const validUser = {
+            "id": "cmfyi6rmm0000jp4yv9r4nq8c",
+            "email": "karl@email.com", 
+            "username": "karl",
+            "name": "Karl Test User"
+        };
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        document.getElementById('forceFixButton').addEventListener('click', () => {
+            try {
+                // Step 1: Clear ALL possible auth-related keys from both localStorage and sessionStorage
+                const keysToRemove = [
+                    'auth_token', 'auth_user', 'token', 'user', 
+                    'access_token', 'refresh_token', 'jwt_token',
+                    'authToken', 'authUser', 'userToken', 'userData'
+                ];
+                
+                console.log('🧹 Clearing all authentication data...');
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    sessionStorage.removeItem(key);
+                });
+                
+                // Step 2: Force set the correct authentication data
+                console.log('🔑 Setting correct authentication token...');
+                localStorage.setItem('auth_token', validToken);
+                localStorage.setItem('auth_user', JSON.stringify(validUser));
+                
+                // Step 3: Also set in sessionStorage as backup
+                sessionStorage.setItem('auth_token', validToken);
+                sessionStorage.setItem('auth_user', JSON.stringify(validUser));
+                
+                // Step 4: Verify the data was set correctly
+                const storedToken = localStorage.getItem('auth_token');
+                const storedUser = localStorage.getItem('auth_user');
+                
+                if (storedToken === validToken && storedUser) {
+                    const user = JSON.parse(storedUser);
+                    if (user.id === validUser.id) {
+                        updateStatus(`
+                            ✅ <strong>AUTHENTICATION FORCE FIXED SUCCESSFULLY!</strong><br><br>
+                            <strong>Valid User ID:</strong> ${user.id}<br>
+                            <strong>Username:</strong> ${user.username}<br>
+                            <strong>Email:</strong> ${user.email}<br><br>
+                            <strong>🎉 You can now create hangouts and events!</strong><br>
+                            <strong>📱 Go back to your app and refresh the page.</strong>
+                        `, 'success');
+                        
+                        console.log('✅ Authentication force fixed successfully!');
+                        console.log('   User ID:', user.id);
+                        console.log('   Username:', user.username);
+                        console.log('   Token set:', storedToken.substring(0, 20) + '...');
+                    } else {
+                        updateStatus('❌ User data verification failed. Please try again.', 'error');
+                    }
+                } else {
+                    updateStatus('❌ Token verification failed. Please try again.', 'error');
+                }
+                
+            } catch (e) {
+                updateStatus('❌ Error during force fix: ' + e.message, 'error');
+                console.error('❌ Error during force fix:', e);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

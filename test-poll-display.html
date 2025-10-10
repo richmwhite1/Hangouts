@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Poll Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .poll {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .option {
+            background-color: #444;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .option:hover {
+            background-color: #555;
+        }
+        .option.voted {
+            background-color: #4CAF50;
+        }
+        .participants {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #555;
+        }
+        .participant {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            background-color: #666;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+        .participant.voted {
+            background-color: #4CAF50;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            color: #2196F3;
+        }
+        .error {
+            color: #f44336;
+        }
+        .success {
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗳️ Test Poll Display</h1>
+        <p>This page tests the poll display functionality without authentication issues.</p>
+        
+        <button onclick="loadPolls()">Load Polls</button>
+        <button onclick="testVote()">Test Vote</button>
+        <button onclick="goToHangout()">Go to Hangout Page</button>
+        
+        <div id="status"></div>
+        <div id="polls"></div>
+    </div>
+
+    <script>
+        const JWT_SECRET = 'your-super-secret-jwt-key-here-make-it-long-and-random';
+        const userId = 'cmfq75h2v0000jpf08u3kfi6b';
+        const username = 'bill';
+        const email = 'bill@email.com';
+        const hangoutId = 'hangout_1758571693257_775kt1fc5';
+        
+        function generateJWT(payload, secret) {
+            const header = {
+                alg: 'HS256',
+                typ: 'JWT'
+            };
+            
+            const encodedHeader = btoa(JSON.stringify(header));
+            const encodedPayload = btoa(JSON.stringify(payload));
+            
+            // Simple HMAC-SHA256 implementation (not secure for production)
+            const signature = btoa(encodedHeader + '.' + encodedPayload + secret);
+            
+            return `${encodedHeader}.${encodedPayload}.${signature}`;
+        }
+        
+        function getToken() {
+            const now = Math.floor(Date.now() / 1000);
+            const payload = {
+                userId: userId,
+                email: email,
+                username: username,
+                iat: now,
+                exp: now + (7 * 24 * 60 * 60) // 7 days
+            };
+            
+            return generateJWT(payload, JWT_SECRET);
+        }
+        
+        async function loadPolls() {
+            try {
+                document.getElementById('status').innerHTML = '<p class="loading">🔄 Loading polls...</p>';
+                
+                const token = getToken();
+                const response = await fetch(`/api/hangouts/${hangoutId}/polls-simple`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Polls data:', data);
+                
+                if (data.success && data.polls && data.polls.length > 0) {
+                    displayPolls(data.polls);
+                    document.getElementById('status').innerHTML = `<p class="success">✅ Loaded ${data.polls.length} poll(s)</p>`;
+                } else {
+                    document.getElementById('status').innerHTML = '<p class="error">❌ No polls found</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading polls:', error);
+                document.getElementById('status').innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function displayPolls(polls) {
+            const pollsContainer = document.getElementById('polls');
+            pollsContainer.innerHTML = '';
+            
+            polls.forEach(poll => {
+                const pollDiv = document.createElement('div');
+                pollDiv.className = 'poll';
+                
+                pollDiv.innerHTML = `
+                    <h3>${poll.title}</h3>
+                    <p>${poll.description || ''}</p>
+                    <div class="progress">
+                        <div style="background-color: #4CAF50; height: 20px; width: ${poll.consensusLevel || 0}%; border-radius: 10px;"></div>
+                    </div>
+                    <p>Consensus: ${poll.consensusLevel || 0}% (${poll.totalVotes} votes, ${poll.participantCount} participants)</p>
+                    <div class="options">
+                        ${poll.pollOptions.map(option => `
+                            <div class="option" data-option-id="${option.id}" onclick="voteOnOption('${poll.id}', '${option.id}')">
+                                <strong>${option.what}</strong>
+                                ${option.where ? `<br>📍 ${option.where}` : ''}
+                                ${option.when ? `<br>🕐 ${option.when}` : ''}
+                                <br>Votes: ${option.voteCount} (${option.percentage}%)
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="participants">
+                        <h4>Participants (${poll.participants.length})</h4>
+                        ${poll.participants.map(participant => `
+                            <span class="participant ${participant.status === 'VOTED' ? 'voted' : ''}">
+                                ${participant.user.name} (${participant.status})
+                            </span>
+                        `).join('')}
+                    </div>
+                `;
+                
+                pollsContainer.appendChild(pollDiv);
+            });
+        }
+        
+        async function voteOnOption(pollId, optionId) {
+            try {
+                const token = getToken();
+                const response = await fetch(`/api/polls/${pollId}/vote-simple`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ optionId })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('status').innerHTML = '<p class="success">✅ Vote cast successfully!</p>';
+                    // Reload polls to show updated vote counts
+                    setTimeout(() => loadPolls(), 1000);
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Vote failed');
+                }
+                
+            } catch (error) {
+                console.error('Error voting:', error);
+                document.getElementById('status').innerHTML = `<p class="error">❌ Vote error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testVote() {
+            // Test voting on the first option of the first poll
+            const polls = document.querySelectorAll('.poll');
+            if (polls.length > 0) {
+                const firstOption = polls[0].querySelector('.option');
+                if (firstOption) {
+                    const pollId = 'poll_1758635072463_cqz5z0m8x'; // Known poll ID
+                    const optionId = firstOption.dataset.optionId;
+                    if (optionId) {
+                        await voteOnOption(pollId, optionId);
+                    }
+                }
+            }
+        }
+        
+        function goToHangout() {
+            // Set up authentication first
+            const token = getToken();
+            localStorage.setItem('auth_token', token);
+            localStorage.setItem('auth_user', JSON.stringify({
+                id: userId,
+                username: username,
+                email: email,
+                name: username
+            }));
+            
+            // Then navigate to hangout
+            window.location.href = `/hangouts/${hangoutId}`;
+        }
+        
+        // Auto-load polls on page load
+        window.onload = function() {
+            loadPolls();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

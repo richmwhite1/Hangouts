@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Debug Test</title>
+</head>
+<body>
+    <h1>Frontend Debug Test</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testFrontendData() {
+            try {
+                // Simulate what the frontend form would send
+                const formData = {
+                    title: 'Test Hangout',
+                    description: 'Test Description',
+                    location: 'Test Location',
+                    startTime: new Date(),
+                    endTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
+                    privacyLevel: 'PUBLIC',
+                    image: null,
+                    participants: ['cmfxfsg6l0001jpvtupwla44d'],
+                    type: 'quick_plan',
+                    options: [{
+                        id: 'opt1',
+                        title: 'Option 1',
+                        description: 'Test option',
+                        location: 'Test Location',
+                        dateTime: '2025-01-25T20:00:00Z',
+                        price: 10,
+                        eventImage: ''
+                    }]
+                };
+
+                // Process it the same way the frontend does
+                const hangoutData = {
+                    title: formData.title,
+                    description: formData.description || null,
+                    location: formData.location || null,
+                    startTime: formData.startTime.toISOString(),
+                    endTime: formData.endTime.toISOString(),
+                    privacyLevel: formData.privacyLevel,
+                    image: formData.image ? URL.createObjectURL(formData.image) : null,
+                    participants: formData.participants,
+                    type: formData.type,
+                    options: formData.options
+                        .filter(option => option.title.trim() !== '')
+                        .map(option => ({
+                            id: option.id,
+                            title: option.title,
+                            description: option.description || '',
+                            location: option.location || '',
+                            dateTime: option.dateTime || formData.startTime.toISOString(),
+                            price: option.price || 0,
+                            eventImage: option.eventImage || ''
+                        }))
+                };
+
+                console.log('Frontend would send:', JSON.stringify(hangoutData, null, 2));
+                
+                // Test the API
+                const response = await fetch('http://localhost:3000/api/hangouts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ4ZnNnNTMwMDAwanB2dGtiMWFhd3l2IiwiZW1haWwiOiJrYXJsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoia2FybCIsImlhdCI6MTc1ODY4NTQzMSwiZXhwIjoxNzU5MjkwMjMxfQ.sNMakdgyXnx5D9-6Tlbcd4trnULVlkkU794bZgCm6I4'
+                    },
+                    body: JSON.stringify(hangoutData)
+                });
+
+                const result = await response.json();
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>Result:</h2>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+                
+                if (result.success) {
+                    console.log('✅ Frontend test passed!');
+                } else {
+                    console.error('❌ Frontend test failed:', result.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Frontend test error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h2>Error:</h2>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        testFrontendData();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

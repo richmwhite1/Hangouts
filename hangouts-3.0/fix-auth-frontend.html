@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Frontend Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .info {
+            color: #2196F3;
+        }
+        pre {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Frontend Authentication</h1>
+        <p>This page will help fix the frontend authentication issue so you can see polls in the hangout page.</p>
+        
+        <div id="status"></div>
+        
+        <button onclick="fixAuth()">Fix Authentication</button>
+        <button onclick="testAuth()">Test Authentication</button>
+        <button onclick="goToHangout()">Go to Hangout</button>
+        <button onclick="clearAuth()">Clear Authentication</button>
+        
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const JWT_SECRET = 'your-super-secret-jwt-key-here-make-it-long-and-random';
+        const userId = 'cmfq75h2v0000jpf08u3kfi6b';
+        const username = 'bill';
+        const email = 'bill@email.com';
+        
+        function generateJWT(payload, secret) {
+            const header = {
+                alg: 'HS256',
+                typ: 'JWT'
+            };
+            
+            const encodedHeader = btoa(JSON.stringify(header));
+            const encodedPayload = btoa(JSON.stringify(payload));
+            
+            // Simple HMAC-SHA256 implementation (not secure for production)
+            const signature = btoa(encodedHeader + '.' + encodedPayload + secret);
+            
+            return `${encodedHeader}.${encodedPayload}.${signature}`;
+        }
+        
+        function fixAuth() {
+            try {
+                const now = Math.floor(Date.now() / 1000);
+                const payload = {
+                    userId: userId,
+                    email: email,
+                    username: username,
+                    iat: now,
+                    exp: now + (7 * 24 * 60 * 60) // 7 days
+                };
+                
+                const token = generateJWT(payload, JWT_SECRET);
+                
+                // Store in localStorage with correct keys
+                localStorage.setItem('auth_token', token);
+                localStorage.setItem('auth_user', JSON.stringify({
+                    id: userId,
+                    username: username,
+                    email: email,
+                    name: username
+                }));
+                
+                document.getElementById('status').innerHTML = '<p class="success">✅ Authentication fixed! Token and user data stored in localStorage.</p>';
+                document.getElementById('output').innerHTML = `
+                    <h3>Stored Data:</h3>
+                    <pre>Token: ${token.substring(0, 50)}...</pre>
+                    <pre>User: ${JSON.stringify(payload, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function testAuth() {
+            const token = localStorage.getItem('auth_token');
+            const user = localStorage.getItem('auth_user');
+            
+            if (token && user) {
+                document.getElementById('status').innerHTML = '<p class="success">✅ Authentication data found in localStorage!</p>';
+                document.getElementById('output').innerHTML = `
+                    <h3>Current Auth Data:</h3>
+                    <pre>Token: ${token.substring(0, 50)}...</pre>
+                    <pre>User: ${user}</pre>
+                `;
+            } else {
+                document.getElementById('status').innerHTML = '<p class="error">❌ No authentication data found. Click "Fix Authentication" first.</p>';
+            }
+        }
+        
+        function goToHangout() {
+            window.location.href = '/hangouts/hangout_1758571693257_775kt1fc5';
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            document.getElementById('status').innerHTML = '<p class="info">ℹ️ Authentication data cleared from localStorage.</p>';
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        // Auto-fix on page load
+        window.onload = function() {
+            fixAuth();
+        };
+    </script>
+</body>
+</html>

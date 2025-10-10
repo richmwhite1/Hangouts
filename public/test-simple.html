@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #000; color: #fff; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 5px; background: #111; }
+        .success { background-color: #0d4f0d; border-color: #28a745; }
+        .error { background-color: #4f0d0d; border-color: #dc3545; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #ff1493; color: #000; border: none; border-radius: 5px; font-weight: bold; }
+        button:hover { background: #ff69b4; }
+        pre { background: #222; padding: 10px; border-radius: 3px; overflow-x: auto; color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple Test</h1>
+    
+    <div class="test">
+        <h2>1. Test Authentication</h2>
+        <button onclick="signinKarl()">Sign In Karl</button>
+        <div id="auth-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>2. Test Create Hangout</h2>
+        <button onclick="createHangout()">Create Hangout</button>
+        <div id="create-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>3. Test Home Feed</h2>
+        <button onclick="testHomeFeed()">Get Home Feed</button>
+        <div id="home-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>4. Test Discover</h2>
+        <button onclick="testDiscover()">Get Discover</button>
+        <div id="discover-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>5. Open Pages</h2>
+        <button onclick="openHome()">Open Home</button>
+        <button onclick="openDiscover()">Open Discover</button>
+        <button onclick="openCreate()">Open Create</button>
+        <div id="page-result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        async function signinKarl() {
+            try {
+                const response = await fetch('/api/auth/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'karl@email.com',
+                        password: 'Password1!'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    document.getElementById('auth-result').innerHTML = 
+                        `<div class="success">✅ Signed in! Token: ${authToken.substring(0, 20)}...</div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to sign in');
+                }
+            } catch (error) {
+                document.getElementById('auth-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function createHangout() {
+            if (!authToken) {
+                document.getElementById('create-result').innerHTML = 
+                    `<div class="error">❌ Please sign in first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hangouts', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Hangout',
+                        description: 'This should appear in feeds',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        privacyLevel: 'PUBLIC',
+                        type: 'quick_plan',
+                        options: [{
+                            id: 'test_option',
+                            title: 'Go to the park',
+                            description: 'Enjoy the day',
+                            location: 'Central Park',
+                            dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                            price: 0
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('create-result').innerHTML = 
+                        `<div class="success">✅ Hangout created! ID: ${data.data.id}</div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create hangout');
+                }
+            } catch (error) {
+                document.getElementById('create-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testHomeFeed() {
+            if (!authToken) {
+                document.getElementById('home-result').innerHTML = 
+                    `<div class="error">❌ Please sign in first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hangouts', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const hangouts = data.data.hangouts || [];
+                    document.getElementById('home-result').innerHTML = 
+                        `<div class="success">✅ Home feed: ${hangouts.length} hangouts<br>
+                        ${hangouts.map(h => `<div>• ${h.title} (${h.privacyLevel})</div>`).join('')}
+                        </div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch home feed');
+                }
+            } catch (error) {
+                document.getElementById('home-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testDiscover() {
+            if (!authToken) {
+                document.getElementById('discover-result').innerHTML = 
+                    `<div class="error">❌ Please sign in first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hangouts?discover=true', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const hangouts = data.data.hangouts || [];
+                    document.getElementById('discover-result').innerHTML = 
+                        `<div class="success">✅ Discover: ${hangouts.length} hangouts<br>
+                        ${hangouts.map(h => `<div>• ${h.title} (${h.privacyLevel})</div>`).join('')}
+                        </div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch discover');
+                }
+            } catch (error) {
+                document.getElementById('discover-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function openHome() {
+            window.open('http://localhost:3000/', '_blank');
+        }
+
+        function openDiscover() {
+            window.open('http://localhost:3000/discover', '_blank');
+        }
+
+        function openCreate() {
+            window.open('http://localhost:3000/create', '_blank');
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

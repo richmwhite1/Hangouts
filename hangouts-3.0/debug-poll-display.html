@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Poll Display</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .poll { background: #e8f4f8; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #2196F3; }
+        .error { background: #ffebee; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #f44336; }
+        button { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #1976D2; }
+    </style>
+</head>
+<body>
+    <h1>Debug Poll Display</h1>
+    
+    <div class="debug">
+        <h3>Authentication</h3>
+        <button onclick="setAuth()">Set Authentication</button>
+        <button onclick="clearAuth()">Clear Authentication</button>
+        <div id="authStatus"></div>
+    </div>
+
+    <div class="debug">
+        <h3>Poll Data</h3>
+        <button onclick="fetchPolls()">Fetch Polls</button>
+        <button onclick="fetchHangout()">Fetch Hangout</button>
+        <div id="pollData"></div>
+    </div>
+
+    <div class="debug">
+        <h3>Poll Display Logic</h3>
+        <button onclick="testPollLogic()">Test Poll Logic</button>
+        <div id="pollLogic"></div>
+    </div>
+
+    <div id="polls"></div>
+
+    <script>
+        const JWT_SECRET = 'your-super-secret-jwt-key-here-make-it-long-and-random';
+        const hangoutId = 'hangout_1758565278199_adqpwjcwh';
+        
+        function setAuth() {
+            const testUser = {
+                id: 'cmfvgcfli0000jphd45q3zadx',
+                email: 'test@example.com',
+                username: 'testuser',
+                name: 'Test User'
+            };
+            
+            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ2Z2NmbGkwMDAwanBoZDQ1cTN6YWR4IiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTc1ODU2NTI4MiwiZXhwIjoxNzU5MTcwMDgyfQ.NDVcQMwRUT6JHnHtDgQZ9fxcmzNMYHGO5oxxvofH4xE';
+            
+            localStorage.setItem('auth_token', token);
+            localStorage.setItem('auth_user', JSON.stringify(testUser));
+            
+            document.getElementById('authStatus').innerHTML = '✅ Authentication set successfully!';
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            document.getElementById('authStatus').innerHTML = '❌ Authentication cleared';
+        }
+        
+        async function fetchPolls() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('pollData').innerHTML = '<div class="error">No authentication token</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/hangouts/${hangoutId}/polls-simple`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                console.log('Polls response:', data);
+                
+                document.getElementById('pollData').innerHTML = `
+                    <div>Success: ${data.success}</div>
+                    <div>Polls count: ${data.polls?.length || 0}</div>
+                    <div>Raw data: <pre>${JSON.stringify(data, null, 2)}</pre></div>
+                `;
+                
+                displayPolls(data.polls || []);
+            } catch (error) {
+                document.getElementById('pollData').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function fetchHangout() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('pollData').innerHTML = '<div class="error">No authentication token</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/hangouts/${hangoutId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                console.log('Hangout response:', data);
+                
+                document.getElementById('pollData').innerHTML = `
+                    <div>Hangout ID: ${data.hangout?.id || data.id}</div>
+                    <div>Title: ${data.hangout?.title || data.title}</div>
+                    <div>Raw data: <pre>${JSON.stringify(data, null, 2)}</pre></div>
+                `;
+            } catch (error) {
+                document.getElementById('pollData').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function testPollLogic() {
+            const polls = JSON.parse(localStorage.getItem('cachedPolls') || '[]');
+            const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+            
+            const activePoll = polls.find(p => p.isActive && !p.consensusReached);
+            const hasActivePoll = !!activePoll;
+            const hasConsensusReached = polls.some(p => p.consensusReached);
+            
+            document.getElementById('pollLogic').innerHTML = `
+                <div>Polls count: ${polls.length}</div>
+                <div>Active poll: ${activePoll ? activePoll.title : 'None'}</div>
+                <div>Has active poll: ${hasActivePoll}</div>
+                <div>Has consensus reached: ${hasConsensusReached}</div>
+                <div>User ID: ${user.id}</div>
+                <div>Poll details: <pre>${JSON.stringify(polls.map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    isActive: p.isActive,
+                    status: p.status,
+                    consensusReached: p.consensusReached
+                })), null, 2)}</pre></div>
+            `;
+        }
+        
+        function displayPolls(polls) {
+            localStorage.setItem('cachedPolls', JSON.stringify(polls));
+            
+            const pollsContainer = document.getElementById('polls');
+            pollsContainer.innerHTML = '';
+            
+            if (polls.length === 0) {
+                pollsContainer.innerHTML = '<div class="error">No polls found</div>';
+                return;
+            }
+            
+            polls.forEach(poll => {
+                const pollDiv = document.createElement('div');
+                pollDiv.className = 'poll';
+                pollDiv.innerHTML = `
+                    <h4>${poll.title}</h4>
+                    <div>ID: ${poll.id}</div>
+                    <div>Status: ${poll.status}</div>
+                    <div>Is Active: ${poll.isActive}</div>
+                    <div>Consensus Reached: ${poll.consensusReached}</div>
+                    <div>Visibility: ${poll.visibility || 'Unknown'}</div>
+                    <div>Options: ${poll.pollOptions?.length || 0}</div>
+                `;
+                pollsContainer.appendChild(pollDiv);
+            });
+        }
+        
+        // Auto-set auth on load
+        window.onload = function() {
+            setAuth();
+        };
+    </script>
+</body>
+</html>

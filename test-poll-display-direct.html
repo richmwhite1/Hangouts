@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poll Display Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            padding: 20px; 
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .poll-option { 
+            background: #2a2a2a; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border: 2px solid #444;
+        }
+        .poll-option.selected { border-color: #3b82f6; background: #1e3a8a; }
+        .poll-option.winning { border-color: #10b981; background: #064e3b; }
+        .option-what { font-weight: bold; font-size: 18px; margin-bottom: 8px; }
+        .option-where { color: #94a3b8; margin-bottom: 4px; }
+        .option-when { color: #94a3b8; margin-bottom: 8px; }
+        .option-votes { color: #6b7280; font-size: 14px; }
+        .loading { text-align: center; padding: 40px; }
+        .error { color: #ef4444; background: #7f1d1d; padding: 15px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Poll Display Test</h1>
+        <p>Testing poll display with authentication token</p>
+        
+        <div id="loading" class="loading">
+            <p>Loading hangout and polls...</p>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="content" style="display: none;">
+            <h2 id="hangout-title"></h2>
+            <p id="hangout-description"></p>
+            
+            <div id="polls-container">
+                <h3>Polls</h3>
+                <div id="polls-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const HANGOUT_ID = 'hangout_1758489489839_z05cs62nb';
+        const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZxNzVoMnYwMDAwanBmMDh1M2tmaTZiIiwiZW1haWwiOiJiaWxsQGV4YW1wbGUuY29tIiwidXNlcm5hbWUiOiJiaWxsIiwiaWF0IjoxNzU4NDg5NDg5LCJleHAiOjE3NTkwOTQyODl9.iz7uF5t2PlRbuiw_he5ZChZ-2ZAz0W81Cj9RcueUxJM';
+        
+        async function testPollDisplay() {
+            try {
+                // 1. Fetch hangout details
+                console.log('Fetching hangout details...');
+                const hangoutResponse = await fetch(`/api/hangouts/${HANGOUT_ID}`, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!hangoutResponse.ok) {
+                    throw new Error(`Hangout fetch failed: ${hangoutResponse.status}`);
+                }
+                
+                const hangoutData = await hangoutResponse.json();
+                console.log('Hangout data:', hangoutData);
+                
+                if (hangoutData.success && hangoutData.hangout) {
+                    document.getElementById('hangout-title').textContent = hangoutData.hangout.title;
+                    document.getElementById('hangout-description').textContent = hangoutData.hangout.description || 'No description';
+                }
+                
+                // 2. Fetch polls
+                console.log('Fetching polls...');
+                const pollsResponse = await fetch(`/api/hangouts/${HANGOUT_ID}/polls-simple`, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!pollsResponse.ok) {
+                    throw new Error(`Polls fetch failed: ${pollsResponse.status}`);
+                }
+                
+                const pollsData = await pollsResponse.json();
+                console.log('Polls data:', pollsData);
+                
+                if (pollsData.success && pollsData.polls) {
+                    displayPolls(pollsData.polls);
+                } else {
+                    throw new Error('No polls found or API error');
+                }
+                
+                // Show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function displayPolls(polls) {
+            const pollsList = document.getElementById('polls-list');
+            
+            if (polls.length === 0) {
+                pollsList.innerHTML = '<p>No polls found</p>';
+                return;
+            }
+            
+            polls.forEach(poll => {
+                const pollDiv = document.createElement('div');
+                pollDiv.innerHTML = `
+                    <h4>${poll.title}</h4>
+                    <p>${poll.description || 'No description'}</p>
+                    <p><strong>Status:</strong> ${poll.status} | <strong>Active:</strong> ${poll.isActive} | <strong>Consensus Reached:</strong> ${poll.consensusReached}</p>
+                    <p><strong>Total Votes:</strong> ${poll.totalVotes} | <strong>Consensus Threshold:</strong> ${poll.consensusThreshold}%</p>
+                    <div class="options">
+                        ${poll.options.map(option => `
+                            <div class="poll-option">
+                                <div class="option-what">${option.what}</div>
+                                <div class="option-where">📍 ${option.where || 'No location'}</div>
+                                <div class="option-when">🕐 ${option.when || 'No time'}</div>
+                                <div class="option-votes">${option.voteCount} votes (${option.percentage.toFixed(1)}%)</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                pollsList.appendChild(pollDiv);
+            });
+        }
+        
+        // Start the test
+        testPollDisplay();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

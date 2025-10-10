@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Valid Token</title>
+</head>
+<body>
+    <h1>Set Valid Token for Testing</h1>
+    <p>This will set a valid authentication token in localStorage for testing hangout creation.</p>
+    
+    <button onclick="setValidToken()">Set Valid Token</button>
+    <button onclick="clearToken()">Clear Token</button>
+    <button onclick="checkToken()">Check Current Token</button>
+    
+    <div id="status"></div>
+
+    <script>
+        const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ5aTZybW0wMDAwanA0eXY5cjRucThjIiwiZW1haWwiOiJrYXJsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoia2FybCIsImlhdCI6MTc1ODc0OTc0MywiZXhwIjoxNzU5MzU0NTQzfQ.2Q3vFE250O6shvjjlDuF9mRHPZW_7du5xzLXsBUmGDM';
+        
+        const validUser = {
+            id: 'cmfyi6rmm0000jp4yv9r4nq8c',
+            email: 'karl@email.com',
+            username: 'karl',
+            name: 'Karl Test User'
+        };
+
+        function setValidToken() {
+            localStorage.setItem('auth_token', validToken);
+            localStorage.setItem('auth_user', JSON.stringify(validUser));
+            document.getElementById('status').innerHTML = '<p style="color: green;">✅ Valid token set successfully!</p>';
+        }
+
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            document.getElementById('status').innerHTML = '<p style="color: orange;">🗑️ Token cleared!</p>';
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('auth_token');
+            const user = localStorage.getItem('auth_user');
+            document.getElementById('status').innerHTML = `
+                <p><strong>Token:</strong> ${token ? token.substring(0, 50) + '...' : 'None'}</p>
+                <p><strong>User:</strong> ${user ? JSON.parse(user).username : 'None'}</p>
+            `;
+        }
+
+        // Check current token on load
+        checkToken();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .success { color: #4ade80; }
+        .error { color: #ef4444; }
+        .info { color: #fbbf24; }
+        button {
+            background-color: #4ade80;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix Authentication</h1>
+    
+    <div id="status" class="info">Ready to fix authentication...</div>
+    
+    <button onclick="fixAuth()">Fix Authentication</button>
+    <button onclick="testHangouts()">Test Hangouts API</button>
+    <button onclick="testPolls()">Test Polls API</button>
+    <button onclick="goToApp()">Go to App</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        const JWT_SECRET = 'your-super-secret-jwt-key-here-make-it-long-and-random';
+        
+        function fixAuth() {
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            
+            try {
+                // Create a valid JWT token
+                const token = createJWTToken();
+                
+                // Store in localStorage
+                localStorage.setItem('auth_token', token);
+                localStorage.setItem('auth_user', JSON.stringify({
+                    id: 'cmfq75h2v0000jpf08u3kfi6b',
+                    name: 'bill',
+                    username: 'bill',
+                    email: 'bill@email.com'
+                }));
+                
+                statusEl.innerHTML = '<div class="success">✅ Authentication fixed! Token stored in localStorage.</div>';
+                resultEl.innerHTML = `<pre>Token: ${token.substring(0, 50)}...</pre>`;
+                
+            } catch (error) {
+                statusEl.innerHTML = '<div class="error">❌ Failed to fix authentication</div>';
+                resultEl.innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        }
+        
+        function createJWTToken() {
+            // Simple JWT creation (in production, use a proper JWT library)
+            const header = {
+                "alg": "HS256",
+                "typ": "JWT"
+            };
+            
+            const payload = {
+                userId: 'cmfq75h2v0000jpf08u3kfi6b',
+                email: 'bill@email.com',
+                username: 'bill',
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
+            };
+            
+            // This is a simplified version - in production, use a proper JWT library
+            const encodedHeader = btoa(JSON.stringify(header));
+            const encodedPayload = btoa(JSON.stringify(payload));
+            
+            // For now, we'll use a pre-generated token
+            return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZxNzVoMnYwMDAwanBmMDh1M2tmaTZiIiwiZW1haWwiOiJiaWxsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoiYmlsbCIsImlhdCI6MTc1ODU4NjQ4MiwiZXhwIjoxNzU5MTkxMjgyfQ.2AZ8CKx22xRN0zOdkgvqgRnY7iBay9uMf7HO1h4EGP8';
+        }
+        
+        async function testHangouts() {
+            const resultEl = document.getElementById('result');
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                resultEl.innerHTML = '<div class="error">❌ No token found. Please fix authentication first.</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/hangouts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultEl.innerHTML = `<div class="success">✅ Hangouts API working! Found ${data.data.hangouts.length} hangouts</div><pre>${JSON.stringify(data.data.hangouts.slice(0, 3), null, 2)}</pre>`;
+                } else {
+                    const error = await response.text();
+                    resultEl.innerHTML = `<div class="error">❌ Hangouts API failed: ${error}</div>`;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testPolls() {
+            const resultEl = document.getElementById('result');
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                resultEl.innerHTML = '<div class="error">❌ No token found. Please fix authentication first.</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/hangouts/hangout_1758585614387_1tkfo6rg0/polls-simple`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultEl.innerHTML = `<div class="success">✅ Polls API working! Found ${data.polls.length} polls</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const error = await response.text();
+                    resultEl.innerHTML = `<div class="error">❌ Polls API failed: ${error}</div>`;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function goToApp() {
+            window.location.href = 'http://localhost:3000';
+        }
+        
+        // Auto-fix on load
+        window.onload = function() {
+            fixAuth();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

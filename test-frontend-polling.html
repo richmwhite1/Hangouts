@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend Polling</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .poll {
+            border: 1px solid #333;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+        }
+        .option {
+            border: 2px solid #444;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #333;
+        }
+        .option:hover {
+            border-color: #666;
+            background-color: #444;
+        }
+        .option.voted {
+            border-color: #4ade80;
+            background-color: rgba(74, 222, 128, 0.1);
+        }
+        .vote-bar {
+            background-color: #4ade80;
+            height: 4px;
+            margin-top: 10px;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        .participants {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+        .participant {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            background-color: #444;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .participant.voted {
+            background-color: #4ade80;
+            color: #000;
+        }
+        .error {
+            color: #ef4444;
+            margin: 10px 0;
+        }
+        .loading {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Frontend Polling Test</h1>
+    <div id="status" class="loading">Loading polls...</div>
+    <div id="polls"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        const HANGOUT_ID = 'hangout_1758572873282_yv89nku1s';
+        
+        // Set auth token from localStorage (should be set by browser)
+        const token = localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ2Z2NmbGkwMDAwanBoZDQ1cTN6YWR4IiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTc1ODU2NTI4MiwiZXhwIjoxNzU5MTcwMDgyfQ.NDVcQMwRUT6JHnHtDgQZ9fxcmzNMYHGO5oxxvofH4xE';
+        
+        let currentUserId = 'cmfvgcfli0000jphd45q3zadx'; // testuser
+        
+        async function fetchPolls() {
+            try {
+                const response = await fetch(`${API_BASE}/api/hangouts/${HANGOUT_ID}/polls-simple`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                console.log('Polls data:', data);
+                
+                document.getElementById('status').textContent = '';
+                renderPolls(data.polls || []);
+                
+            } catch (error) {
+                console.error('Error fetching polls:', error);
+                document.getElementById('status').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function vote(pollId, optionId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/polls/${pollId}/vote-simple`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        optionId: optionId,
+                        voteType: 'SINGLE',
+                        weight: 1.0
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                console.log('Vote response:', data);
+                
+                // Refresh polls after voting
+                fetchPolls();
+                
+            } catch (error) {
+                console.error('Error voting:', error);
+                alert(`Error voting: ${error.message}`);
+            }
+        }
+        
+        function renderPolls(polls) {
+            const container = document.getElementById('polls');
+            
+            if (!polls || polls.length === 0) {
+                container.innerHTML = '<div>No polls found</div>';
+                return;
+            }
+            
+            container.innerHTML = polls.map(poll => {
+                const userVote = poll.pollOptions?.find(opt => 
+                    opt.votes?.some(vote => vote.userId === currentUserId)
+                );
+                
+                return `
+                    <div class="poll">
+                        <h3>${poll.title}</h3>
+                        <p>${poll.description || ''}</p>
+                        <div><strong>Total Votes:</strong> ${poll.totalVotes}</div>
+                        <div><strong>Consensus:</strong> ${poll.consensusReached ? 'Reached' : 'In Progress'} (${poll.consensusLevel?.toFixed(1)}%)</div>
+                        
+                        <div style="margin: 20px 0;">
+                            ${(poll.pollOptions || []).map(option => `
+                                <div class="option ${userVote && userVote.id === option.id ? 'voted' : ''}" 
+                                     onclick="vote('${poll.id}', '${option.id}')">
+                                    <div><strong>${option.what || option.text}</strong></div>
+                                    ${option.where ? `<div>📍 ${option.where}</div>` : ''}
+                                    ${option.when ? `<div>🕐 ${option.when}</div>` : ''}
+                                    <div>Votes: ${option.voteCount} (${option.percentage?.toFixed(1)}%)</div>
+                                    <div class="vote-bar" style="width: ${option.percentage || 0}%"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="participants">
+                            <strong>Participants:</strong>
+                            ${(poll.participants || []).map(p => `
+                                <span class="participant ${p.status === 'VOTED' ? 'voted' : ''}">
+                                    ${p.user?.name || p.user?.username || 'Unknown'} 
+                                    ${p.status === 'VOTED' ? '✓' : ''}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Start the test
+        fetchPolls();
+        
+        // Auto-refresh every 10 seconds
+        setInterval(fetchPolls, 10000);
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

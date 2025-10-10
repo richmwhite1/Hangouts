@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test New Hangout Workflow</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #000; 
+            color: #fff; 
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #333; 
+            border-radius: 5px; 
+            background: #111;
+        }
+        .success { 
+            background-color: #0d4f0d; 
+            border-color: #28a745; 
+        }
+        .error { 
+            background-color: #4f0d0d; 
+            border-color: #dc3545; 
+        }
+        .info { 
+            background-color: #0d2d4f; 
+            border-color: #007bff; 
+        }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            cursor: pointer; 
+            background: #ff1493; 
+            color: #000; 
+            border: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+        }
+        button:hover { background: #ff69b4; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        pre { 
+            background: #222; 
+            padding: 10px; 
+            border-radius: 3px; 
+            overflow-x: auto; 
+            color: #fff;
+        }
+        .workflow-step {
+            border-left: 3px solid #ff1493;
+            padding-left: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 New Hangout Workflow Test</h1>
+    
+    <div class="test-section info">
+        <h2>📋 Test Plan - Two-Stage Workflow</h2>
+        <div class="workflow-step">
+            <strong>Stage 1: Quick Plan Test</strong><br>
+            Create hangout with single option → Should skip to RSVP
+        </div>
+        <div class="workflow-step">
+            <strong>Stage 2: Multi-Option Poll Test</strong><br>
+            Create hangout with multiple options → Should show voting interface
+        </div>
+        <div class="workflow-step">
+            <strong>Stage 3: Auto-Finalization Test</strong><br>
+            Vote on poll → Should auto-finalize when majority reached
+        </div>
+        <div class="workflow-step">
+            <strong>Stage 4: Single-Screen Interface Test</strong><br>
+            Verify no tabs, everything in one scrollable view
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Create Test User</h2>
+        <button onclick="createUser()">Create User</button>
+        <div id="user-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Quick Plan (Skip to RSVP)</h2>
+        <button onclick="createQuickPlan()">Create Quick Plan</button>
+        <div id="quick-plan-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Multi-Option Poll</h2>
+        <button onclick="createMultiOption()">Create Multi-Option Poll</button>
+        <div id="multi-option-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Voting</h2>
+        <button onclick="voteOnPoll()">Vote on Poll</button>
+        <div id="vote-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Test Auto-Finalization</h2>
+        <button onclick="checkFinalization()">Check Finalization</button>
+        <div id="finalization-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Test RSVP</h2>
+        <button onclick="testRSVP()">Test RSVP</button>
+        <div id="rsvp-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>7. Open Hangout Pages</h2>
+        <button onclick="openQuickPlanPage()">Open Quick Plan Page</button>
+        <button onclick="openPollPage()">Open Poll Page</button>
+        <div id="page-result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let quickPlanId = null;
+        let pollHangoutId = null;
+
+        async function createUser() {
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'testworkflow@example.com',
+                        password: 'password123',
+                        name: 'Workflow Tester',
+                        username: 'workflowtester'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    document.getElementById('user-result').innerHTML = 
+                        `<div class="success">✅ User created successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create user');
+                }
+            } catch (error) {
+                document.getElementById('user-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function createQuickPlan() {
+            if (!authToken) {
+                document.getElementById('quick-plan-result').innerHTML = 
+                    `<div class="error">❌ Please create a user first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hangouts', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Quick Plan Test',
+                        description: 'Testing quick plan workflow',
+                        location: 'Test Location',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        privacyLevel: 'PUBLIC',
+                        type: 'quick_plan',
+                        options: [
+                            {
+                                id: 'quick_option_1',
+                                title: 'Go to the movies',
+                                description: 'Watch the latest blockbuster',
+                                location: 'AMC Theater',
+                                dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                price: 15
+                            }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    quickPlanId = data.data.id;
+                    document.getElementById('quick-plan-result').innerHTML = 
+                        `<div class="success">✅ Quick plan created! State: ${data.data.state}<br>
+                        Requires Voting: ${data.data.requiresVoting}<br>
+                        Requires RSVP: ${data.data.requiresRSVP}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create quick plan');
+                }
+            } catch (error) {
+                document.getElementById('quick-plan-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function createMultiOption() {
+            if (!authToken) {
+                document.getElementById('multi-option-result').innerHTML = 
+                    `<div class="error">❌ Please create a user first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hangouts', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Multi-Option Poll Test',
+                        description: 'Testing multi-option poll workflow',
+                        location: 'Various Locations',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        privacyLevel: 'PUBLIC',
+                        type: 'multi_option',
+                        options: [
+                            {
+                                id: 'poll_option_1',
+                                title: 'Go to the movies',
+                                description: 'Watch the latest blockbuster',
+                                location: 'AMC Theater',
+                                dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                price: 15
+                            },
+                            {
+                                id: 'poll_option_2',
+                                title: 'Go bowling',
+                                description: 'Have some fun at the lanes',
+                                location: 'Bowling Alley',
+                                dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                price: 20
+                            },
+                            {
+                                id: 'poll_option_3',
+                                title: 'Have dinner',
+                                description: 'Try a new restaurant',
+                                location: 'Downtown Restaurant',
+                                dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                price: 30
+                            }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    pollHangoutId = data.data.id;
+                    document.getElementById('multi-option-result').innerHTML = 
+                        `<div class="success">✅ Multi-option poll created! State: ${data.data.state}<br>
+                        Requires Voting: ${data.data.requiresVoting}<br>
+                        Requires RSVP: ${data.data.requiresRSVP}<br>
+                        Options: ${data.data.options.length}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to create multi-option poll');
+                }
+            } catch (error) {
+                document.getElementById('multi-option-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function voteOnPoll() {
+            if (!authToken || !pollHangoutId) {
+                document.getElementById('vote-result').innerHTML = 
+                    `<div class="error">❌ Please create a multi-option poll first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/hangouts/${pollHangoutId}/vote`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ optionId: 'poll_option_1' })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('vote-result').innerHTML = 
+                        `<div class="success">✅ Vote cast! Finalized: ${data.finalized}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to vote');
+                }
+            } catch (error) {
+                document.getElementById('vote-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkFinalization() {
+            if (!authToken || !pollHangoutId) {
+                document.getElementById('finalization-result').innerHTML = 
+                    `<div class="error">❌ Please create a poll first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/hangouts/${pollHangoutId}/finalize`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('finalization-result').innerHTML = 
+                        `<div class="success">✅ Finalization check complete!<br>
+                        Finalized: ${data.finalized}<br>
+                        State: ${data.state}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to check finalization');
+                }
+            } catch (error) {
+                document.getElementById('finalization-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testRSVP() {
+            if (!authToken || !quickPlanId) {
+                document.getElementById('rsvp-result').innerHTML = 
+                    `<div class="error">❌ Please create a quick plan first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/hangouts/${quickPlanId}/rsvp`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ status: 'YES' })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('rsvp-result').innerHTML = 
+                        `<div class="success">✅ RSVP updated!<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to update RSVP');
+                }
+            } catch (error) {
+                document.getElementById('rsvp-result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function openQuickPlanPage() {
+            if (!quickPlanId) {
+                document.getElementById('page-result').innerHTML = 
+                    `<div class="error">❌ Please create a quick plan first</div>`;
+                return;
+            }
+
+            const url = `http://localhost:3001/hangout/${quickPlanId}`;
+            document.getElementById('page-result').innerHTML = 
+                `<div class="info">🔗 <a href="${url}" target="_blank" style="color: #ff1493;">Open Quick Plan Page</a><br>URL: ${url}</div>`;
+        }
+
+        function openPollPage() {
+            if (!pollHangoutId) {
+                document.getElementById('page-result').innerHTML = 
+                    `<div class="error">❌ Please create a multi-option poll first</div>`;
+                return;
+            }
+
+            const url = `http://localhost:3001/hangout/${pollHangoutId}`;
+            document.getElementById('page-result').innerHTML = 
+                `<div class="info">🔗 <a href="${url}" target="_blank" style="color: #ff1493;">Open Poll Page</a><br>URL: ${url}</div>`;
+        }
+    </script>
+</body>
+</html>

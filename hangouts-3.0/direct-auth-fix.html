@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Auth Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 8px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+        button { background-color: #28a745; color: white; padding: 20px 40px; border: none; border-radius: 8px; cursor: pointer; font-size: 20px; margin: 20px 0; width: 100%; }
+        button:hover { background-color: #218838; }
+        .code { background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; word-break: break-all; }
+        .step { margin: 20px 0; padding: 20px; border-left: 4px solid #28a745; background-color: #f8f9fa; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Direct Authentication Fix</h1>
+    
+    <div class="warning">
+        <strong>⚠️ CRITICAL:</strong> The frontend is still using an invalid token. This will force the correct authentication data into your browser.
+    </div>
+    
+    <div class="step">
+        <h3>🚨 STEP 1: Force Set Correct Authentication</h3>
+        <p>This will completely override any existing authentication and set the correct valid token.</p>
+        <button id="forceAuthButton">🔑 FORCE SET CORRECT AUTHENTICATION</button>
+    </div>
+    
+    <div class="step">
+        <h3>🧪 STEP 2: Test Authentication</h3>
+        <p>Verify that the authentication is working correctly.</p>
+        <button id="testAuthButton">✅ TEST AUTHENTICATION</button>
+    </div>
+    
+    <div class="step">
+        <h3>🎯 STEP 3: Test Hangout Creation</h3>
+        <p>Test creating a hangout to ensure everything is working.</p>
+        <button id="testHangoutButton">🏠 TEST HANGOUT CREATION</button>
+    </div>
+    
+    <div id="status"></div>
+    <div id="testResults"></div>
+
+    <script>
+        // Valid authentication data
+        const validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ5aTZybW0wMDAwanA0eXY5cjRucThjIiwiZW1haWwiOiJrYXJsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoia2FybCIsImlhdCI6MTc1ODc0OTc0MywiZXhwIjoxNzU5MzU0NTQzfQ.2Q3vFE250O6shvjjlDuF9mRHPZW_7du5xzLXsBUmGDM";
+        const validUser = {
+            "id": "cmfyi6rmm0000jp4yv9r4nq8c",
+            "email": "karl@email.com",
+            "username": "karl",
+            "name": "Karl Test User"
+        };
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function addTestResult(message, passed) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            resultDiv.innerHTML = `${passed ? '✅' : '❌'} ${message}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        document.getElementById('forceAuthButton').addEventListener('click', () => {
+            try {
+                // Clear ALL possible auth keys
+                const keysToRemove = [
+                    'auth_token', 'auth_user', 'token', 'user', 
+                    'access_token', 'refresh_token', 'jwt_token',
+                    'authToken', 'authUser', 'userToken', 'userData',
+                    'auth', 'userData', 'session', 'login'
+                ];
+                
+                console.log('🧹 Clearing all authentication data...');
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    sessionStorage.removeItem(key);
+                });
+                
+                // Force set correct data
+                console.log('🔑 Setting correct authentication...');
+                localStorage.setItem('auth_token', validToken);
+                localStorage.setItem('auth_user', JSON.stringify(validUser));
+                sessionStorage.setItem('auth_token', validToken);
+                sessionStorage.setItem('auth_user', JSON.stringify(validUser));
+                
+                // Verify
+                const storedToken = localStorage.getItem('auth_token');
+                const storedUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+                
+                if (storedToken === validToken && storedUser.id === validUser.id) {
+                    updateStatus(`
+                        ✅ <strong>AUTHENTICATION FORCE SET SUCCESSFULLY!</strong><br><br>
+                        <strong>User ID:</strong> ${storedUser.id}<br>
+                        <strong>Username:</strong> ${storedUser.username}<br>
+                        <strong>Email:</strong> ${storedUser.email}<br><br>
+                        <strong>🎉 Ready for testing!</strong>
+                    `, 'success');
+                } else {
+                    updateStatus('❌ Authentication verification failed. Please try again.', 'error');
+                }
+                
+            } catch (e) {
+                updateStatus('❌ Error: ' + e.message, 'error');
+                console.error('Error:', e);
+            }
+        });
+
+        document.getElementById('testAuthButton').addEventListener('click', async () => {
+            const token = localStorage.getItem('auth_token');
+            const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+            
+            if (!token || !user.id) {
+                addTestResult('No authentication data found', false);
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    addTestResult(`Authentication working! User: ${data.user.username} (${data.user.id})`, true);
+                } else {
+                    addTestResult(`Authentication failed: ${data.message || 'Unknown error'}`, false);
+                }
+            } catch (e) {
+                addTestResult(`Network error: ${e.message}`, false);
+            }
+        });
+
+        document.getElementById('testHangoutButton').addEventListener('click', async () => {
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                addTestResult('No authentication token found', false);
+                return;
+            }
+            
+            try {
+                const hangoutData = {
+                    title: 'Direct Auth Fix Test Hangout',
+                    description: 'This hangout tests the direct auth fix',
+                    location: 'Test Location',
+                    latitude: 34.052235,
+                    longitude: -118.243683,
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+                    privacyLevel: 'PUBLIC',
+                    weatherEnabled: true,
+                    type: 'single_option',
+                    participants: [],
+                    mandatoryParticipants: [],
+                    coHosts: [],
+                };
+
+                const response = await fetch('http://localhost:3000/api/hangouts', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(hangoutData),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    addTestResult(`Hangout creation successful! ID: ${result.data.id}`, true);
+                } else {
+                    addTestResult(`Hangout creation failed: ${result.message || 'Unknown error'}`, false);
+                }
+            } catch (e) {
+                addTestResult(`Network error: ${e.message}`, false);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #000; color: #fff; }
+        pre { background: #222; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+        #logs { margin-top: 20px; }
+        .log { margin: 5px 0; padding: 5px; background: #333; border-radius: 3px; }
+        .error { background: #800; }
+        .success { background: #080; }
+    </style>
+</head>
+<body>
+    <h1>Detailed Login Test</h1>
+    
+    <button id="clearStorage">Clear LocalStorage</button>
+    <button id="testLogin">Test Login</button>
+    
+    <div id="logs"></div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        
+        function addLog(message, type = 'info') {
+            const logEl = document.createElement('div');
+            logEl.className = `log ${type}`;
+            logEl.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logsDiv.appendChild(logEl);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function addJsonLog(title, data, type = 'info') {
+            const logEl = document.createElement('div');
+            logEl.className = `log ${type}`;
+            logEl.innerHTML = `<strong>${title}:</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            logsDiv.appendChild(logEl);
+            logsDiv.scrollHeight;
+        }
+        
+        document.getElementById('clearStorage').addEventListener('click', () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            addLog('Storage cleared', 'success');
+        });
+        
+        document.getElementById('testLogin').addEventListener('click', async () => {
+            logsDiv.innerHTML = '';
+            addLog('Starting login test...');
+            
+            // Check current storage
+            const currentToken = localStorage.getItem('auth_token');
+            const currentUser = localStorage.getItem('auth_user');
+            addLog(`Current token: ${currentToken ? currentToken.substring(0, 20) + '...' : 'None'}`);
+            addLog(`Current user: ${currentUser ? currentUser.substring(0, 50) + '...' : 'None'}`);
+            
+            const loginData = {
+                email: 'karl@example.com',
+                password: 'Password1!'
+            };
+            
+            addJsonLog('Request data', loginData);
+            
+            try {
+                addLog('Sending request to /api/auth/signin...');
+                
+                const startTime = Date.now();
+                const response = await fetch('/api/auth/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                const endTime = Date.now();
+                
+                addLog(`Response received in ${endTime - startTime}ms`);
+                addLog(`Status: ${response.status} ${response.statusText}`);
+                addLog(`OK: ${response.ok}`);
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addJsonLog('Response data', data, 'success');
+                    addLog('Login successful!', 'success');
+                } else {
+                    addJsonLog('Error response', data, 'error');
+                    addLog('Login failed!', 'error');
+                }
+            } catch (error) {
+                addLog(`Network error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+

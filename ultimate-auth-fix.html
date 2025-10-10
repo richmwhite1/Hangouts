@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Auth Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 8px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+        button { background-color: #dc3545; color: white; padding: 20px 40px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; margin: 20px 0; width: 100%; }
+        button:hover { background-color: #c82333; }
+        .code { background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; word-break: break-all; }
+        .step { margin: 20px 0; padding: 20px; border-left: 4px solid #dc3545; background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <h1>🚨 ULTIMATE AUTHENTICATION FIX</h1>
+    
+    <div class="warning">
+        <strong>⚠️ CRITICAL ISSUE DETECTED:</strong> Your frontend is using TWO different tokens!<br>
+        - Friends API: Using CORRECT token (cmfyi6rmm0000jp4yv9r4nq8c) ✅<br>
+        - Hangout Creation: Using OLD token (cmfxfsg530000jpvtkb1aawyv) ❌
+    </div>
+    
+    <div class="step">
+        <h3>🔧 STEP 1: Nuclear Option - Clear Everything</h3>
+        <p>This will completely wipe ALL authentication data from your browser and force the correct token everywhere.</p>
+        <button id="nuclearButton">💥 NUCLEAR CLEAR ALL AUTH DATA</button>
+    </div>
+    
+    <div class="step">
+        <h3>🔑 STEP 2: Set Correct Token Everywhere</h3>
+        <p>Force the correct token into ALL possible storage locations.</p>
+        <button id="setCorrectButton">🔑 SET CORRECT TOKEN EVERYWHERE</button>
+    </div>
+    
+    <div class="step">
+        <h3>🧪 STEP 3: Verify Fix</h3>
+        <p>Check that all authentication data is now consistent.</p>
+        <button id="verifyButton">✅ VERIFY AUTHENTICATION FIX</button>
+    </div>
+    
+    <div id="status"></div>
+
+    <script>
+        const correctToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZ5aTZybW0wMDAwanA0eXY5cjRucThjIiwiZW1haWwiOiJrYXJsQGVtYWlsLmNvbSIsInVzZXJuYW1lIjoia2FybCIsImlhdCI6MTc1ODc0OTc0MywiZXhwIjoxNzU5MzU0NTQzfQ.2Q3vFE250O6shvjjlDuF9mRHPZW_7du5xzLXsBUmGDM";
+        const correctUser = {
+            "id": "cmfyi6rmm0000jp4yv9r4nq8c",
+            "email": "karl@email.com",
+            "username": "karl",
+            "name": "Karl Test User"
+        };
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        document.getElementById('nuclearButton').addEventListener('click', () => {
+            try {
+                console.log('💥 NUCLEAR CLEAR: Starting complete authentication wipe...');
+                
+                // Clear ALL possible storage locations
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Clear cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                // Clear IndexedDB
+                if ('indexedDB' in window) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                        });
+                    });
+                }
+                
+                updateStatus('💥 NUCLEAR CLEAR COMPLETE! All authentication data has been wiped from your browser.', 'success');
+                console.log('💥 NUCLEAR CLEAR: Complete authentication wipe finished');
+                
+            } catch (e) {
+                updateStatus('❌ Nuclear clear failed: ' + e.message, 'error');
+                console.error('Nuclear clear error:', e);
+            }
+        });
+
+        document.getElementById('setCorrectButton').addEventListener('click', () => {
+            try {
+                console.log('🔑 Setting correct token everywhere...');
+                
+                // Set in localStorage
+                localStorage.setItem('auth_token', correctToken);
+                localStorage.setItem('auth_user', JSON.stringify(correctUser));
+                localStorage.setItem('token', correctToken);
+                localStorage.setItem('user', JSON.stringify(correctUser));
+                localStorage.setItem('access_token', correctToken);
+                localStorage.setItem('userData', JSON.stringify(correctUser));
+                
+                // Set in sessionStorage
+                sessionStorage.setItem('auth_token', correctToken);
+                sessionStorage.setItem('auth_user', JSON.stringify(correctUser));
+                sessionStorage.setItem('token', correctToken);
+                sessionStorage.setItem('user', JSON.stringify(correctUser));
+                sessionStorage.setItem('access_token', correctToken);
+                sessionStorage.setItem('userData', JSON.stringify(correctUser));
+                
+                // Set in cookies
+                document.cookie = `auth_token=${correctToken}; path=/; max-age=604800`;
+                document.cookie = `auth_user=${encodeURIComponent(JSON.stringify(correctUser))}; path=/; max-age=604800`;
+                
+                updateStatus('🔑 CORRECT TOKEN SET EVERYWHERE! All storage locations now have the valid token.', 'success');
+                console.log('🔑 Correct token set everywhere');
+                
+            } catch (e) {
+                updateStatus('❌ Set correct token failed: ' + e.message, 'error');
+                console.error('Set correct token error:', e);
+            }
+        });
+
+        document.getElementById('verifyButton').addEventListener('click', () => {
+            try {
+                console.log('🧪 Verifying authentication fix...');
+                
+                const localStorageToken = localStorage.getItem('auth_token');
+                const sessionStorageToken = sessionStorage.getItem('auth_token');
+                const localStorageUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+                const sessionStorageUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+                
+                const allTokensMatch = localStorageToken === correctToken && sessionStorageToken === correctToken;
+                const allUsersMatch = localStorageUser.id === correctUser.id && sessionStorageUser.id === correctUser.id;
+                
+                if (allTokensMatch && allUsersMatch) {
+                    updateStatus(`
+                        ✅ <strong>AUTHENTICATION FIX VERIFIED!</strong><br><br>
+                        <strong>All tokens match:</strong> ${allTokensMatch ? 'YES' : 'NO'}<br>
+                        <strong>All users match:</strong> ${allUsersMatch ? 'YES' : 'NO'}<br><br>
+                        <strong>User ID:</strong> ${localStorageUser.id}<br>
+                        <strong>Username:</strong> ${localStorageUser.username}<br>
+                        <strong>Email:</strong> ${localStorageUser.email}<br><br>
+                        <strong>🎉 Now go back to your main app and try creating a hangout!</strong>
+                    `, 'success');
+                } else {
+                    updateStatus(`
+                        ❌ <strong>VERIFICATION FAILED!</strong><br><br>
+                        <strong>localStorage token:</strong> ${localStorageToken ? localStorageToken.substring(0, 20) + '...' : 'MISSING'}<br>
+                        <strong>sessionStorage token:</strong> ${sessionStorageToken ? sessionStorageToken.substring(0, 20) + '...' : 'MISSING'}<br>
+                        <strong>localStorage user ID:</strong> ${localStorageUser.id || 'MISSING'}<br>
+                        <strong>sessionStorage user ID:</strong> ${sessionStorageUser.id || 'MISSING'}<br><br>
+                        <strong>Please try the nuclear clear and set correct token again.</strong>
+                    `, 'error');
+                }
+                
+            } catch (e) {
+                updateStatus('❌ Verification failed: ' + e.message, 'error');
+                console.error('Verification error:', e);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
