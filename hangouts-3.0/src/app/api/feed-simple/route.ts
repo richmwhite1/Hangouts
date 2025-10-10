@@ -25,8 +25,17 @@ export async function GET(request: NextRequest) {
   
   // For debugging, hardcode the user ID if no authentication
   if (!userId) {
-    userId = 'cmghg3l8w0000jps4yaoolo0s'
-    console.log('Simple Feed API: Using hardcoded user ID for debugging:', userId)
+    // Try to get the first user from the database as a fallback
+    const firstUser = await db.user.findFirst({
+      select: { id: true }
+    })
+    if (firstUser) {
+      userId = firstUser.id
+      console.log('Simple Feed API: Using first user from database for debugging:', userId)
+    } else {
+      console.log('Simple Feed API: No users found in database')
+      return NextResponse.json({ content: [], total: 0 })
+    }
   }
 
   try {
