@@ -23,19 +23,16 @@ export async function GET(request: NextRequest) {
     }
   }
   
-  // For debugging, hardcode the user ID if no authentication
+  // For unauthenticated users, return empty feed
   if (!userId) {
-    // Try to get the first user from the database as a fallback
-    const firstUser = await db.user.findFirst({
-      select: { id: true }
+    console.log('Simple Feed API: No authenticated user, returning empty feed')
+    return NextResponse.json({ 
+      success: true,
+      data: { 
+        content: [], 
+        total: 0 
+      } 
     })
-    if (firstUser) {
-      userId = firstUser.id
-      console.log('Simple Feed API: Using first user from database for debugging:', userId)
-    } else {
-      console.log('Simple Feed API: No users found in database')
-      return NextResponse.json({ content: [], total: 0 })
-    }
   }
 
   try {

@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isClerkUser, setIsClerkUser] = useState(false)
 
-  const isAuthenticated = hasValidClerkKeys ? isSignedIn : false
+  // Remove unused variable
 
   const clearAuthState = () => {
     setUser(null)
@@ -107,9 +107,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth()
   }, [isSignedIn, clerkUserData, clerkIsLoaded, hasValidClerkKeys])
 
-  const signOut = () => {
-    clearAuthState()
-    clerkSignOut()
+  const signOut = async () => {
+    try {
+      // Clear local state first
+      clearAuthState()
+      
+      // Then sign out from Clerk
+      if (hasValidClerkKeys && clerkSignOut) {
+        await clerkSignOut()
+      }
+      
+      // Redirect to home page after sign out
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+    } catch (error) {
+      console.error('Error during sign out:', error)
+      // Still clear local state even if Clerk sign out fails
+      clearAuthState()
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+    }
   }
 
   const value: AuthContextType = {
@@ -117,7 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isClerkUser,
     signOut,
     isLoading,
-    isAuthenticated: hasValidClerkKeys ? isSignedIn : false
+    isAuthenticated: hasValidClerkKeys ? (isSignedIn || false) : false
   }
 
   return (

@@ -76,22 +76,13 @@ export default clerkMiddleware(async (auth, req) => {
     return response
   }
 
-  // In development, be more permissive with authentication
-  if (process.env.NODE_ENV === 'development') {
-    // Only protect routes if user is actually signed in
-    if (isProtectedRoute(req) && !isPublicRoute(req)) {
-      // Check if user is signed in before protecting
-      const { userId } = await auth()
-      if (!userId) {
-        // Redirect to sign in only if user is not signed in
-        auth.protect()
-      }
-    }
-  } else {
-    // In production, protect routes normally
-    if (isProtectedRoute(req) && !isPublicRoute(req)) {
-      auth.protect()
-    }
+  // Check if user is authenticated
+  const { userId } = await auth()
+  
+  // If it's a protected route and user is not authenticated, redirect to sign in
+  if (isProtectedRoute(req) && !isPublicRoute(req) && !userId) {
+    const signInUrl = new URL('/signin', req.url)
+    return NextResponse.redirect(signInUrl)
   }
 
   return response
