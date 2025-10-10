@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "cd hangouts-3.0 && npm install && npx prisma generate && npm run build"
 
 [deploy]
-startCommand = "cd hangouts-3.0 && npm start"
+startCommand = "cd hangouts-3.0 && node .next/standalone/server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
