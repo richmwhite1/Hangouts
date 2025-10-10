@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Hangout 3.0 Application",
   "scripts": {
-    "prebuild": "cd hangouts-3.0 && chmod +x node_modules/.bin/* 2>/dev/null || true",
-    "build": "cd hangouts-3.0 && npm run build",
-    "start": "cd hangouts-3.0 && chmod +x node_modules/.bin/* 2>/dev/null || true && npm run start",
-    "dev": "cd hangouts-3.0 && npm run dev"
+    "prebuild": "echo 'Installing dependencies...'",
+    "build": "cd hangouts-3.0 && npm install && npx prisma generate && npm run build",
+    "start": "cd hangouts-3.0 && node scripts/start-railway-simple.js",
+    "dev": "cd hangouts-3.0 && npm run dev",
+    "deploy": "npm run build && npm start"
   },
   "engines": {
     "node": ">=18.0.0"
