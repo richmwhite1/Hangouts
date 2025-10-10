@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd hangouts-3.0 && rm -rf .next node_modules package-lock.json && npm install && npx prisma generate --force && npm run build"
+buildCommand = "cd hangouts-3.0 && npm install && npx prisma generate && npm run build"
 
 [deploy]
 startCommand = "cd hangouts-3.0 && npm start"
@@ -12,3 +12,5 @@ restartPolicyMaxRetries = 10
 [env]
 PORT = "8080"
 NODE_ENV = "production"
+DATABASE_URL = "${{Postgres.DATABASE_URL}}"
+DIRECT_URL = "${{Postgres.DIRECT_URL}}"
