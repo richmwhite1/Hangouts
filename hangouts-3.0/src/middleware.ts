@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -21,7 +21,7 @@ const isProtectedRoute = createRouteMatcher([
   '/events(.*)',
 ])
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   // Skip authentication completely in development if Clerk keys are empty
   if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     console.log('⚠️ Skipping Clerk authentication in development - no keys provided')
@@ -78,15 +78,10 @@ export default clerkMiddleware((auth, req) => {
 
   // In development, be more permissive with authentication
   if (process.env.NODE_ENV === 'development') {
-    // Allow API routes to pass through without protection
-    if (req.nextUrl.pathname.startsWith('/api/')) {
-      return response
-    }
-    
     // Only protect routes if user is actually signed in
     if (isProtectedRoute(req) && !isPublicRoute(req)) {
       // Check if user is signed in before protecting
-      const { userId } = auth()
+      const { userId } = await auth()
       if (!userId) {
         // Redirect to sign in only if user is not signed in
         auth.protect()
