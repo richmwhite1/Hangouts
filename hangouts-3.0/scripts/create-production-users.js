@@ -22,6 +22,12 @@ const productionDb = new PrismaClient({
     db: {
       url: process.env.DATABASE_URL
     }
+  },
+  // Use production schema for PostgreSQL
+  __internal: {
+    engine: {
+      binaryTargets: ['native']
+    }
   }
 });
 

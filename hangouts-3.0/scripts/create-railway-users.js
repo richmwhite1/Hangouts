@@ -1,9 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * Create Users in Railway Database
- * Uses the production API to create users
+ * Create Production Users Script for Railway PostgreSQL
+ * This script creates users in the Railway production database
  */
+
+const { PrismaClient } = require('@prisma/client');
+
+// Use production schema for PostgreSQL
+const productionDb = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+});
 
 const users = [
   {
@@ -11,115 +22,233 @@ const users = [
     email: 'richmwhite@gmail.com',
     username: 'richmwhite',
     name: 'Rich White',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
   },
   {
     clerkId: 'user_rwhite',
     email: 'rwhite@victig.com',
     username: 'rwhite',
     name: 'Richard White',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
   },
   {
-    clerkId: 'user_test1',
-    email: 'test1@example.com',
-    username: 'testuser1',
-    name: 'Test User 1',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
+    clerkId: 'user_alex_johnson',
+    email: 'alex.johnson@example.com',
+    username: 'alexjohnson',
+    name: 'Alex Johnson',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
   },
   {
-    clerkId: 'user_test2',
-    email: 'test2@example.com',
-    username: 'testuser2',
-    name: 'Test User 2',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
+    clerkId: 'user_sarah_chen',
+    email: 'sarah.chen@example.com',
+    username: 'sarahchen',
+    name: 'Sarah Chen',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_mike_rodriguez',
+    email: 'mike.rodriguez@example.com',
+    username: 'mikerodriguez',
+    name: 'Mike Rodriguez',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_emma_wilson',
+    email: 'emma.wilson@example.com',
+    username: 'emmawilson',
+    name: 'Emma Wilson',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_david_kim',
+    email: 'david.kim@example.com',
+    username: 'davidkim',
+    name: 'David Kim',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_lisa_garcia',
+    email: 'lisa.garcia@example.com',
+    username: 'lisagarcia',
+    name: 'Lisa Garcia',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_james_brown',
+    email: 'james.brown@example.com',
+    username: 'jamesbrown',
+    name: 'James Brown',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
+  },
+  {
+    clerkId: 'user_olivia_taylor',
+    email: 'olivia.taylor@example.com',
+    username: 'oliviataylor',
+    name: 'Olivia Taylor',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    isActive: true,
+    isVerified: true,
+    role: 'USER'
   }
 ];
 
-async function createUser(userData) {
-  try {
-    const response = await fetch('https://hangouts-3-0-production.up.railway.app/api/auth/sync-clerk-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData)
-    });
+async function createUsersInProduction() {
+  console.log('🔧 Creating users in production database...');
+  
+  for (const userData of users) {
+    try {
+      // Check if user already exists
+      const existingUser = await productionDb.user.findFirst({
+        where: {
+          OR: [
+            { email: userData.email },
+            { clerkId: userData.clerkId },
+            { username: userData.username }
+          ]
+        }
+      });
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log(`✅ Created user ${userData.email}:`, result.data?.user?.id || 'Unknown ID');
-      return result.data?.user;
-    } else {
-      const error = await response.text();
-      console.log(`⚠️ User ${userData.email} might already exist or error:`, response.status, error);
-      return null;
+      if (existingUser) {
+        console.log(`✅ User ${userData.email} already exists in production`);
+        continue;
+      }
+
+      // Create user
+      const user = await productionDb.user.create({
+        data: {
+          ...userData,
+          password: null, // Clerk users don't need passwords
+          lastSeen: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+
+      console.log(`✅ Created user ${userData.email} in production (ID: ${user.id})`);
+    } catch (error) {
+      console.error(`❌ Error creating user ${userData.email} in production:`, error.message);
     }
-  } catch (error) {
-    console.error(`❌ Error creating user ${userData.email}:`, error.message);
-    return null;
   }
 }
 
-async function createFriendship(user1Id, user2Id) {
+async function createFriendshipsInProduction() {
+  console.log('\n🔗 Creating friendships in production database...');
+  
   try {
-    const response = await fetch('https://hangouts-3-0-production.up.railway.app/api/friends/requests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: user2Id })
+    // Get all users
+    const allUsers = await productionDb.user.findMany({
+      where: {
+        email: {
+          in: users.map(u => u.email)
+        }
+      }
     });
 
-    if (response.ok) {
-      console.log(`✅ Sent friend request from ${user1Id} to ${user2Id}`);
-      return true;
-    } else {
-      console.log(`⚠️ Friend request might already exist:`, response.status);
-      return false;
+    if (allUsers.length < 2) {
+      console.log('⚠️ Need at least 2 users for friendship creation in production');
+      return;
     }
+
+    console.log(`Found ${allUsers.length} users in production`);
+
+    // Create friendships between all users (everyone is friends with everyone)
+    let friendshipCount = 0;
+    for (let i = 0; i < allUsers.length; i++) {
+      for (let j = i + 1; j < allUsers.length; j++) {
+        const user1 = allUsers[i];
+        const user2 = allUsers[j];
+
+        // Check if friendship already exists
+        const existingFriendship = await productionDb.friendship.findFirst({
+          where: {
+            OR: [
+              { userId: user1.id, friendId: user2.id },
+              { userId: user2.id, friendId: user1.id }
+            ]
+          }
+        });
+
+        if (!existingFriendship) {
+          // Create friendship (bidirectional)
+          await productionDb.friendship.createMany({
+            data: [
+              {
+                userId: user1.id,
+                friendId: user2.id,
+                status: 'ACTIVE',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              },
+              {
+                userId: user2.id,
+                friendId: user1.id,
+                status: 'ACTIVE',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }
+            ]
+          });
+
+          friendshipCount++;
+          console.log(`✅ Created friendship between ${user1.name} and ${user2.name} in production`);
+        } else {
+          console.log(`✅ Friendship already exists between ${user1.name} and ${user2.name} in production`);
+        }
+      }
+    }
+
+    console.log(`✅ Created ${friendshipCount} new friendships in production`);
   } catch (error) {
-    console.error(`❌ Error creating friendship:`, error.message);
-    return false;
+    console.error('❌ Error creating friendships in production:', error.message);
   }
 }
 
 async function main() {
-  console.log('🚀 Creating users in Railway database...\n');
+  console.log('🚀 Starting production user creation process...');
   
-  const createdUsers = [];
-  
-  // Create users
-  for (const userData of users) {
-    const user = await createUser(userData);
-    if (user) {
-      createdUsers.push(user);
-    }
-    // Small delay between requests
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL environment variable is required');
+    process.exit(1);
   }
   
-  console.log(`\n✅ Created ${createdUsers.length} users`);
-  
-  // Create friendships between the main users
-  if (createdUsers.length >= 2) {
-    console.log('\n🔗 Creating friendships...');
+  try {
+    await createUsersInProduction();
+    await createFriendshipsInProduction();
     
-    const user1 = createdUsers.find(u => u.email === 'richmwhite@gmail.com');
-    const user2 = createdUsers.find(u => u.email === 'rwhite@victig.com');
+    console.log('\n✅ Production user creation process completed!');
     
-    if (user1 && user2) {
-      await createFriendship(user1.id, user2.id);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await createFriendship(user2.id, user1.id);
-    }
+  } catch (error) {
+    console.error('❌ Error in production user creation process:', error);
+  } finally {
+    await productionDb.$disconnect();
   }
-  
-  console.log('\n✅ User creation process completed!');
-  console.log('\n🎯 Next steps:');
-  console.log('1. Sign in with richmwhite@gmail.com and rwhite@victig.com');
-  console.log('2. Check if you can see each other in friends');
-  console.log('3. Test hangout creation and invitation');
 }
 
-main().catch(console.error);
+main();

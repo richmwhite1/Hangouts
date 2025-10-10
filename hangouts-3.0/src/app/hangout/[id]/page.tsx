@@ -114,6 +114,61 @@ export default function HangoutDetailPage() {
   const [, setSelectedOption] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [friends, setFriends] = useState<any[]>([])
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([])
+  const [isInviting, setIsInviting] = useState(false)
+
+  // Load friends for invitation
+  const loadFriends = async () => {
+    try {
+      const response = await fetch('/api/friends')
+      if (response.ok) {
+        const data = await response.json()
+        setFriends(data.friends || [])
+      }
+    } catch (error) {
+      console.error('Error loading friends:', error)
+      toast.error('Failed to load friends')
+    }
+  }
+
+  // Handle inviting friends
+  const handleInviteFriends = async () => {
+    if (selectedFriends.length === 0) {
+      toast.error('Please select at least one friend to invite')
+      return
+    }
+
+    setIsInviting(true)
+    try {
+      const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userIds: selectedFriends })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message || 'Friends invited successfully!')
+        setShowInviteModal(false)
+        setSelectedFriends([])
+        // Refresh hangout data
+        await fetchHangout()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to invite friends')
+      }
+    } catch (error) {
+      console.error('Error inviting friends:', error)
+      toast.error('Failed to invite friends')
+    } finally {
+      setIsInviting(false)
+    }
+  }
+
   const handleRemoveUser = async (participantId: string) => {
     if (! !hangoutId) return
     try {
@@ -753,7 +808,8 @@ export default function HangoutDetailPage() {
           hangout={hangout}
           currentUser={user}
           onOpenInviteModal={() => {
-            // Modal functionality removed
+            loadFriends()
+            setShowInviteModal(true)
           }}
           onRemoveUser={handleRemoveUser}
           onShare={handleShare}
@@ -1065,7 +1121,8 @@ function ParticipantStatusSection({
   const participants = hangout.participants || []
   const isCreator = currentUser?.id === hangout.creatorId
   const isHost = isCreator || participants?.some(p => p.user.id === currentUser?.id && p.role === 'CO_HOST')
-  if (participants.length === 0) return null
+  
+  // Always show participants section, even if empty
   return (
     <div className="px-4 py-3">
       {/* Header with Add People and Action Buttons */}
@@ -1097,8 +1154,26 @@ function ParticipantStatusSection({
           />
         </div>
       </div>
-      {/* Large Square Profile Icons Grid with Names and Status */}
-      <div className="grid grid-cols-4 gap-3">
+      
+      {/* Show empty state if no participants */}
+      {participants.length === 0 ? (
+        <div className="text-center py-6">
+          <div className="text-gray-400 text-sm mb-2">No participants yet</div>
+          {isHost && (
+            <Button
+              onClick={onOpenInviteModal}
+              size="sm"
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Invite Friends
+            </Button>
+          )}
+        </div>
+      ) : (
+        /* Large Square Profile Icons Grid with Names and Status */
+        <div className="grid grid-cols-4 gap-3">
         {participants.slice(0, 8).map((participant) => {
           const userVotes = hangout.userVotes?.[participant.user.id] || []
           const hasVoted = userVotes.length > 0
@@ -1162,7 +1237,8 @@ function ParticipantStatusSection({
             </div>
           )
         })}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1497,6 +1573,60 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
           </div>
         </div>
       ) : null}
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">Invite Friends</h3>
+            <div className="space-y-4 max-h-60 overflow-y-auto">
+              {friends.map((friend: any) => (
+                <div key={friend.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={friend.avatar || '/placeholder-avatar.png'}
+                      alt={friend.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <div className="text-white font-medium">{friend.name}</div>
+                      <div className="text-gray-400 text-sm">@{friend.username}</div>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={selectedFriends.includes(friend.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedFriends([...selectedFriends, friend.id])
+                      } else {
+                        setSelectedFriends(selectedFriends.filter((id: string) => id !== friend.id))
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                onClick={() => setShowInviteModal(false)}
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleInviteFriends}
+                disabled={isInviting || selectedFriends.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isInviting ? 'Inviting...' : `Invite ${selectedFriends.length} Friend${selectedFriends.length !== 1 ? 's' : ''}`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -76,9 +76,27 @@ export default clerkMiddleware((auth, req) => {
     return response
   }
 
-  // Protect routes
-  if (isProtectedRoute(req) && !isPublicRoute(req)) {
-    auth.protect()
+  // In development, be more permissive with authentication
+  if (process.env.NODE_ENV === 'development') {
+    // Allow API routes to pass through without protection
+    if (req.nextUrl.pathname.startsWith('/api/')) {
+      return response
+    }
+    
+    // Only protect routes if user is actually signed in
+    if (isProtectedRoute(req) && !isPublicRoute(req)) {
+      // Check if user is signed in before protecting
+      const { userId } = auth()
+      if (!userId) {
+        // Redirect to sign in only if user is not signed in
+        auth.protect()
+      }
+    }
+  } else {
+    // In production, protect routes normally
+    if (isProtectedRoute(req) && !isPublicRoute(req)) {
+      auth.protect()
+    }
   }
 
   return response
