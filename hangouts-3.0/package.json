@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "node scripts/seed-local-data.js",
+    "db:seed:production": "node scripts/seed-production-data.js",
     "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
