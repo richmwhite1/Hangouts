@@ -59,6 +59,8 @@ export default function FriendsPage() {
     if (isAuthenticated && user) {
       loadFriends()
       loadFriendRequests()
+      // Load all users for discovery
+      searchUsers('')
     }
   }, [isAuthenticated, user])
 
@@ -89,11 +91,6 @@ export default function FriendsPage() {
   }
 
   const searchUsers = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      return
-    }
-
     setSearching(true)
     try {
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
@@ -405,7 +402,7 @@ export default function FriendsPage() {
             <div className="space-y-4">
               <div className="flex space-x-2">
                 <Input
-                  placeholder="Search by name or username..."
+                  placeholder="Search by name or username (or leave empty to see all users)..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value)

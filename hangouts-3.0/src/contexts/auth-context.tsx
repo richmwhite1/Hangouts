@@ -117,7 +117,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isClerkUser,
     signOut,
     isLoading,
-    isAuthenticated}
+    isAuthenticated: hasValidClerkKeys ? isSignedIn : false
+  }
 
   return (
     <AuthContext.Provider value={value}>
@@ -125,3 +126,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     </AuthContext.Provider>
   )
 }
+
+
