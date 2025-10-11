@@ -56,6 +56,7 @@ export function FriendsPage() {
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [sendingRequests, setSendingRequests] = useState<Set<string>>(new Set())
+  const [friendStatuses, setFriendStatuses] = useState<Map<string, 'none' | 'pending' | 'friends' | 'received'>>(new Map())
   // Group-related state
   const [groups, setGroups] = useState<Group[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(false)
@@ -107,13 +108,38 @@ export function FriendsPage() {
     setSearchQuery(query)
     searchUsers(query)
   }
+
+  const updateFriendStatuses = () => {
+    const statusMap = new Map<string, 'none' | 'pending' | 'friends' | 'received'>()
+    
+    // Mark friends
+    friends.forEach(friend => {
+      statusMap.set(friend.friend.id, 'friends')
+    })
+    
+    // Mark sent requests
+    sentRequests.forEach(request => {
+      statusMap.set(request.receiver.id, 'pending')
+    })
+    
+    // Mark received requests
+    receivedRequests.forEach(request => {
+      statusMap.set(request.sender.id, 'received')
+    })
+    
+    setFriendStatuses(statusMap)
+  }
+
   // Send friend request
   const handleSendFriendRequest = async (userId: string) => {
     setSendingRequests(prev => new Set(prev).add(userId))
     try {
       await sendFriendRequest(userId)
+      toast.success("Friend request sent!")
+      updateFriendStatuses()
     } catch (error) {
       console.error('Error sending friend request:', error)
+      toast.error("Failed to send friend request")
     } finally {
       setSendingRequests(prev => {
         const newSet = new Set(prev)
@@ -127,8 +153,11 @@ export function FriendsPage() {
     setIsResponding(requestId)
     try {
       await respondToFriendRequest(requestId, status)
+      toast.success(status === 'ACCEPTED' ? 'Friend request accepted!' : 'Friend request declined')
+      updateFriendStatuses()
     } catch (error) {
       console.error('Error responding to friend request:', error)
+      toast.error('Failed to respond to friend request')
     } finally {
       setIsResponding(null)
     }
@@ -193,6 +222,10 @@ export function FriendsPage() {
       loadGroups()
     }
   }, [isSignedIn])
+
+  useEffect(() => {
+    updateFriendStatuses()
+  }, [friends, sentRequests, receivedRequests])
   // Load all users when component mounts and when "Find People" tab is activated
   useEffect(() => {
     if (isSignedIn && user) {
@@ -531,18 +564,63 @@ export function FriendsPage() {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleSendFriendRequest(user.id)}
-                              disabled={sendingRequests.has(user.id)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-medium"
-                            >
-                              {sendingRequests.has(user.id) ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                "Add Friend"
-                              )}
-                            </Button>
+                            {(() => {
+                              const status = friendStatuses.get(user.id) || 'none'
+                              const isSending = sendingRequests.has(user.id)
+                              
+                              if (status === 'friends') {
+                                return (
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="bg-green-600 text-white px-4 py-1.5 rounded-lg font-medium cursor-not-allowed"
+                                  >
+                                    <Check className="w-4 h-4 mr-1" />
+                                    Friends
+                                  </Button>
+                                )
+                              } else if (status === 'pending') {
+                                return (
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="bg-yellow-600 text-white px-4 py-1.5 rounded-lg font-medium cursor-not-allowed"
+                                  >
+                                    <Clock className="w-4 h-4 mr-1" />
+                                    Pending
+                                  </Button>
+                                )
+                              } else if (status === 'received') {
+                                return (
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-medium cursor-not-allowed"
+                                  >
+                                    <UserPlus className="w-4 h-4 mr-1" />
+                                    Request Received
+                                  </Button>
+                                )
+                              } else {
+                                return (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSendFriendRequest(user.id)}
+                                    disabled={isSending}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-medium"
+                                  >
+                                    {isSending ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <UserPlus className="w-4 h-4 mr-1" />
+                                        Add Friend
+                                      </>
+                                    )}
+                                  </Button>
+                                )
+                              }
+                            })()}
                             <Button 
                               variant="ghost" 
                               size="sm"

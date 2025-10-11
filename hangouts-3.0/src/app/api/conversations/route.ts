@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
-import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+
 // GET /api/conversations - Get user's conversations
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
-      return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
     // Get conversations where user is a participant
     const conversations = await db.conversation.findMany({
@@ -84,29 +85,31 @@ export async function GET(request: NextRequest) {
         updatedAt: conv.updatedAt.toISOString()
       }
     })
-    return NextResponse.json(createSuccessResponse({
+    return NextResponse.json({
+      success: true,
       conversations: transformedConversations
-    }, 'Conversations retrieved successfully'))
+    })
   } catch (error) {
     console.error('Error fetching conversations:', error)
-    return NextResponse.json(createErrorResponse('Failed to fetch conversations', error.message), { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch conversations' }, { status: 500 })
   }
 }
 // POST /api/conversations - Create a new conversation
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
-      return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
     const body = await request.json()
     const { type = 'DIRECT', participantIds, name } = body
     if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
-      return NextResponse.json(createErrorResponse('Invalid participants', 'At least one participant is required'), { status: 400 })
+      return NextResponse.json({ error: 'At least one participant is required' }, { status: 400 })
     }
     // Check if direct conversation already exists between these users
     if (type === 'DIRECT' && participantIds.length === 1) {
@@ -142,7 +145,8 @@ export async function POST(request: NextRequest) {
         const conversationName = existingConversation.type === 'DIRECT' && otherParticipant
           ? otherParticipant.user?.name || 'Unknown User'
           : existingConversation.name
-        return NextResponse.json(createSuccessResponse({
+        return NextResponse.json({
+          success: true,
           conversation: {
             id: existingConversation.id,
             type: existingConversation.type,
@@ -155,7 +159,7 @@ export async function POST(request: NextRequest) {
             })),
             createdAt: existingConversation.createdAt.toISOString()
           }
-        }, 'Conversation already exists'))
+        })
       }
     }
     // Create conversation
@@ -191,7 +195,8 @@ export async function POST(request: NextRequest) {
     const conversationName = conversation.type === 'DIRECT' && otherParticipant
       ? otherParticipant.user?.name || 'Unknown User'
       : conversation.name
-    return NextResponse.json(createSuccessResponse({
+    return NextResponse.json({
+      success: true,
       conversation: {
         id: conversation.id,
         type: conversation.type,
@@ -204,9 +209,9 @@ export async function POST(request: NextRequest) {
         })),
         createdAt: conversation.createdAt.toISOString()
       }
-    }, 'Conversation created successfully'))
+    })
   } catch (error) {
     console.error('Error creating conversation:', error)
-    return NextResponse.json(createErrorResponse('Failed to create conversation', error.message), { status: 500 })
+    return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
   }
 }
