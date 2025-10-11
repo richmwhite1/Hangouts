@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Clock, Users, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react'
 import { usePolling } from '@/contexts/realtime-context'
 
+import { logger } from '@/lib/logger'
 interface PollCardProps {
   poll: {
     id: string
@@ -61,7 +62,7 @@ export function PollCard({ poll, onVote, onViewDetails }: PollCardProps) {
       })
       onVote?.(poll.id, optionId)
     } catch (error) {
-      console.error('Error casting vote:', error)
+      logger.error('Error casting vote:', error);
     } finally {
       setIsVoting(false)
     }

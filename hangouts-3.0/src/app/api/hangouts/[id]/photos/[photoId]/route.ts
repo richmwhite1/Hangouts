@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
 
+import { logger } from '@/lib/logger'
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; photoId: string }> }
@@ -62,14 +63,14 @@ export async function DELETE(
       const filePath = join(process.cwd(), 'public', photo.originalUrl)
       await unlink(filePath)
     } catch (fileError) {
-      console.warn('Could not delete physical file:', fileError)
+      logger.warn('Could not delete physical file:', fileError);
       // Don't fail the request if file deletion fails
     }
 
     return NextResponse.json({ success: true, message: 'Photo deleted successfully' })
 
   } catch (error) {
-    console.error('Error deleting photo:', error)
+    logger.error('Error deleting photo:', error);
     return NextResponse.json({ 
       error: 'Failed to delete photo', 
       details: error instanceof Error ? error.message : 'Unknown error' 

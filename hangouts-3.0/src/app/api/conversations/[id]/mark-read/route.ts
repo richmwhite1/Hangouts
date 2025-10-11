@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/mark-read - Mark conversation as read
 export async function POST(
   request: NextRequest,
@@ -66,7 +67,7 @@ export async function POST(
       readAt: new Date().toISOString()
     }, 'Conversation marked as read'))
   } catch (error) {
-    console.error('Error marking conversation as read:', error)
+    logger.error('Error marking conversation as read:', error);
     return NextResponse.json(createErrorResponse('Failed to mark conversation as read', error.message), { status: 500 })
   }
 }

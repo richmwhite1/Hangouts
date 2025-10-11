@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Photo moderation API
 export async function POST(
   request: NextRequest,
@@ -86,7 +87,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Photo moderation error:', error)
+    logger.error('Photo moderation error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to moderate photo',
@@ -153,7 +154,7 @@ async function flagPhoto(
     })
 
   } catch (error) {
-    console.error('Flag photo error:', error)
+    logger.error('Flag photo error:', error);
     throw error
   }
 }
@@ -193,7 +194,7 @@ async function approvePhoto(
     })
 
   } catch (error) {
-    console.error('Approve photo error:', error)
+    logger.error('Approve photo error:', error);
     throw error
   }
 }
@@ -256,7 +257,7 @@ async function rejectPhoto(
     })
 
   } catch (error) {
-    console.error('Reject photo error:', error)
+    logger.error('Reject photo error:', error);
     throw error
   }
 }
@@ -297,7 +298,7 @@ async function hidePhoto(
     })
 
   } catch (error) {
-    console.error('Hide photo error:', error)
+    logger.error('Hide photo error:', error);
     throw error
   }
 }
@@ -359,7 +360,7 @@ async function deletePhoto(
     })
 
   } catch (error) {
-    console.error('Delete photo error:', error)
+    logger.error('Delete photo error:', error);
     throw error
   }
 }
@@ -399,7 +400,7 @@ async function restorePhoto(
     })
 
   } catch (error) {
-    console.error('Restore photo error:', error)
+    logger.error('Restore photo error:', error);
     throw error
   }
 }
@@ -459,7 +460,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Get moderation history error:', error)
+    logger.error('Get moderation history error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to get moderation history',

@@ -3,6 +3,7 @@ import { createApiHandler, createSuccessResponse, createErrorResponse, Authentic
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const createContentSchema = z.object({
   type: z.enum(['HANGOUT', 'EVENT']),
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
@@ -236,7 +237,7 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
       updatedAt: content.updatedAt.toISOString()
     }, `${data.type} created successfully`)
   } catch (error) {
-    console.error('Error in createContentHandler:', error)
+    logger.error('Error in createContentHandler:', error);
     return createErrorResponse('Internal error', `Failed to create ${data?.type || 'content'}: ${error.message}`, 500)
   }
 }

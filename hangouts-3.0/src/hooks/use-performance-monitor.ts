@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
+import { logger } from '@/lib/logger'
 interface PerformanceMetrics {
   loadTime: number
   firstContentfulPaint: number
@@ -38,7 +39,7 @@ export function usePerformanceMonitor(options: PerformanceMonitorOptions = {}) {
       const end = performance.now()
       const renderTime = end - start
       
-      console.log(`${componentName} render time: ${renderTime.toFixed(2)}ms`)
+      // // console.log(`${componentName} render time: ${renderTime.toFixed(2); // Removed for production}ms`); // Removed for production
       
       setMetrics(prev => ({
         ...prev,
@@ -58,13 +59,13 @@ export function usePerformanceMonitor(options: PerformanceMonitorOptions = {}) {
       const end = performance.now()
       const duration = end - start
       
-      console.log(`${operationName} completed in ${duration.toFixed(2)}ms`)
+      // // console.log(`${operationName} completed in ${duration.toFixed(2); // Removed for production}ms`); // Removed for production
       return result
     } catch (error) {
       const end = performance.now()
       const duration = end - start
       
-      console.error(`${operationName} failed after ${duration.toFixed(2)}ms:`, error)
+      logger.error(`${operationName} failed after ${duration.toFixed(2);}ms:`, error)
       throw error
     }
   }, [])
@@ -80,13 +81,13 @@ export function usePerformanceMonitor(options: PerformanceMonitorOptions = {}) {
       const end = performance.now()
       const duration = end - start
       
-      console.log(`${operationName} completed in ${duration.toFixed(2)}ms`)
+      // // console.log(`${operationName} completed in ${duration.toFixed(2); // Removed for production}ms`); // Removed for production
       return result
     } catch (error) {
       const end = performance.now()
       const duration = end - start
       
-      console.error(`${operationName} failed after ${duration.toFixed(2)}ms:`, error)
+      logger.error(`${operationName} failed after ${duration.toFixed(2);}ms:`, error)
       throw error
     }
   }, [])
@@ -147,7 +148,7 @@ export function usePerformanceMonitor(options: PerformanceMonitorOptions = {}) {
     try {
       observer.observe({ entryTypes: ['paint', 'largest-contentful-paint', 'first-input', 'layout-shift'] })
     } catch (error) {
-      console.warn('Performance Observer not fully supported:', error)
+      logger.warn('Performance Observer not fully supported:', error);
     }
 
     // Memory monitoring (if available)

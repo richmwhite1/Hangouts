@@ -6,6 +6,7 @@ import { Calendar, Download, ExternalLink } from 'lucide-react'
 import { calendarService, CalendarEvent } from '@/lib/services/calendar-service'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface CalendarButtonsProps {
   event: CalendarEvent
   className?: string
@@ -20,7 +21,7 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
       await calendarService.addToGoogleCalendar(event)
       toast.success('Opening Google Calendar...')
     } catch (error) {
-      console.error('Error adding to Google Calendar:', error)
+      logger.error('Error adding to Google Calendar:', error);
       toast.error('Failed to open Google Calendar')
     } finally {
       setIsLoading(false)
@@ -33,7 +34,7 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
       await calendarService.addToAppleCalendar(event)
       toast.success('Calendar event downloaded')
     } catch (error) {
-      console.error('Error adding to Apple Calendar:', error)
+      logger.error('Error adding to Apple Calendar:', error);
       toast.error('Failed to download calendar event')
     } finally {
       setIsLoading(false)

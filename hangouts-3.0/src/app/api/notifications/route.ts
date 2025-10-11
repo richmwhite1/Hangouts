@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/notifications - Get user notifications
 export async function GET(request: NextRequest) {
   try {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
       hasMore: offset + notifications.length < totalCount
     }, 'Notifications retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching notifications:', error)
+    logger.error('Error fetching notifications:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch notifications', error.message), { status: 500 })
   }
 }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json(createSuccessResponse(notification, 'Notification created successfully'))
   } catch (error) {
-    console.error('Error creating notification:', error)
+    logger.error('Error creating notification:', error);
     return NextResponse.json(createErrorResponse('Failed to create notification', error.message), { status: 500 })
   }
 }

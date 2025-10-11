@@ -2,6 +2,7 @@ import { Server } from 'socket.io'
 import { createServer } from 'http'
 import { NextApiRequest, NextApiResponse } from 'next'
 
+import { logger } from '@/lib/logger'
 interface AuthenticatedSocket {
   userId: string
   username: string
@@ -83,14 +84,14 @@ class WebSocketManager {
     })
 
     this.setupEventHandlers()
-    console.log('WebSocket server initialized')
+    // console.log('WebSocket server initialized'); // Removed for production
   }
 
   private setupEventHandlers() {
     if (!this.io) return
 
     this.io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id)
+      // console.log('Client connected:', socket.id); // Removed for production
 
       // Authentication
       socket.on('authenticate', (data) => {
@@ -121,9 +122,9 @@ class WebSocketManager {
             username: user.username
           })
           
-          console.log(`User ${user.username} authenticated`)
+          // // console.log(`User ${user.username} authenticated`); // Removed for production; // Removed for production
         } catch (error) {
-          console.error('Authentication failed:', error)
+          logger.error('Authentication failed:', error);
           socket.disconnect()
         }
       })
@@ -142,7 +143,7 @@ class WebSocketManager {
         }
         this.pollRooms.get(pollId)!.add(socket.data.user.userId)
         
-        console.log(`User ${socket.data.user.username} joined poll ${pollId}`)
+        // // console.log(`User ${socket.data.user.username} joined poll ${pollId}`); // Removed for production; // Removed for production
       })
 
       socket.on('leavePoll', (data) => {
@@ -156,7 +157,7 @@ class WebSocketManager {
           this.pollRooms.get(pollId)!.delete(socket.data.user.userId)
         }
         
-        console.log(`User ${socket.data.user.username} left poll ${pollId}`)
+        // // console.log(`User ${socket.data.user.username} left poll ${pollId}`); // Removed for production; // Removed for production
       })
 
       socket.on('castVote', async (data) => {
@@ -173,9 +174,9 @@ class WebSocketManager {
             voteCount: 1 // This would be updated with actual count from database
           })
           
-          console.log(`User ${socket.data.user.username} voted on poll ${pollId}`)
+          // // console.log(`User ${socket.data.user.username} voted on poll ${pollId}`); // Removed for production; // Removed for production
         } catch (error) {
-          console.error('Error casting vote:', error)
+          logger.error('Error casting vote:', error);
         }
       })
 
@@ -192,7 +193,7 @@ class WebSocketManager {
         }
         this.chatRooms.get(hangoutId)!.add(socket.data.user.userId)
         
-        console.log(`User ${socket.data.user.username} joined chat ${hangoutId}`)
+        // // console.log(`User ${socket.data.user.username} joined chat ${hangoutId}`); // Removed for production; // Removed for production
       })
 
       socket.on('leaveChat', (data) => {
@@ -206,7 +207,7 @@ class WebSocketManager {
           this.chatRooms.get(hangoutId)!.delete(socket.data.user.userId)
         }
         
-        console.log(`User ${socket.data.user.username} left chat ${hangoutId}`)
+        // // console.log(`User ${socket.data.user.username} left chat ${hangoutId}`); // Removed for production; // Removed for production
       })
 
       socket.on('sendMessage', (data) => {
@@ -223,7 +224,7 @@ class WebSocketManager {
           timestamp: new Date().toISOString()
         })
         
-        console.log(`User ${socket.data.user.username} sent message in chat ${hangoutId}`)
+        // // console.log(`User ${socket.data.user.username} sent message in chat ${hangoutId}`); // Removed for production; // Removed for production
       })
 
       socket.on('startTyping', (data) => {
@@ -254,7 +255,7 @@ class WebSocketManager {
         
         const { status } = data
         // Update user presence status
-        console.log(`User ${socket.data.user.username} status: ${status}`)
+        // // console.log(`User ${socket.data.user.username} status: ${status}`); // Removed for production; // Removed for production
       })
 
       // Disconnect handling
@@ -279,7 +280,7 @@ class WebSocketManager {
           }
         }
         
-        console.log('Client disconnected:', socket.id)
+        // console.log('Client disconnected:', socket.id); // Removed for production
       })
     })
   }

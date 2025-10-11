@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // PUT /api/conversations/[id]/messages/[messageId] - Edit a message
 export async function PUT(
   request: NextRequest,
@@ -131,7 +132,7 @@ export async function PUT(
       }
     }, 'Message updated successfully'))
   } catch (error) {
-    console.error('Error updating message:', error)
+    logger.error('Error updating message:', error);
     return NextResponse.json(createErrorResponse('Failed to update message', error.message), { status: 500 })
   }
 }
@@ -194,7 +195,7 @@ export async function DELETE(
       }
     }, 'Message deleted successfully'))
   } catch (error) {
-    console.error('Error deleting message:', error)
+    logger.error('Error deleting message:', error);
     return NextResponse.json(createErrorResponse('Failed to delete message', error.message), { status: 500 })
   }
 }

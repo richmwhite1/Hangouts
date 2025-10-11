@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
@@ -47,7 +48,7 @@ export async function GET(
       friendRequestReceived
     }, 'Friendship status retrieved successfully'))
   } catch (error: any) {
-    console.error('Error fetching friendship status:', error)
+    logger.error('Error fetching friendship status:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch friendship status', error.message), { status: 500 })
   }
 }

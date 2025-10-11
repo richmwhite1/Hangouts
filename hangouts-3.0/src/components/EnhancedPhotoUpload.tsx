@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Camera, Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { logger } from '@/lib/logger'
 interface UploadFile extends File {
   id: string
   preview: string
@@ -54,11 +55,11 @@ export function EnhancedPhotoUpload({
   const addFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       if (!allowedTypes.includes(file.type)) {
-        console.warn(`File ${file.name} is not a supported image type`)
+        logger.warn(`File ${file.name} is not a supported image type`);
         return false
       }
       if (file.size > maxFileSize * 1024 * 1024) {
-        console.warn(`File ${file.name} is too large. Maximum size is ${maxFileSize}MB`)
+        logger.warn(`File ${file.name} is too large. Maximum size is ${maxFileSize}MB`);
         return false
       }
       return true

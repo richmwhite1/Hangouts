@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 async function getDiscoverHangoutsHandler(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const location = searchParams.get('location')
@@ -158,7 +159,7 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
 
     return createSuccessResponse({ hangouts: transformedHangouts })
   } catch (error) {
-    console.error('Database error in getDiscoverHangoutsHandler:', error)
+    logger.error('Database error in getDiscoverHangoutsHandler:', error);
     return createErrorResponse('Database error', 'Failed to fetch discover hangouts', 500)
   }
 }

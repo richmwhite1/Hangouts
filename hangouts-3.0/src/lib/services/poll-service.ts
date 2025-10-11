@@ -3,6 +3,7 @@ import { Poll, PollVote, Prisma, UserRole } from '@prisma/client'
 import { z } from 'zod'
 import { CACHE_TTL, CACHE_TAGS } from '@/lib/cache'
 
+import { logger } from '@/lib/logger'
 // Validation schemas
 const createPollSchema = z.object({
   title: z.string().min(1).max(200),
@@ -99,13 +100,13 @@ export class PollService extends BaseService {
    * Create a new poll
    */
   async createPoll(hangoutId: string, data: any): Promise<ServiceResult<PollWithDetails>> {
-    console.log('PollService: createPoll called with hangoutId:', hangoutId, 'data:', data)
-    console.log('PollService: context:', this.context)
+    // console.log('PollService: createPoll called with hangoutId:', hangoutId, 'data:', data); // Removed for production
+    // console.log('PollService: context:', this.context); // Removed for production
     
     let validatedData: any
     try {
       validatedData = createPollSchema.parse(data)
-      console.log('PollService: validated data:', validatedData)
+      // console.log('PollService: validated data:', validatedData); // Removed for production
     } catch (validationError) {
       return this.handleError(validationError, 'Validate poll data')
     }
@@ -128,8 +129,8 @@ export class PollService extends BaseService {
         }
       })
 
-      console.log('PollService: hangout found:', hangout)
-      console.log('PollService: hangout_details:', hangout?.hangout_details)
+      // console.log('PollService: hangout found:', hangout); // Removed for production
+      // console.log('PollService: hangout_details:', hangout?.hangout_details); // Removed for production
 
       if (!hangout) {
         return this.createErrorResult('Hangout not found', 'HANGOUT_NOT_FOUND', 404)
@@ -152,11 +153,11 @@ export class PollService extends BaseService {
         )
       }
 
-      console.log('PollService: About to create poll with data:', {
-        hangoutId: hangout.hangout_details?.id,
-        creatorId: this.context.userId,
-        ...validatedData
-      })
+          // console.log('PollService: About to create poll with data:', {
+          //   hangoutId: hangout.hangout_details?.id,
+          //   creatorId: this.context.userId,
+          //   ...validatedData
+          // }); // Removed for production
 
       // Create poll
       const poll = await this.db.poll.create({
@@ -190,7 +191,7 @@ export class PollService extends BaseService {
         }
       })
 
-      console.log('PollService: Poll created successfully:', poll)
+      // console.log('PollService: Poll created successfully:', poll); // Removed for production
 
       // Process poll data
       const processedPoll = await this.processPollData(poll)

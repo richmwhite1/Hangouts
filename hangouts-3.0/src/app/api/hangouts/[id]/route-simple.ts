@@ -3,17 +3,18 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('🔍 Hangout API: GET request received')
+    // console.log('🔍 Hangout API: GET request received'); // Removed for production
     const { id: hangoutId } = await params
-    console.log('🔍 Hangout ID:', hangoutId)
+    // console.log('🔍 Hangout ID:', hangoutId); // Removed for production
     
     if (!hangoutId) {
-      console.log('❌ Hangout ID is required')
+      // console.log('❌ Hangout ID is required'); // Removed for production
       return NextResponse.json(
         { error: 'Hangout ID is required' },
         { status: 400 }
@@ -21,7 +22,7 @@ export async function GET(
     }
 
     // First check if hangout exists with a simple query
-    console.log('🔍 Checking if hangout exists...')
+    // console.log('🔍 Checking if hangout exists...'); // Removed for production
     const hangoutExists = await db.content.findUnique({
       where: { 
         id: hangoutId,
@@ -31,7 +32,7 @@ export async function GET(
     })
 
     if (!hangoutExists) {
-      console.log('❌ Hangout not found:', hangoutId)
+      // console.log('❌ Hangout not found:', hangoutId); // Removed for production
       return NextResponse.json(
         { 
           error: 'Hangout not found',
@@ -42,7 +43,7 @@ export async function GET(
       )
     }
 
-    console.log('✅ Hangout exists, fetching basic data...')
+    // console.log('✅ Hangout exists, fetching basic data...'); // Removed for production
     
     // Get hangout with minimal data to reduce memory usage
     const hangout = await db.content.findUnique({
@@ -79,7 +80,7 @@ export async function GET(
     })
 
     if (!hangout) {
-      console.log('❌ Hangout data fetch failed:', hangoutId)
+      // console.log('❌ Hangout data fetch failed:', hangoutId); // Removed for production
       return NextResponse.json(
         { 
           error: 'Hangout data unavailable',
@@ -90,7 +91,7 @@ export async function GET(
       )
     }
     
-    console.log('✅ Hangout found:', hangout.title)
+    // console.log('✅ Hangout found:', hangout.title); // Removed for production
 
     // Check if hangout is public (for unauthenticated access)
     if (hangout.privacyLevel !== 'PUBLIC') {
@@ -155,7 +156,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('❌ Hangout API error:', error)
+    logger.error('❌ Hangout API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { 

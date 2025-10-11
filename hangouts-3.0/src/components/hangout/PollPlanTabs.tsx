@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle, Clock, Users, Vote } from 'lucide-react'
+import { logger } from '@/lib/logger'
 // Removed api-client import - using direct fetch calls
 interface Poll {
   id: string
@@ -72,7 +73,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        logger.error('Error fetching data:', error);
       } finally {
         setIsLoading(false)
       }
@@ -98,7 +99,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
         }
       }
     } catch (error) {
-      console.error('Error voting:', error)
+      logger.error('Error voting:', error);
     }
   }
   const handleTransitionToPlan = async (pollId: string) => {
@@ -120,7 +121,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
         }
       }
     } catch (error) {
-      console.error('Error transitioning to plan:', error)
+      logger.error('Error transitioning to plan:', error);
     }
   }
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
@@ -141,7 +142,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
         }
       }
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      logger.error('Error updating RSVP:', error);
     }
   }
   const getVoteCounts = (poll: Poll) => {

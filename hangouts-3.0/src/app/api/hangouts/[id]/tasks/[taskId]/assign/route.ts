@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/hangouts/[id]/tasks/[taskId]/assign - Assign/unassign user to task
 export async function POST(
   request: NextRequest,
@@ -127,7 +128,7 @@ export async function POST(
       isAssigned: !existingAssignment
     }, existingAssignment ? 'Task unassigned successfully' : 'Task assigned successfully'))
   } catch (error: any) {
-    console.error('Error assigning task:', error)
+    logger.error('Error assigning task:', error);
     return NextResponse.json(createErrorResponse('Failed to assign task', error.message), { status: 500 })
   }
 }

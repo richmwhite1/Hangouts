@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth';
 import { db } from '@/lib/db';
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-response';
 
+import { logger } from '@/lib/logger'
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -97,7 +98,7 @@ export async function POST(
 
     return NextResponse.json(createSuccessResponse({ photos: uploadedPhotos }), { status: 201 });
   } catch (error: any) {
-    console.error('Error uploading photos:', error);
+    logger.error('Error uploading photos:', error);
     return NextResponse.json(createErrorResponse('Internal Server Error', error.message || 'Failed to upload photos'), { status: 500 });
   }
 }
@@ -167,7 +168,7 @@ export async function GET(
 
     return NextResponse.json(createSuccessResponse({ photos }), { status: 200 });
   } catch (error: any) {
-    console.error('Error fetching photos:', error);
+    logger.error('Error fetching photos:', error);
     return NextResponse.json(createErrorResponse('Internal Server Error', error.message || 'Failed to fetch photos'), { status: 500 });
   }
 }

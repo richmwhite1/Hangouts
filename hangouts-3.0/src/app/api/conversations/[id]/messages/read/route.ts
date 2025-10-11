@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/messages/read - Mark multiple messages as read
 export async function POST(
   request: NextRequest,
@@ -80,7 +81,7 @@ export async function POST(
         readReceipts.push(readReceipt)
       } catch (error) {
         // Skip messages that don't exist or user doesn't have access to
-        console.warn(`Failed to mark message ${messageId} as read:`, error.message)
+        logger.warn(`Failed to mark message ${messageId} as read:`, error.message);
       }
     }
     return NextResponse.json(createSuccessResponse({
@@ -93,7 +94,7 @@ export async function POST(
       }))
     }, `${readReceipts.length} messages marked as read`))
   } catch (error) {
-    console.error('Error marking messages as read:', error)
+    logger.error('Error marking messages as read:', error);
     return NextResponse.json(createErrorResponse('Failed to mark messages as read', error.message), { status: 500 })
   }
 }

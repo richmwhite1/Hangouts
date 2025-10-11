@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { checkAndFinalizeIfReady, calculateWinner } from '@/lib/hangout-flow'
+import { logger } from '@/lib/logger'
 // POST /api/hangouts/[id]/finalize - Check and finalize hangout if ready
 export async function POST(
   request: NextRequest,
@@ -103,7 +104,7 @@ export async function POST(
       message: 'Not ready to finalize yet'
     }, 'Not ready to finalize yet'))
   } catch (error) {
-    console.error('Error finalizing hangout:', error)
+    logger.error('Error finalizing hangout:', error);
     return NextResponse.json(createErrorResponse('Failed to finalize hangout', error.message), { status: 500 })
   }
 }

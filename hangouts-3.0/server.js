@@ -2,6 +2,7 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const path = require('path');
+const { Server } = require('socket.io');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0'; // CRITICAL: Must bind to 0.0.0.0 for Railway
@@ -31,7 +32,7 @@ const app = next({
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  createServer(async (req, res) => {
+  const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
       console.log(`📥 ${req.method} ${req.url}`);
@@ -41,13 +42,87 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('internal server error');
     }
-  })
+  });
+
+  // Initialize Socket.IO
+  const io = new Server(httpServer, {
+    cors: {
+      origin: process.env.NEXTAUTH_URL || "http://localhost:3000",
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    path: "/api/socket"
+  });
+
+  // WebSocket event handlers
+  io.on('connection', (socket) => {
+    console.log('🔌 Client connected:', socket.id);
+
+    // Authentication
+    socket.on('authenticate', (data) => {
+      try {
+        // For now, accept authentication and validate later
+        socket.userId = data.userId;
+        console.log('✅ User authenticated:', data.userId);
+      } catch (error) {
+        console.error('❌ Authentication error:', error);
+        socket.disconnect();
+      }
+    });
+
+    // Join hangout room
+    socket.on('join-hangout', (hangoutId) => {
+      socket.join(`hangout:${hangoutId}`);
+      console.log(`👥 User ${socket.userId} joined hangout ${hangoutId}`);
+    });
+
+    // Leave hangout room
+    socket.on('leave-hangout', (hangoutId) => {
+      socket.leave(`hangout:${hangoutId}`);
+      console.log(`👋 User ${socket.userId} left hangout ${hangoutId}`);
+    });
+
+    // Send message to hangout
+    socket.on('send-message', (data) => {
+      const { hangoutId, message } = data;
+      socket.to(`hangout:${hangoutId}`).emit('message-received', {
+        messageId: `msg_${Date.now()}`,
+        content: message,
+        userId: socket.userId,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`💬 Message sent to hangout ${hangoutId} by ${socket.userId}`);
+    });
+
+    // Typing indicators
+    socket.on('typing:start', (data) => {
+      socket.to(`hangout:${data.hangoutId}`).emit('typing:start', {
+        userId: socket.userId,
+        hangoutId: data.hangoutId
+      });
+    });
+
+    socket.on('typing:stop', (data) => {
+      socket.to(`hangout:${data.hangoutId}`).emit('typing:stop', {
+        userId: socket.userId,
+        hangoutId: data.hangoutId
+      });
+    });
+
+    // Disconnect
+    socket.on('disconnect', () => {
+      console.log('🔌 Client disconnected:', socket.id);
+    });
+  });
+
+  httpServer
     .once('error', (err) => {
       console.error('❌ Server error:', err);
       process.exit(1);
     })
     .listen(port, hostname, () => {
       console.log(`✅ Server ready on http://${hostname}:${port}`);
+      console.log(`🔌 WebSocket server ready on ws://${hostname}:${port}/api/socket`);
       console.log(`🏥 Health check: http://${hostname}:${port}/api/health`);
     });
 });

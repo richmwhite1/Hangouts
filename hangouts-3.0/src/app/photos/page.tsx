@@ -1,12 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PhotoGallery } from '@/components/photo-gallery'
 import { PhotoLightbox } from '@/components/photo-lightbox'
 import { PhotoUpload } from '@/components/photo-upload'
+import { logger } from '@/lib/logger'
 import {
   Plus,
   Grid3X3,
@@ -116,7 +117,7 @@ export default function PhotosPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching photos:', error)
+      logger.error('Error fetching photos:', error);
     } finally {
       setIsLoading(false)
     }
@@ -131,7 +132,7 @@ export default function PhotosPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching albums:', error)
+      logger.error('Error fetching albums:', error);
     }
   }
   const handlePhotoClick = (photo: Photo) => {
@@ -156,15 +157,15 @@ export default function PhotosPage() {
   }
   const handleLike = async (photoId: string) => {
     // TODO: Implement like functionality
-    console.log('Like photo:', photoId)
+    // console.log('Like photo:', photoId); // Removed for production
   }
   const handleComment = async (photoId: string) => {
     // TODO: Implement comment functionality
-    console.log('Comment on photo:', photoId)
+    // console.log('Comment on photo:', photoId); // Removed for production
   }
   const handleShare = async (photoId: string) => {
     // TODO: Implement share functionality
-    console.log('Share photo:', photoId)
+    // console.log('Share photo:', photoId); // Removed for production
   }
   const handleDownload = async (photoId: string) => {
     const photo = photos.find(p => p.id === photoId)
@@ -199,7 +200,7 @@ export default function PhotosPage() {
         }
       }
     } catch (error) {
-      console.error('Error uploading photos:', error)
+      logger.error('Error uploading photos:', error);
       throw error
     }
   }

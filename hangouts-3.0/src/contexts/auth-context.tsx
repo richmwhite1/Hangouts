@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/nextjs'
 import { User } from '@/types/api'
 
+import { logger } from '@/lib/logger'
 interface AuthContextType {
   user: User | null
   isClerkUser: boolean
@@ -52,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeAuth = async () => {
       // Skip Clerk initialization if keys are invalid
       if (!hasValidClerkKeys) {
-        console.log('⚠️ Skipping Clerk authentication due to invalid keys')
+        // console.log('⚠️ Skipping Clerk authentication due to invalid keys'); // Removed for production
         setIsLoading(false)
         return
       }
@@ -86,18 +87,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               const { data } = await response.json()
               setUser(data.user)
             } else {
-              console.error('Failed to sync Clerk user:', await response.text())
+              logger.error('Failed to sync Clerk user:', await response.text())
               clearAuthState()
             }
           } catch (error) {
-            console.error('Error syncing Clerk user:', error)
+            logger.error('Error syncing Clerk user:', error);
             clearAuthState()
           }
         } else {
           clearAuthState()
         }
       } catch (error) {
-        console.error('Auth: Initialization error:', error)
+        logger.error('Auth: Initialization error:', error);
         clearAuthState()
       } finally {
         setIsLoading(false)
@@ -122,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         window.location.href = '/'
       }
     } catch (error) {
-      console.error('Error during sign out:', error)
+      logger.error('Error during sign out:', error);
       // Still clear local state even if Clerk sign out fails
       clearAuthState()
       if (typeof window !== 'undefined') {

@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const UpdatePollSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional(),
@@ -136,7 +137,7 @@ export async function GET(
 
     return NextResponse.json(pollWithConsensus)
   } catch (error) {
-    console.error('Error fetching poll:', error)
+    logger.error('Error fetching poll:', error);
     return NextResponse.json({ error: 'Failed to fetch poll' }, { status: 500 })
   }
 }
@@ -203,7 +204,7 @@ export async function PUT(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
-    console.error('Error updating poll:', error)
+    logger.error('Error updating poll:', error);
     return NextResponse.json({ error: 'Failed to update poll' }, { status: 500 })
   }
 }
@@ -249,7 +250,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Poll deleted successfully' })
   } catch (error) {
-    console.error('Error deleting poll:', error)
+    logger.error('Error deleting poll:', error);
     return NextResponse.json({ error: 'Failed to delete poll' }, { status: 500 })
   }
 }

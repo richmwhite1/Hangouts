@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
 
+import { logger } from '@/lib/logger'
 const prisma = new PrismaClient()
 
 interface AuthenticatedSocket {
@@ -236,14 +237,14 @@ class PollingWebSocketManager {
     })
 
     this.setupEventHandlers()
-    console.log('Polling WebSocket server initialized')
+    // console.log('Polling WebSocket server initialized'); // Removed for production
   }
 
   private setupEventHandlers() {
     if (!this.io) return
 
     this.io.on('connection', (socket) => {
-      console.log('Polling client connected:', socket.id)
+      // console.log('Polling client connected:', socket.id); // Removed for production
 
       // Authentication
       socket.on('authenticate', (data) => {
@@ -268,9 +269,9 @@ class PollingWebSocketManager {
           // Join user to their personal room
           socket.join(`user:${user.userId}`)
           
-          console.log(`User ${user.username} authenticated for polling`)
+          // // console.log(`User ${user.username} authenticated for polling`); // Removed for production; // Removed for production
         } catch (error) {
-          console.error('Polling authentication failed:', error)
+          logger.error('Polling authentication failed:', error);
           socket.disconnect()
         }
       })
@@ -295,7 +296,7 @@ class PollingWebSocketManager {
         // Send current poll state
         await this.sendPollState(socket, pollId)
         
-        console.log(`User ${socket.data.user.username} joined poll ${pollId}`)
+        // // console.log(`User ${socket.data.user.username} joined poll ${pollId}`); // Removed for production; // Removed for production
       })
 
       socket.on('leavePoll', async (data) => {
@@ -309,7 +310,7 @@ class PollingWebSocketManager {
           this.pollRooms.get(pollId)!.delete(socket.data.user.userId)
         }
         
-        console.log(`User ${socket.data.user.username} left poll ${pollId}`)
+        // // console.log(`User ${socket.data.user.username} left poll ${pollId}`); // Removed for production; // Removed for production
       })
 
       // Voting
@@ -332,7 +333,7 @@ class PollingWebSocketManager {
             })
           }
         } catch (error) {
-          console.error('Error casting vote:', error)
+          logger.error('Error casting vote:', error);
           socket.emit('pollError', {
             pollId: data.pollId,
             error: 'Failed to cast vote',
@@ -357,7 +358,7 @@ class PollingWebSocketManager {
             })
           }
         } catch (error) {
-          console.error('Error changing vote:', error)
+          logger.error('Error changing vote:', error);
         }
       })
 
@@ -371,7 +372,7 @@ class PollingWebSocketManager {
             await this.updateConsensus(pollId)
           }
         } catch (error) {
-          console.error('Error deleting vote:', error)
+          logger.error('Error deleting vote:', error);
         }
       })
 
@@ -395,7 +396,7 @@ class PollingWebSocketManager {
             this.broadcastDelegationCreated(pollId, result.delegation)
           }
         } catch (error) {
-          console.error('Error delegating vote:', error)
+          logger.error('Error delegating vote:', error);
         }
       })
 
@@ -415,7 +416,7 @@ class PollingWebSocketManager {
           }
         }
         
-        console.log('Polling client disconnected:', socket.id)
+        // console.log('Polling client disconnected:', socket.id); // Removed for production
       })
     })
   }
@@ -491,7 +492,7 @@ class PollingWebSocketManager {
       
       return { success: true, vote }
     } catch (error) {
-      console.error('Error casting vote:', error)
+      logger.error('Error casting vote:', error);
       return { success: false, error: 'Database error', code: 'DATABASE_ERROR' }
     }
   }
@@ -554,7 +555,7 @@ class PollingWebSocketManager {
         }
       })
     } catch (error) {
-      console.error('Error updating consensus:', error)
+      logger.error('Error updating consensus:', error);
     }
   }
 
@@ -718,7 +719,7 @@ class PollingWebSocketManager {
         })
       }
     } catch (error) {
-      console.error('Error sending poll state:', error)
+      logger.error('Error sending poll state:', error);
     }
   }
 
@@ -738,7 +739,7 @@ class PollingWebSocketManager {
         }
       })
     } catch (error) {
-      console.error('Error updating participant status:', error)
+      logger.error('Error updating participant status:', error);
     }
   }
 

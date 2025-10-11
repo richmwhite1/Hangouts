@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface User {
   id: string
   username: string
@@ -47,7 +48,7 @@ interface Friendship {
 }
 
 export default function FriendsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isSignedIn, isLoaded } = useAuth()
   const [friends, setFriends] = useState<Friendship[]>([])
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -57,13 +58,13 @@ export default function FriendsPage() {
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isSignedIn && user) {
       loadFriends()
       loadFriendRequests()
       // Load all users for discovery
       searchUsers('')
     }
-  }, [isAuthenticated, user])
+  }, [isSignedIn, user])
 
   const loadFriends = async () => {
     try {
@@ -73,7 +74,7 @@ export default function FriendsPage() {
         setFriends(data.friends || [])
       }
     } catch (error) {
-      console.error('Error loading friends:', error)
+      logger.error('Error loading friends:', error);
     }
   }
 
@@ -85,7 +86,7 @@ export default function FriendsPage() {
         setFriendRequests(data.requests || [])
       }
     } catch (error) {
-      console.error('Error loading friend requests:', error)
+      logger.error('Error loading friend requests:', error);
     } finally {
       setLoading(false)
     }
@@ -100,7 +101,7 @@ export default function FriendsPage() {
         setSearchResults(data.users || [])
       }
     } catch (error) {
-      console.error('Error searching users:', error)
+      logger.error('Error searching users:', error);
       toast.error('Failed to search users')
     } finally {
       setSearching(false)
@@ -140,7 +141,7 @@ export default function FriendsPage() {
         newSet.delete(userId)
         return newSet
       })
-      console.error('Error sending friend request:', error)
+      logger.error('Error sending friend request:', error);
       toast.error('Failed to send friend request')
     }
   }
@@ -164,7 +165,7 @@ export default function FriendsPage() {
         toast.error(error.message || 'Failed to respond to friend request')
       }
     } catch (error) {
-      console.error('Error responding to friend request:', error)
+      logger.error('Error responding to friend request:', error);
       toast.error('Failed to respond to friend request')
     }
   }
@@ -183,12 +184,12 @@ export default function FriendsPage() {
         toast.error(error.message || 'Failed to remove friend')
       }
     } catch (error) {
-      console.error('Error removing friend:', error)
+      logger.error('Error removing friend:', error);
       toast.error('Failed to remove friend')
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">

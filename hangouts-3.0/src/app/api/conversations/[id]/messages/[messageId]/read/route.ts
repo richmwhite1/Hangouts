@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/messages/[messageId]/read - Mark message as read
 export async function POST(
   request: NextRequest,
@@ -69,7 +70,7 @@ export async function POST(
       }
     }, 'Message marked as read'))
   } catch (error) {
-    console.error('Error marking message as read:', error)
+    logger.error('Error marking message as read:', error);
     return NextResponse.json(createErrorResponse('Failed to mark message as read', error.message), { status: 500 })
   }
 }
@@ -120,7 +121,7 @@ export async function GET(
       }))
     }, 'Read receipts retrieved successfully'))
   } catch (error) {
-    console.error('Error getting read receipts:', error)
+    logger.error('Error getting read receipts:', error);
     return NextResponse.json(createErrorResponse('Failed to get read receipts', error.message), { status: 500 })
   }
 }

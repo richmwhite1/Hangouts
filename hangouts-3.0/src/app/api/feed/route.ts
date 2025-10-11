@@ -400,7 +400,7 @@ async function getFeedHandler(request: NextRequest) {
         }
       }
       } catch (transformError) {
-        console.error('Error transforming content item:', item.id, transformError);
+        logger.error('Error transforming content item:', item.id, transformError);
         return null;
       }
     }).filter(item => item !== null)
@@ -418,10 +418,10 @@ async function getFeedHandler(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Database error in getFeedHandler:', error)
+    logger.error('Database error in getFeedHandler:', error);
     if (error instanceof Error) {
-      console.error('Error stack:', error.stack)
-      console.error('Error message:', error.message)
+      logger.error('Error stack:', error.stack);
+      logger.error('Error message:', error.message);
     }
     return NextResponse.json({ 
       success: false, 

@@ -7,6 +7,7 @@ import HangoutForm, { HangoutFormData } from '@/components/create/HangoutForm'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 export default function CreateHangoutPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading: authLoading, user, token } = useAuth()
@@ -44,7 +45,7 @@ export default function CreateHangoutPage() {
         isPoll: formData.isPoll
       }
 
-      console.log('Creating hangout with data:', hangoutData)
+      // console.log('Creating hangout with data:', hangoutData); // Removed for production
 
       const response = await apiClient.createHangout(hangoutData)
       
@@ -55,7 +56,7 @@ export default function CreateHangoutPage() {
         toast.error(response.error || 'Failed to create hangout')
       }
     } catch (error) {
-      console.error('Error creating hangout:', error)
+      logger.error('Error creating hangout:', error);
       toast.error('An unexpected error occurred')
     } finally {
       setIsCreating(false)

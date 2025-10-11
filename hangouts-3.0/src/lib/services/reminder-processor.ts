@@ -1,5 +1,6 @@
 import { ReminderService } from './reminder-service'
 
+import { logger } from '@/lib/logger'
 export class ReminderProcessor {
   private static intervalId: NodeJS.Timeout | null = null
   private static isRunning = false
@@ -7,11 +8,11 @@ export class ReminderProcessor {
   // Start the reminder processor
   static start(intervalMs: number = 60000) { // Default: check every minute
     if (this.isRunning) {
-      console.log('Reminder processor is already running')
+      // console.log('Reminder processor is already running'); // Removed for production
       return
     }
 
-    console.log('Starting reminder processor...')
+    // console.log('Starting reminder processor...'); // Removed for production
     this.isRunning = true
 
     // Process immediately on start
@@ -30,17 +31,17 @@ export class ReminderProcessor {
       this.intervalId = null
     }
     this.isRunning = false
-    console.log('Reminder processor stopped')
+    // console.log('Reminder processor stopped'); // Removed for production
   }
 
   // Process due reminders
   private static async processReminders() {
     try {
-      console.log('Processing due reminders...')
+      // console.log('Processing due reminders...'); // Removed for production
       const processed = await ReminderService.processDueReminders()
       
       if (processed.length > 0) {
-        console.log(`Processed ${processed.length} reminders`)
+        // // console.log(`Processed ${processed.length} reminders`); // Removed for production; // Removed for production
       }
 
       // Clean up old reminders every hour
@@ -49,7 +50,7 @@ export class ReminderProcessor {
         await ReminderService.cleanupOldReminders()
       }
     } catch (error) {
-      console.error('Error processing reminders:', error)
+      logger.error('Error processing reminders:', error);
     }
   }
 

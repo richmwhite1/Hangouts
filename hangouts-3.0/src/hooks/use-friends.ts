@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { User } from '@/types/api'
 import { useAuth } from '@clerk/nextjs'
 
+import { logger } from '@/lib/logger'
 interface FriendRequest {
   id: string
   senderId: string
@@ -59,7 +60,7 @@ export const useFriends = (): UseFriendsReturn => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch friends data'
       setError(errorMessage)
-      console.error('Error fetching friends data:', err)
+      logger.error('Error fetching friends data:', err);
     } finally {
       setIsLoading(false)
     }

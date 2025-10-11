@@ -2,6 +2,7 @@ import { Server as NetServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import wsManager from './websocket-server'
 
+import { logger } from '@/lib/logger'
 declare global {
   var io: SocketIOServer | undefined
   var httpServer: NetServer | undefined
@@ -23,7 +24,7 @@ export function initializeWebSocket() {
       
       global.io = io
       wsManager.initialize(httpServer)
-      console.log('WebSocket server initialized')
+      // console.log('WebSocket server initialized'); // Removed for production
     }
   }
 }

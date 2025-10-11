@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // GET /api/preferences - Get user preferences
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error fetching preferences:', error)
+    logger.error('Error fetching preferences:', error);
     return NextResponse.json(
       { error: 'Failed to fetch preferences' },
       { status: 500 }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ preferences })
   } catch (error) {
-    console.error('Error updating preferences:', error)
+    logger.error('Error updating preferences:', error);
     return NextResponse.json(
       { error: 'Failed to update preferences' },
       { status: 500 }

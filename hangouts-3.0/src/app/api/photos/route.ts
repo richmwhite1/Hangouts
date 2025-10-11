@@ -6,6 +6,7 @@ import { writeFile, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import sharp from 'sharp'
 
+import { logger } from '@/lib/logger'
 // Enhanced photo management API with Instagram-quality features
 export async function GET(request: NextRequest) {
   try {
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Get photos error:', error)
+    logger.error('Get photos error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch photos',
@@ -325,7 +326,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Upload photo error:', error)
+    logger.error('Upload photo error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to upload photo',

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Transition poll to RSVP mode
 export async function POST(
   request: NextRequest,
@@ -143,7 +144,7 @@ export async function POST(
         )
     }
   } catch (error) {
-    console.error('Error transitioning poll:', error)
+    logger.error('Error transitioning poll:', error);
     return NextResponse.json({ error: 'Failed to transition poll' }, { status: 500 })
   }
 }
@@ -233,7 +234,7 @@ export async function GET(
       }
     })
   } catch (error) {
-    console.error('Error getting transition status:', error)
+    logger.error('Error getting transition status:', error);
     return NextResponse.json({ error: 'Failed to get transition status' }, { status: 500 })
   }
 }

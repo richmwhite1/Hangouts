@@ -43,6 +43,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MobileModal } from '@/components/ui/mobile-modal'
+import { logger } from '@/lib/logger'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -880,7 +881,7 @@ export default function HangoutDetailModern({
             <AlertDialogAction 
               onClick={() => {
                 // TODO: Implement actual invite functionality
-                console.log('Inviting friends:', selectedFriends)
+                // console.log('Inviting friends:', selectedFriends); // Removed for production
                 setIsInviteModalOpen(false)
                 setSelectedFriends([])
                 setFriendSearchTerm('')

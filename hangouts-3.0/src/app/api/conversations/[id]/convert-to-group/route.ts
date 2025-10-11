@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/convert-to-group - Convert direct conversation to group
 export async function POST(
   request: NextRequest,
@@ -100,7 +101,7 @@ export async function POST(
       }
     }, 'Conversation converted to group successfully'))
   } catch (error) {
-    console.error('Error converting conversation to group:', error)
+    logger.error('Error converting conversation to group:', error);
     return NextResponse.json(createErrorResponse('Failed to convert conversation', error.message), { status: 500 })
   }
 }

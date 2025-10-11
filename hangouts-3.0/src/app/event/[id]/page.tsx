@@ -13,6 +13,7 @@ import { TileActions } from '@/components/ui/tile-actions'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
 import { sharingService } from '@/lib/services/sharing-service'
 
+import { logger } from '@/lib/logger'
 interface Event {
   id: string
   title: string
@@ -75,7 +76,7 @@ export default function EventDetailPage() {
         setError('Event not found')
       }
     } catch (error) {
-      console.error('Error fetching event:', error)
+      logger.error('Error fetching event:', error);
       setError('Failed to load event')
     } finally {
       setLoading(false)
@@ -128,7 +129,7 @@ export default function EventDetailPage() {
         toast.error(error.error || 'Failed to update RSVP')
       }
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      logger.error('Error updating RSVP:', error);
       toast.error('Failed to update RSVP')
     } finally {
       setIsRsvping(false)
@@ -156,7 +157,7 @@ export default function EventDetailPage() {
         toast.error(error.error || 'Failed to save event')
       }
     } catch (error) {
-      console.error('Error saving event:', error)
+      logger.error('Error saving event:', error);
       toast.error('Failed to save event')
     } finally {
       setIsSaving(false)
@@ -182,7 +183,7 @@ export default function EventDetailPage() {
         includeDescription: true
       })
     } catch (error) {
-      console.error('Share failed:', error)
+      logger.error('Share failed:', error);
     }
   }
 
@@ -372,10 +373,10 @@ export default function EventDetailPage() {
             privacyLevel={event.privacyLevel || 'PUBLIC'}
             isSaved={isSaved}
             onSave={(id, type) => {
-              console.log('Save event:', id, type)
+              // console.log('Save event:', id, type); // Removed for production
             }}
             onUnsave={(id, type) => {
-              console.log('Unsave event:', id, type)
+              // console.log('Unsave event:', id, type); // Removed for production
             }}
           />
         </div>

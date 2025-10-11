@@ -18,6 +18,7 @@ import {
 import { UserPlus, Search, X, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface Friend {
   id: string
   name: string
@@ -64,11 +65,11 @@ export function InviteModal({ hangoutId, onInvite, children }: InviteModalProps)
         })) || []
         setFriends(friendsList)
       } else {
-        console.error('Failed to fetch friends')
+        logger.error('Failed to fetch friends');
         toast.error('Failed to load friends')
       }
     } catch (error) {
-      console.error('Error fetching friends:', error)
+      logger.error('Error fetching friends:', error);
       toast.error('Failed to load friends')
     } finally {
       setIsLoading(false)
@@ -102,7 +103,7 @@ export function InviteModal({ hangoutId, onInvite, children }: InviteModalProps)
       setSelectedFriends([])
       setSearchQuery('')
     } catch (error) {
-      console.error('Error inviting friends:', error)
+      logger.error('Error inviting friends:', error);
       toast.error('Failed to invite friends')
     } finally {
       setIsInviting(false)

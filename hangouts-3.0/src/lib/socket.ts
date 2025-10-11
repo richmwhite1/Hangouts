@@ -1,6 +1,7 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 
+import { logger } from '@/lib/logger'
 export function initializeSocket(server: HTTPServer) {
   const io = new SocketIOServer(server, {
     cors: {
@@ -10,18 +11,18 @@ export function initializeSocket(server: HTTPServer) {
   })
 
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id)
+    // console.log('User connected:', socket.id); // Removed for production
 
     // Join hangout room
     socket.on('join-hangout', (hangoutId: string) => {
       socket.join(`hangout-${hangoutId}`)
-      console.log(`User ${socket.id} joined hangout ${hangoutId}`)
+      // // console.log(`User ${socket.id} joined hangout ${hangoutId}`); // Removed for production; // Removed for production
     })
 
     // Leave hangout room
     socket.on('leave-hangout', (hangoutId: string) => {
       socket.leave(`hangout-${hangoutId}`)
-      console.log(`User ${socket.id} left hangout ${hangoutId}`)
+      // // console.log(`User ${socket.id} left hangout ${hangoutId}`); // Removed for production; // Removed for production
     })
 
     // Handle RSVP updates
@@ -40,7 +41,7 @@ export function initializeSocket(server: HTTPServer) {
     })
 
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id)
+      // console.log('User disconnected:', socket.id); // Removed for production
     })
   })
 

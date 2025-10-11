@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       requests: friendRequests
     })
   } catch (error) {
-    console.error('Error fetching friend requests:', error)
+    logger.error('Error fetching friend requests:', error);
     return NextResponse.json(
       { error: 'Failed to fetch friend requests' },
       { status: 500 }

@@ -5,6 +5,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from './clerk-auth'
 
+import { logger } from '@/lib/logger'
 export interface TokenPayload {
   userId: string
   email: string
@@ -24,7 +25,7 @@ export function verifyToken(_token: string): TokenPayload | null {
   // We need to handle this differently - this is a compatibility issue
   // For now, we'll return null and let the calling code handle it
   // The proper fix would be to update all calling code to use async auth
-  console.warn('verifyToken() called - this should be replaced with async Clerk auth')
+  logger.warn('verifyToken(); called - this should be replaced with async Clerk auth')
   return null
 }
 
@@ -47,7 +48,7 @@ export async function verifyTokenAsync(): Promise<TokenPayload | null> {
       role: user.role || 'USER'
     }
   } catch (error) {
-    console.error('Error verifying Clerk token:', error)
+    logger.error('Error verifying Clerk token:', error);
     return null
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from './clerk-auth'
 
+import { logger } from '@/lib/logger'
 export async function withClerkAuth(handler: (req: NextRequest, user: any) => Promise<NextResponse>) {
   return async (req: NextRequest): Promise<NextResponse> => {
     try {
@@ -35,7 +36,7 @@ export async function withClerkAuth(handler: (req: NextRequest, user: any) => Pr
       
       return await handler(req, user)
     } catch (error) {
-      console.error('Clerk auth middleware error:', error)
+      logger.error('Clerk auth middleware error:', error);
       return NextResponse.json({
         success: false,
         error: 'Authentication failed',

@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 async function getContentHandler(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: contentId } = await params
@@ -409,7 +410,7 @@ async function getContentHandler(request: NextRequest, { params }: { params: Pro
 
     return createSuccessResponse(transformedContent)
   } catch (error) {
-    console.error('Database error in getContentHandler:', error)
+    logger.error('Database error in getContentHandler:', error);
     return createErrorResponse('Database error', 'Failed to fetch content', 500)
   }
 }

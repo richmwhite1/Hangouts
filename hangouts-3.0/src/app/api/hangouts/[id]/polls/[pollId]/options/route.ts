@@ -3,6 +3,7 @@ import { createApiHandler, createSuccessResponse, createErrorResponse, API_CONFI
 import { PollService } from '@/lib/services'
 import { wsManager } from '@/lib/websocket-server'
 
+import { logger } from '@/lib/logger'
 // Add option to poll
 async function addOptionHandler(request: AuthenticatedRequest) {
   const { id: hangoutId, pollId } = await request.params
@@ -44,7 +45,7 @@ async function addOptionHandler(request: AuthenticatedRequest) {
 
     return createSuccessResponse(result.data, result.message)
   } catch (error) {
-    console.error('Add option error:', error)
+    logger.error('Add option error:', error);
     return createErrorResponse(
       'Service error',
       'Failed to add option',

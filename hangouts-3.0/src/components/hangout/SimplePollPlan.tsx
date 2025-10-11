@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle, Clock, Users, Vote, Plus } from 'lucide-react'
+import { logger } from '@/lib/logger'
 interface Poll {
   id: string
   title: string
@@ -75,7 +76,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        logger.error('Error fetching data:', error);
       } finally {
         setIsLoading(false)
       }
@@ -101,7 +102,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         }
       }
     } catch (error) {
-      console.error('Error voting:', error)
+      logger.error('Error voting:', error);
     }
   }
   const handleCreatePoll = async () => {
@@ -119,30 +120,30 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         isAnonymous: false,
         visibility: 'PUBLIC' as const
       }
-      console.log('Creating poll for hangout:', hangoutId, 'with data:', pollData)
+      // console.log('Creating poll for hangout:', hangoutId, 'with data:', pollData); // Removed for production
       const response = await fetch(`/api/hangouts/${hangoutId}/polls`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'},
         body: JSON.stringify(pollData)
       })
-      console.log('Poll creation response:', response.status, response.statusText)
+      // console.log('Poll creation response:', response.status, response.statusText); // Removed for production
       if (response.ok) {
         const result = await response.json()
-        console.log('Poll created successfully:', result)
+        // console.log('Poll created successfully:', result); // Removed for production
         // Refresh polls
         const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
-          console.log('Refreshed polls:', pollsData)
+          // console.log('Refreshed polls:', pollsData); // Removed for production
           setPolls(pollsData.polls || [])
         }
       } else {
         const errorData = await response.json()
-        console.error('Poll creation failed:', errorData)
+        logger.error('Poll creation failed:', errorData);
       }
     } catch (error) {
-      console.error('Error creating poll:', error)
+      logger.error('Error creating poll:', error);
     }
   }
   const handleTransitionToRSVP = async (pollId: string) => {
@@ -164,7 +165,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         }
       }
     } catch (error) {
-      console.error('Error transitioning to RSVP:', error)
+      logger.error('Error transitioning to RSVP:', error);
     }
   }
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
@@ -186,7 +187,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         }
       }
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      logger.error('Error updating RSVP:', error);
     }
   }
   const getVoteCounts = (poll: Poll) => {

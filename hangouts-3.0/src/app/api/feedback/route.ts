@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const feedbackSchema = z.object({
   type: z.enum(['bug', 'feature', 'general', 'ui', 'performance']),
   rating: z.number().min(1).max(5),
@@ -24,14 +25,14 @@ export async function POST(request: NextRequest) {
 
     // For now, we'll just log the feedback
     // In production, you'd save this to a database
-    console.log('=== BETA FEEDBACK SUBMITTED ===')
-    console.log('Type:', validatedData.type)
-    console.log('Rating:', validatedData.rating)
-    console.log('Title:', validatedData.title)
-    console.log('Description:', validatedData.description)
-    console.log('Steps to Reproduce:', validatedData.stepsToReproduce)
-    console.log('Context:', JSON.stringify(validatedData.context, null, 2))
-    console.log('================================')
+    // console.log('=== BETA FEEDBACK SUBMITTED ==='); // Removed for production
+    // console.log('Type:', validatedData.type); // Removed for production
+    // console.log('Rating:', validatedData.rating); // Removed for production
+    // console.log('Title:', validatedData.title); // Removed for production
+    // console.log('Description:', validatedData.description); // Removed for production
+    // console.log('Steps to Reproduce:', validatedData.stepsToReproduce); // Removed for production
+    // console.log('Context:', JSON.stringify(validatedData.context, null, 2); // Removed for production)
+    // console.log('================================'); // Removed for production
 
     // TODO: Save to database
     // await db.feedback.create({
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     }, 'Thank you for your feedback!'))
 
   } catch (error) {
-    console.error('Error processing feedback:', error)
+    logger.error('Error processing feedback:', error);
     return NextResponse.json(createErrorResponse('Invalid feedback data', 'Please check your input and try again'), { status: 400 })
   }
 }
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     // This would require authentication and admin role
     return NextResponse.json(createErrorResponse('Not implemented', 'Admin endpoint not yet implemented'), { status: 501 })
   } catch (error) {
-    console.error('Error fetching feedback:', error)
+    logger.error('Error fetching feedback:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch feedback', 'Please try again later'), { status: 500 })
   }
 }

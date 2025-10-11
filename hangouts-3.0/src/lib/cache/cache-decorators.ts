@@ -1,6 +1,7 @@
 import { CacheOptions } from './cache-manager'
 import { cacheManager } from './cache-manager'
 
+import { logger } from '@/lib/logger'
 /**
  * Cache key generators for different data types
  */
@@ -298,6 +299,6 @@ export class CacheUtils {
   static async preloadCriticalData(userIds: string[]): Promise<void> {
     // This would be implemented to preload frequently accessed data
     // For now, it's a placeholder for future implementation
-    console.log('Preloading critical data for users:', userIds)
+    // console.log('Preloading critical data for users:', userIds); // Removed for production
   }
 }

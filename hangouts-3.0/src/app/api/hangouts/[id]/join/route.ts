@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -79,7 +80,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Error joining hangout:', error)
+    logger.error('Error joining hangout:', error);
     return NextResponse.json(
       { error: 'Failed to join hangout' },
       { status: 500 }

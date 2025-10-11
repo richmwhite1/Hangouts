@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { createApiHandler } from '@/lib/api-middleware'
 
+import { logger } from '@/lib/logger'
 // GET /api/groups/[id] - Get group details
 async function getGroupHandler(
   request: NextRequest,
@@ -66,7 +67,7 @@ async function getGroupHandler(
 
     return NextResponse.json({ group })
   } catch (error) {
-    console.error('Error fetching group:', error)
+    logger.error('Error fetching group:', error);
     return NextResponse.json(
       { error: 'Failed to fetch group' },
       { status: 500 }
@@ -145,7 +146,7 @@ async function updateGroupHandler(
 
     return NextResponse.json({ group: updatedGroup })
   } catch (error) {
-    console.error('Error updating group:', error)
+    logger.error('Error updating group:', error);
     return NextResponse.json(
       { error: 'Failed to update group' },
       { status: 500 }
@@ -192,7 +193,7 @@ async function deleteGroupHandler(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting group:', error)
+    logger.error('Error deleting group:', error);
     return NextResponse.json(
       { error: 'Failed to delete group' },
       { status: 500 }

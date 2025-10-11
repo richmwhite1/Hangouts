@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const likeContentSchema = z.object({
   action: z.enum(['like', 'unlike'])
 })
@@ -113,7 +114,7 @@ export async function POST(
     }
 
   } catch (error: any) {
-    console.error('Error liking content:', error)
+    logger.error('Error liking content:', error);
     
     if (error.name === 'ZodError') {
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 })
@@ -158,7 +159,7 @@ export async function GET(
     })
 
   } catch (error: any) {
-    console.error('Error checking like status:', error)
+    logger.error('Error checking like status:', error);
     return NextResponse.json({ 
       error: 'Failed to check like status',
       details: error instanceof Error ? error.message : 'Unknown error'

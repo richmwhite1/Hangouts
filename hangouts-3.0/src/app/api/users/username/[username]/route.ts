@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
   { params }: { params: { username: string } }
@@ -38,7 +39,7 @@ export async function GET(
     return NextResponse.json(createSuccessResponse({ user }, 'User retrieved successfully'))
 
   } catch (error: any) {
-    console.error('Error fetching user by username:', error)
+    logger.error('Error fetching user by username:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch user', error.message), { status: 500 })
   }
 }

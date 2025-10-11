@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/notifications/stats - Get notification statistics
 export async function GET(request: NextRequest) {
   try {
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(createSuccessResponse(stats, 'Notification statistics retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching notification stats:', error)
+    logger.error('Error fetching notification stats:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch notification statistics', error.message), { status: 500 })
   }
 }

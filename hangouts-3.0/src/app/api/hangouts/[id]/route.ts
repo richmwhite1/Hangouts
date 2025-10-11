@@ -3,20 +3,21 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('🔍 Hangout API: GET request received')
+  // console.log('🔍 Hangout API: GET request received'); // Removed for production
   const { id: hangoutId } = await params
-  console.log('🔍 Hangout ID:', hangoutId)
+  // console.log('🔍 Hangout ID:', hangoutId); // Removed for production
   
   // Log memory usage at start of request
   const memoryUsage = process.memoryUsage()
-  console.log(`🧠 Memory usage - Heap: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB, RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB`)
+  // // console.log(`🧠 Memory usage - Heap: ${Math.round(memoryUsage.heapUsed / 1024 / 1024); // Removed for production}MB, RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB`); // Removed for production
   
   if (!hangoutId) {
-    console.log('❌ Hangout ID is required')
+    // console.log('❌ Hangout ID is required'); // Removed for production
     return NextResponse.json(
       { error: 'Hangout ID is required' },
       { status: 400 }
@@ -34,7 +35,7 @@ export async function GET(
   const mainLogic = async (): Promise<NextResponse> => {
     try {
       // First check if hangout exists with a simple query
-      console.log('🔍 Checking if hangout exists...')
+      // console.log('🔍 Checking if hangout exists...'); // Removed for production
       const hangoutExists = await db.content.findUnique({
         where: { 
           id: hangoutId,
@@ -44,7 +45,7 @@ export async function GET(
       })
 
       if (!hangoutExists) {
-        console.log('❌ Hangout not found:', hangoutId)
+        // console.log('❌ Hangout not found:', hangoutId); // Removed for production
         return NextResponse.json(
           { 
             error: 'Hangout not found',
@@ -55,7 +56,7 @@ export async function GET(
         )
       }
 
-      console.log('✅ Hangout exists, fetching basic data...')
+      // console.log('✅ Hangout exists, fetching basic data...'); // Removed for production
       
       // Get hangout with minimal data to reduce memory usage
       const hangout = await db.content.findUnique({
@@ -92,7 +93,7 @@ export async function GET(
       })
 
       if (!hangout) {
-        console.log('❌ Hangout data fetch failed:', hangoutId)
+        // console.log('❌ Hangout data fetch failed:', hangoutId); // Removed for production
         return NextResponse.json(
           { 
             error: 'Hangout data unavailable',
@@ -103,7 +104,7 @@ export async function GET(
         )
       }
       
-      console.log('✅ Hangout found:', hangout.title)
+      // console.log('✅ Hangout found:', hangout.title); // Removed for production
 
       // Get participants and RSVPs
       const participants = await db.content_participants.findMany({
@@ -195,18 +196,18 @@ export async function GET(
       }
 
       // Get poll data for voting information
-      console.log('🔍 Looking for poll with contentId:', hangoutId)
+      // console.log('🔍 Looking for poll with contentId:', hangoutId); // Removed for production
       const poll = await db.polls.findFirst({
         where: { contentId: hangoutId },
         include: {
           votes: true
         }
       })
-      console.log('🔍 Poll found:', poll ? 'Yes' : 'No')
+      // console.log('🔍 Poll found:', poll ? 'Yes' : 'No'); // Removed for production
       if (poll) {
-        console.log('🔍 Poll status:', poll.status)
-        console.log('🔍 Poll options (JSON):', poll.options)
-        console.log('🔍 Poll votes count:', poll.votes?.length || 0)
+        // console.log('🔍 Poll status:', poll.status); // Removed for production
+        // console.log('🔍 Poll options (JSON); // Removed for production:', poll.options)
+        // console.log('🔍 Poll votes count:', poll.votes?.length || 0); // Removed for production
       }
 
       // Determine hangout state based on poll status
@@ -219,7 +220,7 @@ export async function GET(
 
       if (poll) {
         const pollOptions = Array.isArray(poll.options) ? poll.options : []
-        console.log('🔍 Poll options array:', pollOptions)
+        // console.log('🔍 Poll options array:', pollOptions); // Removed for production
         
         if (poll.status === 'ACTIVE' && pollOptions.length > 1) {
           hangoutState = 'polling'
@@ -333,7 +334,7 @@ export async function GET(
       })
 
     } catch (error) {
-      console.error('❌ Hangout API error:', error)
+      logger.error('❌ Hangout API error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       return NextResponse.json(
         { 
@@ -350,7 +351,7 @@ export async function GET(
   try {
     return await Promise.race([mainLogic(), timeoutPromise])
   } catch (error) {
-    console.error('Hangout API timeout or error:', error)
+    logger.error('Hangout API timeout or error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Request timeout or server error', details: errorMessage },
@@ -364,9 +365,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('🔍 Hangout API: PATCH request received')
+    // console.log('🔍 Hangout API: PATCH request received'); // Removed for production
     const { id: hangoutId } = await params
-    console.log('🔍 Hangout ID:', hangoutId)
+    // console.log('🔍 Hangout ID:', hangoutId); // Removed for production
     
     if (!hangoutId) {
       return NextResponse.json(
@@ -377,7 +378,7 @@ export async function PATCH(
 
     // Parse request body
     const data = await request.json()
-    console.log('🔍 PATCH data:', data)
+    // console.log('🔍 PATCH data:', data); // Removed for production
 
     // Get auth token
     const authHeader = request.headers.get('authorization')
@@ -452,7 +453,7 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('❌ Hangout PATCH error:', error)
+    logger.error('❌ Hangout PATCH error:', error);
     return NextResponse.json(
       { error: 'Failed to update hangout' },
       { status: 500 }

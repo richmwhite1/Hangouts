@@ -2,6 +2,7 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { rbac, Permission } from '@/lib/rbac'
+import { logger } from '@/lib/logger'
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
@@ -64,7 +65,7 @@ export function PermissionGate({
         }
         setHasPermission(result)
       } catch (error) {
-        console.error('Error checking permission:', error)
+        logger.error('Error checking permission:', error);
         setHasPermission(false)
       } finally {
         setIsLoading(false)
@@ -110,7 +111,7 @@ export function RoleGate({
         }
         setHasRole(result)
       } catch (error) {
-        console.error('Error checking role:', error)
+        logger.error('Error checking role:', error);
         setHasRole(false)
       } finally {
         setIsLoading(false)
@@ -295,7 +296,7 @@ export function usePermission(permission: Permission): boolean | null {
         const result = await rbac.hasPermission(user.userId, permission)
         setHasPermission(result)
       } catch (error) {
-        console.error('Error checking permission:', error)
+        logger.error('Error checking permission:', error);
         setHasPermission(false)
       } finally {
         setIsLoading(false)
@@ -325,7 +326,7 @@ export function usePermissions(permissions: Permission[], requireAll = false): b
         }
         setHasPermissions(result)
       } catch (error) {
-        console.error('Error checking permissions:', error)
+        logger.error('Error checking permissions:', error);
         setHasPermissions(false)
       } finally {
         setIsLoading(false)
@@ -350,7 +351,7 @@ export function useRole(role: string): boolean | null {
         const userPermissions = await rbac.getUserPermissions(user.userId)
         setHasRole(userPermissions.role === role)
       } catch (error) {
-        console.error('Error checking role:', error)
+        logger.error('Error checking role:', error);
         setHasRole(false)
       } finally {
         setIsLoading(false)

@@ -14,6 +14,7 @@ import { Plus, X, Settings, Users, Clock, Target } from 'lucide-react'
 import { usePolling } from '@/contexts/realtime-context'
 import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
 
+import { logger } from '@/lib/logger'
 interface CreatePollModalProps {
   hangoutId: string
   onPollCreated?: (poll: any) => void
@@ -148,7 +149,7 @@ export function CreatePollModal({ hangoutId, onPollCreated, children }: CreatePo
       setOpen(false)
       onPollCreated?.(result)
     } catch (err) {
-      console.error('Error creating poll:', err)
+      logger.error('Error creating poll:', err);
       setError(err instanceof Error ? err.message : 'Failed to create poll')
     } finally {
       setLoading(false)

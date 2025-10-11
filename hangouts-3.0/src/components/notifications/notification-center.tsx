@@ -20,6 +20,7 @@ import {
   BarChart3
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { logger } from '@/lib/logger'
 interface Notification {
   id: string
   type: string
@@ -61,7 +62,7 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
         }
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error)
+      logger.error('Error fetching notifications:', error);
     } finally {
       setIsLoading(false)
     }
@@ -83,7 +84,7 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
         setUnreadCount(prev => Math.max(0, prev - 1))
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
+      logger.error('Error marking notification as read:', error);
     }
   }
   const markAllAsRead = async () => {
@@ -98,7 +99,7 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
         setUnreadCount(0)
       }
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
+      logger.error('Error marking all notifications as read:', error);
     }
   }
   const dismissNotification = async (notificationId: string) => {
@@ -115,7 +116,7 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
         })
       }
     } catch (error) {
-      console.error('Error dismissing notification:', error)
+      logger.error('Error dismissing notification:', error);
     }
   }
   const getNotificationIcon = (type: string) => {

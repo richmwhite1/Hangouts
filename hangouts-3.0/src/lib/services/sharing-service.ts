@@ -1,5 +1,6 @@
 'use client'
 import { toast } from 'sonner'
+import { logger } from '@/lib/logger'
 export interface ShareData {
   title: string
   description?: string
@@ -71,13 +72,13 @@ export class SharingService {
       await this.copyToClipboard(url, title)
       return true
     } catch (error) {
-      console.error('Share failed:', error)
+      logger.error('Share failed:', error);
       // Fallback: Copy to clipboard
       try {
         await this.copyToClipboard(shareData.url, shareData.title)
         return true
       } catch (fallbackError) {
-        console.error('Fallback share also failed:', fallbackError)
+        logger.error('Fallback share also failed:', fallbackError);
         toast.error('Unable to share. Please copy the link manually.')
         return false
       }
@@ -94,7 +95,7 @@ export class SharingService {
       this.trackShareEvent({ url, type, title: '', privacyLevel: 'PUBLIC' }, 'copy')
       return true
     } catch (error) {
-      console.error('Copy failed:', error)
+      logger.error('Copy failed:', error);
       toast.error('Failed to copy link')
       return false
     }
@@ -131,7 +132,7 @@ export class SharingService {
         return false
       }
     } catch (error) {
-      console.error('Interest toggle failed:', error)
+      logger.error('Interest toggle failed:', error);
       toast.error('Failed to save content')
       return false
     }
@@ -163,14 +164,14 @@ export class SharingService {
    */
   private trackShareEvent(shareData: ShareData, method: 'native' | 'copy'): void {
     // TODO: Implement analytics tracking
-    console.log('Share event:', { shareData, method })
+    // console.log('Share event:', { shareData, method }); // Removed for production
   }
   /**
    * Track interest events for analytics
    */
   private trackInterestEvent(contentId: string, type: string, isSaved: boolean): void {
     // TODO: Implement analytics tracking
-    console.log('Interest event:', { contentId, type, isSaved })
+    // console.log('Interest event:', { contentId, type, isSaved }); // Removed for production
   }
   /**
    * Generate Open Graph meta tags for a page

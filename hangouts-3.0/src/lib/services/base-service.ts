@@ -4,6 +4,7 @@ import { rbac } from '@/lib/rbac'
 import { UserRole, PrivacyLevel } from '@prisma/client'
 import { QueryCacheService, CacheUtils, CacheKeys, CACHE_TTL, CACHE_TAGS } from '@/lib/cache'
 
+import { logger } from '@/lib/logger'
 export interface ServiceContext {
   userId: string
   userRole: UserRole
@@ -53,7 +54,7 @@ export abstract class BaseService {
     try {
       return await this.rbac.hasPermission(this.context.userId, permission as any)
     } catch (error) {
-      console.error('Permission check failed:', error)
+      logger.error('Permission check failed:', error);
       return false
     }
   }
@@ -65,7 +66,7 @@ export abstract class BaseService {
     try {
       return await this.rbac.hasAnyPermission(this.context.userId, permissions as any[])
     } catch (error) {
-      console.error('Permission check failed:', error)
+      logger.error('Permission check failed:', error);
       return false
     }
   }
@@ -90,7 +91,7 @@ export abstract class BaseService {
         details
       )
     } catch (error) {
-      console.error('Failed to log data access:', error)
+      logger.error('Failed to log data access:', error);
     }
   }
 
@@ -116,7 +117,7 @@ export abstract class BaseService {
         this.context.userAgent
       )
     } catch (error) {
-      console.error('Failed to log action:', error)
+      logger.error('Failed to log action:', error);
     }
   }
 
@@ -223,7 +224,7 @@ export abstract class BaseService {
    * Handle service errors consistently
    */
   protected handleError(error: any, operation: string): ServiceResult<never> {
-    console.error(`${operation} error:`, error)
+    logger.error(`${operation} error:`, error);
     
     if (error instanceof Error) {
       return this.createErrorResult(
@@ -255,7 +256,7 @@ export abstract class BaseService {
       )
       return access.granted
     } catch (error) {
-      console.error('Resource access check failed:', error)
+      logger.error('Resource access check failed:', error);
       return false
     }
   }
@@ -278,7 +279,7 @@ export abstract class BaseService {
         f.user1Id === userId ? f.user2Id : f.user1Id
       )
     } catch (error) {
-      console.error('Failed to get user friends:', error)
+      logger.error('Failed to get user friends:', error);
       return []
     }
   }
@@ -299,7 +300,7 @@ export abstract class BaseService {
 
       return !!friendship
     } catch (error) {
-      console.error('Failed to check friendship:', error)
+      logger.error('Failed to check friendship:', error);
       return false
     }
   }

@@ -6,6 +6,7 @@ import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/avatar - Upload conversation avatar
 export async function POST(
   request: NextRequest,
@@ -52,38 +53,38 @@ export async function POST(
     }
     // Create uploads directory if it doesn't exist
     const uploadsDir = join(process.cwd(), 'public', 'uploads', 'conversations')
-    console.log('Creating uploads directory:', uploadsDir)
+    // console.log('Creating uploads directory:', uploadsDir); // Removed for production
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
-      console.log('Directory created successfully')
+      // console.log('Directory created successfully'); // Removed for production
     } else {
-      console.log('Directory already exists')
+      // console.log('Directory already exists'); // Removed for production
     }
     // Generate unique filename
     const fileExtension = photo.name.split('.').pop() || 'jpg'
     const fileName = `${params.id}-${Date.now()}.${fileExtension}`
     const filePath = join(uploadsDir, fileName)
     // Convert file to buffer and save
-    console.log('Saving file to:', filePath)
+    // console.log('Saving file to:', filePath); // Removed for production
     const bytes = await photo.arrayBuffer()
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
-    console.log('File saved successfully')
+    // console.log('File saved successfully'); // Removed for production
     // Update conversation with avatar URL
     const avatarUrl = `/uploads/conversations/${fileName}`
-    console.log('Updating conversation with avatar URL:', avatarUrl)
+    // console.log('Updating conversation with avatar URL:', avatarUrl); // Removed for production
     const updatedConversation = await db.conversation.update({
       where: { id: params.id },
       data: {
         avatar: avatarUrl
       }
     })
-    console.log('Conversation updated successfully:', updatedConversation.avatar)
+    // console.log('Conversation updated successfully:', updatedConversation.avatar); // Removed for production
     return NextResponse.json(createSuccessResponse({
       avatar: avatarUrl
     }, 'Avatar uploaded successfully'))
   } catch (error) {
-    console.error('Error uploading avatar:', error)
+    logger.error('Error uploading avatar:', error);
     return NextResponse.json(createErrorResponse('Failed to upload avatar', error.message), { status: 500 })
   }
 }

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { sharingService, ShareData } from '@/lib/services/sharing-service'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface TileActionsProps {
   itemId: string
   itemType: 'event' | 'hangout' | 'content'
@@ -61,7 +62,7 @@ export function TileActions({
         }
       }
     } catch (error) {
-      console.error('Error saving content:', error)
+      logger.error('Error saving content:', error);
     }
   }
 
@@ -98,7 +99,7 @@ export function TileActions({
         customMessage: `Check out this ${itemType}!`
       })
     } catch (error) {
-      console.error('Share failed:', error)
+      logger.error('Share failed:', error);
     }
   }
 
@@ -113,7 +114,7 @@ export function TileActions({
     try {
       await sharingService.copyLink(itemId, itemType)
     } catch (error) {
-      console.error('Copy link failed:', error)
+      logger.error('Copy link failed:', error);
     }
   }
 

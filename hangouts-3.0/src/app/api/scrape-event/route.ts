@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { parse } from 'node-html-parser'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
     }
 
-    console.log('🔍 Scraping URL:', url)
+    // console.log('🔍 Scraping URL:', url); // Removed for production
 
     // Use fetch instead of Puppeteer for better production compatibility
     const response = await fetch(url, {
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       tags: []
     }
 
-    console.log('✅ Scraped data:', scrapedData)
+    // console.log('✅ Scraped data:', scrapedData); // Removed for production
 
     return NextResponse.json({
       success: true,
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Scraping error:', error)
+    logger.error('❌ Scraping error:', error);
     return NextResponse.json(
       { error: 'Failed to scrape URL', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

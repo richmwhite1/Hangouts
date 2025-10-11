@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const feedType = searchParams.get('type') || 'home'
@@ -19,13 +20,13 @@ export async function GET(request: NextRequest) {
     const clerkUser = await getClerkApiUser()
     if (clerkUser) {
       userId = clerkUser.id
-      console.log('Simple Feed API: Using Clerk user ID:', userId)
+      // console.log('Simple Feed API: Using Clerk user ID:', userId); // Removed for production
     }
   }
   
   // For unauthenticated users, return empty feed
   if (!userId) {
-    console.log('Simple Feed API: No authenticated user, returning empty feed')
+    // console.log('Simple Feed API: No authenticated user, returning empty feed'); // Removed for production
     return NextResponse.json({ 
       success: true,
       data: { 
@@ -36,10 +37,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('Simple Feed API: Starting request processing')
-    console.log('Simple Feed API: User ID:', userId)
-    console.log('Simple Feed API: Feed type:', feedType)
-    console.log('Simple Feed API: Content type:', contentType)
+    // console.log('Simple Feed API: Starting request processing'); // Removed for production
+    // console.log('Simple Feed API: User ID:', userId); // Removed for production
+    // console.log('Simple Feed API: Feed type:', feedType); // Removed for production
+    // console.log('Simple Feed API: Content type:', contentType); // Removed for production
 
     // Build where clause based on feed type
     let whereClause: any = {
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
             }
           }
         ]
-        console.log('Simple Feed API: Using OR filter for user:', userId)
+        // console.log('Simple Feed API: Using OR filter for user:', userId); // Removed for production
       } else {
         // If no user, show nothing for home feed
         whereClause.id = 'nonexistent'
@@ -132,16 +133,16 @@ export async function GET(request: NextRequest) {
           }
         ]
       }
-      console.log('Simple Feed API: Using comprehensive where clause for home feed')
+      // console.log('Simple Feed API: Using comprehensive where clause for home feed'); // Removed for production
     }
 
-    console.log('Simple Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2))
+    // console.log('Simple Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2); // Removed for production)
     
     // Test the where clause step by step
-    console.log('Simple Feed API: Testing where clause components...')
-    console.log('  - status:', whereClause.status)
-    console.log('  - type:', whereClause.type)
-    console.log('  - OR clause:', whereClause.OR ? whereClause.OR.length : 'none')
+    // console.log('Simple Feed API: Testing where clause components...'); // Removed for production
+    // console.log('  - status:', whereClause.status); // Removed for production
+    // console.log('  - type:', whereClause.type); // Removed for production
+    // console.log('  - OR clause:', whereClause.OR ? whereClause.OR.length : 'none'); // Removed for production
 
     // Simple query with minimal fields
     const content = await db.content.findMany({
@@ -186,8 +187,8 @@ export async function GET(request: NextRequest) {
       take: limit,
       skip: offset})
 
-    console.log('Simple Feed API: Raw content found:', content.length, 'items')
-    console.log('Simple Feed API: First content item:', content[0] ? { id: content[0].id, title: content[0].title } : 'None')
+    // console.log('Simple Feed API: Raw content found:', content.length, 'items'); // Removed for production
+    // console.log('Simple Feed API: First content item:', content[0] ? { id: content[0].id, title: content[0].title } : 'None'); // Removed for production
 
     // Simple transformation
     const transformedContent = content.map(item => ({
@@ -228,7 +229,7 @@ export async function GET(request: NextRequest) {
       }
     }))
 
-    console.log('Simple Feed API: Transformed content:', transformedContent.length, 'items')
+    // console.log('Simple Feed API: Transformed content:', transformedContent.length, 'items'); // Removed for production
 
     return NextResponse.json({ 
       success: true,
@@ -243,10 +244,10 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Simple Feed API: Database error:', error)
+    logger.error('Simple Feed API: Database error:', error);
     if (error instanceof Error) {
-      console.error('Simple Feed API: Error stack:', error.stack)
-      console.error('Simple Feed API: Error message:', error.message)
+      logger.error('Simple Feed API: Error stack:', error.stack);
+      logger.error('Simple Feed API: Error message:', error.message);
     }
     return NextResponse.json({ 
       success: false, 

@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { WebSocketProvider } from '@/contexts/websocket-context'
 import { BottomNavigation } from '@/components/bottom-navigation'
+import { GlobalErrorBoundary } from '@/components/global-error-boundary'
 import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -26,15 +27,17 @@ export default function RootLayout({
     return (
       <html lang="en">
         <body className={inter.className}>
-          <AuthProvider>
-            <div className="min-h-screen bg-background text-foreground dark">
-              <main className="container mx-auto px-4 py-6 max-w-4xl">
-                {children}
-              </main>
-              <BottomNavigation />
-            </div>
-          </AuthProvider>
-          <Toaster position="top-right" richColors />
+          <GlobalErrorBoundary>
+            <AuthProvider>
+              <div className="min-h-screen bg-background text-foreground dark">
+                <main className="container mx-auto px-4 py-6 max-w-4xl">
+                  {children}
+                </main>
+                <BottomNavigation />
+              </div>
+            </AuthProvider>
+            <Toaster position="top-right" richColors />
+          </GlobalErrorBoundary>
         </body>
       </html>
     )
@@ -44,20 +47,22 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={inter.className}>
-          <AuthProvider>
-            <RealtimeProvider>
-              <WebSocketProvider>
-                <div className="min-h-screen bg-background text-foreground dark">
-                  {/* Navigation is handled by individual pages */}
-                  <main className="container mx-auto px-4 py-6 max-w-4xl">
-                    {children}
-                  </main>
-                  <BottomNavigation />
-                </div>
-                <Toaster position="top-right" richColors />
-              </WebSocketProvider>
-            </RealtimeProvider>
-          </AuthProvider>
+          <GlobalErrorBoundary>
+            <AuthProvider>
+              <RealtimeProvider>
+                <WebSocketProvider>
+                  <div className="min-h-screen bg-background text-foreground dark">
+                    {/* Navigation is handled by individual pages */}
+                    <main className="container mx-auto px-4 py-6 max-w-4xl">
+                      {children}
+                    </main>
+                    <BottomNavigation />
+                  </div>
+                  <Toaster position="top-right" richColors />
+                </WebSocketProvider>
+              </RealtimeProvider>
+            </AuthProvider>
+          </GlobalErrorBoundary>
         </body>
       </html>
     </ClerkProvider>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 // Removed api-client import - using direct fetch calls
 import { useAuth } from '@clerk/nextjs'
 
+import { logger } from '@/lib/logger'
 interface UserProfile {
   id: string
   name: string
@@ -111,7 +112,7 @@ export function useProfile() {
               : data.data.profile.favoriteActivities
           }
         } catch (e) {
-          console.warn('Failed to parse favoriteActivities:', e)
+          logger.warn('Failed to parse favoriteActivities:', e);
         }
         
         try {
@@ -121,7 +122,7 @@ export function useProfile() {
               : data.data.profile.favoritePlaces
           }
         } catch (e) {
-          console.warn('Failed to parse favoritePlaces:', e)
+          logger.warn('Failed to parse favoritePlaces:', e);
         }
 
         // Use the profile data from the API
@@ -147,7 +148,7 @@ export function useProfile() {
         setUserHangouts(data.data.hangouts || [])
         
       } catch (error) {
-        console.error('Profile fetch error:', error)
+        logger.error('Profile fetch error:', error);
         setError('Failed to load profile')
       } finally {
         setIsLoading(false)
@@ -197,7 +198,7 @@ export function useProfile() {
             : data.data.profile.favoriteActivities
         }
       } catch (e) {
-        console.warn('Failed to parse favoriteActivities:', e)
+        logger.warn('Failed to parse favoriteActivities:', e);
       }
       
       try {
@@ -207,7 +208,7 @@ export function useProfile() {
             : data.data.profile.favoritePlaces
         }
       } catch (e) {
-        console.warn('Failed to parse favoritePlaces:', e)
+        logger.warn('Failed to parse favoritePlaces:', e);
       }
 
       // Use the profile data from the API
@@ -233,7 +234,7 @@ export function useProfile() {
       setUserHangouts(data.data.hangouts || [])
       
     } catch (error) {
-      console.error('Profile refetch error:', error)
+      logger.error('Profile refetch error:', error);
       setError('Failed to load profile')
     } finally {
       setIsLoading(false)

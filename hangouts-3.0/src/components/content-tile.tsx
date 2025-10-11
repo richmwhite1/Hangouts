@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { BaseContent, ContentType } from '@/types/content'
 
+import { logger } from '@/lib/logger'
 interface ContentTileProps {
   content: BaseContent
   index: number
@@ -117,10 +118,10 @@ export function ContentTile({
         setIsLiked(data.liked)
         onLike?.(content.id)
       } else {
-        console.error('Failed to like content')
+        logger.error('Failed to like content');
       }
     } catch (error) {
-      console.error('Error liking content:', error)
+      logger.error('Error liking content:', error);
     }
   }
 

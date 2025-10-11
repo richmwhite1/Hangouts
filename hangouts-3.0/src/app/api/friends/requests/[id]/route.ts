@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { createFriendAcceptedNotification } from '@/lib/notifications'
 
+import { logger } from '@/lib/logger'
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -133,7 +134,7 @@ export async function PUT(
 
     return NextResponse.json(updatedRequest)
   } catch (error) {
-    console.error('Update friend request error:', error)
+    logger.error('Update friend request error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -193,7 +194,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Delete friend request error:', error)
+    logger.error('Delete friend request error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

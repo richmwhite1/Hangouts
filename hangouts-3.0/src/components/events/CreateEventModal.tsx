@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 
+import { logger } from '@/lib/logger'
 interface EventFormData {
   // Step 1: Basic Information
   title: string
@@ -275,7 +276,7 @@ export function CreateEventModal() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ Event created:', result.event)
+        // console.log('✅ Event created:', result.event); // Removed for production
         setIsOpen(false)
         setCurrentStep(1)
         setFormData({
@@ -310,11 +311,11 @@ export function CreateEventModal() {
         window.location.reload()
       } else {
         const error = await response.json()
-        console.error('❌ Event creation failed:', error)
+        logger.error('❌ Event creation failed:', error);
         alert('Failed to create event: ' + (error.error || 'Unknown error'))
       }
     } catch (error) {
-      console.error('❌ Event creation error:', error)
+      logger.error('❌ Event creation error:', error);
       alert('Failed to create event')
     } finally {
       setIsLoading(false)

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 
+import { logger } from '@/lib/logger'
 export async function GET() {
   try {
-    console.log('🏥 Health check requested')
+    // console.log('🏥 Health check requested'); // Removed for production
     
     // Simple health check for Railway
     const healthData = {
@@ -14,7 +15,7 @@ export async function GET() {
       version: process.version
     }
     
-    console.log('✅ Health check response:', healthData)
+    // console.log('✅ Health check response:', healthData); // Removed for production
     
     return NextResponse.json(healthData, {
       status: 200,
@@ -27,7 +28,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('❌ Health check failed:', error)
+    logger.error('❌ Health check failed:', error);
     
     return NextResponse.json({
       status: 'error',

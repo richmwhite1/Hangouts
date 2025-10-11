@@ -14,6 +14,7 @@ import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { EventSelectionModal } from '@/components/ui/event-selection-modal'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface NewHangoutFormProps {
   onSubmit: (data: NewHangoutFormData) => void
   isLoading?: boolean
@@ -119,7 +120,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         if (friendsResponse.ok) {
           const friendsData = await friendsResponse.json()
           const friends = friendsData.friends || []
-          console.log('Friends fetched:', friends.length, friends)
+          // console.log('Friends fetched:', friends.length, friends); // Removed for production
           // Transform friends to match expected format
           const transformedFriends = friends.map((friendship: any) => ({
             id: friendship.friend.id,
@@ -132,10 +133,10 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           setAllFriends(transformedFriends)
           setRecentFriends(transformedFriends.slice(0, 10)) // Show 10 most recent
         } else {
-          console.error('Friends fetch failed:', friendsResponse.status)
+          logger.error('Friends fetch failed:', friendsResponse.status);
         }
       } catch (error) {
-        console.error('Error fetching friends:', error)
+        logger.error('Error fetching friends:', error);
       } finally {
         setIsLoadingFriends(false)
       }
@@ -385,7 +386,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 const resizedFile = await resizeImage(file)
                 handleInputChange('image', resizedFile)
               } catch (error) {
-                console.error('Error resizing image:', error)
+                logger.error('Error resizing image:', error);
                 handleInputChange('image', file) // Fallback to original file
               }
             }

@@ -10,6 +10,7 @@ import Link from "next/link"
 import { ActionIndicators, ActionDot } from "./hangout/action-indicators"
 import { TileActions } from "./ui/tile-actions"
 
+import { logger } from '@/lib/logger'
 interface Hangout {
   id: string
   title: string
@@ -166,7 +167,7 @@ export function StackedHangoutTile({
                 e.preventDefault()
                 e.stopPropagation()
                 // TODO: Navigate to chat
-                console.log('Open chat for hangout:', hangout.id)
+                // console.log('Open chat for hangout:', hangout.id); // Removed for production
               }}
             >
               <MessageSquare className="h-4 w-4" />
@@ -179,7 +180,7 @@ export function StackedHangoutTile({
                 e.preventDefault()
                 e.stopPropagation()
                 // TODO: Handle RSVP
-                console.log('RSVP to hangout:', hangout.id)
+                // console.log('RSVP to hangout:', hangout.id); // Removed for production
               }}
             >
               <Users className="h-4 w-4" />
@@ -259,10 +260,10 @@ export function StackedHangoutTile({
                   itemImage={hangout.image || ''}
                   privacyLevel={hangout.privacyLevel || 'PUBLIC'}
                   onSave={(id, type) => {
-                    console.log('Save hangout:', id, type)
+                    // console.log('Save hangout:', id, type); // Removed for production
                   }}
                   onUnsave={(id, type) => {
-                    console.log('Unsave hangout:', id, type)
+                    // console.log('Unsave hangout:', id, type); // Removed for production
                   }}
                 />
               </div>

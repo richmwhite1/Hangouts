@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { CheckCircle, Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { logger } from '@/lib/logger'
 interface Task {
   id: string
   text: string
@@ -48,7 +49,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
         }
       }
     } catch (error) {
-      console.error('Error fetching tasks:', error)
+      logger.error('Error fetching tasks:', error);
     } finally {
       setIsLoading(false)
     }
@@ -83,7 +84,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
         }
       }
     } catch (error) {
-      console.error('Error adding task:', error)
+      logger.error('Error adding task:', error);
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +107,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
         }
       }
     } catch (error) {
-      console.error('Error toggling task assignment:', error)
+      logger.error('Error toggling task assignment:', error);
     }
   }
   const deleteTask = (taskId: string) => {

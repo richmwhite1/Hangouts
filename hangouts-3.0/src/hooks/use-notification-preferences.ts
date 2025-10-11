@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { logger } from '@/lib/logger'
 interface NotificationPreferences {
   id: string
   userId: string
@@ -39,7 +40,7 @@ export function useNotificationPreferences() {
         throw new Error(data.error || 'Failed to fetch preferences')
       }
     } catch (err) {
-      console.error('Error fetching notification preferences:', err)
+      logger.error('Error fetching notification preferences:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch preferences')
     } finally {
       setIsLoading(false)
@@ -65,7 +66,7 @@ export function useNotificationPreferences() {
         throw new Error(data.error || 'Failed to update preferences')
       }
     } catch (err) {
-      console.error('Error updating notification preferences:', err)
+      logger.error('Error updating notification preferences:', err);
       setError(err instanceof Error ? err.message : 'Failed to update preferences')
       return false
     } finally {

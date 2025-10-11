@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { logger } from '@/lib/logger'
 interface UnreadCount {
   conversationId: string
   unreadCount: number
@@ -35,7 +36,7 @@ export function useUnreadCounts() {
         throw new Error(data.error || 'Failed to fetch unread counts')
       }
     } catch (err) {
-      console.error('Error fetching unread counts:', err)
+      logger.error('Error fetching unread counts:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch unread counts')
     } finally {
       setIsLoading(false)
@@ -65,7 +66,7 @@ export function useUnreadCounts() {
         })
       }
     } catch (err) {
-      console.error('Error marking conversation as read:', err)
+      logger.error('Error marking conversation as read:', err);
     }
   }, [])
   const getUnreadCount = useCallback((conversationId: string) => {

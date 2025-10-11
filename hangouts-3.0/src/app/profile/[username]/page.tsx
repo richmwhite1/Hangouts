@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+import { logger } from '@/lib/logger'
 interface ProfileStats {
   friendsCount: number
   hostedHangoutsCount: number
@@ -127,7 +128,7 @@ export default function ProfilePage() {
       }
 
     } catch (error) {
-      console.error('Error fetching profile data:', error)
+      logger.error('Error fetching profile data:', error);
       setError('Failed to load profile')
     } finally {
       setLoading(false)
@@ -156,7 +157,7 @@ export default function ProfilePage() {
         setFriendRequestSent(true)
       }
     } catch (error) {
-      console.error('Error handling friend request:', error)
+      logger.error('Error handling friend request:', error);
     }
   }
 
@@ -192,11 +193,11 @@ export default function ProfilePage() {
                 itemType="hangout"
                 onSave={(id, type) => {
                   // TODO: Implement save functionality
-                  console.log('Save hangout:', id, type)
+                  // console.log('Save hangout:', id, type); // Removed for production
                 }}
                 onUnsave={(id, type) => {
                   // TODO: Implement unsave functionality
-                  console.log('Unsave hangout:', id, type)
+                  // console.log('Unsave hangout:', id, type); // Removed for production
                 }}
               />
             </div>
@@ -242,11 +243,11 @@ export default function ProfilePage() {
                 itemType="event"
                 onSave={(id, type) => {
                   // TODO: Implement save functionality
-                  console.log('Save event:', id, type)
+                  // console.log('Save event:', id, type); // Removed for production
                 }}
                 onUnsave={(id, type) => {
                   // TODO: Implement unsave functionality
-                  console.log('Unsave event:', id, type)
+                  // console.log('Unsave event:', id, type); // Removed for production
                 }}
               />
             </div>

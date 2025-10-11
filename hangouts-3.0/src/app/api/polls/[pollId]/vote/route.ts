@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const VoteSchema = z.object({
   optionId: z.string().min(1),
   voteType: z.enum(['SINGLE', 'MULTIPLE', 'RANKED', 'SCORED', 'QUADRATIC', 'DELEGATED']).default('SINGLE'),
@@ -206,7 +207,7 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
-    console.error('Error casting vote:', error)
+    logger.error('Error casting vote:', error);
     return NextResponse.json({ error: 'Failed to cast vote' }, { status: 500 })
   }
 }
@@ -355,7 +356,7 @@ export async function PUT(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
-    console.error('Error changing vote:', error)
+    logger.error('Error changing vote:', error);
     return NextResponse.json({ error: 'Failed to change vote' }, { status: 500 })
   }
 }
@@ -474,7 +475,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Vote deleted successfully' })
   } catch (error) {
-    console.error('Error deleting vote:', error)
+    logger.error('Error deleting vote:', error);
     return NextResponse.json({ error: 'Failed to delete vote' }, { status: 500 })
   }
 }

@@ -5,6 +5,7 @@ import { db } from './db'
 import { rbac, Permission } from './rbac'
 import { auditLogger } from './audit-logger'
 
+import { logger } from '@/lib/logger'
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
@@ -154,12 +155,12 @@ async function withAuth(
   }
 
   try {
-    console.log('Auth middleware: Getting auth user')
+    // console.log('Auth middleware: Getting auth user'); // Removed for production
     const user = await getAuthUser()
-    console.log('Auth middleware: User:', user)
+    // console.log('Auth middleware: User:', user); // Removed for production
     
     if (!user) {
-      console.log('Auth middleware: No authenticated user')
+      // console.log('Auth middleware: No authenticated user'); // Removed for production
       return {
         response: createErrorResponse(
           'Authentication required',
@@ -170,10 +171,10 @@ async function withAuth(
       }
     }
 
-    console.log('Auth middleware: User authenticated:', user)
+    // console.log('Auth middleware: User authenticated:', user); // Removed for production
     return { response: null, user }
   } catch (error) {
-    console.error('Auth middleware: Error:', error)
+    logger.error('Auth middleware: Error:', error);
     return {
       response: createErrorResponse(
         'Authentication error',
@@ -225,7 +226,7 @@ async function withAuthorization(
 
     return { response: null }
   } catch (error) {
-    console.error('Authorization middleware error:', error)
+    logger.error('Authorization middleware error:', error);
     return {
       response: createErrorResponse(
         'Authorization failed',
@@ -299,8 +300,8 @@ function withCORS(
 
   // In production, check against allowed origins
   if (origin && !allowedOrigins.includes(origin)) {
-    console.log('CORS Error: Origin not allowed:', origin)
-    console.log('Allowed origins:', allowedOrigins)
+    // console.log('CORS Error: Origin not allowed:', origin); // Removed for production
+    // console.log('Allowed origins:', allowedOrigins); // Removed for production
     return createErrorResponse(
       'CORS error',
       'Origin not allowed',
@@ -330,7 +331,7 @@ async function withLogging(
     timestamp: new Date().toISOString()
   }
 
-  console.log('API Request:', JSON.stringify(logData, null, 2))
+  // console.log('API Request:', JSON.stringify(logData, null, 2); // Removed for production)
 }
 
 // ============================================================================
@@ -345,28 +346,28 @@ export function createApiHandler<T = unknown>(
     const requestId = generateRequestId()
     
     try {
-      console.log('createApiHandler: Starting request processing')
+      // console.log('createApiHandler: Starting request processing'); // Removed for production
       
       // Handle CORS
       const corsResponse = withCORS(request, config)
       if (corsResponse) {
-        console.log('createApiHandler: CORS response returned')
+        // console.log('createApiHandler: CORS response returned'); // Removed for production
         return corsResponse as NextResponse<ApiResponse<T>>
       }
 
       // Handle rate limiting
       const rateLimitResponse = await withRateLimit(request, config)
       if (rateLimitResponse) {
-        console.log('createApiHandler: Rate limit response returned')
+        // console.log('createApiHandler: Rate limit response returned'); // Removed for production
         return rateLimitResponse as NextResponse<ApiResponse<T>>
       }
 
       // Handle authentication
-      console.log('createApiHandler: Calling withAuth')
+      // console.log('createApiHandler: Calling withAuth'); // Removed for production
       const { response: authResponse, user } = await withAuth(request, config)
-      console.log('createApiHandler: Auth result:', { authResponse: !!authResponse, user: !!user, userType: typeof user })
+      // console.log('createApiHandler: Auth result:', { authResponse: !!authResponse, user: !!user, userType: typeof user }); // Removed for production
       if (authResponse) {
-        console.log('createApiHandler: Auth response returned')
+        // console.log('createApiHandler: Auth response returned'); // Removed for production
         return authResponse as NextResponse<ApiResponse<T>>
       }
 
@@ -412,7 +413,7 @@ export function createApiHandler<T = unknown>(
       return response
 
     } catch (error) {
-      console.error('API Handler Error:', error)
+      logger.error('API Handler Error:', error);
       
       const errorResponse = createErrorResponse(
         'Internal server error',

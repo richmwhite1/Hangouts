@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useAuth } from './auth-context'
+import { logger } from '@/lib/logger'
 interface WebSocketContextType {
   socket: Socket | null
   isConnected: boolean
@@ -22,10 +23,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const typingTimeouts = useRef<{ [conversationId: string]: NodeJS.Timeout }>({})
   useEffect(() => {
-    // Temporarily disable WebSocket connections due to Railway deployment issues
-    console.log('🔌 WebSocket connection disabled for Railway deployment')
-    return
-    if (isAuthenticated ) {
+    if (isAuthenticated && user?.id) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
         auth: {
           userId: user?.id
@@ -38,11 +36,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         reconnectionAttempts: 5
       })
       newSocket.on('connect', () => {
-        console.log('WebSocket connected')
+        // console.log('🔌 WebSocket connected'); // Removed for production
         setIsConnected(true)
+        // Authenticate with the server
+        newSocket.emit('authenticate', { userId: user?.id })
       })
       newSocket.on('disconnect', () => {
-        console.log('WebSocket disconnected')
+        // console.log('🔌 WebSocket disconnected'); // Removed for production
         setIsConnected(false)
       })
       newSocket.on('typing:start', (data) => {
@@ -62,11 +62,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       })
       newSocket.on('message:new', (data) => {
         // Handle new message - this will be handled by individual components
-        console.log('New message received:', data)
+        // console.log('New message received:', data); // Removed for production
       })
       newSocket.on('message:reaction', (data) => {
         // Handle message reaction - this will be handled by individual components
-        console.log('Message reaction received:', data)
+        // console.log('Message reaction received:', data); // Removed for production
       })
       newSocket.on('presence:online', (data) => {
         setOnlineUsers(prev => [...new Set([...prev, data.userId])])
@@ -80,12 +80,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       if (socket) {
-        socket!.close()
+        socket.disconnect()
         setSocket(null)
         setIsConnected(false)
       }
     }
-  }, [isAuthenticated])
+
+    return () => {
+      if (socket) {
+        socket.disconnect()
+      }
+    }
+  }, [isAuthenticated, user?.id])
   const sendTypingIndicator = (conversationId: string, isTyping: boolean) => {
     if (!socket || !isConnected) return
     if (isTyping) {

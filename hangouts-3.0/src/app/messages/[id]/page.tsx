@@ -45,6 +45,7 @@ import { useWebSocket } from "@/contexts/websocket-context"
 import { User } from "@/types/api"
 import Link from "next/link"
 
+import { logger } from '@/lib/logger'
 interface Message {
   id: string
   content: string
@@ -229,11 +230,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Fetched conversation data:', data)
+        // console.log('Fetched conversation data:', data); // Removed for production
         setConversation(data.data.conversation)
       }
     } catch (error) {
-      console.error('Error fetching conversation:', error)
+      logger.error('Error fetching conversation:', error);
     }
   }
 
@@ -246,7 +247,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setMessages(data.data.messages || [])
       }
     } catch (error) {
-      console.error('Error fetching messages:', error)
+      logger.error('Error fetching messages:', error);
     } finally {
       setIsLoading(false)
     }
@@ -288,7 +289,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         scrollToBottom()
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message:', error);
     }
   }
 
@@ -328,7 +329,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         body: JSON.stringify({ isTyping: typing })
       })
     } catch (error) {
-      console.error('Error sending typing indicator:', error)
+      logger.error('Error sending typing indicator:', error);
     }
   }
 
@@ -350,7 +351,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         await fetchMessages()
       }
     } catch (error) {
-      console.error('Error adding reaction:', error)
+      logger.error('Error adding reaction:', error);
     }
   }
 
@@ -367,7 +368,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         await fetchMessages()
       }
     } catch (error) {
-      console.error('Error editing message:', error)
+      logger.error('Error editing message:', error);
     }
   }
 
@@ -380,7 +381,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         await fetchMessages()
       }
     } catch (error) {
-      console.error('Error deleting message:', error)
+      logger.error('Error deleting message:', error);
     }
   }
 
@@ -425,7 +426,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setSearchResults(data.data.results)
       }
     } catch (error) {
-      console.error('Error searching messages:', error)
+      logger.error('Error searching messages:', error);
     } finally {
       setIsSearching(false)
     }
@@ -436,7 +437,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       await fetch(`/api/conversations/${resolvedParams.id}/messages/${messageId}/read`, {
         method: 'POST' })
     } catch (error) {
-      console.error('Error marking message as read:', error)
+      logger.error('Error marking message as read:', error);
     }
   }
 
@@ -450,7 +451,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         })
       })
     } catch (error) {
-      console.error('Error marking all as read:', error)
+      logger.error('Error marking all as read:', error);
     }
   }
 
@@ -471,7 +472,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setShowExportMenu(false)
       }
     } catch (error) {
-      console.error('Error exporting conversation:', error)
+      logger.error('Error exporting conversation:', error);
     }
   }
 
@@ -491,7 +492,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setAvailableFriends(available)
       }
     } catch (error) {
-      console.error('Error loading friends:', error)
+      logger.error('Error loading friends:', error);
     } finally {
       setIsLoadingFriends(false)
     }
@@ -518,10 +519,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setSelectedFriends([])
       } else {
         const errorData = await response.json()
-        console.error('Error adding participants:', errorData)
+        logger.error('Error adding participants:', errorData);
       }
     } catch (error) {
-      console.error('Error adding participants:', error)
+      logger.error('Error adding participants:', error);
     } finally {
       setIsAddingParticipants(false)
     }
@@ -553,7 +554,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setIsEditingGroupName(false)
       }
     } catch (error) {
-      console.error('Error updating group name:', error)
+      logger.error('Error updating group name:', error);
     }
   }
 
@@ -587,15 +588,15 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
       if (response.ok) {
         const result = await response.json()
-        console.log('Avatar upload successful:', result)
+        // console.log('Avatar upload successful:', result); // Removed for production
         await fetchConversation()
       } else {
         const error = await response.json()
-        console.error('Avatar upload failed:', error)
+        logger.error('Avatar upload failed:', error);
         alert('Failed to upload photo')
       }
     } catch (error) {
-      console.error('Error uploading photo:', error)
+      logger.error('Error uploading photo:', error);
       alert('Error uploading photo')
     } finally {
       setIsUploadingPhoto(false)

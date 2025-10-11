@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 
+import { logger } from '@/lib/logger'
 interface PhotoModeration {
   id: string
   photoId: string
@@ -98,7 +99,7 @@ export default function PhotoModerationPage() {
         setPhotos(data.data)
       }
     } catch (error) {
-      console.error('Error fetching photos:', error)
+      logger.error('Error fetching photos:', error);
     } finally {
       setLoading(false)
     }
@@ -113,7 +114,7 @@ export default function PhotoModerationPage() {
         setModerationHistory(data.data.moderations)
       }
     } catch (error) {
-      console.error('Error fetching moderation history:', error)
+      logger.error('Error fetching moderation history:', error);
     }
   }
 
@@ -147,7 +148,7 @@ export default function PhotoModerationPage() {
         alert(data.error || 'Failed to moderate photo')
       }
     } catch (error) {
-      console.error('Error moderating photo:', error)
+      logger.error('Error moderating photo:', error);
       alert('Failed to moderate photo')
     } finally {
       setSubmitting(false)

@@ -15,6 +15,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
+import { logger } from '@/lib/logger'
 import {
   Calendar,
   MapPin,
@@ -227,14 +228,14 @@ export function ImprovedCreateEventModal() {
         }))
         
         // Show success message
-        console.log('Event data scraped successfully')
+        // console.log('Event data scraped successfully'); // Removed for production
       } else {
-        console.error('Failed to scrape URL')
+        logger.error('Failed to scrape URL');
         // Show error message to user
         alert('Failed to scrape event data from URL. Please fill in the details manually.')
       }
     } catch (error) {
-      console.error('Error scraping URL:', error)
+      logger.error('Error scraping URL:', error);
       // Show error message to user
       alert('Error scraping event data. Please fill in the details manually.')
     } finally {
@@ -257,7 +258,7 @@ export function ImprovedCreateEventModal() {
         setShowLocationResults(true)
       }
     } catch (error) {
-      console.error('Error searching locations:', error)
+      logger.error('Error searching locations:', error);
       setLocationResults([])
     } finally {
       setIsSearchingLocation(false)
@@ -348,7 +349,7 @@ export function ImprovedCreateEventModal() {
       })
       if (response.ok) {
         const result = await response.json()
-        console.log('Event created successfully:', result)
+        // console.log('Event created successfully:', result); // Removed for production
         setIsOpen(false)
         // Reset form
         setFormData({
@@ -382,10 +383,10 @@ export function ImprovedCreateEventModal() {
         })
       } else {
         const error = await response.json()
-        console.error('Failed to create event:', error)
+        logger.error('Failed to create event:', error);
       }
     } catch (error) {
-      console.error('Error creating event:', error)
+      logger.error('Error creating event:', error);
     } finally {
       setIsLoading(false)
     }

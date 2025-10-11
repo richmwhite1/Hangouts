@@ -30,11 +30,12 @@ import {
   Home,
   TrendingUp
 } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { GuestLanding } from '@/components/guest-landing'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 interface Event {
   id: string
   title: string
@@ -126,7 +127,7 @@ const distanceOptions = [
   { id: 'unlimited', label: 'No limit' },
 ]
 export function MergedDiscoveryPage() {
-  const { token, isAuthenticated } = useAuth()
+  const { getToken, isSignedIn } = useAuth()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -182,7 +183,7 @@ export function MergedDiscoveryPage() {
         lng: baseLng + (Math.random() - 0.5) * 2
       }
     } catch (error) {
-      console.error('Geocoding error:', error)
+      logger.error('Geocoding error:', error);
       return null
     }
   }
@@ -254,7 +255,7 @@ export function MergedDiscoveryPage() {
           })
         },
         (error) => {
-          console.error('Geolocation error:', error)
+          logger.error('Geolocation error:', error);
         }
       )
     }
@@ -315,7 +316,7 @@ export function MergedDiscoveryPage() {
         setEvents(data.events || [])
       }
     } catch (error) {
-      console.error('Error fetching events:', error)
+      logger.error('Error fetching events:', error);
     }
   }
   // Handle refresh
@@ -377,7 +378,7 @@ export function MergedDiscoveryPage() {
         setHangouts(mappedHangouts)
       }
     } catch (error) {
-      console.error('Error fetching hangouts:', error)
+      logger.error('Error fetching hangouts:', error);
     }
   }
   // Filter content based on all filter criteria
@@ -486,15 +487,15 @@ export function MergedDiscoveryPage() {
     setMergedContent(mergeAndSortContent)
   }, [mergeAndSortContent])
   useEffect(() => {
-    if (isAuthenticated ) {
+    if (isSignedIn) {
       setIsLoading(true)
       Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
         setIsLoading(false)
       })
     }
-  }, [isAuthenticated])
+  }, [isSignedIn])
   useEffect(() => {
-    if (isAuthenticated ) {
+    if (isSignedIn) {
       fetchEvents()
     }
   }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange])
@@ -600,11 +601,11 @@ export function MergedDiscoveryPage() {
               itemType="event"
               onSave={(id, type) => {
                 // TODO: Implement save functionality
-                console.log('Save event:', id, type)
+                // console.log('Save event:', id, type); // Removed for production
               }}
               onUnsave={(id, type) => {
                 // TODO: Implement unsave functionality
-                console.log('Unsave event:', id, type)
+                // console.log('Unsave event:', id, type); // Removed for production
               }}
             />
           </div>
@@ -682,11 +683,11 @@ export function MergedDiscoveryPage() {
               itemType="hangout"
               onSave={(id, type) => {
                 // TODO: Implement save functionality
-                console.log('Save hangout:', id, type)
+                // console.log('Save hangout:', id, type); // Removed for production
               }}
               onUnsave={(id, type) => {
                 // TODO: Implement unsave functionality
-                console.log('Unsave hangout:', id, type)
+                // console.log('Unsave hangout:', id, type); // Removed for production
               }}
             />
           </div>
@@ -706,7 +707,7 @@ export function MergedDiscoveryPage() {
   //   )
   // }
   // Show public content for non-authenticated users with subtle guest landing
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-black">
         {/* Subtle Guest Landing Banner */}

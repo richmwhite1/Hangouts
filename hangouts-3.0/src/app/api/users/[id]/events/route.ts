@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -59,7 +60,7 @@ export async function GET(
     return NextResponse.json(createSuccessResponse({ events: transformedEvents }, 'User events retrieved successfully'))
 
   } catch (error: any) {
-    console.error('Error fetching user events:', error)
+    logger.error('Error fetching user events:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch user events', error.message), { status: 500 })
   }
 }

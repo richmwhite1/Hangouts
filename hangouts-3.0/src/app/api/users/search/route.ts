@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser()
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
       users
     })
   } catch (error) {
-    console.error('Error searching users:', error)
+    logger.error('Error searching users:', error);
     return NextResponse.json(
       { error: 'Failed to search users' },
       { status: 500 }

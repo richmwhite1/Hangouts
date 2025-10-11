@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { usePolling } from '@/contexts/realtime-context'
 
+import { logger } from '@/lib/logger'
 interface PollDetailsProps {
   pollId: string
   onClose?: () => void
@@ -120,7 +121,7 @@ export function PollDetails({ pollId, onClose }: PollDetailsProps) {
       const data = await response.json()
       setPoll(data)
     } catch (err) {
-      console.error('Error fetching poll details:', err)
+      logger.error('Error fetching poll details:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch poll details')
     } finally {
       setLoading(false)
@@ -193,7 +194,7 @@ export function PollDetails({ pollId, onClose }: PollDetailsProps) {
         sentiment: 'positive'
       })
     } catch (error) {
-      console.error('Error casting vote:', error)
+      logger.error('Error casting vote:', error);
     } finally {
       setIsVoting(false)
     }

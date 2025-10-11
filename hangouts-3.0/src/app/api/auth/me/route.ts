@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Get me error:', error)
+    logger.error('Get me error:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error'

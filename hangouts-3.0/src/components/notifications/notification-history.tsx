@@ -17,6 +17,7 @@ import {
   BarChart3
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { logger } from '@/lib/logger'
 interface Notification {
   id: string
   type: string
@@ -74,7 +75,7 @@ export function NotificationHistory({ isOpen, onClose }: NotificationHistoryProp
         }
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error)
+      logger.error('Error fetching notifications:', error);
     } finally {
       setIsLoading(false)
     }
@@ -89,7 +90,7 @@ export function NotificationHistory({ isOpen, onClose }: NotificationHistoryProp
         }
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      logger.error('Error fetching stats:', error);
     }
   }
   const getNotificationIcon = (type: string) => {

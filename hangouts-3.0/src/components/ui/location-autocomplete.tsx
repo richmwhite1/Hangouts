@@ -5,6 +5,7 @@ import { MapPin, Search } from 'lucide-react'
 import { Input } from './input'
 import { Button } from './button'
 
+import { logger } from '@/lib/logger'
 interface LocationSuggestion {
   display_name: string
   lat: string
@@ -62,7 +63,7 @@ export function LocationAutocomplete({
         }
       }
     } catch (error) {
-      console.error('Location search error:', error)
+      logger.error('Location search error:', error);
     } finally {
       setIsLoading(false)
     }

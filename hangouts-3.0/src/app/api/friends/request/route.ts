@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
       request: friendRequest
     })
   } catch (error) {
-    console.error('Error sending friend request:', error)
+    logger.error('Error sending friend request:', error);
     return NextResponse.json(
       { error: 'Failed to send friend request' },
       { status: 500 }

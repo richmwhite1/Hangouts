@@ -29,6 +29,7 @@ import { useFriends } from "@/hooks/use-friends"
 import { useAuth } from "@clerk/nextjs"
 import { User } from "@/types/api"
 import Link from "next/link"
+import { logger } from '@/lib/logger'
 interface Group {
   id: string
   name: string
@@ -84,7 +85,7 @@ export function FriendsPage() {
         setGroups(groupConversations)
       }
     } catch (error) {
-      console.error('Error loading groups:', error)
+      logger.error('Error loading groups:', error);
     } finally {
       setIsLoadingGroups(false)
     }
@@ -96,7 +97,7 @@ export function FriendsPage() {
       const response = await apiClient.searchUsers(query, 20, 0)
       setSearchResults(response.users)
     } catch (error) {
-      console.error('Error searching users:', error)
+      logger.error('Error searching users:', error);
       setSearchResults([])
     } finally {
       setIsSearching(false)
@@ -138,7 +139,7 @@ export function FriendsPage() {
       toast.success("Friend request sent!")
       updateFriendStatuses()
     } catch (error) {
-      console.error('Error sending friend request:', error)
+      logger.error('Error sending friend request:', error);
       toast.error("Failed to send friend request")
     } finally {
       setSendingRequests(prev => {
@@ -156,7 +157,7 @@ export function FriendsPage() {
       toast.success(status === 'ACCEPTED' ? 'Friend request accepted!' : 'Friend request declined')
       updateFriendStatuses()
     } catch (error) {
-      console.error('Error responding to friend request:', error)
+      logger.error('Error responding to friend request:', error);
       toast.error('Failed to respond to friend request')
     } finally {
       setIsResponding(null)
@@ -184,7 +185,7 @@ export function FriendsPage() {
         }
       }
     } catch (error) {
-      console.error('Error creating direct message:', error)
+      logger.error('Error creating direct message:', error);
     }
   }
   // Unfriend user
@@ -208,11 +209,11 @@ export function FriendsPage() {
         // Refresh friends list
         window.location.reload()
       } else {
-        console.error('Failed to unfriend user')
+        logger.error('Failed to unfriend user');
         alert('Failed to unfriend user. Please try again.')
       }
     } catch (error) {
-      console.error('Error unfriending user:', error)
+      logger.error('Error unfriending user:', error);
       alert('Error unfriending user. Please try again.')
     }
   }

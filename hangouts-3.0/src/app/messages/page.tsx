@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import Link from "next/link"
 
+import { logger } from '@/lib/logger'
 interface Friend {
   id: string
   name: string
@@ -85,7 +86,7 @@ export default function MessagesPage() {
         setConversations(data.data.conversations || [])
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error)
+      logger.error('Error fetching conversations:', error);
     }
   }
 
@@ -98,7 +99,7 @@ export default function MessagesPage() {
         setFriends(data.data.friends || [])
       }
     } catch (error) {
-      console.error('Error fetching friends:', error)
+      logger.error('Error fetching friends:', error);
     } finally {
       setIsLoading(false)
     }
@@ -124,7 +125,7 @@ export default function MessagesPage() {
         window.location.href = `/messages/${data.data.conversation.id}`
       }
     } catch (error) {
-      console.error('Error starting conversation:', error)
+      logger.error('Error starting conversation:', error);
     }
   }
 
@@ -165,7 +166,7 @@ export default function MessagesPage() {
         window.location.href = `/messages/${data.data.conversation.id}`
       }
     } catch (error) {
-      console.error('Error starting group conversation:', error)
+      logger.error('Error starting group conversation:', error);
     }
   }
 

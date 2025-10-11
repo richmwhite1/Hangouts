@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
+import { logger } from '@/lib/logger'
 interface Hangout {
   id: string
   title: string
@@ -108,7 +109,7 @@ export default function PublicHangoutPage() {
           setComments(commentsData.comments || [])
         }
       } catch (err) {
-        console.error('Error fetching hangout:', err)
+        logger.error('Error fetching hangout:', err);
         setError(err instanceof Error ? err.message : 'Failed to load hangout')
       } finally {
         setIsLoading(false)
@@ -134,7 +135,7 @@ export default function PublicHangoutPage() {
         })
       } catch (error) {
         // User cancelled sharing or error occurred
-        console.log('Share cancelled or failed:', error)
+        // console.log('Share cancelled or failed:', error); // Removed for production
       }
     } else {
       // Fallback: copy to clipboard
@@ -142,7 +143,7 @@ export default function PublicHangoutPage() {
         await navigator.clipboard.writeText(shareText)
         // Success - no popup needed
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error)
+        logger.error('Failed to copy to clipboard:', error);
         // Final fallback: show the URL
         prompt('Copy this link to share:', shareUrl)
       }

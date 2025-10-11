@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Albums API for photo organization
 export async function GET(request: NextRequest) {
   try {
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Get albums error:', error)
+    logger.error('Get albums error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch albums',
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Create album error:', error)
+    logger.error('Create album error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to create album',

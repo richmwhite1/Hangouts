@@ -1,5 +1,6 @@
 import { db } from './db'
 
+import { logger } from '@/lib/logger'
 export interface FriendRequest {
   id: string
   senderId: string
@@ -378,11 +379,11 @@ export class FriendsSystem {
     })
 
     if (users.length < 2) {
-      console.log('Not enough users to create friendships')
+      // console.log('Not enough users to create friendships'); // Removed for production
       return
     }
 
-    console.log(`Creating friendships between ${users.length} users...`)
+    // // console.log(`Creating friendships between ${users.length} users...`); // Removed for production; // Removed for production
 
     // Create friendships between all users
     for (let i = 0; i < users.length; i++) {
@@ -428,7 +429,7 @@ export class FriendsSystem {
       }
     }
 
-    console.log('✅ All users are now friends with each other')
+    // console.log('✅ All users are now friends with each other'); // Removed for production
   }
 }
 

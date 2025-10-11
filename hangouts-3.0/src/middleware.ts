@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
+import { logger } from '@/lib/logger'
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -24,7 +25,7 @@ const isProtectedRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   // Skip authentication completely in development if Clerk keys are empty
   if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    console.log('⚠️ Skipping Clerk authentication in development - no keys provided')
+    // console.log('⚠️ Skipping Clerk authentication in development - no keys provided'); // Removed for production
     return NextResponse.next()
   }
 
@@ -72,7 +73,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Skip authentication in development if Clerk keys are invalid
   if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')) {
-    console.log('⚠️ Skipping Clerk authentication in development due to invalid keys')
+    // console.log('⚠️ Skipping Clerk authentication in development due to invalid keys'); // Removed for production
     return response
   }
 

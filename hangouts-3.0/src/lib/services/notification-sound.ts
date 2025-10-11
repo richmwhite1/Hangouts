@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 export class NotificationSoundService {
   private static audioContext: AudioContext | null = null
   private static isEnabled = true
@@ -47,7 +48,7 @@ export class NotificationSoundService {
       oscillator.start(now)
       oscillator.stop(now + (freq.length * duration * 0.8) + duration)
     } catch (error) {
-      console.warn('Failed to play notification sound:', error)
+      logger.warn('Failed to play notification sound:', error);
     }
   }
 
@@ -73,7 +74,7 @@ export class NotificationSoundService {
       oscillator.start(now)
       oscillator.stop(endTime)
     } catch (error) {
-      console.warn('Failed to play custom sound:', error)
+      logger.warn('Failed to play custom sound:', error);
     }
   }
 

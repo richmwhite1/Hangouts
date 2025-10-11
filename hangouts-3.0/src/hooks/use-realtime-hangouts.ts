@@ -5,6 +5,7 @@ import { useRealtime } from '@/contexts/realtime-context'
 import { useHangouts } from '@/contexts/hangout-context'
 import { Content as Hangout } from '@/types/api'
 
+import { logger } from '@/lib/logger'
 export const useRealtimeHangouts = () => {
   const { socket, isConnected, onHangoutUpdate, offHangoutUpdate } = useRealtime()
   const { state, updateHangout, addHangout, removeHangout } = useHangouts()
@@ -26,7 +27,7 @@ export const useRealtimeHangouts = () => {
       try {
         callback(updatedHangout, data.updatedBy)
       } catch (error) {
-        console.error('Error in hangout update callback:', error)
+        logger.error('Error in hangout update callback:', error);
       }
     })
   }, [state.hangouts, updateHangout])

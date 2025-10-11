@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress'
 import { CheckCircle, Users, Clock, Plus } from 'lucide-react'
 import { AddPollOptionModal } from './AddPollOptionModal'
 
+import { logger } from '@/lib/logger'
 interface SimplePollDisplayProps {
   poll: {
     id: string
@@ -78,14 +79,14 @@ export function SimplePollDisplay({ poll, onVote, onOptionAdded, userVote, curre
   const [isVoting, setIsVoting] = useState(false)
   const [userVotes, setUserVotes] = useState<string[]>([])
   
-  // Debug logging
-  console.log('🎯 SimplePollDisplay rendered with:', {
-    pollId: poll?.id,
-    pollTitle: poll?.title,
-    optionsCount: poll?.options?.length || poll?.pollOptions?.length || 0,
-    userVote,
-    currentUserId
-  })
+      // Debug logging
+      // console.log('🎯 SimplePollDisplay rendered with:', {
+      //   pollId: poll?.id,
+      //   pollTitle: poll?.title,
+      //   optionsCount: poll?.options?.length || poll?.pollOptions?.length || 0,
+      //   userVote,
+      //   currentUserId
+      // }); // Removed for production
 
   // Initialize user votes from userVote prop
   useEffect(() => {
@@ -127,7 +128,7 @@ export function SimplePollDisplay({ poll, onVote, onOptionAdded, userVote, curre
       
       await onVote(poll.id, optionId)
     } catch (error) {
-      console.error('Vote failed:', error)
+      logger.error('Vote failed:', error);
       // Revert local state on error
       setUserVotes(prev => {
         if (prev.includes(optionId)) {
@@ -270,7 +271,7 @@ export function SimplePollDisplay({ poll, onVote, onOptionAdded, userVote, curre
               className="w-full border-purple-500 text-purple-400 hover:border-purple-400 hover:text-purple-300"
               onClick={() => {
                 // TODO: Implement mark preferred functionality
-                console.log('Mark preferred clicked for votes:', userVotes)
+                // console.log('Mark preferred clicked for votes:', userVotes); // Removed for production
               }}
             >
               <CheckCircle className="w-4 h-4 mr-2" />

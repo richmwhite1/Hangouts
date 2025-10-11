@@ -1,13 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHangoutForm'
 // Removed apiClient import - using direct fetch instead
 import { toast } from 'sonner'
+import { logger } from '@/lib/logger'
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isAuthenticated, user } = useAuth()
+  const { isSignedIn, user } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
   useEffect(() => {
@@ -24,7 +25,7 @@ export default function CreateHangoutPage() {
       </div>
     )
   }
-  if (!isAuthenticated || !user) {
+  if (!isSignedIn || !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="max-w-md mx-auto p-6">
@@ -90,14 +91,14 @@ export default function CreateHangoutPage() {
           if (uploadResponse.ok) {
             const uploadData = await uploadResponse.json()
             imageUrl = uploadData.url
-            console.log('Image uploaded successfully:', imageUrl)
+            // console.log('Image uploaded successfully:', imageUrl); // Removed for production
           } else {
-            console.error('Image upload failed:', uploadResponse.status)
+            logger.error('Image upload failed:', uploadResponse.status);
             toast.error('Failed to upload image')
             return
           }
         } catch (uploadError) {
-          console.error('Error uploading image:', uploadError)
+          logger.error('Error uploading image:', uploadError);
           toast.error('Failed to upload image')
           return
         }
@@ -122,7 +123,7 @@ export default function CreateHangoutPage() {
             eventImage: option.eventImage || ''
           }))
       }
-      console.log('Creating hangout with data:', hangoutData)
+      // console.log('Creating hangout with data:', hangoutData); // Removed for production
       const response = await fetch('/api/hangouts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +136,7 @@ export default function CreateHangoutPage() {
         toast.error(responseData.error || 'Failed to create hangout')
       }
     } catch (error) {
-      console.error('Error creating hangout:', error)
+      logger.error('Error creating hangout:', error);
       toast.error('An unexpected error occurred')
     } finally {
       setIsCreating(false)

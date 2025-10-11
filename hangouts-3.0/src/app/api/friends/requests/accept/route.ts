@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
 import { FriendsSystem } from '@/lib/friends-system'
 
+import { logger } from '@/lib/logger'
 // Accept friend request
 async function acceptFriendRequestHandler(request: AuthenticatedRequest) {
   const userId = request.user.userId
@@ -19,7 +20,7 @@ async function acceptFriendRequestHandler(request: AuthenticatedRequest) {
       request: result.request 
     }, 'Friend request accepted successfully')
   } catch (error) {
-    console.error('Error accepting friend request:', error)
+    logger.error('Error accepting friend request:', error);
     return createErrorResponse('Failed to accept friend request', error instanceof Error ? error.message : 'Unknown error')
   }
 }

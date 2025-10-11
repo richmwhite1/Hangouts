@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/messages/[messageId]/reactions - Add or remove a reaction
 export async function POST(
   request: NextRequest,
@@ -90,7 +91,7 @@ export async function POST(
       }, 'Reaction added successfully'))
     }
   } catch (error) {
-    console.error('Error managing reaction:', error)
+    logger.error('Error managing reaction:', error);
     return NextResponse.json(createErrorResponse('Failed to manage reaction', error.message), { status: 500 })
   }
 }
@@ -151,7 +152,7 @@ export async function GET(
       reactions: groupedReactions
     }, 'Reactions retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching reactions:', error)
+    logger.error('Error fetching reactions:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch reactions', error.message), { status: 500 })
   }
 }

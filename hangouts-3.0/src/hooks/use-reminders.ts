@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { logger } from '@/lib/logger'
 interface Reminder {
   id: string
   userId: string
@@ -51,7 +52,7 @@ export function useReminders() {
         throw new Error(data.error || 'Failed to fetch reminders')
       }
     } catch (err) {
-      console.error('Error fetching reminders:', err)
+      logger.error('Error fetching reminders:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch reminders')
     } finally {
       setIsLoading(false)
@@ -81,7 +82,7 @@ export function useReminders() {
         throw new Error(data.error || 'Failed to create reminder')
       }
     } catch (err) {
-      console.error('Error creating reminder:', err)
+      logger.error('Error creating reminder:', err);
       setError(err instanceof Error ? err.message : 'Failed to create reminder')
       return null
     }
@@ -96,7 +97,7 @@ export function useReminders() {
         setReminders(prev => prev.filter(r => r.id !== reminderId))
       }
     } catch (err) {
-      console.error('Error dismissing reminder:', err)
+      logger.error('Error dismissing reminder:', err);
     }
   }, [])
   const getUpcomingReminders = useCallback(() => {

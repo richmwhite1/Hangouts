@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 const { db } = require('../../db')
 
 class ReminderProcessor {
@@ -6,21 +7,21 @@ class ReminderProcessor {
   static start(intervalMs = 60000) {
     // Disable reminder processor in production to prevent memory leaks
     if (process.env.NODE_ENV === 'production') {
-      console.log('Reminder processor disabled in production to prevent memory issues')
+      // console.log('Reminder processor disabled in production to prevent memory issues'); // Removed for production
       return
     }
 
     if (this.intervalId) {
-      console.log('Reminder processor already running')
+      // console.log('Reminder processor already running'); // Removed for production
       return
     }
 
-    console.log('Starting reminder processor...')
+    // console.log('Starting reminder processor...'); // Removed for production
     this.intervalId = setInterval(async () => {
       try {
         await this.processReminders()
       } catch (error) {
-        console.error('Error processing reminders:', error)
+        logger.error('Error processing reminders:', error);
       }
     }, intervalMs)
 
@@ -32,7 +33,7 @@ class ReminderProcessor {
     if (this.intervalId) {
       clearInterval(this.intervalId)
       this.intervalId = null
-      console.log('Reminder processor stopped')
+      // console.log('Reminder processor stopped'); // Removed for production
     }
   }
 
@@ -72,7 +73,7 @@ class ReminderProcessor {
         return
       }
 
-      console.log(`Processing ${dueReminders.length} due reminders`)
+      // // console.log(`Processing ${dueReminders.length} due reminders`); // Removed for production; // Removed for production
 
       for (const reminder of dueReminders) {
         try {
@@ -100,13 +101,13 @@ class ReminderProcessor {
             }
           })
 
-          console.log(`Sent reminder to ${reminder.user.name}: ${reminder.title}`)
+          // // console.log(`Sent reminder to ${reminder.user.name}: ${reminder.title}`); // Removed for production; // Removed for production
         } catch (error) {
-          console.error(`Failed to process reminder ${reminder.id}:`, error)
+          logger.error(`Failed to process reminder ${reminder.id}:`, error);
         }
       }
     } catch (error) {
-      console.error('Error in processReminders:', error)
+      logger.error('Error in processReminders:', error);
     }
   }
 
@@ -125,10 +126,10 @@ class ReminderProcessor {
       })
 
       if (deleted.count > 0) {
-        console.log(`Cleaned up ${deleted.count} old reminders`)
+        // // console.log(`Cleaned up ${deleted.count} old reminders`); // Removed for production; // Removed for production
       }
     } catch (error) {
-      console.error('Error cleaning up old reminders:', error)
+      logger.error('Error cleaning up old reminders:', error);
     }
   }
 }

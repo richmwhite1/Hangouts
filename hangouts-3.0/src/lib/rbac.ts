@@ -1,5 +1,6 @@
 import { db } from './db'
 
+import { logger } from '@/lib/logger'
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
@@ -324,21 +325,21 @@ export class RBACService {
       
       // Check if role exists in our permissions map
       if (!(role in RBACService.ROLE_PERMISSIONS)) {
-        console.error('Unknown role:', role, 'Available roles:', Object.keys(RBACService.ROLE_PERMISSIONS))
+        logger.error('Unknown role:', role, 'Available roles:', Object.keys(RBACService.ROLE_PERMISSIONS))
         throw new Error(`Unknown user role: ${role}`)
       }
       
       const permissions = RBACService.ROLE_PERMISSIONS[role]
       
-      console.log('RBAC Debug:', {
-        userId: user.id,
-        role: user.role,
-        roleType: typeof user.role,
-        isActive: user.isActive,
-        permissions: permissions.length,
-        availableRoles: Object.keys(RBACService.ROLE_PERMISSIONS),
-        hasRole: role in RBACService.ROLE_PERMISSIONS
-      })
+          // console.log('RBAC Debug:', {
+          //   userId: user.id,
+          //   role: user.role,
+          //   roleType: typeof user.role,
+          //   isActive: user.isActive,
+          //   permissions: permissions.length,
+          //   availableRoles: Object.keys(RBACService.ROLE_PERMISSIONS),
+          //   hasRole: role in RBACService.ROLE_PERMISSIONS
+          // }); // Removed for production
 
       return {
         userId: user.id,
@@ -347,7 +348,7 @@ export class RBACService {
         isActive: user.isActive
       }
     } catch (error) {
-      console.error('Error getting user permissions:', error)
+      logger.error('Error getting user permissions:', error);
       throw new Error('Failed to get user permissions')
     }
   }
@@ -360,7 +361,7 @@ export class RBACService {
       const userPermissions = await RBACService.getUserPermissions(userId)
       return userPermissions.isActive && userPermissions.permissions.includes(permission)
     } catch (error) {
-      console.error('Error checking permission:', error)
+      logger.error('Error checking permission:', error);
       return false
     }
   }
@@ -377,7 +378,7 @@ export class RBACService {
         userPermissions.permissions.includes(permission)
       )
     } catch (error) {
-      console.error('Error checking any permission:', error)
+      logger.error('Error checking any permission:', error);
       return false
     }
   }
@@ -394,7 +395,7 @@ export class RBACService {
         userPermissions.permissions.includes(permission)
       )
     } catch (error) {
-      console.error('Error checking all permissions:', error)
+      logger.error('Error checking all permissions:', error);
       return false
     }
   }
@@ -462,7 +463,7 @@ export class RBACService {
           }
       }
     } catch (error) {
-      console.error('Error checking resource access:', error)
+      logger.error('Error checking resource access:', error);
       return {
         resourceType,
         resourceId,
@@ -582,7 +583,7 @@ export class RBACService {
         reason: 'Insufficient permissions'
       }
     } catch (error) {
-      console.error('Error checking hangout access:', error)
+      logger.error('Error checking hangout access:', error);
       return {
         resourceType: 'hangout',
         resourceId: hangoutId,
@@ -710,7 +711,7 @@ export class RBACService {
         reason: 'Group member'
       }
     } catch (error) {
-      console.error('Error checking group access:', error)
+      logger.error('Error checking group access:', error);
       return {
         resourceType: 'group',
         resourceId: groupId,
@@ -782,7 +783,7 @@ export class RBACService {
         reason: 'Insufficient permissions'
       }
     } catch (error) {
-      console.error('Error checking comment access:', error)
+      logger.error('Error checking comment access:', error);
       return {
         resourceType: 'comment',
         resourceId: commentId,
@@ -867,7 +868,7 @@ export class RBACService {
         reason: 'Insufficient permissions'
       }
     } catch (error) {
-      console.error('Error checking poll access:', error)
+      logger.error('Error checking poll access:', error);
       return {
         resourceType: 'poll',
         resourceId: pollId,
@@ -908,7 +909,7 @@ export class RBACService {
       const access = await RBACService.canAccessResource(userId, 'hangout', hangoutId, 'invite')
       return access.granted
     } catch (error) {
-      console.error('Error checking hangout invite permission:', error)
+      logger.error('Error checking hangout invite permission:', error);
       return false
     }
   }
@@ -921,7 +922,7 @@ export class RBACService {
       const access = await RBACService.canAccessResource(userId, resourceType as any, resourceId, 'moderate')
       return access.granted
     } catch (error) {
-      console.error('Error checking moderate permission:', error)
+      logger.error('Error checking moderate permission:', error);
       return false
     }
   }
@@ -942,7 +943,7 @@ export class RBACService {
       })
       return users
     } catch (error) {
-      console.error('Error getting users by role:', error)
+      logger.error('Error getting users by role:', error);
       return []
     }
   }
@@ -958,7 +959,7 @@ export class RBACService {
       })
       return true
     } catch (error) {
-      console.error('Error updating user role:', error)
+      logger.error('Error updating user role:', error);
       return false
     }
   }

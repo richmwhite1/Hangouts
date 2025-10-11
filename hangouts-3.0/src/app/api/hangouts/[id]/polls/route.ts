@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse, PollResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 // Validation schemas - Simplified for new schema
 const CreatePollSchema = z.object({
   title: z.string().min(1).max(200),
@@ -92,7 +93,7 @@ export async function GET(
     return NextResponse.json(createSuccessResponse(polls, 'Polls fetched successfully'))
 
   } catch (error) {
-    console.error('Error fetching polls:', error)
+    logger.error('Error fetching polls:', error);
     return NextResponse.json(
       createErrorResponse('Failed to fetch polls', error.message),
       { status: 500 }
@@ -121,7 +122,7 @@ export async function POST(
     const body = await request.json()
     
     // Debug logging
-    console.log('Poll creation request body:', JSON.stringify(body, null, 2))
+    // console.log('Poll creation request body:', JSON.stringify(body, null, 2); // Removed for production)
     
     // Get the hangout details ID from the content ID
     const hangout = await db.content.findUnique({
@@ -181,8 +182,8 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
-    console.error('Error creating poll:', error)
-    console.error('Error stack:', error.stack)
+    logger.error('Error creating poll:', error);
+    logger.error('Error stack:', error.stack);
     return NextResponse.json(createErrorResponse('Failed to create poll', error.message), { status: 500 })
   }
 }

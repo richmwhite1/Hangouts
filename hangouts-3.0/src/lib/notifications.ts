@@ -1,5 +1,6 @@
 import { db } from './db'
 
+import { logger } from '@/lib/logger'
 export async function createNotification(data: {
   userId: string
   type: string
@@ -19,7 +20,7 @@ export async function createNotification(data: {
 
     return notification
   } catch (error) {
-    console.error('Failed to create notification:', error)
+    logger.error('Failed to create notification:', error);
     throw error
   }
 }

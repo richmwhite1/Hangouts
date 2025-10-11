@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Photo sharing and collaboration API
 export async function POST(
   request: NextRequest,
@@ -74,7 +75,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Photo share error:', error)
+    logger.error('Photo share error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to share photo',
@@ -134,7 +135,7 @@ async function shareWithUsers(
     })
 
   } catch (error) {
-    console.error('Share with users error:', error)
+    logger.error('Share with users error:', error);
     throw error
   }
 }
@@ -207,7 +208,7 @@ async function shareWithGroups(
     })
 
   } catch (error) {
-    console.error('Share with groups error:', error)
+    logger.error('Share with groups error:', error);
     throw error
   }
 }
@@ -255,7 +256,7 @@ async function createPublicLink(
     })
 
   } catch (error) {
-    console.error('Create public link error:', error)
+    logger.error('Create public link error:', error);
     throw error
   }
 }
@@ -290,7 +291,7 @@ async function revokeAccess(
     })
 
   } catch (error) {
-    console.error('Revoke access error:', error)
+    logger.error('Revoke access error:', error);
     throw error
   }
 }
@@ -376,7 +377,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Get photo shares error:', error)
+    logger.error('Get photo shares error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to get sharing information',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -63,7 +64,7 @@ export async function GET(
     return NextResponse.json(createSuccessResponse({ events: transformedEvents }, 'Attended events retrieved successfully'))
 
   } catch (error: any) {
-    console.error('Error fetching attended events:', error)
+    logger.error('Error fetching attended events:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch attended events', error.message), { status: 500 })
   }
 }

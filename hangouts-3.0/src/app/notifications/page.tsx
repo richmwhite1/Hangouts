@@ -3,15 +3,16 @@
 import { useState } from 'react'
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react'
 
+import { logger } from '@/lib/logger'
 export default function NotificationsPage() {
   // Real implementation - no mock data
   const notifications: any[] = []
   const unreadCount = 0
   const markAsRead = async (ids: string[]) => {
-    console.log('Mark as read:', ids)
+    // console.log('Mark as read:', ids); // Removed for production
   }
   const markAllAsRead = async () => {
-    console.log('Mark all as read')
+    // console.log('Mark all as read'); // Removed for production
   }
   const isLoading = false
   const [isMarkingAll, setIsMarkingAll] = useState(false)
@@ -21,7 +22,7 @@ export default function NotificationsPage() {
     try {
       await markAllAsRead()
     } catch (error) {
-      console.error('Failed to mark all as read:', error)
+      logger.error('Failed to mark all as read:', error);
     } finally {
       setIsMarkingAll(false)
     }
@@ -31,7 +32,7 @@ export default function NotificationsPage() {
     try {
       await markAsRead([notificationId])
     } catch (error) {
-      console.error('Failed to mark as read:', error)
+      logger.error('Failed to mark as read:', error);
     }
   }
 

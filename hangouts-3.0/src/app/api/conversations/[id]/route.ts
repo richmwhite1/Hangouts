@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/conversations/[id] - Get conversation details
 export async function GET(
   request: NextRequest,
@@ -67,7 +68,7 @@ export async function GET(
       }
     }, 'Conversation retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching conversation:', error)
+    logger.error('Error fetching conversation:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch conversation', error.message), { status: 500 })
   }
 }
@@ -145,7 +146,7 @@ export async function PUT(
       }
     }, 'Conversation updated successfully'))
   } catch (error) {
-    console.error('Error updating conversation:', error)
+    logger.error('Error updating conversation:', error);
     return NextResponse.json(createErrorResponse('Failed to update conversation', error.message), { status: 500 })
   }
 }

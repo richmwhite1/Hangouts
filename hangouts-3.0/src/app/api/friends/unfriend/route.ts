@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     ))
 
   } catch (error) {
-    console.error('Unfriend error:', error)
+    logger.error('Unfriend error:', error);
     return NextResponse.json(createErrorResponse('Internal Server Error', 'Failed to unfriend user'), { status: 500 })
   }
 }

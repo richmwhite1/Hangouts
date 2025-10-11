@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/polls/friends - Get friends-only polls (requires authentication)
 export async function GET(request: NextRequest) {
   try {
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching friends polls:', error)
+    logger.error('Error fetching friends polls:', error);
     return NextResponse.json(
       { error: 'Failed to fetch friends polls', message: error.message },
       { status: 500 }

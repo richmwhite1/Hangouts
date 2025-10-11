@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
 import { FriendsSystem } from '@/lib/friends-system'
 
+import { logger } from '@/lib/logger'
 async function getRecentFriendsHandler(request: AuthenticatedRequest) {
   const userId = request.user.userId
 
@@ -14,7 +15,7 @@ async function getRecentFriendsHandler(request: AuthenticatedRequest) {
     
     return createSuccessResponse({ data: recentFriends })
   } catch (error) {
-    console.error('Error fetching recent friends:', error)
+    logger.error('Error fetching recent friends:', error);
     return createErrorResponse('Failed to fetch recent friends', error instanceof Error ? error.message : 'Unknown error')
   }
 }

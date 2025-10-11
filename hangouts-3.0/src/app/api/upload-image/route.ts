@@ -5,6 +5,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import sharp from 'sharp'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error uploading image:', error)
+    logger.error('Error uploading image:', error);
     return NextResponse.json(
       { error: 'Failed to upload image' },
       { status: 500 }

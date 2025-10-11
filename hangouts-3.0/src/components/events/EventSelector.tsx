@@ -16,6 +16,7 @@ import {
   Check
 } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
+import { logger } from '@/lib/logger'
 interface Event {
   id: string
   title: string
@@ -70,7 +71,7 @@ export function EventSelector({ onEventSelect, selectedEvent, onRemoveEvent }: E
         setEvents(data.events || [])
       }
     } catch (error) {
-      console.error('Error fetching events:', error)
+      logger.error('Error fetching events:', error);
     } finally {
       setLoading(false)
     }

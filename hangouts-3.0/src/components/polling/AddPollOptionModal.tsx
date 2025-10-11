@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Plus, Calendar, MapPin, Clock, Loader2 } from 'lucide-react'
 
+import { logger } from '@/lib/logger'
 interface AddPollOptionModalProps {
   pollId: string
   onOptionAdded: (option: any) => void
@@ -79,7 +80,7 @@ export function AddPollOptionModal({ pollId, onOptionAdded, children }: AddPollO
         setError(errorData.error || 'Failed to add option')
       }
     } catch (err) {
-      console.error('Error adding poll option:', err)
+      logger.error('Error adding poll option:', err);
       setError('Failed to add option. Please try again.')
     } finally {
       setIsLoading(false)

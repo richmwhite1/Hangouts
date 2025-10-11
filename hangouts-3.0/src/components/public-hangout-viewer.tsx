@@ -10,6 +10,7 @@ import { sharingService } from '@/lib/services/sharing-service'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
 // import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface PublicHangoutViewerProps {
   hangoutId: string
   onSignInRequired?: () => void
@@ -74,7 +75,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
         }
       }
     } catch (error) {
-      console.error('Error fetching hangout:', error)
+      logger.error('Error fetching hangout:', error);
       setError('Failed to load hangout')
     } finally {
       setIsLoading(false)

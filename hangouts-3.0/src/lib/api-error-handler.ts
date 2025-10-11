@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSuccessResponse, createErrorResponse } from './api-response'
 import { ValidationError } from './validation'
 
+import { logger } from '@/lib/logger'
 export class ApiError extends Error {
   public readonly statusCode: number
   public readonly code: string
@@ -73,7 +74,7 @@ export class RateLimitError extends ApiError {
 }
 
 export function handleApiError(error: unknown): NextResponse {
-  console.error('API Error:', error)
+  logger.error('API Error:', error);
 
   // Handle known API errors
   if (error instanceof ApiError) {

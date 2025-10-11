@@ -6,6 +6,7 @@ import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/upload - Upload file for messaging
 export async function POST(
   request: NextRequest,
@@ -104,7 +105,7 @@ export async function POST(
       }
     }, 'File uploaded successfully'))
   } catch (error) {
-    console.error('Error uploading file:', error)
+    logger.error('Error uploading file:', error);
     return NextResponse.json(createErrorResponse('Failed to upload file', error.message), { status: 500 })
   }
 }

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from './auth'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 // Rate limiting store (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
@@ -54,7 +55,7 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
 
       return await handler(authenticatedReq)
     } catch (error) {
-      console.error('Auth middleware error:', error)
+      logger.error('Auth middleware error:', error);
       return NextResponse.json<ApiResponse>({
         success: false,
         error: 'Authentication failed',
@@ -105,9 +106,9 @@ export function withRateLimit(handler: (req: NextRequest) => Promise<NextRespons
 
       return await handler(req)
     } catch (error) {
-      console.error('Rate limit middleware error:', error)
+      logger.error('Rate limit middleware error:', error);
       // Don't fail the request due to rate limiting errors, just log and continue
-      console.warn('Rate limiting failed, allowing request to proceed:', error)
+      logger.warn('Rate limiting failed, allowing request to proceed:', error);
       return await handler(req)
     }
   }
@@ -136,7 +137,7 @@ export function withValidation<T>(schema: z.ZodSchema<T>) {
           }, { status: 400 })
         }
         
-        console.error('Validation middleware error:', error)
+        logger.error('Validation middleware error:', error);
         return NextResponse.json<ApiResponse>({
           success: false,
           error: 'Validation failed',
@@ -153,7 +154,7 @@ export function withErrorHandling(handler: (req: NextRequest) => Promise<NextRes
     try {
       return await handler(req)
     } catch (error) {
-      console.error('API Error:', error)
+      logger.error('API Error:', error);
       
       // Handle specific error types
       if (error instanceof Error) {

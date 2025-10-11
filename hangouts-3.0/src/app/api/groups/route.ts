@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { createApiHandler } from '@/lib/api-handler'
 
+import { logger } from '@/lib/logger'
 // GET /api/groups - Get user's groups
 async function getGroupsHandler(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -59,7 +60,7 @@ async function getGroupsHandler(request: NextRequest) {
 
     return NextResponse.json({ groups })
   } catch (error) {
-    console.error('Error fetching groups:', error)
+    logger.error('Error fetching groups:', error);
     return NextResponse.json(
       { error: 'Failed to fetch groups' },
       { status: 500 }
@@ -165,9 +166,9 @@ async function createGroupHandler(request: NextRequest) {
 
     return NextResponse.json({ group: completeGroup })
   } catch (error) {
-    console.error('Error creating group:', error)
-    console.error('Error details:', error.message)
-    console.error('Error stack:', error.stack)
+    logger.error('Error creating group:', error);
+    logger.error('Error details:', error.message);
+    logger.error('Error stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to create group', details: error.message },
       { status: 500 }

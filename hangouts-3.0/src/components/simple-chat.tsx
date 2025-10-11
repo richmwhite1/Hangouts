@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Send, MessageCircle } from 'lucide-react'
+import { logger } from '@/lib/logger'
 interface Message {
   id: string
   content: string
@@ -55,7 +56,7 @@ export function SimpleChat({ hangoutId, user, token }: SimpleChatProps) {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch messages:', error)
+      logger.error('Failed to fetch messages:', error);
     }
   }
   // Send message
@@ -76,10 +77,10 @@ export function SimpleChat({ hangoutId, user, token }: SimpleChatProps) {
         // Refresh messages after sending
         await fetchMessages()
       } else {
-        console.error('Failed to send message')
+        logger.error('Failed to send message');
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message:', error);
     } finally {
       setIsSending(false)
     }

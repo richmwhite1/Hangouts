@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Heart, MessageCircle, Share2, Download, Tag, ThumbsUp } from 'lucide-react'
 import { PhotoLightbox } from '@/components/photo-lightbox'
 import { PhotoGallery } from '@/components/photo-gallery'
+import { logger } from '@/lib/logger'
 interface SharedPhoto {
   id: string
   originalUrl: string
@@ -89,7 +90,7 @@ export default function SharedPhotoPage() {
       }
     } catch (err) {
       setError('Failed to load photo')
-      console.error('Error fetching shared photo:', err)
+      logger.error('Error fetching shared photo:', err);
     } finally {
       setLoading(false)
     }
@@ -114,7 +115,7 @@ export default function SharedPhotoPage() {
         fetchSharedPhoto() // Refresh to get new comment
       }
     } catch (err) {
-      console.error('Error adding comment:', err)
+      logger.error('Error adding comment:', err);
     } finally {
       setSubmittingComment(false)
     }
@@ -137,7 +138,7 @@ export default function SharedPhotoPage() {
         fetchSharedPhoto() // Refresh to get new reaction
       }
     } catch (err) {
-      console.error('Error adding reaction:', err)
+      logger.error('Error adding reaction:', err);
     }
   }
   const handleDownload = () => {
@@ -158,7 +159,7 @@ export default function SharedPhotoPage() {
           url: window.location.href
         })
       } catch (err) {
-        console.error('Error sharing:', err)
+        logger.error('Error sharing:', err);
       }
     } else {
       // Fallback: copy to clipboard

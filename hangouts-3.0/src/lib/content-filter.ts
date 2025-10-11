@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 // Content filtering service for photos and text
 export interface ContentFilterResult {
   isAllowed: boolean
@@ -68,7 +69,7 @@ export class ContentFilterService {
       }
 
     } catch (error) {
-      console.error('Image filtering error:', error)
+      logger.error('Image filtering error:', error);
       // Fail open - allow content if filtering fails
       return {
         isAllowed: true,
@@ -110,7 +111,7 @@ export class ContentFilterService {
       }
 
     } catch (error) {
-      console.error('Text filtering error:', error)
+      logger.error('Text filtering error:', error);
       return {
         isAllowed: true,
         confidence: 0.5,

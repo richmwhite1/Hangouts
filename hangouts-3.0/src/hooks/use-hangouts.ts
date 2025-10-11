@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Content as Hangout } from '@/types/api'
 
+import { logger } from '@/lib/logger'
 interface UseHangoutsParams {
   status?: string
   privacy?: string
@@ -24,15 +25,15 @@ export const useHangouts = (params?: UseHangoutsParams): UseHangoutsReturn => {
 
   const fetchHangouts = useCallback(async () => {
     try {
-      console.log('🚀 Starting to fetch hangouts...')
+      // console.log('🚀 Starting to fetch hangouts...'); // Removed for production
       setIsLoading(true)
       setError(null)
       
       const data = await apiClient.getHangouts(params)
-      console.log('✅ Fetched hangouts:', data.hangouts.length)
+      // console.log('✅ Fetched hangouts:', data.hangouts.length); // Removed for production
       setHangouts(data.hangouts)
     } catch (err) {
-      console.error('❌ Error fetching hangouts:', err)
+      logger.error('❌ Error fetching hangouts:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch hangouts'
       setError(errorMessage)
     } finally {
@@ -46,7 +47,7 @@ export const useHangouts = (params?: UseHangoutsParams): UseHangoutsReturn => {
       return
     }
 
-    console.log('🎯 useEffect running on client side')
+    // console.log('🎯 useEffect running on client side'); // Removed for production
     fetchHangouts()
   }, [fetchHangouts])
 
@@ -71,7 +72,7 @@ export const useHangout = (id: string) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch hangout'
       setError(errorMessage)
-      console.error('Error fetching hangout:', err)
+      logger.error('Error fetching hangout:', err);
     } finally {
       setIsLoading(false)
     }

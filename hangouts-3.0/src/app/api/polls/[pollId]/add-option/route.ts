@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const AddOptionSchema = z.object({
   text: z.string().min(1, 'Option text is required'),
   description: z.string().optional(),
@@ -107,7 +108,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Error adding poll option:', error)
+    logger.error('Error adding poll option:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },

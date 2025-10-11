@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // PATCH /api/notifications/[id] - Update notification (mark as read/dismissed)
 export async function PATCH(
   request: NextRequest,
@@ -49,7 +50,7 @@ export async function PATCH(
     })
     return NextResponse.json(createSuccessResponse(updatedNotification, 'Notification updated successfully'))
   } catch (error) {
-    console.error('Error updating notification:', error)
+    logger.error('Error updating notification:', error);
     return NextResponse.json(createErrorResponse('Failed to update notification', error.message), { status: 500 })
   }
 }
@@ -83,7 +84,7 @@ export async function DELETE(
     })
     return NextResponse.json(createSuccessResponse(null, 'Notification deleted successfully'))
   } catch (error) {
-    console.error('Error deleting notification:', error)
+    logger.error('Error deleting notification:', error);
     return NextResponse.json(createErrorResponse('Failed to delete notification', error.message), { status: 500 })
   }
 }

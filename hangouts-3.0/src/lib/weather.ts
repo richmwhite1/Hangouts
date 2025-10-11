@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 // Free weather service using OpenWeatherMap (requires free API key)
 // For demo purposes, we'll use a mock weather service
 
@@ -76,7 +77,7 @@ export async function getCurrentWeather(latitude: number, longitude: number): Pr
       feelsLike: Math.max(0, randomTemp + Math.floor(Math.random() * 4) - 2)
     }
   } catch (error) {
-    console.error('Weather API error:', error)
+    logger.error('Weather API error:', error);
     return mockWeatherData
   }
 }
@@ -91,7 +92,7 @@ export async function getWeatherForecast(latitude: number, longitude: number): P
     
     return mockForecast
   } catch (error) {
-    console.error('Weather forecast API error:', error)
+    logger.error('Weather forecast API error:', error);
     return mockForecast
   }
 }

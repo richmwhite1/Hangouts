@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 // Validation schemas
 const CreatePollSchema = z.object({
   hangoutId: z.string().min(1),
@@ -151,7 +152,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error fetching polls:', error)
+    logger.error('Error fetching polls:', error);
     return NextResponse.json({ error: 'Failed to fetch polls' }, { status: 500 })
   }
 }
@@ -301,7 +302,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
-    console.error('Error creating poll:', error)
+    logger.error('Error creating poll:', error);
     return NextResponse.json({ error: 'Failed to create poll' }, { status: 500 })
   }
 }

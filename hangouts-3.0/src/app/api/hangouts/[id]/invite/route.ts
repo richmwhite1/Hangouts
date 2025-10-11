@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const InviteSchema = z.object({
   friendIds: z.array(z.string()).min(1, 'At least one friend must be selected')
 })
@@ -106,7 +107,7 @@ export async function POST(
       }, { status: 400 })
     }
     
-    console.error('Error inviting friends to hangout:', error)
+    logger.error('Error inviting friends to hangout:', error);
     return NextResponse.json(
       { error: 'Failed to invite friends', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
+import { logger } from '@/lib/logger'
 // Local storage configuration
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
 const UPLOAD_URL = '/uploads'
@@ -42,7 +43,7 @@ export async function saveFileLocally(buffer, originalName, type = 'hangout') {
       size: buffer.length
     }
   } catch (error) {
-    console.error('Local file save error:', error)
+    logger.error('Local file save error:', error);
     return {
       success: false,
       error: error.message
@@ -57,7 +58,7 @@ export async function deleteFileLocally(filename) {
     await fs.unlink(filePath)
     return { success: true }
   } catch (error) {
-    console.error('Local file delete error:', error)
+    logger.error('Local file delete error:', error);
     return { success: false, error: error.message }
   }
 }

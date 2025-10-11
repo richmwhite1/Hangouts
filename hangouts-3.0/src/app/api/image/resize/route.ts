@@ -4,6 +4,7 @@ import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         'Content-Length': outputBuffer.length.toString()}})
     
   } catch (error) {
-    console.error('Image resize error:', error)
+    logger.error('Image resize error:', error);
     return NextResponse.json(
       { error: 'Failed to process image' },
       { status: 500 }

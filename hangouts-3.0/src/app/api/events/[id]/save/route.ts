@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 // POST /api/events/[id]/save - Save event to user's saved events
 export async function POST(
   request: NextRequest,
@@ -62,7 +63,7 @@ export async function POST(
     }, 'Event saved successfully'))
 
   } catch (error) {
-    console.error('❌ Error saving event:', error)
+    logger.error('❌ Error saving event:', error);
     return NextResponse.json(createErrorResponse(
       'Failed to save event',
       error instanceof Error ? error.message : 'Unknown error'
@@ -102,7 +103,7 @@ export async function DELETE(
     }, 'Event unsaved successfully'))
 
   } catch (error) {
-    console.error('❌ Error unsaving event:', error)
+    logger.error('❌ Error unsaving event:', error);
     return NextResponse.json(createErrorResponse(
       'Failed to unsave event',
       error instanceof Error ? error.message : 'Unknown error'

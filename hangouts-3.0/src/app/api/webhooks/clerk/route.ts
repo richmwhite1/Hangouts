@@ -3,6 +3,7 @@ import { Webhook } from 'svix'
 import { syncClerkUserToDatabase } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function POST(req: NextRequest) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
   
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature})
   } catch (err) {
-    console.error('Error verifying webhook:', err)
+    logger.error('Error verifying webhook:', err);
     return new Response('Error occured', {
       status: 400})
   }
@@ -43,9 +44,9 @@ export async function POST(req: NextRequest) {
     case 'user.created':
       try {
         await syncClerkUserToDatabase(data)
-        console.log('User created and synced:', data.id)
+        // console.log('User created and synced:', data.id); // Removed for production
       } catch (error) {
-        console.error('Error syncing user creation:', error)
+        logger.error('Error syncing user creation:', error);
       }
       break
       
@@ -66,10 +67,10 @@ export async function POST(req: NextRequest) {
               isVerified: data.email_addresses[0]?.verification?.status === 'verified'
             }
           })
-          console.log('User updated:', data.id)
+          // console.log('User updated:', data.id); // Removed for production
         }
       } catch (error) {
-        console.error('Error updating user:', error)
+        logger.error('Error updating user:', error);
       }
       break
       
@@ -84,10 +85,10 @@ export async function POST(req: NextRequest) {
             where: { id: user.id },
             data: { isActive: false }
           })
-          console.log('User deactivated:', data.id)
+          // console.log('User deactivated:', data.id); // Removed for production
         }
       } catch (error) {
-        console.error('Error deactivating user:', error)
+        logger.error('Error deactivating user:', error);
       }
       break
   }

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/conversations/[id]/export - Export conversation messages
 export async function GET(
   request: NextRequest,
@@ -201,7 +202,7 @@ export async function GET(
       return NextResponse.json(createErrorResponse('Invalid format', 'Supported formats: json, txt'), { status: 400 })
     }
   } catch (error) {
-    console.error('Error exporting conversation:', error)
+    logger.error('Error exporting conversation:', error);
     return NextResponse.json(createErrorResponse('Failed to export conversation', error.message), { status: 500 })
   }
 }

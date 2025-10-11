@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const saveContentSchema = z.object({
   action: z.enum(['save', 'unsave']),
   type: z.enum(['hangout', 'event', 'content']).optional()
@@ -104,7 +105,7 @@ export async function POST(
     }
 
   } catch (error: any) {
-    console.error('Error saving content:', error)
+    logger.error('Error saving content:', error);
     
     if (error.name === 'ZodError') {
       return NextResponse.json(createErrorResponse('Invalid request', 'Invalid request data'), { status: 400 })
@@ -152,7 +153,7 @@ export async function GET(
     ))
 
   } catch (error: any) {
-    console.error('Error checking save status:', error)
+    logger.error('Error checking save status:', error);
     return NextResponse.json(createErrorResponse(
       'Internal server error',
       'Failed to check save status'

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { generateEventMetadata } from './metadata'
 
+import { logger } from '@/lib/logger'
 interface EventPageProps {
   params: Promise<{ id: string }>
 }
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
       }
     }
   } catch (error) {
-    console.error('Error fetching event metadata:', error)
+    logger.error('Error fetching event metadata:', error);
   }
   
   // Fallback metadata

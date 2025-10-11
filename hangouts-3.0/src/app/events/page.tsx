@@ -61,25 +61,25 @@ export default function EventsPage() {
       return
     }
     
-    console.log('EventsPage: useEffect triggered')
+    // console.log('EventsPage: useEffect triggered'); // Removed for production
     const fetchEvents = async () => {
       try {
-        console.log('EventsPage: Starting to fetch events')
+        // console.log('EventsPage: Starting to fetch events'); // Removed for production
         const response = await fetch('/api/events')
-        console.log('EventsPage: Response status:', response.status)
+        // console.log('EventsPage: Response status:', response.status); // Removed for production
         
         if (response.ok) {
           const data = await response.json()
-          console.log('EventsPage: Fetched events data:', data)
+          // console.log('EventsPage: Fetched events data:', data); // Removed for production
           setEvents(data.events || [])
-          console.log('EventsPage: Set events:', data.events || [])
+          // console.log('EventsPage: Set events:', data.events || []); // Removed for production
         } else {
-          console.error('EventsPage: Failed to fetch events:', response.status)
+          console.error('EventsPage: Failed to fetch events:', response.status);
         }
       } catch (error) {
-        console.error('EventsPage: Error fetching events:', error)
+        console.error('EventsPage: Error fetching events:', error);
       } finally {
-        console.log('EventsPage: Setting isLoading to false')
+        // console.log('EventsPage: Setting isLoading to false'); // Removed for production
         setIsLoading(false)
       }
     }
@@ -406,10 +406,10 @@ export default function EventsPage() {
                         itemImage={event.coverImage || ''}
                         privacyLevel={event.isPublic ? 'PUBLIC' : 'PRIVATE'}
                         onSave={(id, type) => {
-                          console.log('Save event:', id, type)
+                          // console.log('Save event:', id, type); // Removed for production
                         }}
                         onUnsave={(id, type) => {
-                          console.log('Unsave event:', id, type)
+                          // console.log('Unsave event:', id, type); // Removed for production
                         }}
                         className="scale-75"
                       />

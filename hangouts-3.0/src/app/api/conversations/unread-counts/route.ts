@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 // GET /api/conversations/unread-counts - Get unread counts for all conversations
 export async function GET(request: NextRequest) {
   try {
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
     }, 'Unread counts retrieved successfully'))
 
   } catch (error) {
-    console.error('Error fetching unread counts:', error)
+    logger.error('Error fetching unread counts:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch unread counts', error.message), { status: 500 })
   }
 }

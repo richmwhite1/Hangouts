@@ -3,6 +3,7 @@
 import React from 'react'
 import { usePerformanceMonitor } from '@/hooks/use-performance-monitor'
 
+import { logger } from '@/lib/logger'
 interface PerformanceMonitorProps {
   enabled?: boolean
   showMetrics?: boolean
@@ -18,7 +19,7 @@ export function PerformanceMonitor({
     enableMemoryMonitoring: true,
     onMetricsUpdate: (metrics) => {
       if (enabled) {
-        console.log('Performance Metrics:', metrics)
+        // console.log('Performance Metrics:', metrics); // Removed for production
       }
     }
   })

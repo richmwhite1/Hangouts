@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis'
 
+import { logger } from '@/lib/logger'
 export interface CacheConfig {
   defaultTTL: number // seconds
   maxMemory: string
@@ -56,14 +57,14 @@ export class CacheManager {
       })
 
       this.redis.on('error', (error) => {
-        console.warn('Redis connection failed, falling back to memory cache:', error.message)
+        logger.warn('Redis connection failed, falling back to memory cache:', error.message);
         this.redis = null
       })
 
       await this.redis.ping()
-      console.log('✅ Redis cache connected successfully')
+      // console.log('✅ Redis cache connected successfully'); // Removed for production
     } catch (error) {
-      console.warn('Redis not available, using memory cache:', error)
+      logger.warn('Redis not available, using memory cache:', error);
       this.redis = null
     }
   }
@@ -81,7 +82,7 @@ export class CacheManager {
         return this.getFromMemory<T>(fullKey)
       }
     } catch (error) {
-      console.error('Cache get error:', error)
+      logger.error('Cache get error:', error);
       this.stats.misses++
       return null
     }
@@ -104,7 +105,7 @@ export class CacheManager {
         return this.setInMemory(fullKey, value, ttl, tags)
       }
     } catch (error) {
-      console.error('Cache set error:', error)
+      logger.error('Cache set error:', error);
       return false
     }
   }
@@ -122,7 +123,7 @@ export class CacheManager {
         return this.deleteFromMemory(fullKey)
       }
     } catch (error) {
-      console.error('Cache delete error:', error)
+      logger.error('Cache delete error:', error);
       return false
     }
   }
@@ -140,7 +141,7 @@ export class CacheManager {
         return this.deletePatternFromMemory(fullPattern)
       }
     } catch (error) {
-      console.error('Cache delete pattern error:', error)
+      logger.error('Cache delete pattern error:', error);
       return 0
     }
   }
@@ -156,7 +157,7 @@ export class CacheManager {
         return this.deleteByTagsFromMemory(tags)
       }
     } catch (error) {
-      console.error('Cache delete by tags error:', error)
+      logger.error('Cache delete by tags error:', error);
       return 0
     }
   }
@@ -174,7 +175,7 @@ export class CacheManager {
         return this.existsInMemory(fullKey)
       }
     } catch (error) {
-      console.error('Cache exists error:', error)
+      logger.error('Cache exists error:', error);
       return false
     }
   }
@@ -222,7 +223,7 @@ export class CacheManager {
       
       return true
     } catch (error) {
-      console.error('Cache clear error:', error)
+      logger.error('Cache clear error:', error);
       return false
     }
   }

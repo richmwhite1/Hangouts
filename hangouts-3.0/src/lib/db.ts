@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
+import { logger } from '@/lib/logger'
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
@@ -12,7 +13,7 @@ const createPrismaClient = () => {
     throw new Error('DATABASE_URL environment variable is required')
   }
   
-  console.log('🔗 Database URL configured:', databaseUrl.replace(/\/\/.*@/, '//***:***@'))
+  // console.log('🔗 Database URL configured:', databaseUrl.replace(/\/\/.*@/, '//***:***@'); // Removed for production)
   
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],

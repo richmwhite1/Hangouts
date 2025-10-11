@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/events/[id] - Get a specific event
 export async function GET(
   request: NextRequest,
@@ -74,7 +75,7 @@ export async function GET(
     }
     return NextResponse.json(createSuccessResponse({ event: transformedEvent }, 'Event retrieved successfully'))
   } catch (error: any) {
-    console.error('Error fetching event:', error)
+    logger.error('Error fetching event:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch event', error.message), { status: 500 })
   }
 }

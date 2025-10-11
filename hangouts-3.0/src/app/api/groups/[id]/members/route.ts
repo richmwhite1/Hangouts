@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { createApiHandler } from '@/lib/api-middleware'
 
+import { logger } from '@/lib/logger'
 // POST /api/groups/[id]/members - Add members to group
 async function addMembersHandler(
   request: NextRequest,
@@ -91,7 +92,7 @@ async function addMembersHandler(
 
     return NextResponse.json({ group, addedMembers })
   } catch (error) {
-    console.error('Error adding members to group:', error)
+    logger.error('Error adding members to group:', error);
     return NextResponse.json(
       { error: 'Failed to add members to group' },
       { status: 500 }
@@ -176,7 +177,7 @@ async function removeMemberHandler(
 
     return NextResponse.json({ group })
   } catch (error) {
-    console.error('Error removing member from group:', error)
+    logger.error('Error removing member from group:', error);
     return NextResponse.json(
       { error: 'Failed to remove member from group' },
       { status: 500 }

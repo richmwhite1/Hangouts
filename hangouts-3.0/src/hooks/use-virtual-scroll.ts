@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 
+import { logger } from '@/lib/logger'
 interface VirtualScrollOptions {
   itemHeight: number
   containerHeight: number
@@ -124,7 +125,7 @@ export function useInfiniteScroll<T>({
     try {
       await fetchMore()
     } catch (error) {
-      console.error('Error loading more items:', error)
+      logger.error('Error loading more items:', error);
     } finally {
       setIsLoading(false)
     }

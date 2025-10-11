@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { saveFileLocally } from './local-storage';
 
+import { logger } from '@/lib/logger'
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
@@ -21,7 +22,7 @@ export const uploadImage = async (buffer, filename, mimeType, folder = 'hangouts
          process.env.CLOUDINARY_API_KEY === 'demo' ||
          process.env.CLOUDINARY_API_KEY === 'your_cloudinary_api_key')) {
       // Use local file storage for development
-      console.log('Using local file storage for development');
+      // console.log('Using local file storage for development'); // Removed for production
       const result = await saveFileLocally(buffer, filename, folder);
       if (result.success) {
         return {
@@ -53,7 +54,7 @@ export const uploadImage = async (buffer, filename, mimeType, folder = 'hangouts
       public_id: result.public_id,
     };
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    logger.error('Cloudinary upload error:', error);
     return {
       success: false,
       error: error.message,
@@ -80,7 +81,7 @@ export const deleteImage = async (publicId) => {
     await cloudinary.uploader.destroy(publicId);
     return { success: true };
   } catch (error) {
-    console.error('Image delete error:', error);
+    logger.error('Image delete error:', error);
     return { success: false, error: error.message };
   }
 };

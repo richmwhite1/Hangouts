@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { logger } from '@/lib/logger'
 interface PhotoUploadProps {
   onUpload: (files: File[], metadata: PhotoMetadata) => Promise<void>
   onCancel?: () => void
@@ -87,11 +88,11 @@ export function PhotoUpload({
   const addFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       if (!allowedTypes.includes(file.type)) {
-        console.warn(`File ${file.name} is not a supported image type`)
+        logger.warn(`File ${file.name} is not a supported image type`);
         return false
       }
       if (file.size > maxFileSize * 1024 * 1024) {
-        console.warn(`File ${file.name} is too large. Maximum size is ${maxFileSize}MB`)
+        logger.warn(`File ${file.name} is too large. Maximum size is ${maxFileSize}MB`);
         return false
       }
       return true

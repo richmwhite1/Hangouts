@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/participants - Add participants to conversation
 export async function POST(
   request: NextRequest,
@@ -98,7 +99,7 @@ export async function POST(
       }))
     }, `${addedParticipants.length} participants added successfully`))
   } catch (error) {
-    console.error('Error adding participants:', error)
+    logger.error('Error adding participants:', error);
     return NextResponse.json(createErrorResponse('Failed to add participants', error.message), { status: 500 })
   }
 }
@@ -153,7 +154,7 @@ export async function DELETE(
       removedCount: removedParticipants.count
     }, `${removedParticipants.count} participants removed successfully`))
   } catch (error) {
-    console.error('Error removing participants:', error)
+    logger.error('Error removing participants:', error);
     return NextResponse.json(createErrorResponse('Failed to remove participants', error.message), { status: 500 })
   }
 }
@@ -227,7 +228,7 @@ export async function PUT(
       }
     }, 'Participant role updated successfully'))
   } catch (error) {
-    console.error('Error updating participant role:', error)
+    logger.error('Error updating participant role:', error);
     return NextResponse.json(createErrorResponse('Failed to update participant role', error.message), { status: 500 })
   }
 }

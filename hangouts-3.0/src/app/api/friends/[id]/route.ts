@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -44,7 +45,7 @@ export async function DELETE(
       message: 'Friendship removed'
     })
   } catch (error) {
-    console.error('Error removing friendship:', error)
+    logger.error('Error removing friendship:', error);
     return NextResponse.json(
       { error: 'Failed to remove friendship' },
       { status: 500 }

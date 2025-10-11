@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { createHangoutFlow } from '@/lib/hangout-flow'
 import { TransactionQueries } from '@/lib/db-queries'
 
+import { logger } from '@/lib/logger'
 const createHangoutSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
   description: z.string().max(500, 'Description too long').optional(),
@@ -130,7 +131,7 @@ async function getHangoutsHandler(request: AuthenticatedRequest) {
 
     return createSuccessResponse({ hangouts })
   } catch (error) {
-    console.error('Database error in getHangoutsHandler:', error)
+    logger.error('Database error in getHangoutsHandler:', error);
     return createErrorResponse('Database error', 'Failed to fetch hangouts', 500)
   }
 }
@@ -212,9 +213,9 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
 
     // Create poll for all hangouts with options (both quick_plan and multi_option)
     if (flowData.options.length > 0) {
-      console.log('🔍 Creating poll for hangout:', hangout?.id)
-      console.log('🔍 Poll options:', flowData.options)
-      console.log('🔍 Requires voting:', flowResult.requiresVoting)
+      // console.log('🔍 Creating poll for hangout:', hangout?.id); // Removed for production
+      // console.log('🔍 Poll options:', flowData.options); // Removed for production
+      // console.log('🔍 Requires voting:', flowResult.requiresVoting); // Removed for production
       
       try {
         const pollData = {
@@ -231,21 +232,21 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
           expiresAt: flowResult.votingDeadline || null
         };
         
-        console.log('🔍 Poll data to create:', JSON.stringify(pollData, null, 2));
+        // console.log('🔍 Poll data to create:', JSON.stringify(pollData, null, 2); // Removed for production);
         
         const poll = await db.polls.create({
           data: pollData
         });
-        console.log('✅ Poll created successfully:', poll.id)
+        // console.log('✅ Poll created successfully:', poll.id); // Removed for production
       } catch (error) {
-        console.error('❌ Error creating poll:', error)
-        console.error('❌ Error details:', {
+        logger.error('❌ Error creating poll:', error);
+        logger.error('❌ Error details:', {
           message: error instanceof Error ? error.message : 'Unknown error',
           code: (error as any)?.code,
           meta: (error as any)?.meta
         });
         // Don't throw error, just log it and continue
-        console.log('⚠️ Continuing without poll creation...');
+        // console.log('⚠️ Continuing without poll creation...'); // Removed for production
       }
     }
 
@@ -263,12 +264,12 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
 
     return createSuccessResponse(hangoutWithFlow, 'Hangout created successfully')
   } catch (error) {
-    console.error('Error in createHangoutHandler:', error)
-    console.error('Error details:', {
+    logger.error('Error in createHangoutHandler:', error);
+    logger.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       name: error instanceof Error ? error.name : 'Unknown'
-    })
+    });
     return createErrorResponse('Internal error', `Failed to create hangout: ${error instanceof Error ? error.message : 'Unknown error'}`, 500)
   }
 }

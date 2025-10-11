@@ -8,6 +8,7 @@ import { SimpleChat } from '@/components/simple-chat'
 import { PhotoGallery } from '@/components/PhotoGallery'
 import { EnhancedPhotoUpload } from '@/components/EnhancedPhotoUpload'
 import { Calendar, Clock, Users, Camera, BarChart3, UserPlus, MapPin } from 'lucide-react'
+import { logger } from '@/lib/logger'
 export default function HangoutDetailPage() {
   const { id: hangoutId } = useParams()
   const { user } = useAuth()
@@ -32,38 +33,38 @@ export default function HangoutDetailPage() {
       const data = await response.json()
       setCurrentHangout(data.hangout || data)
     } catch (error) {
-      console.error('Error fetching hangout:', error)
+      logger.error('Error fetching hangout:', error);
       setError('Failed to load hangout')
     } finally {
       setIsLoading(false)
     }
   }
   const fetchPolls = async () => {
-    console.log('🔄 fetchPolls called with:', { hangoutId })
+    // console.log('🔄 fetchPolls called with:', { hangoutId }); // Removed for production
     if (!hangoutId) {
-      console.log('❌ fetchPolls skipped - missing hangoutId')
+      // console.log('❌ fetchPolls skipped - missing hangoutId'); // Removed for production
       return
     }
     try {
-      console.log('🌐 Fetching polls from:', `/api/hangouts/${hangoutId}/polls-simple`)
+      // console.log('🌐 Fetching polls from:', `/api/hangouts/${hangoutId}/polls-simple`); // Removed for production
       const response = await fetch(`/api/hangouts/${hangoutId}/polls-simple`)
-      console.log('📡 Polls response status:', response.status, response.ok)
+      // console.log('📡 Polls response status:', response.status, response.ok); // Removed for production
       if (response.ok) {
         const data = await response.json()
-        console.log('📊 Polls API Response:', data)
-        console.log('📊 Setting polls to:', data.polls || [])
+        // console.log('📊 Polls API Response:', data); // Removed for production
+        // console.log('📊 Setting polls to:', data.polls || []); // Removed for production
         setPolls(data.polls || [])
       } else {
-        console.error('❌ Polls API error:', response.status, response.statusText)
+        logger.error('❌ Polls API error:', response.status, response.statusText);
         const errorData = await response.json()
-        console.error('❌ Polls API error details:', errorData)
+        logger.error('❌ Polls API error details:', errorData);
       }
     } catch (error) {
-      console.error('❌ Polls fetch error:', error)
+      logger.error('❌ Polls fetch error:', error);
     }
   }
   const handleVote = async (pollId: string, optionId: string) => {
-    console.log('🗳️ Voting on poll:', pollId, 'option:', optionId)
+    // console.log('🗳️ Voting on poll:', pollId, 'option:', optionId); // Removed for production
     try {
       const response = await fetch(`/api/polls/${pollId}/vote-simple`, {
         method: 'POST',
@@ -74,17 +75,17 @@ export default function HangoutDetailPage() {
           weight: 1.0
         })
       })
-      console.log('📡 Vote response status:', response.status)
+      // console.log('📡 Vote response status:', response.status); // Removed for production
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ Vote successful:', result)
+        // console.log('✅ Vote successful:', result); // Removed for production
         await fetchPolls()
       } else {
         const errorData = await response.json()
-        console.error('❌ Vote failed:', errorData)
+        logger.error('❌ Vote failed:', errorData);
       }
     } catch (error) {
-      console.error('❌ Vote error:', error)
+      logger.error('❌ Vote error:', error);
     }
   }
   const handlePhotoUpload = async (files: File[]) => {
@@ -103,7 +104,7 @@ export default function HangoutDetailPage() {
           await fetchHangout()
         }
       } catch (error) {
-        console.error('Error uploading photo:', error)
+        logger.error('Error uploading photo:', error);
       }
     }
   }
@@ -115,11 +116,11 @@ export default function HangoutDetailPage() {
         await fetchHangout()
       }
     } catch (error) {
-      console.error('Error deleting photo:', error)
+      logger.error('Error deleting photo:', error);
     }
   }
   const handleOptionAdded = async (option: any) => {
-    console.log('Option added:', option)
+    // console.log('Option added:', option); // Removed for production
     // Refresh polls to show the new option
     await fetchPolls()
   }
@@ -137,7 +138,7 @@ export default function HangoutDetailPage() {
         throw new Error('Failed to fetch final plan')
       }
     } catch (error) {
-      console.error('Error fetching final plan:', error)
+      logger.error('Error fetching final plan:', error);
       setFinalPlan(null)
     } finally {
       setIsLoadingFinalPlan(false)
@@ -154,7 +155,7 @@ export default function HangoutDetailPage() {
         throw new Error('Failed to fetch RSVPs')
       }
     } catch (error) {
-      console.error('Error fetching RSVPs:', error)
+      logger.error('Error fetching RSVPs:', error);
       setRsvps([])
     }
   }
@@ -172,7 +173,7 @@ export default function HangoutDetailPage() {
         throw new Error('Failed to update RSVP')
       }
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      logger.error('Error updating RSVP:', error);
     } finally {
       setIsUpdatingRSVP(false)
     }
@@ -186,7 +187,7 @@ export default function HangoutDetailPage() {
         setFriends(data.friends || [])
       }
     } catch (error) {
-      console.error('Error fetching friends:', error)
+      logger.error('Error fetching friends:', error);
     }
   }
 
@@ -208,10 +209,10 @@ export default function HangoutDetailPage() {
         setSelectedFriends([])
         fetchHangout() // Refresh hangout data
       } else {
-        console.error('Failed to invite friends')
+        logger.error('Failed to invite friends');
       }
     } catch (error) {
-      console.error('Error inviting friends:', error)
+      logger.error('Error inviting friends:', error);
     } finally {
       setIsInviting(false)
     }
@@ -404,7 +405,7 @@ export default function HangoutDetailPage() {
                 {polls.length > 0 && (
                   <div className="space-y-6">
                     {polls.map((poll) => {
-                      console.log('🎯 Rendering poll:', poll.id, 'with options:', poll.pollOptions?.length || 0)
+                      // console.log('🎯 Rendering poll:', poll.id, 'with options:', poll.pollOptions?.length || 0); // Removed for production
                       return (
                         <div key={poll.id} className="bg-gray-800 rounded-lg p-6">
                           <SimplePollDisplay

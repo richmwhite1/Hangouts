@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Advanced photo search and filtering API
 export async function GET(request: NextRequest) {
   try {
@@ -197,7 +198,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Photo search error:', error)
+    logger.error('Photo search error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to search photos',
@@ -264,7 +265,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Save search error:', error)
+    logger.error('Save search error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to save search query',

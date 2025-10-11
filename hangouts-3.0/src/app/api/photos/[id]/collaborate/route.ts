@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Photo collaboration API (comments, reactions, etc.)
 export async function POST(
   request: NextRequest,
@@ -84,7 +85,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Photo collaboration error:', error)
+    logger.error('Photo collaboration error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to collaborate on photo',
@@ -148,7 +149,7 @@ async function addComment(photoId: string, userId: string, content: string) {
     })
 
   } catch (error) {
-    console.error('Add comment error:', error)
+    logger.error('Add comment error:', error);
     throw error
   }
 }
@@ -223,7 +224,7 @@ async function addReaction(photoId: string, userId: string, reaction: string) {
     }
 
   } catch (error) {
-    console.error('Add reaction error:', error)
+    logger.error('Add reaction error:', error);
     throw error
   }
 }
@@ -299,7 +300,7 @@ async function addTag(photoId: string, userId: string, tagUserId: string, x: num
     })
 
   } catch (error) {
-    console.error('Add tag error:', error)
+    logger.error('Add tag error:', error);
     throw error
   }
 }
@@ -344,7 +345,7 @@ async function removeTag(photoId: string, userId: string, tagUserId: string) {
     })
 
   } catch (error) {
-    console.error('Remove tag error:', error)
+    logger.error('Remove tag error:', error);
     throw error
   }
 }
@@ -388,7 +389,7 @@ async function addAnnotation(photoId: string, userId: string, content: string, x
     })
 
   } catch (error) {
-    console.error('Add annotation error:', error)
+    logger.error('Add annotation error:', error);
     throw error
   }
 }
@@ -481,7 +482,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Get photo collaboration error:', error)
+    logger.error('Get photo collaboration error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to get collaboration data',

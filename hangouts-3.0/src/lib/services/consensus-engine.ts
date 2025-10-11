@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
+import { logger } from '@/lib/logger'
 const prisma = new PrismaClient()
 
 export interface ConsensusResult {
@@ -131,7 +132,7 @@ export class ConsensusEngine {
 
       return result
     } catch (error) {
-      console.error('Error calculating consensus:', error)
+      logger.error('Error calculating consensus:', error);
       throw error
     }
   }
@@ -415,7 +416,7 @@ export class ConsensusEngine {
         }
       })
     } catch (error) {
-      console.error('Error saving consensus history:', error)
+      logger.error('Error saving consensus history:', error);
     }
   }
 

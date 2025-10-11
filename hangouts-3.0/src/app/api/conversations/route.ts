@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/conversations - Get user's conversations
 export async function GET(request: NextRequest) {
   try {
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
       conversations: transformedConversations
     })
   } catch (error) {
-    console.error('Error fetching conversations:', error)
+    logger.error('Error fetching conversations:', error);
     return NextResponse.json({ error: 'Failed to fetch conversations' }, { status: 500 })
   }
 }
@@ -211,7 +212,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error creating conversation:', error)
+    logger.error('Error creating conversation:', error);
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
   }
 }

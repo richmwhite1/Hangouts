@@ -1,6 +1,7 @@
 import { db } from './db'
 import { ResourceAccess } from './rbac'
 
+import { logger } from '@/lib/logger'
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
@@ -76,7 +77,7 @@ export class AuditLogger {
         }
       })
     } catch (error) {
-      console.error('Error logging audit event:', error)
+      logger.error('Error logging audit event:', error);
     }
   }
 
@@ -113,7 +114,7 @@ export class AuditLogger {
         }
       })
     } catch (error) {
-      console.error('Error logging permission check:', error)
+      logger.error('Error logging permission check:', error);
     }
   }
 
@@ -144,7 +145,7 @@ export class AuditLogger {
         }
       })
     } catch (error) {
-      console.error('Error logging resource access:', error)
+      logger.error('Error logging resource access:', error);
     }
   }
 
@@ -175,7 +176,7 @@ export class AuditLogger {
 
       // For critical events, also log to console
       if (severity === 'CRITICAL') {
-        console.error('CRITICAL SECURITY EVENT:', {
+        logger.error('CRITICAL SECURITY EVENT:', {
           action,
           userId,
           resource,
@@ -186,7 +187,7 @@ export class AuditLogger {
         })
       }
     } catch (error) {
-      console.error('Error logging security event:', error)
+      logger.error('Error logging security event:', error);
     }
   }
 
@@ -301,7 +302,7 @@ export class AuditLogger {
         createdAt: log.createdAt
       }))
     } catch (error) {
-      console.error('Error getting entity audit logs:', error)
+      logger.error('Error getting entity audit logs:', error);
       return []
     }
   }
@@ -335,7 +336,7 @@ export class AuditLogger {
         timestamp: log.createdAt
       }))
     } catch (error) {
-      console.error('Error getting user security logs:', error)
+      logger.error('Error getting user security logs:', error);
       return []
     }
   }
@@ -374,7 +375,7 @@ export class AuditLogger {
         }))
         .filter(log => !severity || log.severity === severity)
     } catch (error) {
-      console.error('Error getting recent security events:', error)
+      logger.error('Error getting recent security events:', error);
       return []
     }
   }
@@ -421,7 +422,7 @@ export class AuditLogger {
 
       return deletedAuditLogs.count + deletedSecurityLogs.count
     } catch (error) {
-      console.error('Error cleaning up old logs:', error)
+      logger.error('Error cleaning up old logs:', error);
       return 0
     }
   }

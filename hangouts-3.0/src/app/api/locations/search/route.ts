@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       locations
     })
   } catch (error) {
-    console.error('Location search error:', error)
+    logger.error('Location search error:', error);
     return NextResponse.json(
       { error: 'Failed to search locations' },
       { status: 500 }

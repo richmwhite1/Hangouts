@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Send, X, Search, Users, Check } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 
+import { logger } from '@/lib/logger'
 interface Friend {
   id: string
   name: string
@@ -88,7 +89,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
         setFriends(data.data.friends || [])
       }
     } catch (error) {
-      console.error('Error fetching friends:', error)
+      logger.error('Error fetching friends:', error);
     }
   }
 
@@ -101,7 +102,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
         setConversations(data.data.conversations || [])
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error)
+      logger.error('Error fetching conversations:', error);
     }
   }
 
@@ -115,7 +116,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
         setMessages(data.data.messages || [])
       }
     } catch (error) {
-      console.error('Error fetching messages:', error)
+      logger.error('Error fetching messages:', error);
     }
   }
 
@@ -156,7 +157,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
         await fetchMessages(conversation.id)
       }
     } catch (error) {
-      console.error('Error starting conversation:', error)
+      logger.error('Error starting conversation:', error);
     } finally {
       setIsLoading(false)
     }
@@ -201,7 +202,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
         await fetchMessages(conversation.id)
       }
     } catch (error) {
-      console.error('Error starting group conversation:', error)
+      logger.error('Error starting group conversation:', error);
     } finally {
       setIsLoading(false)
     }
@@ -236,7 +237,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
         await fetchConversations()
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message:', error);
     }
   }
 

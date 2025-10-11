@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ReminderType } from '@prisma/client'
 
+import { logger } from '@/lib/logger'
 export interface ReminderData {
   contentId?: string
   type: ReminderType
@@ -197,9 +198,9 @@ export class ReminderService {
           notification
         })
 
-        console.log(`Processed reminder: ${reminder.title} for user ${reminder.user.name}`)
+        // // console.log(`Processed reminder: ${reminder.title} for user ${reminder.user.name}`); // Removed for production; // Removed for production
       } catch (error) {
-        console.error(`Error processing reminder ${reminder.id}:`, error)
+        logger.error(`Error processing reminder ${reminder.id}:`, error);
       }
     }
 
@@ -238,7 +239,7 @@ export class ReminderService {
       }
     })
 
-    console.log(`Cleaned up ${result.count} old reminders`)
+    // // console.log(`Cleaned up ${result.count} old reminders`); // Removed for production; // Removed for production
     return result.count
   }
 }

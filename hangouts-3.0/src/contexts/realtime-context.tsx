@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { io, Socket } from 'socket.io-client'
 import { useAuth } from './auth-context'
 import { config } from '@/lib/config'
+import { logger } from '@/lib/logger'
 // Type definitions
 interface PollData {
   id: string
@@ -148,40 +149,66 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
   const { user, isAuthenticated } = useAuth()
   const eventCallbacks = useRef<Map<string, Set<Function>>>(new Map())
-  // Initialize socket connection - TEMPORARILY DISABLED DUE TO CORS ISSUES
+  // Initialize socket connection
   useEffect(() => {
-    // TODO: Fix CORS configuration for Socket.io
-    console.log('🔌 Realtime connection temporarily disabled due to CORS issues')
-    if (socket) {
-      socket.disconnect()
-      setSocket(null)
-      setIsConnected(false)
+    if (isAuthenticated && user?.id) {
+      const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
+        path: '/api/socket',
+        auth: { userId: user.id },
+        transports: ['polling', 'websocket'],
+        timeout: 2000,
+        retries: 3,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 3,
+        maxReconnectionAttempts: 3,
+        forceNew: true,
+      })
+
+      newSocket.on('connect', () => {
+        // console.log('🔌 Realtime WebSocket connected'); // Removed for production
+        setIsConnected(true)
+        setConnectionError(null)
+        setReconnectAttempts(0)
+        // Authenticate with the server
+        newSocket.emit('authenticate', { userId: user.id })
+      })
+
+      newSocket.on('disconnect', () => {
+        // console.log('🔌 Realtime WebSocket disconnected'); // Removed for production
+        setIsConnected(false)
+      })
+
+      newSocket.on('connect_error', (error) => {
+        logger.error('🔌 Realtime WebSocket connection error:', error);
+        setConnectionError(error.message)
+        setReconnectAttempts(prev => prev + 1)
+      })
+
+      setSocket(newSocket)
+
+      return () => {
+        newSocket.disconnect()
+      }
+    } else {
+      if (socket) {
+        socket.disconnect()
+        setSocket(null)
+        setIsConnected(false)
+      }
     }
-    // Re-enable when CORS is fixed:
-    // const newSocket = io(config.realtime.socketUrl, {
-    //   path: '/socket.io/',
-    //   auth: { token, userId: user.id },
-    //   transports: ['polling', 'websocket'],
-    //   timeout: 2000,
-    //   retries: 3,
-    //   reconnection: true,
-    //   reconnectionDelay: 1000,
-    //   reconnectionAttempts: 3,
-    //   maxReconnectionAttempts: 3,
-    //   forceNew: true,
-    // })
   }, [isAuthenticated, user?.id])
   // Hangout management
   const joinHangout = useCallback((hangoutId: string) => {
     if (socket && isConnected) {
       socket.emit('join-hangout', hangoutId)
-      console.log('Joined hangout room:', hangoutId)
+      // console.log('Joined hangout room:', hangoutId); // Removed for production
     }
   }, [socket, isConnected])
   const leaveHangout = useCallback((hangoutId: string) => {
     if (socket && isConnected) {
       socket.emit('leave-hangout', hangoutId)
-      console.log('Left hangout room:', hangoutId)
+      // console.log('Left hangout room:', hangoutId); // Removed for production
     }
   }, [socket, isConnected])
   const sendMessage = useCallback((hangoutId: string, message: string) => {
@@ -193,13 +220,13 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const joinPoll = useCallback((pollId: string) => {
     if (socket && isConnected) {
       socket.emit('joinPoll', { pollId })
-      console.log('Joined poll room:', pollId)
+      // console.log('Joined poll room:', pollId); // Removed for production
     }
   }, [socket, isConnected])
   const leavePoll = useCallback((pollId: string) => {
     if (socket && isConnected) {
       socket.emit('leavePoll', { pollId })
-      console.log('Left poll room:', pollId)
+      // console.log('Left poll room:', pollId); // Removed for production
     }
   }, [socket, isConnected])
   const createPoll = useCallback(async (data: Omit<PollData, 'id' | 'createdAt' | 'updatedAt'>): Promise<PollData> => {
@@ -215,7 +242,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }
       return await response.json() as PollData
     } catch (error) {
-      console.error('Error creating poll:', error)
+      logger.error('Error creating poll:', error);
       throw error
     }
   }, [])
@@ -233,7 +260,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }
       return await response.json() as PollVote
     } catch (error) {
-      console.error('Error casting vote:', error)
+      logger.error('Error casting vote:', error);
       throw error
     }
   }, [])
@@ -250,7 +277,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }
       return await response.json() as PollVote
     } catch (error) {
-      console.error('Error changing vote:', error)
+      logger.error('Error changing vote:', error);
       throw error
     }
   }, [])
@@ -264,7 +291,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
         throw new Error(error.error || 'Failed to delete vote')
       }
     } catch (error) {
-      console.error('Error deleting vote:', error)
+      logger.error('Error deleting vote:', error);
       throw error
     }
   }, [])

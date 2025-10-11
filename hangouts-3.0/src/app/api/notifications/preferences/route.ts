@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 // GET /api/notifications/preferences - Get user notification preferences
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(createSuccessResponse(preferences, 'Notification preferences retrieved successfully'))
 
   } catch (error) {
-    console.error('Error fetching notification preferences:', error)
+    logger.error('Error fetching notification preferences:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch notification preferences', error.message), { status: 500 })
   }
 }
@@ -88,7 +89,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(createSuccessResponse(preferences, 'Notification preferences updated successfully'))
 
   } catch (error) {
-    console.error('Error updating notification preferences:', error)
+    logger.error('Error updating notification preferences:', error);
     return NextResponse.json(createErrorResponse('Failed to update notification preferences', error.message), { status: 500 })
   }
 }

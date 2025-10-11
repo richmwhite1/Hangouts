@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/conversations/[id]/messages - Get messages for a conversation
 export async function GET(
   request: NextRequest,
@@ -121,7 +122,7 @@ export async function GET(
       messages: transformedMessages
     }, 'Messages retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching messages:', error)
+    logger.error('Error fetching messages:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch messages', error.message), { status: 500 })
   }
 }
@@ -258,7 +259,7 @@ export async function POST(
       }
     }, 'Message sent successfully'))
   } catch (error) {
-    console.error('Error sending message:', error)
+    logger.error('Error sending message:', error);
     return NextResponse.json(createErrorResponse('Failed to send message', error.message), { status: 500 })
   }
 }

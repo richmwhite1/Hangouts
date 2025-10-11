@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function GET() {
   try {
-    console.log('🔍 Test hangout API: GET request received')
+    // console.log('🔍 Test hangout API: GET request received'); // Removed for production
     
     // Test basic database connection
     const hangoutCount = await db.content.count({
       where: { type: 'HANGOUT' }
     })
     
-    console.log(`📊 Found ${hangoutCount} hangouts in database`)
+    // // console.log(`📊 Found ${hangoutCount} hangouts in database`); // Removed for production; // Removed for production
     
     return NextResponse.json({
       success: true,
@@ -20,7 +21,7 @@ export async function GET() {
     })
     
   } catch (error) {
-    console.error('❌ Test hangout API error:', error)
+    logger.error('❌ Test hangout API error:', error);
     return NextResponse.json(
       { 
         error: 'Test hangout API failed',

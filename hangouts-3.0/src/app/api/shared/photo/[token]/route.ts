@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // Get shared photo by token
 export async function GET(
   request: NextRequest,
@@ -132,7 +133,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Get shared photo error:', error)
+    logger.error('Get shared photo error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to load shared photo',

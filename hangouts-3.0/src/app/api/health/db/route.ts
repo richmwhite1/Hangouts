@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function GET() {
   try {
-    console.log('🏥 Database health check requested')
+    // console.log('🏥 Database health check requested'); // Removed for production
     
     // Test database connection
     await db.$connect()
-    console.log('✅ Database connected successfully')
+    // console.log('✅ Database connected successfully'); // Removed for production
     
     // Test a simple query
     const userCount = await db.user.count()
-    console.log(`✅ Database query successful, user count: ${userCount}`)
+    // // console.log(`✅ Database query successful, user count: ${userCount}`); // Removed for production; // Removed for production
     
     const response = {
       status: 'healthy',
@@ -21,7 +22,7 @@ export async function GET() {
       environment: process.env.NODE_ENV || 'development'
     }
     
-    console.log('✅ Database health check response:', response)
+    // console.log('✅ Database health check response:', response); // Removed for production
     
     return NextResponse.json(response, {
       status: 200,
@@ -35,7 +36,7 @@ export async function GET() {
     })
     
   } catch (error: any) {
-    console.error('❌ Database health check failed:', error)
+    logger.error('❌ Database health check failed:', error);
     
     const errorResponse = {
       status: 'unhealthy',
@@ -57,9 +58,9 @@ export async function GET() {
   } finally {
     try {
       await db.$disconnect()
-      console.log('✅ Database disconnected successfully')
+      // console.log('✅ Database disconnected successfully'); // Removed for production
     } catch (disconnectError) {
-      console.error('❌ Error disconnecting from database:', disconnectError)
+      logger.error('❌ Error disconnecting from database:', disconnectError);
     }
   }
 }

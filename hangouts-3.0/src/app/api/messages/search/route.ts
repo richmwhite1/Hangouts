@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/messages/search - Search messages across conversations
 export async function GET(request: NextRequest) {
   try {
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest) {
       query: query
     }, 'Search completed successfully'))
   } catch (error) {
-    console.error('Error searching messages:', error)
+    logger.error('Error searching messages:', error);
     return NextResponse.json(createErrorResponse('Failed to search messages', error.message), { status: 500 })
   }
 }

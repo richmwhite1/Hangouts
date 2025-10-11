@@ -5,6 +5,7 @@ import sharp from 'sharp'
 import { filterPhotoContent } from '@/lib/content-filter'
 import { uploadImage } from '@/lib/cloudinary'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     
     // If file type is not in allowed list, try to process it anyway
     if (!allowedTypes.includes(file.type)) {
-      console.log(`Unknown file type: ${file.type}, attempting to process anyway`)
+      // // console.log(`Unknown file type: ${file.type}, attempting to process anyway`); // Removed for production; // Removed for production
     }
 
     // Validate file size (max 10MB)
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
               
               // Handle unknown formats by trying to auto-detect
               if (!allowedTypes.includes(file.type)) {
-                console.log(`Attempting to process unknown format: ${file.type}`)
+                // // console.log(`Attempting to process unknown format: ${file.type}`); // Removed for production; // Removed for production
                 // Sharp will try to auto-detect the format
               }
       
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
         dimensions = { width, height }
       }
     } catch (processingError) {
-      console.error('Image processing error:', processingError)
+      logger.error('Image processing error:', processingError);
       return NextResponse.json(
         { error: 'Image processing failed', details: processingError instanceof Error ? processingError.message : 'Unknown processing error' },
         { status: 400 }
@@ -226,7 +227,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Upload error:', error)
+    logger.error('Upload error:', error);
     return NextResponse.json(
       { error: 'Upload failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

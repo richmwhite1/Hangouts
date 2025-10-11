@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { X, Star, Bug, Lightbulb, MessageSquare, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { logger } from '@/lib/logger'
 interface BetaFeedbackModalProps {
   isOpen: boolean
   onClose: () => void
@@ -72,12 +73,12 @@ export function BetaFeedbackModal({ isOpen, onClose, context }: BetaFeedbackModa
       }
 
       const result = await response.json()
-      console.log('Feedback submitted successfully:', result)
+      // console.log('Feedback submitted successfully:', result); // Removed for production
       
       toast.success('Thank you for your feedback!')
       handleClose()
     } catch (error) {
-      console.error('Error submitting feedback:', error)
+      logger.error('Error submitting feedback:', error);
       toast.error('Failed to submit feedback. Please try again.')
     } finally {
       setIsSubmitting(false)

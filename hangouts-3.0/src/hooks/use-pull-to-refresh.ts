@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 
+import { logger } from '@/lib/logger'
 interface PullToRefreshOptions {
   threshold?: number // Distance to trigger refresh (default: 80px)
   resistance?: number // How much to resist the pull (default: 2.5)
@@ -74,7 +75,7 @@ export function usePullToRefresh({
       try {
         await onRefresh()
       } catch (error) {
-        console.error('Pull to refresh error:', error)
+        logger.error('Pull to refresh error:', error);
       } finally {
         setState(prev => ({ 
           ...prev, 

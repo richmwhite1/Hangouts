@@ -22,6 +22,31 @@ const nextConfig = {
     if (isServer) {
       config.externals.push('ws')
     }
+    
+    // Exclude Winston from client-side bundles
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        os: false,
+        crypto: false,
+        stream: false,
+        util: false,
+        buffer: false,
+        events: false,
+        assert: false,
+        http: false,
+        https: false,
+        url: false,
+        querystring: false,
+        zlib: false,
+        net: false,
+        tls: false,
+        child_process: false,
+      }
+    }
+    
     return config
   },
   

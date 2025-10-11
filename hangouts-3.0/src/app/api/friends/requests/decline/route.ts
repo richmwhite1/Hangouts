@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
 import { FriendsSystem } from '@/lib/friends-system'
 
+import { logger } from '@/lib/logger'
 // Decline friend request
 async function declineFriendRequestHandler(request: AuthenticatedRequest) {
   const userId = request.user.userId
@@ -16,7 +17,7 @@ async function declineFriendRequestHandler(request: AuthenticatedRequest) {
     const request = await FriendsSystem.declineFriendRequest(requestId, userId)
     return createSuccessResponse({ request }, 'Friend request declined')
   } catch (error) {
-    console.error('Error declining friend request:', error)
+    logger.error('Error declining friend request:', error);
     return createErrorResponse('Failed to decline friend request', error instanceof Error ? error.message : 'Unknown error')
   }
 }

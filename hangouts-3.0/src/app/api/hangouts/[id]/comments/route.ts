@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/hangouts/[id]/comments - Get comments for a hangout
 export async function GET(
   request: NextRequest,
@@ -48,8 +49,8 @@ export async function GET(
       }))
     })
   } catch (error) {
-    console.error('Error fetching hangout comments:', error)
-    console.error('Error stack:', error.stack)
+    logger.error('Error fetching hangout comments:', error);
+    logger.error('Error stack:', error.stack);
     return NextResponse.json({ error: 'Failed to fetch comments', details: error.message }, { status: 500 })
   }
 }
@@ -110,9 +111,9 @@ export async function POST(
       }
     })
   } catch (error) {
-    console.error('Error creating comment:', error)
-    console.error('Error details:', error.message)
-    console.error('Error stack:', error.stack)
+    logger.error('Error creating comment:', error);
+    logger.error('Error details:', error.message);
+    logger.error('Error stack:', error.stack);
     return NextResponse.json({ error: 'Failed to create comment', details: error.message }, { status: 500 })
   }
 }

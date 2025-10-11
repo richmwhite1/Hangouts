@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse, RSVPResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 const RSVPSchema = z.object({
   status: z.enum(['PENDING', 'YES', 'NO', 'MAYBE'])
 })
@@ -67,7 +68,7 @@ export async function GET(
     ))
 
   } catch (error) {
-    console.error('❌ Error fetching RSVPs:', error)
+    logger.error('❌ Error fetching RSVPs:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch RSVPs', error.message), { status: 500 })
   }
 }
@@ -184,8 +185,8 @@ export async function POST(
     }, 'RSVP updated successfully'))
 
   } catch (error) {
-    console.error('❌ Error updating RSVP:', error)
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    logger.error('❌ Error updating RSVP:', error);
+    logger.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(createErrorResponse(
       'Failed to update RSVP',
       error instanceof Error ? error.message : 'Unknown error'

@@ -21,6 +21,7 @@ import { HangoutCard } from "@/components/hangout-card"
 import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
 import { ContentFeed } from "@/components/content-feed"
 import { useState, useEffect } from "react"
+import { logger } from '@/lib/logger'
 // Removed api-client import - using direct fetch calls
 
 async function getHangouts() {
@@ -29,7 +30,7 @@ async function getHangouts() {
     const data = await response.json()
     return data.hangouts || []
   } catch (error) {
-    console.error('Error fetching hangouts:', error)
+    logger.error('Error fetching hangouts:', error);
     return []
   }
 }
@@ -65,7 +66,7 @@ export function DiscoveryPageServer() {
         const hangoutsData = await getHangouts()
         setHangouts(hangoutsData)
       } catch (err) {
-        console.error('Error fetching hangouts:', err)
+        logger.error('Error fetching hangouts:', err);
         setError('Failed to load hangouts')
       } finally {
         setIsLoading(false)

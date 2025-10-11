@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 const { Server: SocketIOServer } = require('socket.io')
 const { verifyToken } = require('./auth')
 const { db } = require('./db')
@@ -54,7 +55,7 @@ class WebSocketServer {
 
   setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`User ${socket.user?.name} connected with socket ${socket.id}`)
+      // // console.log(`User ${socket.user?.name} connected with socket ${socket.id}`); // Removed for production; // Removed for production
       
       if (socket.userId) {
         this.connectedUsers.set(socket.userId, socket.id)
@@ -100,7 +101,7 @@ class WebSocketServer {
 
       socket.join(`user:${socket.userId}`)
     } catch (error) {
-      console.error('Error joining user conversations:', error)
+      logger.error('Error joining user conversations:', error);
     }
   }
 
@@ -208,7 +209,7 @@ class WebSocketServer {
   async handleDisconnect(socket) {
     if (!socket.userId) return
 
-    console.log(`User ${socket.user?.name} disconnected`)
+    // // console.log(`User ${socket.user?.name} disconnected`); // Removed for production; // Removed for production
 
     this.connectedUsers.delete(socket.userId)
     
@@ -241,7 +242,7 @@ class WebSocketServer {
 
       return conversations.map(c => c.id)
     } catch (error) {
-      console.error('Error getting user conversations:', error)
+      logger.error('Error getting user conversations:', error);
       return []
     }
   }

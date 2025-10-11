@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { createApiHandler, createSuccessResponse, createErrorResponse } from '@/lib/api-handler'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 async function getProfileHandler(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -153,7 +154,7 @@ async function getProfileHandler(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Profile API error:', error)
+    logger.error('Profile API error:', error);
     return createErrorResponse('Database error', 'Failed to fetch profile', 500)
   }
 }

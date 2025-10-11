@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 
+import { logger } from '@/lib/logger'
 // Get photos for moderation dashboard
 export async function GET(request: NextRequest) {
   try {
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Get moderation photos error:', error)
+    logger.error('Get moderation photos error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch photos for moderation',

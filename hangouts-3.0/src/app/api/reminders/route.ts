@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // GET /api/reminders - Get user reminders
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json(createSuccessResponse(reminders, 'Reminders retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching reminders:', error)
+    logger.error('Error fetching reminders:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch reminders', error.message), { status: 500 })
   }
 }
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json(createSuccessResponse(reminder, 'Reminder created successfully'))
   } catch (error) {
-    console.error('Error creating reminder:', error)
+    logger.error('Error creating reminder:', error);
     return NextResponse.json(createErrorResponse('Failed to create reminder', error.message), { status: 500 })
   }
 }

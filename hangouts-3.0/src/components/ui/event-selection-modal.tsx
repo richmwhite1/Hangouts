@@ -6,6 +6,7 @@ import { Input } from './input'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Badge } from './badge'
 import { MobileModal } from './mobile-modal'
+import { logger } from '@/lib/logger'
 interface Event {
   id: string
   title: string
@@ -73,7 +74,7 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
         setFilteredEvents(data.events || [])
       }
     } catch (error) {
-      console.error('Error fetching events:', error)
+      logger.error('Error fetching events:', error);
     } finally {
       setIsLoading(false)
     }

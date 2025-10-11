@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { HANGOUT_STATES, getVoteCount, checkMandatoryRSVP } from '@/lib/hangout-flow'
 import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
@@ -12,6 +12,7 @@ import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
 import { InviteModal } from '@/components/hangout/InviteModal'
+import { logger } from '@/lib/logger'
 interface Hangout {
   id: string
   title: string
@@ -129,7 +130,7 @@ export default function HangoutDetailPage() {
         setFriends(data.friends || [])
       }
     } catch (error) {
-      console.error('Error loading friends:', error)
+      logger.error('Error loading friends:', error);
       toast.error('Failed to load friends')
     }
   }
@@ -150,7 +151,7 @@ export default function HangoutDetailPage() {
         toast.error(error.message || 'Failed to remove user')
       }
     } catch (error) {
-      console.error('Error removing user:', error)
+      logger.error('Error removing user:', error);
       toast.error('Failed to remove user')
     }
   }
@@ -170,7 +171,7 @@ export default function HangoutDetailPage() {
         includeDescription: true
       })
     } catch (error) {
-      console.error('Share failed:', error)
+      logger.error('Share failed:', error);
     }
   }
   const handleCopyLink = async () => {
@@ -200,7 +201,7 @@ export default function HangoutDetailPage() {
         toast.error(error.error || 'Failed to invite friends')
       }
     } catch (error) {
-      console.error('Error inviting friends:', error)
+      logger.error('Error inviting friends:', error);
       toast.error('Failed to invite friends')
     }
   }
@@ -225,7 +226,7 @@ export default function HangoutDetailPage() {
         toast.error(errorData.error || 'Failed to join hangout')
       }
     } catch (error) {
-      console.error('Error joining hangout:', error)
+      logger.error('Error joining hangout:', error);
       toast.error('Failed to join hangout')
     }
   }
@@ -242,7 +243,7 @@ export default function HangoutDetailPage() {
         await checkSaveStatus()
       }
     } catch (error) {
-      console.error('Error fetching hangout:', error)
+      logger.error('Error fetching hangout:', error);
       setError('Failed to load hangout')
     } finally {
       setIsLoading(false)
@@ -257,7 +258,7 @@ export default function HangoutDetailPage() {
         setIsSaved(data.data?.saved || false)
       }
     } catch (error) {
-      console.error('Error checking save status:', error)
+      logger.error('Error checking save status:', error);
     }
   }
   const handleSave = async () => {
@@ -276,7 +277,7 @@ export default function HangoutDetailPage() {
         toast.error('Failed to update save status')
       }
     } catch (error) {
-      console.error('Error saving hangout:', error)
+      logger.error('Error saving hangout:', error);
       toast.error('Failed to save hangout')
     } finally {
       setIsSaving(false)
@@ -342,7 +343,7 @@ export default function HangoutDetailPage() {
         toast.error(errorData.error || 'Failed to update vote')
       }
     } catch (error) {
-      console.error('Error voting:', error)
+      logger.error('Error voting:', error);
       // Revert optimistic update on error
       await fetchHangout()
       toast.error('An unexpected error occurred during voting')
@@ -410,7 +411,7 @@ export default function HangoutDetailPage() {
         toast.error(errorData.error || 'Failed to update RSVP')
       }
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      logger.error('Error updating RSVP:', error);
       // Revert optimistic update on error
       await fetchHangout()
       toast.error('An unexpected error occurred while updating RSVP')
@@ -503,15 +504,15 @@ export default function HangoutDetailPage() {
   const userRSVP = hangout.rsvps?.find(r => r.user.id === user?.id)?.status || 'PENDING'
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
-  // Debug logging
-  console.log('Hangout data:', {
-    id: hangout.id,
-    state: hangout.state,
-    currentState,
-    options: hangout.options,
-    requiresVoting: hangout.requiresVoting,
-    type: hangout.type
-  })
+      // Debug logging
+      // console.log('Hangout data:', {
+      //   id: hangout.id,
+      //   state: hangout.state,
+      //   currentState,
+      //   options: hangout.options,
+      //   requiresVoting: hangout.requiresVoting,
+      //   type: hangout.type
+      // }); // Removed for production
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <div className="max-w-md mx-auto pb-20">
@@ -531,10 +532,10 @@ export default function HangoutDetailPage() {
                 privacyLevel={hangout.privacyLevel}
                 isSaved={isSaved}
                 onSave={(id, type) => {
-                  console.log('Save hangout:', id, type)
+                  // console.log('Save hangout:', id, type); // Removed for production
                 }}
                 onUnsave={(id, type) => {
-                  console.log('Unsave hangout:', id, type)
+                  // console.log('Unsave hangout:', id, type); // Removed for production
                 }}
                 className="scale-75"
               />
@@ -1386,7 +1387,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
         setMessages(data.data?.messages || [])
       }
     } catch (error) {
-      console.error('Error fetching messages:', error)
+      logger.error('Error fetching messages:', error);
     } finally {
       setIsLoadingMessages(false)
     }
@@ -1407,7 +1408,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
         toast.error('Failed to send message')
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message:', error);
       toast.error('Failed to send message')
     }
   }
@@ -1541,7 +1542,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
         setPhotos(data.data?.photos || [])
       }
     } catch (error) {
-      console.error('Error fetching photos:', error)
+      logger.error('Error fetching photos:', error);
     } finally {
       setIsLoadingPhotos(false)
     }
@@ -1566,7 +1567,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
         toast.error('Failed to upload photos')
       }
     } catch (error) {
-      console.error('Error uploading photos:', error)
+      logger.error('Error uploading photos:', error);
       toast.error('An error occurred while uploading photos')
     } finally {
       setIsUploading(false)

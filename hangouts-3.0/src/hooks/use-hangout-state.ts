@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { logger } from '@/lib/logger'
 interface HangoutState {
   // Hangout info
   id: string
@@ -62,7 +63,7 @@ export function useHangoutState(hangoutId: string) {
       if (!hangoutResponse.ok) throw new Error('Failed to fetch hangout')
       const hangoutData = await hangoutResponse.json()
       // Debug logging
-      console.log('Hangout API response:', hangoutData)
+      // console.log('Hangout API response:', hangoutData); // Removed for production
       // Fetch polls
       const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls-simple`, {
         )
@@ -111,7 +112,7 @@ export function useHangoutState(hangoutId: string) {
         isLoading: false
       })
     } catch (error) {
-      console.error('Error fetching hangout data:', error)
+      logger.error('Error fetching hangout data:', error);
       setState(prev => prev ? { ...prev, error: 'Failed to load hangout', isLoading: false } : null)
     } finally {
       setIsLoading(false)
@@ -136,7 +137,7 @@ export function useHangoutState(hangoutId: string) {
       }
       return false
     } catch (error) {
-      console.error('Error voting:', error)
+      logger.error('Error voting:', error);
       return false
     }
   }
@@ -155,7 +156,7 @@ export function useHangoutState(hangoutId: string) {
       }
       return false
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      logger.error('Error updating RSVP:', error);
       return false
     }
   }

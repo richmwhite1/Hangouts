@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // POST /api/hangouts/[id]/finalize-plan - Finalize plan when consensus is reached
 export async function POST(
   request: NextRequest,
@@ -140,8 +141,8 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('❌ Error finalizing plan:', error)
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    logger.error('❌ Error finalizing plan:', error);
+    logger.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json({ 
       error: 'Failed to finalize plan',
       details: error instanceof Error ? error.message : 'Unknown error'

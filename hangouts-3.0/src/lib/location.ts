@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 // Free geocoding service using Nominatim (OpenStreetMap)
 export interface LocationResult {
   display_name: string
@@ -48,7 +49,7 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult[]> 
         postcode: result.address?.postcode}
     }))
   } catch (error) {
-    console.error('Geocoding error:', error)
+    logger.error('Geocoding error:', error);
     return []
   }
 }
@@ -81,7 +82,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
         postcode: result.address?.postcode}
     }
   } catch (error) {
-    console.error('Reverse geocoding error:', error)
+    logger.error('Reverse geocoding error:', error);
     return null
   }
 }

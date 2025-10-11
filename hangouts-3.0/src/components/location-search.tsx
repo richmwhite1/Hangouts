@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Search, X, Loader2 } from 'lucide-react'
 import { geocodeAddress, GeocodeResult } from '@/lib/location'
 
+import { logger } from '@/lib/logger'
 interface LocationSearchProps {
   value: string
   onChange: (location: string) => void
@@ -56,7 +57,7 @@ export function LocationSearch({
         setSearchResults(results)
         setShowResults(true)
       } catch (error) {
-        console.error('Location search error:', error)
+        logger.error('Location search error:', error);
         setSearchResults([])
       } finally {
         setIsSearching(false)

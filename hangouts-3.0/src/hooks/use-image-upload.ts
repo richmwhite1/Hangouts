@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 
+import { logger } from '@/lib/logger'
 interface UploadResult {
   url: string
   filename: string
@@ -51,7 +52,7 @@ export function useImageUpload() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed'
       setError(errorMessage)
-      console.error('Upload error:', err)
+      logger.error('Upload error:', err);
       return null
     } finally {
       setIsUploading(false)
@@ -97,7 +98,7 @@ export function useImageUpload() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Profile update failed'
       setError(errorMessage)
-      console.error('Profile update error:', err)
+      logger.error('Profile update error:', err);
       return null
     } finally {
       setIsUploading(false)

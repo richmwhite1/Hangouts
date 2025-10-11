@@ -16,6 +16,7 @@ import { DraftHangoutCard } from "@/components/draft-hangout-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { logger } from '@/lib/logger'
 // Removed api-client import - using direct fetch calls
 
 export function HangoutFeed() {
@@ -26,7 +27,7 @@ export function HangoutFeed() {
   const [error, setError] = useState<string | null>(null)
   const { isAuthenticated, authLoading } = useAuth()
   
-  console.log('🔄 HangoutFeed component mounting...')
+  // console.log('🔄 HangoutFeed component mounting...'); // Removed for production
   
   // Use useEffect properly
   useEffect(() => {
@@ -39,13 +40,13 @@ export function HangoutFeed() {
       }
       
       try {
-        console.log('🚀 useEffect API call starting...')
+        // console.log('🚀 useEffect API call starting...'); // Removed for production
         setIsLoading(true)
         const data = await apiClient.getHangouts()
-        console.log('✅ useEffect API success:', data.hangouts?.length || 0)
+        // console.log('✅ useEffect API success:', data.hangouts?.length || 0); // Removed for production
         setHangouts(data.hangouts || [])
       } catch (err) {
-        console.error('❌ useEffect API error:', err)
+        logger.error('❌ useEffect API error:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch')
       } finally {
         setIsLoading(false)
@@ -55,7 +56,7 @@ export function HangoutFeed() {
     fetchData()
   }, [isAuthenticated, authLoading])
   
-  console.log('📊 Direct state:', { hangoutsCount: hangouts.length, isLoading, error })
+  // console.log('📊 Direct state:', { hangoutsCount: hangouts.length, isLoading, error }); // Removed for production
   
   const { drafts, loadDraft, deleteDraft } = useDraft()
   const router = useRouter()
@@ -173,7 +174,7 @@ export function HangoutFeed() {
       <AdvancedSearch
         onFiltersChange={(filters) => {
           // Handle advanced filters
-          console.log('Advanced filters:', filters)
+          // console.log('Advanced filters:', filters); // Removed for production
         }}
         onSearch={(query) => setSearchQuery(query)}
       />

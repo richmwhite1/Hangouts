@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // POST /api/conversations/[id]/typing - Set typing indicator
 export async function POST(
   request: NextRequest,
@@ -67,7 +68,7 @@ export async function POST(
       conversationId: params.id
     }, isTyping ? 'Typing indicator set' : 'Typing indicator removed'))
   } catch (error) {
-    console.error('Error managing typing indicator:', error)
+    logger.error('Error managing typing indicator:', error);
     return NextResponse.json(createErrorResponse('Failed to manage typing indicator', error.message), { status: 500 })
   }
 }
@@ -132,7 +133,7 @@ export async function GET(
       }))
     }, 'Typing indicators retrieved successfully'))
   } catch (error) {
-    console.error('Error fetching typing indicators:', error)
+    logger.error('Error fetching typing indicators:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch typing indicators', error.message), { status: 500 })
   }
 }

@@ -115,7 +115,7 @@ export class Cache<T> {
         localStorage.setItem(storageKey, data)
       }
     } catch (error) {
-      console.warn('Failed to persist to storage:', error)
+      console.warn('Failed to persist to storage:', error);
     }
   }
 
@@ -134,7 +134,7 @@ export class Cache<T> {
         return JSON.parse(data)
       }
     } catch (error) {
-      console.warn('Failed to load from storage:', error)
+      console.warn('Failed to load from storage:', error);
     }
     
     return null
@@ -150,7 +150,7 @@ export class Cache<T> {
         localStorage.removeItem(storageKey)
       }
     } catch (error) {
-      console.warn('Failed to remove from storage:', error)
+      console.warn('Failed to remove from storage:', error);
     }
   }
 
@@ -166,7 +166,7 @@ export class Cache<T> {
           .forEach(key => localStorage.removeItem(key))
       }
     } catch (error) {
-      console.warn('Failed to clear storage:', error)
+      console.warn('Failed to clear storage:', error);
     }
   }
 }

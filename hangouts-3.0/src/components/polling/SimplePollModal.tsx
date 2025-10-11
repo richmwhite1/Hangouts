@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { X, Plus, Trash2 } from 'lucide-react'
 import { MobileModal } from '@/components/ui/mobile-modal'
 
+import { logger } from '@/lib/logger'
 interface SimplePollModalProps {
   hangoutId: string
   onPollCreated: (poll: any) => void
@@ -77,10 +78,10 @@ export function SimplePollModal({ hangoutId, onPollCreated, onClose }: SimplePol
         onPollCreated(data.poll)
         onClose()
       } else {
-        console.error('Failed to create poll')
+        logger.error('Failed to create poll');
       }
     } catch (error) {
-      console.error('Error creating poll:', error)
+      logger.error('Error creating poll:', error);
     } finally {
       setIsCreating(false)
     }

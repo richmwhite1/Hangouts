@@ -3,10 +3,11 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/events - List events
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 Events API: GET request received')
+    // console.log('🔍 Events API: GET request received'); // Removed for production
     
     // Handle query parameters
     const { searchParams } = new URL(request.url)
@@ -15,8 +16,8 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     
-    console.log('🔍 Query params:', { search, category, dateFrom, dateTo })
-    console.log('🔍 Available db models:', Object.keys(db))
+    // console.log('🔍 Query params:', { search, category, dateFrom, dateTo }); // Removed for production
+    // console.log('🔍 Available db models:', Object.keys(db); // Removed for production)
     
     // Get user ID for friend context (optional for discover page)
     let userId: string | null = null
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.log('Events API: No authenticated user, showing public events')
+      // console.log('Events API: No authenticated user, showing public events'); // Removed for production
     }
 
     let friendIds: string[] = []
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
       take: 20
     })
 
-    console.log('📊 Events found:', events.length)
+    // console.log('📊 Events found:', events.length); // Removed for production
 
     const transformedEvents = events.map(event => ({
       id: event.id,
@@ -150,9 +151,9 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Events API Error:', error)
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    logger.error('❌ Events API Error:', error);
+    logger.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { success: false, error: 'Failed to fetch events', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -163,10 +164,10 @@ export async function GET(request: NextRequest) {
 // POST /api/events - Create new event
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 Events API: POST request received')
+    // console.log('🔍 Events API: POST request received'); // Removed for production
     
     const body = await request.json()
-    console.log('📊 Request body:', JSON.stringify(body, null, 2))
+    // console.log('📊 Request body:', JSON.stringify(body, null, 2); // Removed for production)
 
     // Get user ID from Clerk auth
     const { userId: clerkUserId } = await auth()
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('✅ Event created:', event.id)
+    // console.log('✅ Event created:', event.id); // Removed for production
 
     return NextResponse.json({
       success: true,
@@ -231,7 +232,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Events API Error:', error)
+    logger.error('❌ Events API Error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to create event', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

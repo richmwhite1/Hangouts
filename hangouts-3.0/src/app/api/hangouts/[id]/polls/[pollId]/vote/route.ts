@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 // Validation schema
 const VoteSchema = z.object({
   option: z.string().min(1, 'Option is required')
@@ -107,7 +108,7 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
-    console.error('Error voting on poll:', error)
+    logger.error('Error voting on poll:', error);
     return NextResponse.json({ error: 'Failed to vote', details: error.message }, { status: 500 })
   }
 }
@@ -147,7 +148,7 @@ export async function GET(
       userVotes: votes.map(vote => vote.option)
     })
   } catch (error) {
-    console.error('Error getting user votes:', error)
+    logger.error('Error getting user votes:', error);
     return NextResponse.json({ error: 'Failed to get votes' }, { status: 500 })
   }
 }

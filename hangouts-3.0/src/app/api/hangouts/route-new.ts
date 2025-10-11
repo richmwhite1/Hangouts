@@ -13,6 +13,7 @@ import { hangoutSchemas, ValidationUtils } from '@/lib/validation'
 import { TransactionQueries } from '@/lib/db-queries'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/hangouts - Get user's hangouts
 async function getHangouts(request: NextRequest) {
   // Extract user ID from auth header (would be set by auth middleware)
@@ -126,7 +127,7 @@ async function getHangouts(request: NextRequest) {
       }
     }, 'Hangouts retrieved successfully')
   } catch (error) {
-    console.error('Database error in getHangouts:', error)
+    logger.error('Database error in getHangouts:', error);
     throw new ApiError('Failed to fetch hangouts', 500, 'INTERNAL_ERROR')
   }
 }
@@ -166,7 +167,7 @@ async function createHangout(validatedData: any, request: NextRequest) {
 
     return createCreatedResponse(hangout, 'Hangout created successfully')
   } catch (error) {
-    console.error('Error in createHangout:', error)
+    logger.error('Error in createHangout:', error);
     if (error instanceof ApiError) {
       throw error
     }

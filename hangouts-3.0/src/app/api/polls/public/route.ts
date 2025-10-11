@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/polls/public - Get public polls (no authentication required)
 export async function GET(request: NextRequest) {
   try {
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching public polls:', error)
+    logger.error('Error fetching public polls:', error);
     return NextResponse.json(
       { error: 'Failed to fetch public polls', message: error.message },
       { status: 500 }

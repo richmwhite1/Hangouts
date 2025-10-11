@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
+import { logger } from '@/lib/logger'
 interface Conversation {
   id: string
   type: 'direct' | 'group' | 'hangout'
@@ -80,20 +81,20 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
   const [unreadCount, setUnreadCount] = useState(0)
   // Load friends when modal opens
   const loadFriends = async () => {
-    console.log('loadFriends called, user:', user)
+    // console.log('loadFriends called, user:', user); // Removed for production
     if (!user) {
-      console.log('No user available for loading friends')
+      // console.log('No user available for loading friends'); // Removed for production
       return
     }
     try {
       setIsLoadingFriends(true)
-      console.log('Loading friends...')
+      // console.log('Loading friends...'); // Removed for production
       const response = await fetch('/api/friends')
-      console.log('Friends response:', response) // Debug log
+      // console.log('Friends response:', response); // Removed for production // Debug log
       if (response.ok) {
         const data = await response.json()
         if (data.friends && Array.isArray(data.friends)) {
-          console.log('Found friends:', data.friends.length)
+          // console.log('Found friends:', data.friends.length); // Removed for production
           setFriends(data.friends.map(friend => ({
             id: friend.id,
             name: friend.name,
@@ -101,15 +102,15 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
             avatar: friend.avatar
           })))
         } else {
-          console.log('No friends found or invalid response format')
+          // console.log('No friends found or invalid response format'); // Removed for production
           setFriends([])
         }
       } else {
-        console.log('No friends found or invalid response format')
+        // console.log('No friends found or invalid response format'); // Removed for production
         setFriends([])
       }
     } catch (error) {
-      console.error('Failed to load friends:', error)
+      logger.error('Failed to load friends:', error);
       setFriends([])
     } finally {
       setIsLoadingFriends(false)
@@ -132,12 +133,12 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         setUnreadCount(totalUnread)
       }
     } catch (error) {
-      console.error('Failed to load conversations:', error)
+      logger.error('Failed to load conversations:', error);
     }
   }
   // Load data when modal opens
   useEffect(() => {
-    console.log('Modal effect triggered, isOpen:', isOpen, 'user:', user)
+    // console.log('Modal effect triggered, isOpen:', isOpen, 'user:', user); // Removed for production
     if (isOpen && user) {
       loadFriends()
       loadConversations()
@@ -259,7 +260,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         setMessages(data.data.messages || [])
       }
     } catch (error) {
-      console.error('Failed to load messages:', error)
+      logger.error('Failed to load messages:', error);
     }
   }
   const handleStartConversation = async (friend: any) => {
@@ -287,10 +288,10 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         // Load messages for this conversation
         await loadMessages(conversation.id)
       } else {
-        console.error('Failed to create conversation:', response.statusText)
+        logger.error('Failed to create conversation:', response.statusText);
       }
     } catch (error) {
-      console.error('Error starting conversation:', error)
+      logger.error('Error starting conversation:', error);
     }
   }
   const filteredConversations = conversations.filter(conv =>

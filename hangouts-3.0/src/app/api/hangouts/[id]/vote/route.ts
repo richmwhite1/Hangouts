@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { checkAndFinalizeIfReady, calculateWinner } from '@/lib/hangout-flow'
+import { logger } from '@/lib/logger'
 const VoteSchema = z.object({
   optionId: z.string().min(1, 'Option ID is required'),
   action: z.enum(['add', 'remove', 'preferred', 'toggle']).optional().default('add')
@@ -254,7 +255,7 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
-    console.error('Error casting vote:', error)
+    logger.error('Error casting vote:', error);
     return NextResponse.json(createErrorResponse('Failed to cast vote', error.message), { status: 500 })
   }
 }

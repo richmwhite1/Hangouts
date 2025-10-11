@@ -12,6 +12,7 @@ import { useImageUpload } from "@/hooks/use-image-upload"
 import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2 } from "lucide-react"
 import Image from "next/image"
 
+import { logger } from '@/lib/logger'
 export function ProfilePage() {
   const [mounted, setMounted] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState<'profile' | 'background' | null>(null)
@@ -194,14 +195,14 @@ export function ProfilePage() {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
-      console.warn('Invalid file type selected')
+      logger.warn('Invalid file type selected');
       return
     }
 
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {
-      console.warn('File too large')
+      logger.warn('File too large');
       return
     }
 
@@ -233,13 +234,13 @@ export function ProfilePage() {
           setUploadPreview(null)
           // Success - no popup needed
         } else {
-          console.error('Failed to update profile')
+          logger.error('Failed to update profile');
         }
       } else {
-        console.error('Failed to upload image')
+        logger.error('Failed to upload image');
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      logger.error('Upload error:', error);
     }
   }
 
@@ -279,10 +280,10 @@ export function ProfilePage() {
         setShowEditModal(false)
         // Success - no popup needed
       } else {
-        console.error('Failed to update profile')
+        logger.error('Failed to update profile');
       }
     } catch (error) {
-      console.error('Profile update error:', error)
+      logger.error('Profile update error:', error);
     } finally {
       setIsSaving(false)
     }
@@ -314,10 +315,12 @@ export function ProfilePage() {
             alt="Background"
             className="w-full h-full object-cover"
             onError={(e) => {
-              console.error('Background image failed to load:', profile.backgroundImage)
+              logger.error('Background image failed to load:', profile.backgroundImage);
               e.currentTarget.style.display = 'none'
             }}
-            onLoad={() => console.log('Background image loaded successfully:', profile.backgroundImage)}
+            onLoad={() => {
+              // console.log('Background image loaded successfully:', profile.backgroundImage); // Removed for production
+            }}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900" />

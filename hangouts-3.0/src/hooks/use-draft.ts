@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
+import { logger } from '@/lib/logger'
 interface DraftHangout {
   id: string
   activity: string
@@ -70,7 +71,7 @@ export const useDraft = () => {
         setDrafts(parsedDrafts)
       }
     } catch (error) {
-      console.error('Error loading drafts:', error)
+      logger.error('Error loading drafts:', error);
     }
   }, [])
 
@@ -79,7 +80,7 @@ export const useDraft = () => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts))
     } catch (error) {
-      console.error('Error saving drafts:', error)
+      logger.error('Error saving drafts:', error);
     }
   }, [drafts])
 

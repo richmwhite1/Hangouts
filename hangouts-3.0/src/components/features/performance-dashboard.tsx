@@ -21,6 +21,7 @@ import { getCacheStats } from '@/lib/cache'
 import { databaseOptimizer } from '@/lib/database-optimizer'
 import { cn } from '@/lib/utils'
 
+import { logger } from '@/lib/logger'
 interface PerformanceDashboardProps {
   className?: string
   refreshInterval?: number
@@ -51,7 +52,7 @@ export const PerformanceDashboard = memo(function PerformanceDashboard({
       setDbStats(dbData)
       setLastRefresh(new Date())
     } catch (error) {
-      console.error('Failed to refresh performance data:', error)
+      logger.error('Failed to refresh performance data:', error);
     } finally {
       setIsLoading(false)
     }

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 // PATCH /api/reminders/[id] - Update reminder (dismiss)
 export async function PATCH(
   request: NextRequest,
@@ -43,7 +44,7 @@ export async function PATCH(
     })
     return NextResponse.json(createSuccessResponse(updatedReminder, 'Reminder updated successfully'))
   } catch (error) {
-    console.error('Error updating reminder:', error)
+    logger.error('Error updating reminder:', error);
     return NextResponse.json(createErrorResponse('Failed to update reminder', error.message), { status: 500 })
   }
 }
@@ -77,7 +78,7 @@ export async function DELETE(
     })
     return NextResponse.json(createSuccessResponse(null, 'Reminder deleted successfully'))
   } catch (error) {
-    console.error('Error deleting reminder:', error)
+    logger.error('Error deleting reminder:', error);
     return NextResponse.json(createErrorResponse('Failed to delete reminder', error.message), { status: 500 })
   }
 }

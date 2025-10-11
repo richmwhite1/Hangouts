@@ -9,6 +9,7 @@ import { getHangoutActionStatus } from "@/hooks/use-hangout-actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
 import { useRouter } from "next/navigation"
+import { logger } from '@/lib/logger'
 interface Hangout {
   id: string
   title: string
@@ -140,7 +141,7 @@ export default function HomePage() {
           throw new Error(data.error || 'Failed to fetch hangouts')
         }
       } catch (err) {
-        console.error('Error fetching hangouts:', err)
+        logger.error('Error fetching hangouts:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch hangouts')
         setHangouts([])
       } finally {

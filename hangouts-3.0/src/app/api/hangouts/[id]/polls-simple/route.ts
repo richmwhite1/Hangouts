@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/hangouts/[id]/polls-simple - Get polls for a specific hangout
 export async function GET(
   request: NextRequest,
@@ -178,8 +179,8 @@ export async function GET(
       polls: transformedPolls
     })
   } catch (error) {
-    console.error('❌ Error fetching hangout polls:', error)
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    logger.error('❌ Error fetching hangout polls:', error);
+    logger.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json({ error: 'Failed to fetch polls' }, { status: 500 })
   }
 }

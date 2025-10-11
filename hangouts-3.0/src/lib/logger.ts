@@ -1,8 +1,5 @@
-/**
- * Production-ready logging utility
- * In development: logs to console
- * In production: can be configured to send to logging service
- */
+// Production-ready logging utility
+// Uses Winston for server-side logging, console for client-side
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -17,41 +14,30 @@ interface LogEntry {
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development'
   private isProduction = process.env.NODE_ENV === 'production'
+  private isServer = typeof window === 'undefined'
 
-  private formatMessage(level: LogLevel, message: string, data?: any, context?: string): LogEntry {
-    return {
+  private log(level: LogLevel, message: string, data?: any, context?: string) {
+    const entry: LogEntry = {
       level,
       message,
       data,
       timestamp: new Date().toISOString(),
       context
     }
-  }
 
-  private log(level: LogLevel, message: string, data?: any, context?: string) {
-    const entry = this.formatMessage(level, message, data, context)
-    
-    if (this.isDevelopment) {
-      // In development, use console methods with colors
-      const colors = {
-        debug: '\x1b[36m', // Cyan
-        info: '\x1b[32m',  // Green
-        warn: '\x1b[33m',  // Yellow
-        error: '\x1b[31m'  // Red
+    // Use Winston logger only on server-side
+    if (this.isServer) {
+      try {
+        const { defaultLogger } = require('./winston-logger')
+        defaultLogger[level](message, data)
+      } catch (error) {
+        // Fallback to console if Winston fails
+        console[level === 'debug' ? 'log' : level](`[${level.toUpperCase()}] ${message}`, data || '')
       }
-      const reset = '\x1b[0m'
-      
-      console[level === 'debug' ? 'log' : level](
-        `${colors[level]}[${entry.timestamp}] ${entry.context ? `[${entry.context}] ` : ''}${entry.message}${reset}`,
-        data ? data : ''
-      )
-    } else if (this.isProduction) {
-      // In production, you could send to a logging service
-      // For now, we'll just use console methods without colors
-      console[level === 'debug' ? 'log' : level](
-        `[${entry.timestamp}] ${entry.context ? `[${entry.context}] ` : ''}${entry.message}`,
-        data ? data : ''
-      )
+    } else {
+      // Client-side logging
+      const consoleMethod = level === 'debug' ? 'log' : level
+      console[consoleMethod](`[${level.toUpperCase()}] ${message}`, data || '')
     }
   }
 
@@ -72,8 +58,25 @@ class Logger {
   }
 }
 
+// Export singleton instance
 export const logger = new Logger()
+
+// Export individual methods for convenience
+export const { debug, info, warn, error } = logger
+
+// Export Winston logger for advanced usage (server-side only)
+export const createWinstonLogger = (context: string) => {
+  if (typeof window === 'undefined') {
+    try {
+      const { createLogger } = require('./winston-logger')
+      return createLogger(context)
+    } catch (error) {
+      console.warn('Winston logger not available:', error)
+      return logger
+    }
+  }
+  return logger
+}
+
+// Export default logger
 export default logger
-
-
-

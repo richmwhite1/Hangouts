@@ -14,6 +14,7 @@ import { Share2, Users, Globe, Link, Copy, Check, X, Clock, Download, MessageCir
 import { useAuth } from '@/contexts/auth-context'
 import { useFriends } from '@/hooks/use-friends'
 
+import { logger } from '@/lib/logger'
 interface PhotoSharingProps {
   photoId: string
   onClose: () => void
@@ -58,12 +59,12 @@ export function PhotoSharing({ photoId, onClose }: PhotoSharingProps) {
 
   const handleShare = async () => {
     if (shareType === 'users' && selectedUsers.length === 0) {
-      console.warn('Please select at least one user to share with')
+      logger.warn('Please select at least one user to share with');
       return
     }
 
     if (shareType === 'groups' && selectedGroups.length === 0) {
-      console.warn('Please select at least one group to share with')
+      logger.warn('Please select at least one group to share with');
       return
     }
 
@@ -105,10 +106,10 @@ export function PhotoSharing({ photoId, onClose }: PhotoSharingProps) {
       if (result.success) {
         setShareResult(result.data)
       } else {
-        console.error('Failed to share photo:', result.error)
+        logger.error('Failed to share photo:', result.error);
       }
     } catch (error) {
-      console.error('Error sharing photo:', error)
+      logger.error('Error sharing photo:', error);
     } finally {
       setSharing(false)
     }

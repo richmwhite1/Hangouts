@@ -6,6 +6,7 @@ import { PollList } from '@/components/polling/PollList'
 import { CreatePollModal } from '@/components/polling/CreatePollModal'
 import { PollDetails } from '@/components/polling/PollDetails'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { logger } from '@/lib/logger'
 import { 
   BarChart3, 
   Users, 
@@ -58,7 +59,7 @@ export default function PollingPage() {
         })
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      logger.error('Error fetching stats:', error);
       // Set default stats on error
       setStats({
         activePolls: 0,
@@ -80,7 +81,7 @@ export default function PollingPage() {
   }
 
   const handlePollCreated = (poll: any) => {
-    console.log('Poll created:', poll)
+    // console.log('Poll created:', poll); // Removed for production
     setShowCreateModal(false)
     // Refresh stats when a new poll is created
     fetchStats()

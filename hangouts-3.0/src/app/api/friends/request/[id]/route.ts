@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -82,7 +83,7 @@ export async function PATCH(
       request: updatedRequest
     })
   } catch (error) {
-    console.error('Error responding to friend request:', error)
+    logger.error('Error responding to friend request:', error);
     return NextResponse.json(
       { error: 'Failed to respond to friend request' },
       { status: 500 }

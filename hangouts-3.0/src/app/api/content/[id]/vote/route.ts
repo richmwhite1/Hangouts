@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { checkAndFinalizeIfReady, calculateWinner } from '@/lib/hangout-flow'
 
+import { logger } from '@/lib/logger'
 const voteSchema = z.object({
   action: z.enum(['vote', 'toggle', 'preferred']),
   option: z.string()})
@@ -195,7 +196,7 @@ async function voteHandler(request: AuthenticatedRequest, { params }: { params: 
 
     return createErrorResponse('Bad request', 'Invalid action', 400)
   } catch (error) {
-    console.error('Error in voteHandler:', error)
+    logger.error('Error in voteHandler:', error);
     return createErrorResponse('Internal error', `Failed to process vote: ${error.message}`, 500)
   }
 }

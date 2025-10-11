@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 export async function PUT(request: NextRequest) {
   try {
     // Verify authentication
@@ -70,7 +71,7 @@ export async function PUT(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Profile update error:', error)
+    logger.error('Profile update error:', error);
     return NextResponse.json(
       { error: 'Profile update failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Download, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { logger } from '@/lib/logger'
 interface Photo {
   id: string
   originalUrl: string
@@ -142,7 +143,7 @@ export function PhotoGallery({ photos, onDelete, canDelete = false }: PhotoGalle
                 alt={`Hangout photo ${index + 1}`}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 onError={(e) => {
-                  console.error('Photo load error:', photo.originalUrl)
+                  logger.error('Photo load error:', photo.originalUrl);
                   e.currentTarget.style.display = 'none'
                   const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
                   if (errorDiv) errorDiv.style.display = 'flex'
@@ -236,7 +237,7 @@ export function PhotoGallery({ photos, onDelete, canDelete = false }: PhotoGalle
               alt={`Hangout photo ${selectedPhotoIndex + 1}`}
               className="max-w-full max-h-full object-contain"
               onError={(e) => {
-                console.error('Fullscreen photo load error:', photos[selectedPhotoIndex].originalUrl)
+                logger.error('Fullscreen photo load error:', photos[selectedPhotoIndex].originalUrl);
                 e.currentTarget.style.display = 'none'
               }}
             />

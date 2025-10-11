@@ -3,6 +3,7 @@ import { createApiHandler, createSuccessResponse, createErrorResponse, Authentic
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 const rsvpSchema = z.object({
   status: z.enum(['YES', 'NO', 'MAYBE'])})
 
@@ -131,7 +132,7 @@ async function updateRSVPHandler(request: AuthenticatedRequest, { params }: { pa
       }, 'RSVP created successfully')
     }
   } catch (error) {
-    console.error('Error in updateRSVPHandler:', error)
+    logger.error('Error in updateRSVPHandler:', error);
     return createErrorResponse('Internal error', `Failed to update RSVP: ${error.message}`, 500)
   }
 }

@@ -1,6 +1,7 @@
 import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 async function getFriendSuggestionsHandler(request: AuthenticatedRequest) {
   const userId = request.user?.userId
   if (!userId) {
@@ -186,7 +187,7 @@ async function getFriendSuggestionsHandler(request: AuthenticatedRequest) {
 
     return createSuccessResponse({ suggestions: suggestionsWithStatus })
   } catch (error) {
-    console.error('Get friend suggestions error:', error)
+    logger.error('Get friend suggestions error:', error);
     return createErrorResponse('Database error', 'Failed to get friend suggestions', 500)
   }
 }

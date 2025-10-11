@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { type, title, message, hangoutId, recipientIds, data } = body
 
-    console.log('📱 Sending notification:', {
-      type,
-      title,
-      message,
-      hangoutId,
-      recipientCount: recipientIds?.length || 0,
-      data
-    })
+        // console.log('📱 Sending notification:', {
+        //   type,
+        //   title,
+        //   message,
+        //   hangoutId,
+        //   recipientCount: recipientIds?.length || 0,
+        //   data
+        // }); // Removed for production
 
     // For now, just log the notification
     // In a real app, you would:
@@ -34,9 +35,9 @@ export async function POST(request: NextRequest) {
 
     // Simulate sending to multiple recipients
     if (recipientIds && recipientIds.length > 0) {
-      console.log(`📤 Notification sent to ${recipientIds.length} friends:`)
+      // // console.log(`📤 Notification sent to ${recipientIds.length} friends:`); // Removed for production; // Removed for production
       recipientIds.forEach((friendId: string, index: number) => {
-        console.log(`  ${index + 1}. Friend ${friendId}: ${title}`)
+        // // console.log(`  ${index + 1}. Friend ${friendId}: ${title}`); // Removed for production; // Removed for production
       })
     }
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Notification send error:', error)
+    logger.error('Notification send error:', error);
     return NextResponse.json(
       { error: 'Failed to send notification' },
       { status: 500 }

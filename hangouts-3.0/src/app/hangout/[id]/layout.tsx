@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { generateHangoutMetadata } from './metadata'
 
+import { logger } from '@/lib/logger'
 interface HangoutPageProps {
   params: Promise<{ id: string }>
 }
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: HangoutPageProps): Promise<Me
       }
     }
   } catch (error) {
-    console.error('Error fetching hangout metadata:', error)
+    logger.error('Error fetching hangout metadata:', error);
   }
   
   // Fallback metadata

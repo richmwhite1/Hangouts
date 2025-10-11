@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Search, X, Loader2, Star, Clock, Phone } from 'lucide-react'
 
+import { logger } from '@/lib/logger'
 interface BusinessResult {
   place_id: string
   name: string
@@ -71,7 +72,7 @@ const searchBusinesses = async (query: string, userLocation?: { lat: number; lng
     return uniqueResults.slice(0, 10)
     
   } catch (error) {
-    console.error('Business search error:', error)
+    logger.error('Business search error:', error);
     return await searchWithFallback(query, userLocation)
   }
 }
@@ -122,7 +123,7 @@ const searchWithOverpass = async (query: string, userLocation?: { lat: number; l
       }
     }) || []
   } catch (error) {
-    console.error('Overpass search error:', error)
+    logger.error('Overpass search error:', error);
     return []
   }
 }
@@ -161,7 +162,7 @@ const searchWithNominatim = async (query: string, userLocation?: { lat: number; 
       opening_hours: undefined
     }))
   } catch (error) {
-    console.error('Nominatim search error:', error)
+    logger.error('Nominatim search error:', error);
     return []
   }
 }
@@ -200,7 +201,7 @@ const searchWithSimpleText = async (query: string, userLocation?: { lat: number;
       opening_hours: undefined
     }))
   } catch (error) {
-    console.error('Simple text search error:', error)
+    logger.error('Simple text search error:', error);
     return []
   }
 }
@@ -277,7 +278,7 @@ const searchWithFallback = async (query: string, userLocation?: { lat: number; l
       opening_hours: undefined
     }))
   } catch (error) {
-    console.error('Fallback search error:', error)
+    logger.error('Fallback search error:', error);
     return []
   }
 }
@@ -309,7 +310,7 @@ export function BusinessLocationSearch({
           })
         },
         (error) => {
-          console.log('Geolocation error:', error)
+          // console.log('Geolocation error:', error); // Removed for production
         }
       )
     }
@@ -346,7 +347,7 @@ export function BusinessLocationSearch({
         setSearchResults(results)
         setShowResults(true)
       } catch (error) {
-        console.error('Search error:', error)
+        logger.error('Search error:', error);
         setSearchResults([])
       } finally {
         setIsSearching(false)

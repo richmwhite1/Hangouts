@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { z } from 'zod'
 
+import { logger } from '@/lib/logger'
 // GET /api/hangouts/[id]/messages - Get messages for a hangout
 export async function GET(
   request: NextRequest,
@@ -84,7 +85,7 @@ export async function GET(
     return NextResponse.json(createSuccessResponse({ messages: transformedMessages }, 'Messages retrieved successfully'))
 
   } catch (error: any) {
-    console.error('Error fetching hangout messages:', error)
+    logger.error('Error fetching hangout messages:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch messages', error.message), { status: 500 })
   }
 }
@@ -184,7 +185,7 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return NextResponse.json(createErrorResponse('Validation error', JSON.stringify(error.errors)), { status: 400 })
     }
-    console.error('Error sending hangout message:', error)
+    logger.error('Error sending hangout message:', error);
     return NextResponse.json(createErrorResponse('Failed to send message', error.message), { status: 500 })
   }
 }

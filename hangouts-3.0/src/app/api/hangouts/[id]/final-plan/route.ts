@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
+import { logger } from '@/lib/logger'
 // GET /api/hangouts/[id]/final-plan - Get the finalized plan
 export async function GET(
   request: NextRequest,
@@ -74,7 +75,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('❌ Error fetching final plan:', error)
+    logger.error('❌ Error fetching final plan:', error);
     return NextResponse.json({ error: 'Failed to fetch final plan' }, { status: 500 })
   }
 }

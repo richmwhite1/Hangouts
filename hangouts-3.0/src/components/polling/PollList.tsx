@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Filter, Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { usePolling } from '@/contexts/realtime-context'
 
+import { logger } from '@/lib/logger'
 interface PollListProps {
   hangoutId?: string
   onCreatePoll?: () => void
@@ -78,7 +79,7 @@ export function PollList({ hangoutId, onCreatePoll, onPollClick }: PollListProps
         throw new Error(data.error || 'Failed to fetch polls')
       }
     } catch (err) {
-      console.error('Error fetching polls:', err)
+      logger.error('Error fetching polls:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch polls')
     } finally {
       setLoading(false)
@@ -144,7 +145,7 @@ export function PollList({ hangoutId, onCreatePoll, onPollClick }: PollListProps
 
   const handleVote = (pollId: string, optionId: string) => {
     // Vote handling is done in PollCard component
-    console.log('Vote cast:', { pollId, optionId })
+    // console.log('Vote cast:', { pollId, optionId }); // Removed for production
   }
 
   const handleRefresh = () => {

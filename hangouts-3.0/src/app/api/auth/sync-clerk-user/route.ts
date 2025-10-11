@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
+import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
       const authResult = await auth()
       userId = authResult.userId
     } catch (error) {
-      console.log('⚠️ Clerk auth failed in development, proceeding anyway:', error)
+      // console.log('⚠️ Clerk auth failed in development, proceeding anyway:', error); // Removed for production
     }
 
     // If no userId from Clerk, use the clerkId from the request body
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
     }, 'User synced successfully'))
 
   } catch (error: any) {
-    console.error('Sync Clerk user error:', error)
+    logger.error('Sync Clerk user error:', error);
     return NextResponse.json(createErrorResponse('Sync failed', error.message), { status: 500 })
   }
 }
