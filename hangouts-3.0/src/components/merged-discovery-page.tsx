@@ -557,10 +557,10 @@ export function MergedDiscoveryPage() {
               </div>
             </div>
           )}
-          {/* Type Badge - Top Left */}
+          {/* Type Badge - Top Left - More Discreet */}
           <div className="absolute top-4 left-4">
-            <Badge className="bg-purple-600/95 text-white text-sm px-3 py-1.5 font-medium">
-              <CategoryIcon className="w-4 h-4 mr-1" />
+            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+              <CategoryIcon className="w-3 h-3 mr-1" />
               Event
             </Badge>
           </div>
@@ -638,17 +638,18 @@ export function MergedDiscoveryPage() {
               </div>
             </div>
           )}
-          {/* Type Badge - Top Left */}
+          {/* Type Badge - Top Left - More Discreet */}
           <div className="absolute top-4 left-4">
-            <Badge className="bg-blue-600/95 text-white text-sm px-3 py-1.5 font-medium">
-              <Users className="w-4 h-4 mr-1" />
+            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+              <Users className="w-3 h-3 mr-1" />
               Hangout
             </Badge>
           </div>
-          {/* Participants Count - Under Type Badge */}
+          {/* Participants Count - Under Type Badge - More Discreet */}
           <div className="absolute top-4 left-4 mt-10">
-            <Badge className="bg-orange-600/95 text-white text-sm px-3 py-1.5 font-medium">
-              {hangout.participants?.length || 0} people
+            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+              <Users className="w-3 h-3 mr-1" />
+              {hangout.participants?.length || 0}
             </Badge>
           </div>
           {/* Date - Top Right (if no distance) */}

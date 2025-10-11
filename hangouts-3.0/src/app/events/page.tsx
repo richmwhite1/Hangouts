@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Search, Filter, MapPin, Calendar, DollarSign, Plus } from 'lucide-react'
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 
 interface Event {
   id: string
@@ -31,7 +31,7 @@ interface Event {
 }
 
 export default function EventsPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -57,8 +57,7 @@ export default function EventsPage() {
   ]
 
   useEffect(() => {
-    if (!isAuthenticated || authLoading) {
-      setIsLoading(false)
+    if (!isLoaded) {
       return
     }
     
@@ -86,7 +85,7 @@ export default function EventsPage() {
     }
 
     fetchEvents()
-  }, [isAuthenticated, authLoading])
+  }, [isLoaded])
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -15,7 +15,7 @@ import {
   X,
   Check
 } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 interface Event {
   id: string
   title: string
@@ -46,7 +46,7 @@ interface EventSelectorProps {
   onRemoveEvent: () => void
 }
 export function EventSelector({ onEventSelect, selectedEvent, onRemoveEvent }: EventSelectorProps) {
-  const { token } = useAuth()
+  const { getToken } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [events, setEvents] = useState<Event[]>([])

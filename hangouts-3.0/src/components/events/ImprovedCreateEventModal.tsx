@@ -92,7 +92,7 @@ export function ImprovedCreateEventModal() {
     startTime: '',
     endTime: '',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    priceMin: 0,
+    priceMin: null,
     priceMax: null,
     currency: 'USD',
     ticketUrl: '',
@@ -661,8 +661,8 @@ export function ImprovedCreateEventModal() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={formData.priceMin}
-                    onChange={(e) => handleInputChange('priceMin', e.target.value ? parseFloat(e.target.value) : 0)}
+                    value={formData.priceMin || ''}
+                    onChange={(e) => handleInputChange('priceMin', e.target.value ? parseFloat(e.target.value) : null)}
                     className="bg-gray-700 border-gray-600 text-white"
                   />
                 </div>

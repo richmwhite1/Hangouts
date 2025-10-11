@@ -335,7 +335,7 @@ export function ContentTile({
             unoptimized
           />
           <div className="absolute top-1 left-1">
-            <Badge className={`${getContentTypeColor(content.type)} text-white border-0 text-xs px-1 py-0.5`}>
+            <Badge className="bg-black/60 text-white/90 border-0 text-xs px-1 py-0.5 backdrop-blur-sm border border-white/20">
               {getContentTypeIcon(content.type)}
             </Badge>
           </div>
