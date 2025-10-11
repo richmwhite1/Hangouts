@@ -1,7 +1,7 @@
 "use client"
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { useAuth } from './auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { logger } from '@/lib/logger'
 interface WebSocketContextType {
   socket: Socket | null
@@ -16,14 +16,14 @@ interface WebSocketContextType {
 }
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined)
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user } = useAuth()
+  const { isSignedIn, user } = useAuth()
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [typingUsers, setTypingUsers] = useState<{ [conversationId: string]: string[] }>({})
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const typingTimeouts = useRef<{ [conversationId: string]: NodeJS.Timeout }>({})
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
+    if (isSignedIn && user?.id) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
         auth: {
           userId: user?.id
@@ -91,7 +91,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         socket.disconnect()
       }
     }
-  }, [isAuthenticated, user?.id])
+  }, [isSignedIn, user?.id])
   const sendTypingIndicator = (conversationId: string, isTyping: boolean) => {
     if (!socket || !isConnected) return
     if (isTyping) {

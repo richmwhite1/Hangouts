@@ -1,7 +1,7 @@
 "use client"
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { useAuth } from './auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { config } from '@/lib/config'
 import { logger } from '@/lib/logger'
 // Type definitions
@@ -147,13 +147,12 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [isConnected, setIsConnected] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
-  const { user, isAuthenticated } = useAuth()
+  const { user, isSignedIn } = useAuth()
   const eventCallbacks = useRef<Map<string, Set<Function>>>(new Map())
   // Initialize socket connection
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
+    if (isSignedIn && user?.id) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
-        path: '/api/socket',
         auth: { userId: user.id },
         transports: ['polling', 'websocket'],
         timeout: 2000,
@@ -197,7 +196,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
         setIsConnected(false)
       }
     }
-  }, [isAuthenticated, user?.id])
+  }, [isSignedIn, user?.id])
   // Hangout management
   const joinHangout = useCallback((hangoutId: string) => {
     if (socket && isConnected) {

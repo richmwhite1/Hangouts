@@ -47,11 +47,13 @@ app.prepare().then(() => {
   // Initialize Socket.IO
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.NEXTAUTH_URL || "http://localhost:3000",
+      origin: process.env.NEXTAUTH_URL || process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:3000",
       methods: ["GET", "POST"],
       credentials: true
     },
-    path: "/api/socket"
+    // Remove custom path to use default /socket.io
+    transports: ['polling', 'websocket'],
+    allowEIO3: true
   });
 
   // WebSocket event handlers
