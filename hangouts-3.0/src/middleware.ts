@@ -21,7 +21,6 @@ const isProtectedRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, req) => {
-
   // Handle CORS
   const response = NextResponse.next()
   
@@ -64,12 +63,19 @@ export default clerkMiddleware(async (auth, req) => {
     return new Response(null, { status: 200, headers: response.headers })
   }
 
-
   // Check if user is authenticated
   const { userId } = await auth()
   
+  // Debug logging for development
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Middleware] ${req.method} ${req.nextUrl.pathname} - userId: ${userId}`)
+  }
+  
   // If it's a protected route and user is not authenticated, redirect to sign in
   if (isProtectedRoute(req) && !isPublicRoute(req) && !userId) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Middleware] Redirecting ${req.nextUrl.pathname} to /signin - no userId`)
+    }
     const signInUrl = new URL('/signin', req.url)
     return NextResponse.redirect(signInUrl)
   }
