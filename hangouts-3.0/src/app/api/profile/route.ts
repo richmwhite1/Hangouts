@@ -139,8 +139,10 @@ async function getProfileHandler(request: NextRequest) {
       enneagram: user.enneagram,
       bigFive: user.bigFive,
       loveLanguage: user.loveLanguage,
-      favoriteActivities: user.favoriteActivities ? JSON.parse(user.favoriteActivities) : [],
-      favoritePlaces: user.favoritePlaces ? JSON.parse(user.favoritePlaces) : [],
+      favoriteActivities: user.favoriteActivities ? 
+        (typeof user.favoriteActivities === 'string' ? JSON.parse(user.favoriteActivities) : user.favoriteActivities) : [],
+      favoritePlaces: user.favoritePlaces ? 
+        (typeof user.favoritePlaces === 'string' ? JSON.parse(user.favoritePlaces) : user.favoritePlaces) : [],
       joinDate: user.createdAt.toISOString(),
       stats
     }

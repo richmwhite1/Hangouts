@@ -274,12 +274,30 @@ export async function GET(
         }
       }
 
+      // Transform participants to match frontend expectations
+      const transformedParticipants = participants.map(p => ({
+        id: p.id,
+        user: p.users, // Transform 'users' to 'user'
+        rsvpStatus: 'PENDING' as const, // Default status
+        role: p.role,
+        canEdit: p.canEdit
+      }))
+
+      // Transform RSVPs to match frontend expectations
+      const transformedRsvps = rsvps.map(r => ({
+        id: r.id,
+        userId: r.userId,
+        status: r.status,
+        respondedAt: r.respondedAt?.toISOString(),
+        user: r.users // Transform 'users' to 'user'
+      }))
+
       // Transform the data to match frontend expectations
       const transformedHangout = {
         ...hangout,
         creator: hangout.users,
-        participants: participants,
-        rsvps: rsvps,
+        participants: transformedParticipants,
+        rsvps: transformedRsvps,
         _count: {
           participants: participants.length,
           comments: 0,
