@@ -112,18 +112,18 @@ export function ProfilePage() {
     )
   }
 
-  if (authLoading || isLoading) {
+  if (!isLoaded || isLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-white" />
-          <p className="text-gray-400">{authLoading ? 'Authenticating...' : 'Loading profile...'}</p>
+          <p className="text-gray-400">{!isLoaded ? 'Authenticating...' : 'Loading profile...'}</p>
         </div>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">

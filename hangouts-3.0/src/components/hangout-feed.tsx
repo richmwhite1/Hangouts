@@ -14,7 +14,7 @@ import { UnauthorizedMessage } from "@/components/unauthorized-message"
 import { AdvancedSearch } from "@/components/advanced-search"
 import { DraftHangoutCard } from "@/components/draft-hangout-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { logger } from '@/lib/logger'
 // Removed api-client import - using direct fetch calls
@@ -25,16 +25,16 @@ export function HangoutFeed() {
   const [hangouts, setHangouts] = useState<{ id: string; title: string; description?: string; startTime: string; endTime: string; location?: string; creator: { name: string; username: string; avatar?: string }; privacyLevel?: string; maxParticipants?: number; image?: string; photos?: string[]; participants?: any[]; _count?: { participants: number } }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated, authLoading } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   
   // console.log('🔄 HangoutFeed component mounting...'); // Removed for production
   
   // Use useEffect properly
   useEffect(() => {
     const fetchData = async () => {
-      if (authLoading) return
+      if (!isLoaded) return
       
-      if (!isAuthenticated) {
+      if (!isSignedIn) {
         setIsLoading(false)
         return
       }
@@ -54,7 +54,7 @@ export function HangoutFeed() {
     }
     
     fetchData()
-  }, [isAuthenticated, authLoading])
+  }, [isSignedIn, isLoaded])
   
   // console.log('📊 Direct state:', { hangoutsCount: hangouts.length, isLoading, error }); // Removed for production
   
@@ -101,11 +101,11 @@ export function HangoutFeed() {
     return filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
   }, [hangouts, searchQuery, activeFilter])
 
-  if (authLoading) {
+  if (!isLoaded) {
     return <HangoutFeedSkeleton />
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return <UnauthorizedMessage />
   }
 

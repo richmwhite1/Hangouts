@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from "@clerk/nextjs"
 import { logger } from '@/lib/logger'
 interface UnreadCount {
   conversationId: string
@@ -14,9 +14,9 @@ export function useUnreadCounts() {
   const [totalUnreadCount, setTotalUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated, token, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const fetchUnreadCounts = useCallback(async () => {
-    if (authLoading || !isAuthenticated || !token) {
+    if (!isLoaded || !isSignedIn) {
       setUnreadCounts([])
       setTotalUnreadCount(0)
       return
@@ -41,7 +41,7 @@ export function useUnreadCounts() {
     } finally {
       setIsLoading(false)
     }
-  }, [authLoading, isAuthenticated])
+  }, [isLoaded, isSignedIn])
   const markConversationAsRead = useCallback(async (conversationId: string) => {
     try {
       const response = await fetch(`/api/conversations/${conversationId}/mark-read`, { method: 'POST' })

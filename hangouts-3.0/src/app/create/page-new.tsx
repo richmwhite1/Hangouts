@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from "@clerk/nextjs"
 import HangoutForm, { HangoutFormData } from '@/components/create/HangoutForm'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
@@ -10,11 +10,11 @@ import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading, user, token } = useAuth()
+  const { isSignedIn, isLoaded, user, getToken } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
 
   // Redirect if not authenticated
-  if (authLoading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -25,7 +25,7 @@ export default function CreateHangoutPage() {
     )
   }
 
-  if (!isAuthenticated || !user || !token) {
+  if (!isSignedIn || !user) {
     router.push('/login')
     return null
   }

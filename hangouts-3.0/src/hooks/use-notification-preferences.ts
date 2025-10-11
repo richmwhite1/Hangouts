@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from "@clerk/nextjs"
 import { logger } from '@/lib/logger'
 interface NotificationPreferences {
   id: string
@@ -20,9 +20,9 @@ export function useNotificationPreferences() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated, token, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const fetchPreferences = useCallback(async () => {
-    if (authLoading || !isAuthenticated || !token) {
+    if (!isLoaded || !isSignedIn) {
       setPreferences(null)
       return
     }
@@ -45,7 +45,7 @@ export function useNotificationPreferences() {
     } finally {
       setIsLoading(false)
     }
-  }, [authLoading, isAuthenticated])
+  }, [isLoaded, isSignedIn])
   const updatePreferences = useCallback(async (updates: Partial<NotificationPreferences>) => {
     false
     try {
