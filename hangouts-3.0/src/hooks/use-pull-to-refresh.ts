@@ -58,7 +58,7 @@ export function usePullToRefresh({
     }))
 
     // Prevent default scrolling when pulling
-    if (pullDistance > 0) {
+    if (pullDistance > 0 && e.cancelable) {
       e.preventDefault()
     }
   }, [state.isPulling, resistance, threshold])

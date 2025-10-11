@@ -29,7 +29,7 @@ export default function RootLayout({
         <body className={inter.className}>
           <GlobalErrorBoundary>
             <AuthProvider>
-              <div className="min-h-screen bg-background text-foreground dark">
+              <div className="min-h-screen bg-background text-foreground dark pb-20">
                 <main className="container mx-auto px-4 py-6 max-w-4xl">
                   {children}
                 </main>
@@ -51,7 +51,7 @@ export default function RootLayout({
             <AuthProvider>
               <RealtimeProvider>
                 <WebSocketProvider>
-                  <div className="min-h-screen bg-background text-foreground dark">
+                  <div className="min-h-screen bg-background text-foreground dark pb-20">
                     {/* Navigation is handled by individual pages */}
                     <main className="container mx-auto px-4 py-6 max-w-4xl">
                       {children}

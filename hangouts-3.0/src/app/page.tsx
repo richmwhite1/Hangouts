@@ -180,10 +180,10 @@ export default function HomePage() {
   return (
     <div
       {...swipeGestures}
-      className="min-h-screen"
+      className="min-h-screen pb-20"
     >
       <Navigation />
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
           <HangoutCalendar hangouts={hangouts} events={[]} />
         </div>
@@ -252,7 +252,7 @@ export default function HomePage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

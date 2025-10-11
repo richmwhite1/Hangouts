@@ -16,7 +16,7 @@ export function useSwipeGestures(options: SwipeGestureOptions = {}) {
     onSwipeUp,
     onSwipeDown,
     threshold = 50,
-    preventDefault = true
+    preventDefault = false
   } = options
 
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
@@ -25,7 +25,8 @@ export function useSwipeGestures(options: SwipeGestureOptions = {}) {
   const minSwipeDistance = threshold
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (preventDefault) {
+    // Only prevent default if explicitly requested and not in a passive context
+    if (preventDefault && e.cancelable) {
       e.preventDefault()
     }
     setTouchEnd(null)
@@ -36,7 +37,8 @@ export function useSwipeGestures(options: SwipeGestureOptions = {}) {
   }, [preventDefault])
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (preventDefault) {
+    // Only prevent default if explicitly requested and not in a passive context
+    if (preventDefault && e.cancelable) {
       e.preventDefault()
     }
     setTouchEnd({

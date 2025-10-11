@@ -58,13 +58,13 @@ export default function FriendsPage() {
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (isSignedIn && user) {
+    if (isSignedIn && isLoaded && user) {
       loadFriends()
       loadFriendRequests()
       // Load all users for discovery
       searchUsers('')
     }
-  }, [isSignedIn, user])
+  }, [isSignedIn, isLoaded, user])
 
   const loadFriends = async () => {
     try {
@@ -187,6 +187,17 @@ export default function FriendsPage() {
       logger.error('Error removing friend:', error);
       toast.error('Failed to remove friend')
     }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!isSignedIn) {
