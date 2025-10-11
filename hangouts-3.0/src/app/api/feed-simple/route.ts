@@ -102,14 +102,37 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // For debugging, let's use a simpler approach
+    // For home feed, show user's content, invited content, and saved content
     if (userId && feedType === 'home') {
       whereClause = {
         status: 'PUBLISHED',
-        type: 'HANGOUT',
-        creatorId: userId
+        OR: [
+          // User's own content (all types)
+          { creatorId: userId },
+          // Content where user is a participant (invited)
+          {
+            content_participants: {
+              some: { userId: userId }
+            }
+          },
+          // Content user has liked/saved
+          {
+            content_likes: {
+              some: { userId: userId }
+            }
+          },
+          // Content user has RSVP'd to (for events)
+          {
+            rsvps: {
+              some: { 
+                userId: userId,
+                status: { in: ['YES', 'MAYBE'] }
+              }
+            }
+          }
+        ]
       }
-      console.log('Simple Feed API: Using simplified where clause for debugging')
+      console.log('Simple Feed API: Using comprehensive where clause for home feed')
     }
 
     console.log('Simple Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2))

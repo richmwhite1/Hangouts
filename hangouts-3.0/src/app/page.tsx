@@ -4,7 +4,7 @@ import { HangoutCalendar } from "@/components/hangout-calendar"
 import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
 import { GuestLanding } from "@/components/guest-landing"
 import { useEffect, useState, useMemo } from "react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { getHangoutActionStatus } from "@/hooks/use-hangout-actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
@@ -50,7 +50,7 @@ interface Hangout {
   createdAt?: string
 }
 export default function HomePage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [loading, setLoading] = useState(true)
@@ -118,7 +118,7 @@ export default function HomePage() {
     setIsClient(true)
     const fetchHangouts = async () => {
       // Don't fetch if auth is still loading
-      if (authLoading) {
+      if (!isLoaded) {
         setLoading(true)
         return
       }
@@ -128,7 +128,7 @@ export default function HomePage() {
         const headers: HeadersInit = {
           'Content-Type': 'application/json'
         }
-        const response = await fetch('/api/feed-simple?type=home&contentType=hangouts', {
+        const response = await fetch('/api/feed-simple?type=home&contentType=all', {
           headers
         })
         const data = await response.json()
@@ -148,9 +148,9 @@ export default function HomePage() {
       }
     }
     fetchHangouts()
-  }, [authLoading])
+  }, [isLoaded])
   // Show guest landing for non-authenticated users
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <GuestLanding
         onSignIn={() => {
@@ -218,12 +218,12 @@ export default function HomePage() {
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold mb-4">Welcome to Hangouts 3.0</h2>
               <p className="text-gray-600 mb-6">
-                {!isAuthenticated
+                {!isSignedIn
                   ? "Please sign in to view your hangouts and create new ones."
                   : "No hangouts found. Create your first hangout!"
                 }
               </p>
-              {!isAuthenticated && (
+              {!isSignedIn && (
                 <div className="space-x-4">
                   <a href="/login" className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
                     Sign In

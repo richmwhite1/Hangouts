@@ -225,11 +225,18 @@ export function ImprovedCreateEventModal() {
           coverImagePreview: data.coverImage || prev.coverImagePreview,
           categories: data.categories || prev.categories
         }))
+        
+        // Show success message
+        console.log('Event data scraped successfully')
       } else {
         console.error('Failed to scrape URL')
+        // Show error message to user
+        alert('Failed to scrape event data from URL. Please fill in the details manually.')
       }
     } catch (error) {
       console.error('Error scraping URL:', error)
+      // Show error message to user
+      alert('Error scraping event data. Please fill in the details manually.')
     } finally {
       setIsScraping(false)
     }
