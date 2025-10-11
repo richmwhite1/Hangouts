@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Users, 
   UserPlus, 
-  UserCheck, 
   UserX, 
   Search,
   MessageCircle,
@@ -221,7 +220,6 @@ export default function FriendsPage() {
   }
 
     const pendingFriendRequests = friendRequests.filter(req => req.status === 'PENDING')
-  const sentRequests = friendRequests.filter(req => req.sender.id === user?.id)
 
   return (
     <div className="min-h-screen bg-background">
@@ -234,18 +232,14 @@ export default function FriendsPage() {
         </div>
 
         <Tabs defaultValue="friends" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="friends">
               <Users className="w-4 h-4 mr-2" />
               Friends ({friends.length})
             </TabsTrigger>
-            <TabsTrigger value="sent">
-              <UserCheck className="w-4 h-4 mr-2" />
-              Sent ({sentRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="search">
+            <TabsTrigger value="find">
               <Search className="w-4 h-4 mr-2" />
-              Find People
+              Find Friends
             </TabsTrigger>
           </TabsList>
 
@@ -259,7 +253,7 @@ export default function FriendsPage() {
                     <p className="text-muted-foreground mb-4">
                       Start by searching for people to connect with
                     </p>
-                    <Button onClick={() => document.querySelector('[value="search"]')?.click()}>
+                    <Button onClick={() => document.querySelector('[value="find"]')?.click()}>
                       Find People
                     </Button>
                   </CardContent>
@@ -312,47 +306,8 @@ export default function FriendsPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="sent" className="mt-6">
-            <div className="grid gap-4">
-              {sentRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <UserCheck className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">No sent requests</h3>
-                    <p className="text-muted-foreground">
-                      Sent friend requests will appear here
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                sentRequests.map((request) => (
-                  <Card key={request.id}>
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center space-x-3">
-                        <Avatar>
-                          <AvatarImage src={request.receiver.avatar} />
-                          <AvatarFallback>
-                            {request.receiver.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{request.receiver.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            @{request.receiver.username}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">
-                        {request.status}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="search" className="mt-6">
+          <TabsContent value="find" className="mt-6">
             <div className="space-y-4">
               <div className="flex space-x-2">
                 <Input

@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Search, Filter, MapPin, Calendar, DollarSign, Plus } from 'lucide-react'
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
+import { useAuth } from '@/contexts/auth-context'
 
 interface Event {
   id: string
@@ -30,6 +31,7 @@ interface Event {
 }
 
 export default function EventsPage() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -55,6 +57,11 @@ export default function EventsPage() {
   ]
 
   useEffect(() => {
+    if (!isAuthenticated || authLoading) {
+      setIsLoading(false)
+      return
+    }
+    
     console.log('EventsPage: useEffect triggered')
     const fetchEvents = async () => {
       try {
@@ -79,7 +86,7 @@ export default function EventsPage() {
     }
 
     fetchEvents()
-  }, [])
+  }, [isAuthenticated, authLoading])
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -130,6 +137,33 @@ export default function EventsPage() {
       return `$${price.min} - $${price.max}`
     }
     return `$${price.min}`
+  }
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <h1 className="text-2xl font-bold mb-4 text-white">Events</h1>
+          <p className="text-gray-400 mb-8">Please sign in to view and create events</p>
+          <Button onClick={() => window.location.href = '/signin'}>
+            Sign In
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

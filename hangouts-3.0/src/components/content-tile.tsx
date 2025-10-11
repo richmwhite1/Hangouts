@@ -100,9 +100,28 @@ export function ContentTile({
     }
   }
 
-  const handleLike = () => {
-    setIsLiked(!isLiked)
-    onLike?.(content.id)
+  const handleLike = async () => {
+    try {
+      const response = await fetch(`/api/content/${content.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: isLiked ? 'unlike' : 'like'
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsLiked(data.liked)
+        onLike?.(content.id)
+      } else {
+        console.error('Failed to like content')
+      }
+    } catch (error) {
+      console.error('Error liking content:', error)
+    }
   }
 
   const handleShare = () => {

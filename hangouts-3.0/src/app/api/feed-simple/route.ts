@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
               some: { userId: userId }
             }
           },
-          // Content user has saved (for events)
+          // Content user has liked/saved
           {
-            eventSaves: {
+            content_likes: {
               some: { userId: userId }
             }
           },
