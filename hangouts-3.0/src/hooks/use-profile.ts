@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 // Removed api-client import - using direct fetch calls
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 
 interface UserProfile {
   id: string
@@ -63,7 +63,7 @@ interface UserHangout {
 }
 
 export function useProfile() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userHangouts, setUserHangouts] = useState<UserHangout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -72,8 +72,8 @@ export function useProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       // Don't fetch if auth is still loading or user is not authenticated
-      if (authLoading || !isAuthenticated) {
-        setIsLoading(authLoading)
+      if (!isLoaded || !isSignedIn) {
+        setIsLoading(!isLoaded)
         return
       }
 
@@ -155,11 +155,11 @@ export function useProfile() {
     }
     
     fetchProfile()
-  }, [isAuthenticated, authLoading])
+  }, [isSignedIn, isLoaded])
 
   const refetch = async () => {
     // Don't refetch if user is not authenticated
-    if (!isAuthenticated) {
+    if (!isSignedIn) {
       return
     }
 

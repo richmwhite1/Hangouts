@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { PreferencesAndPlaces } from "@/components/profile/preferences-and-places"
 import { useState, useEffect, useRef } from "react"
 import { useProfile } from "@/hooks/use-profile"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { useImageUpload } from "@/hooks/use-image-upload"
 import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2 } from "lucide-react"
 import Image from "next/image"
@@ -38,7 +38,7 @@ export function ProfilePage() {
     { id: 'place_2', title: 'Blue Bottle Coffee', mapLink: 'https://www.google.com/maps/search/?api=1&query=Blue+Bottle+Coffee' },
     { id: 'place_3', title: 'Brooklyn Bridge', mapLink: 'https://www.google.com/maps/search/?api=1&query=Brooklyn+Bridge' }
   ])
-  const { isAuthenticated, isLoading: authLoading, signOut } = useAuth()
+  const { isSignedIn, isLoaded, signOut } = useAuth()
   const { profile, userHangouts, isLoading, error, refetch } = useProfile()
   const { uploadImage, updateProfile, isUploading, error: uploadError, clearError } = useImageUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -49,12 +49,12 @@ export function ProfilePage() {
 
   // Redirect non-authenticated users to home page
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (isLoaded && !isSignedIn) {
       window.location.href = '/'
     }
-  }, [isAuthenticated, authLoading])
+  }, [isSignedIn, isLoaded])
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">

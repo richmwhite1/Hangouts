@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 
 interface UploadResult {
   url: string
@@ -14,7 +14,7 @@ interface UploadResult {
 export function useImageUpload() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { token } = useAuth()
+  const { getToken } = useAuth()
 
   const uploadImage = async (file: File, type: 'profile' | 'background' | 'hangout', hangoutId?: string): Promise<UploadResult | null> => {
     try {
@@ -30,9 +30,12 @@ export function useImageUpload() {
         formData.append('hangoutId', hangoutId)
       }
 
+      const token = await getToken()
       const response = await fetch('/api/upload', {
         method: 'POST',
-        
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       })
 
@@ -72,9 +75,13 @@ export function useImageUpload() {
       setIsUploading(true)
       setError(null)
 
+      const token = await getToken()
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(updates)
       })
 
