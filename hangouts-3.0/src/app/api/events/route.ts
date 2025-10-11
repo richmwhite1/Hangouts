@@ -81,8 +81,7 @@ export async function GET(request: NextRequest) {
           OR: [
             { title: { contains: search } },
             { description: { contains: search } },
-            { venue: { contains: search } },
-            { city: { contains: search } }
+            { location: { contains: search } }
           ]
         }
       ]
@@ -127,19 +126,19 @@ export async function GET(request: NextRequest) {
       title: event.title,
       description: event.description,
       category: 'OTHER', // Default category since we don't have categories in unified table
-      venue: event.venue || '',
-      address: event.address || '',
-      city: event.city || '',
+      venue: event.location || '',
+      address: event.location || '',
+      city: event.location || '',
       startDate: event.startTime?.toISOString() || new Date().toISOString(),
       startTime: '14:00', // Default time since we don't store separate time
       coverImage: event.image || '/placeholder-event.jpg',
       price: {
-        min: event.priceMin || 0,
-        max: event.priceMax,
-        currency: event.currency || 'USD'
+        min: 0,
+        max: 0,
+        currency: 'USD'
       },
       tags: [], // No tags in unified table for now
-      attendeeCount: event.attendeeCount || 0,
+      attendeeCount: 0, // Default count
       isPublic: event.privacyLevel === 'PUBLIC',
       creator: event.users,
       createdAt: event.createdAt.toISOString()
@@ -196,20 +195,7 @@ export async function POST(request: NextRequest) {
         status: 'PUBLISHED',
         privacyLevel: body.isPublic !== false ? 'PUBLIC' : 'PRIVATE',
         creatorId: user.id,
-        updatedAt: new Date(),
-        // Event-specific fields
-        venue: body.venue || '',
-        address: body.address || '',
-        city: body.city || '',
-        state: body.state || '',
-        zipCode: body.zipCode || '',
-        priceMin: body.priceMin || 0,
-        priceMax: body.priceMax || null,
-        currency: body.currency || 'USD',
-        ticketUrl: body.ticketUrl || '',
-        attendeeCount: body.attendeeCount || 0,
-        externalEventId: body.eventUrl ? `external_${Date.now()}` : null,
-        source: body.eventUrl ? 'OTHER' : 'MANUAL'
+        updatedAt: new Date()
       }
     })
 
@@ -221,9 +207,9 @@ export async function POST(request: NextRequest) {
         id: event.id,
         title: event.title,
         description: event.description,
-        venue: event.venue,
-        address: event.address,
-        city: event.city,
+        venue: event.location,
+        address: event.location,
+        city: event.location,
         startDate: event.startTime?.toISOString(),
         endDate: event.endTime?.toISOString(),
         coverImage: event.image,

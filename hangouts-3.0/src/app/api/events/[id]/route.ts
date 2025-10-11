@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
+import { verifyToken } from '@/lib/auth'
 // GET /api/events/[id] - Get a specific event
 export async function GET(
   request: NextRequest,
@@ -14,10 +15,10 @@ export async function GET(
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     // Optional authentication - events can be viewed publicly
     let userId = null
-    {
+    if (token) {
       const payload = verifyToken(token)
       if (payload) {
-        userId = user.id
+        userId = payload.userId
       }
     }
     const event = await db.content.findUnique({
@@ -32,6 +33,11 @@ export async function GET(
             username: true,
             name: true,
             avatar: true
+          }
+        },
+        content_participants: {
+          select: {
+            userId: true
           }
         }
       }
@@ -51,19 +57,19 @@ export async function GET(
       title: event.title,
       description: event.description || '',
       category: 'OTHER', // Default category since we don't have categories in unified table
-      venue: event.venue || '',
-      address: event.address || '',
-      city: event.city || '',
+      venue: event.location || '',
+      address: event.location || '',
+      city: event.location || '',
       startDate: event.startTime?.toISOString() || new Date().toISOString(),
       startTime: '14:00', // Default time since we don't store separate time
       coverImage: event.image || '/placeholder-event.jpg',
       price: {
-        min: event.priceMin || 0,
-        max: event.priceMax,
-        currency: event.currency || 'USD'
+        min: 0,
+        max: 0,
+        currency: 'USD'
       },
       tags: [], // No tags in unified table for now
-      attendeeCount: event.attendeeCount || 0,
+      attendeeCount: event.content_participants?.length || 0,
       isPublic: event.privacyLevel === 'PUBLIC',
       creator: event.users || {
         id: '',

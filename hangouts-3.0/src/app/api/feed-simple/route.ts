@@ -86,6 +86,12 @@ export async function GET(request: NextRequest) {
               some: { userId: userId }
             }
           },
+          // Content user has saved (events)
+          {
+            eventSaves: {
+              some: { userId: userId }
+            }
+          },
           // Content user has RSVP'd to (for events)
           {
             rsvps: {
@@ -119,6 +125,12 @@ export async function GET(request: NextRequest) {
           // Content user has liked/saved
           {
             content_likes: {
+              some: { userId: userId }
+            }
+          },
+          // Content user has saved (events)
+          {
+            eventSaves: {
               some: { userId: userId }
             }
           },
