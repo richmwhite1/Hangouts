@@ -11,6 +11,7 @@ import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
+import { InviteModal } from '@/components/hangout/InviteModal'
 interface Hangout {
   id: string
   title: string
@@ -210,6 +211,33 @@ export default function HangoutDetailPage() {
   const handleCopyLink = async () => {
     if (!hangout) return
     await sharingService.copyLink(hangoutId, 'hangout')
+  }
+
+  const handleInviteFriends = async (friendIds: string[]) => {
+    if (!hangoutId) return
+    
+    try {
+      const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ friendIds })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message)
+        // Refresh hangout data to show new participants
+        await fetchHangout()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to invite friends')
+      }
+    } catch (error) {
+      console.error('Error inviting friends:', error)
+      toast.error('Failed to invite friends')
+    }
   }
 
   const handleJoinHangout = async (hangoutId: string) => {
@@ -1067,7 +1095,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
                 </div>
                 <div className="flex gap-2 ml-4">
                   <button
-                    onClick={() => onVote(option.id)}
+                    onClick={() => onVote(option.id, 'toggle')}
                     disabled={isVoting}
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
                       hasUserVoted
@@ -1080,7 +1108,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
                   </button>
                   {hasUserVoted && (
                     <button
-                      onClick={() => onVote(option.id)}
+                      onClick={() => onVote(option.id, 'preferred')}
                       disabled={isVoting}
                       className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
                         isPreferred
