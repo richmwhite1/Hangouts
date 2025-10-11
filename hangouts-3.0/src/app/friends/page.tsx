@@ -170,6 +170,75 @@ export default function FriendsPage() {
     }
   }
 
+  const getFriendStatus = (userId: string) => {
+    // Check if already friends
+    const isFriend = friends.some(friendship => friendship.friend.id === userId)
+    if (isFriend) return 'friends'
+    
+    // Check if there's a pending request
+    const hasPendingRequest = friendRequests.some(req => 
+      (req.sender.id === userId || req.receiver.id === userId) && req.status === 'PENDING'
+    )
+    if (hasPendingRequest) return 'pending'
+    
+    // Check if request is pending (sent by current user)
+    const sentRequest = friendRequests.some(req => 
+      req.sender.id === userId && req.status === 'PENDING'
+    )
+    if (sentRequest) return 'sent'
+    
+    return 'none'
+  }
+
+  const getFriendStatusButton = (user: User) => {
+    const status = getFriendStatus(user.id)
+    
+    switch (status) {
+      case 'friends':
+        return (
+          <Badge variant="secondary" className="flex items-center">
+            <Users className="w-3 h-3 mr-1" />
+            Friends
+          </Badge>
+        )
+      case 'pending':
+        return (
+          <Badge variant="outline" className="flex items-center">
+            <Clock className="w-3 h-3 mr-1" />
+            Pending
+          </Badge>
+        )
+      case 'sent':
+        return (
+          <Badge variant="outline" className="flex items-center">
+            <Clock className="w-3 h-3 mr-1" />
+            Request Sent
+          </Badge>
+        )
+      default:
+        return (
+          <Button 
+            size="sm"
+            onClick={() => sendFriendRequest(user.id)}
+            disabled={pendingRequests.has(user.id)}
+            variant={pendingRequests.has(user.id) ? "secondary" : "default"}
+          >
+            {pendingRequests.has(user.id) ? (
+              <>
+                <Clock className="w-4 h-4 mr-2" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Friend
+              </>
+            )}
+          </Button>
+        )
+    }
+  }
+
   const removeFriend = async (friendshipId: string) => {
     try {
       const response = await fetch(`/api/friends/${friendshipId}`, {
@@ -252,10 +321,14 @@ export default function FriendsPage() {
         </div>
 
         <Tabs defaultValue="friends" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">
               <Users className="w-4 h-4 mr-2" />
               Friends ({friends.length})
+            </TabsTrigger>
+            <TabsTrigger value="requests">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Requests ({pendingFriendRequests.length})
             </TabsTrigger>
             <TabsTrigger value="find">
               <Search className="w-4 h-4 mr-2" />
@@ -326,6 +399,70 @@ export default function FriendsPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="requests" className="mt-6">
+            <div className="space-y-4">
+              {pendingFriendRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <UserPlus className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
+                    <p className="text-muted-foreground">
+                      You don't have any pending friend requests
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Pending Friend Requests</h3>
+                  {pendingFriendRequests.map((request) => (
+                    <Card key={request.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Avatar>
+                              <AvatarImage src={request.sender.avatar} />
+                              <AvatarFallback>
+                                {request.sender.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-semibold">{request.sender.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                @{request.sender.username}
+                              </p>
+                              {request.message && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  "{request.message}"
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(request.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              size="sm"
+                              onClick={() => respondToFriendRequest(request.id, 'ACCEPTED')}
+                            >
+                              Accept
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="outline"
+                              onClick={() => respondToFriendRequest(request.id, 'DECLINED')}
+                            >
+                              Decline
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
 
           <TabsContent value="find" className="mt-6">
             <div className="space-y-4">
@@ -366,24 +503,7 @@ export default function FriendsPage() {
                           )}
                         </div>
                       </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => sendFriendRequest(user.id)}
-                        disabled={pendingRequests.has(user.id)}
-                        variant={pendingRequests.has(user.id) ? "secondary" : "default"}
-                      >
-                        {pendingRequests.has(user.id) ? (
-                          <>
-                            <Clock className="w-4 h-4 mr-2" />
-                            Pending
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Add Friend
-                          </>
-                        )}
-                      </Button>
+                      {getFriendStatusButton(user)}
                     </CardContent>
                   </Card>
                 ))}
