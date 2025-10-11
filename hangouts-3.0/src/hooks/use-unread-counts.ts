@@ -14,6 +14,7 @@ export function useUnreadCounts() {
   const [totalUnreadCount, setTotalUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const fetchUnreadCounts = useCallback(async () => {
     if (!isLoaded || !isSignedIn) {

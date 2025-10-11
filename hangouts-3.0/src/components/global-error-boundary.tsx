@@ -7,11 +7,12 @@ import { logger } from '@/lib/logger'
 
 // Import Sentry for error tracking
 let Sentry: any = null
-try {
-  Sentry = require('@sentry/nextjs')
-} catch (error) {
-  // Sentry not available, continue without it
-}
+// Temporarily disable Sentry to fix build issues
+// try {
+//   Sentry = require('@sentry/nextjs')
+// } catch (error) {
+//   // Sentry not available, continue without it
+// }
 interface GlobalErrorBoundaryProps {
   children: React.ReactNode
 }

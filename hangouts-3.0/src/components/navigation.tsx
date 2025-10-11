@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Bell, User, Users, LogOut, Settings, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth, useClerk } from "@clerk/nextjs"
 import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { NotificationSettings } from "@/components/notifications/notification-settings"
@@ -19,7 +19,9 @@ export function Navigation() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false)
   const [showNotificationHistory, setShowNotificationHistory] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const { user, isAuthenticated, signOut } = useAuth()
+  
+  const { isSignedIn, isLoaded, user } = useAuth()
+  const clerk = useClerk()
   const { totalUnreadCount } = useUnreadCounts()
 
   return (
@@ -84,11 +86,11 @@ export function Navigation() {
               >
                 <Avatar className="w-8 h-8 rounded-md">
                   <AvatarImage 
-                    src={isAuthenticated && user?.avatar ? user.avatar : "/placeholder-avatar.png"} 
-                    alt={isAuthenticated && user?.name ? user.name : "Profile"} 
+                    src={isSignedIn && user?.imageUrl ? user.imageUrl : "/placeholder-avatar.png"} 
+                    alt={isSignedIn && user?.fullName ? user.fullName : "Profile"} 
                   />
                   <AvatarFallback className="rounded-md">
-                    {isAuthenticated && user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                    {isSignedIn && user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -99,16 +101,16 @@ export function Navigation() {
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
                         <AvatarImage 
-                          src={isAuthenticated && user?.avatar ? user.avatar : "/placeholder-avatar.png"} 
-                          alt={isAuthenticated && user?.name ? user.name : "Profile"} 
+                          src={isSignedIn && user?.imageUrl ? user.imageUrl : "/placeholder-avatar.png"} 
+                          alt={isSignedIn && user?.fullName ? user.fullName : "Profile"} 
                         />
                         <AvatarFallback>
-                          {isAuthenticated && user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                          {isSignedIn && user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-sm">{isAuthenticated && user?.name ? user.name : "User"}</p>
-                        <p className="text-xs text-muted-foreground">{isAuthenticated && user?.email ? user.email : ""}</p>
+                        <p className="font-semibold text-sm">{isSignedIn && user?.fullName ? user.fullName : "User"}</p>
+                        <p className="text-xs text-muted-foreground">{isSignedIn && user?.primaryEmailAddress?.emailAddress ? user.primaryEmailAddress.emailAddress : ""}</p>
                       </div>
                     </div>
                   </div>
@@ -134,7 +136,7 @@ export function Navigation() {
                       size="sm" 
                       className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => {
-                        signOut()
+                        clerk.signOut()
                         setShowUserMenu(false)
                       }}
                     >

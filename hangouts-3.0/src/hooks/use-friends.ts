@@ -28,7 +28,25 @@ interface UseFriendsReturn {
 }
 
 export const useFriends = (): UseFriendsReturn => {
-  const { isSignedIn, isLoaded } = useAuth()
+  // Safely call useAuth with error handling
+  let clerkAuth
+  try {
+    clerkAuth = useAuth()
+  } catch (error) {
+    // Clerk not available, return empty state
+    return {
+      friends: [],
+      sentRequests: [],
+      receivedRequests: [],
+      isLoading: false,
+      error: 'Authentication not available',
+      refetch: () => Promise.resolve(),
+      sendFriendRequest: () => Promise.resolve(),
+      respondToFriendRequest: () => Promise.resolve()
+    }
+  }
+
+  const { isSignedIn, isLoaded } = clerkAuth
   const [friends, setFriends] = useState<User[]>([])
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])

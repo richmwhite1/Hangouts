@@ -5,14 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SimplePollModal } from '@/components/polling/SimplePollModal'
 import { SimplePollDisplay } from '@/components/polling/SimplePollDisplay'
+import { useUser } from '@clerk/nextjs'
 import { useHangoutState } from '@/hooks/use-hangout-state'
-import { Calendar, Users, MessageSquare, Camera, CheckCircle, Clock } from 'lucide-react'
+import { Calendar, Users, CheckCircle, Clock } from 'lucide-react'
 
 interface SimplifiedHangoutPageProps {
   hangoutId: string
 }
 
 export function SimplifiedHangoutPage({ hangoutId }: SimplifiedHangoutPageProps) {
+  const { user } = useUser()
   const { state, isLoading, voteOnPoll, updateRSVP } = useHangoutState(hangoutId)
   const [showCreatePoll, setShowCreatePoll] = useState(false)
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false)
@@ -37,7 +39,7 @@ export function SimplifiedHangoutPage({ hangoutId }: SimplifiedHangoutPageProps)
   }
 
   const isCreator = state.participants.some(p => p.role === 'CREATOR')
-  const userRSVP = state.participants.find(p => p.user.id === 'current-user-id')?.rsvpStatus
+  const userRSVP = state.participants.find(p => p.user.id === user?.id)?.rsvpStatus
 
   const handleVote = async (pollId: string, optionId: string) => {
     await voteOnPoll(pollId, optionId)

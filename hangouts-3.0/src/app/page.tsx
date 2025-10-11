@@ -11,8 +11,6 @@ import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
 import { useRouter } from "next/navigation"
 import { logger } from '@/lib/logger'
 
-// Check if Clerk keys are available
-const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
 interface Hangout {
   id: string
   title: string
@@ -54,9 +52,7 @@ interface Hangout {
   createdAt?: string
 }
 export default function HomePage() {
-  // Only use Clerk auth if keys are available
-  const clerkAuth = hasValidClerkKeys ? useAuth() : { isSignedIn: true, isLoaded: true }
-  const { isSignedIn, isLoaded } = clerkAuth
+  const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [loading, setLoading] = useState(true)
@@ -155,8 +151,8 @@ export default function HomePage() {
     }
     fetchHangouts()
   }, [isLoaded])
-  // Show guest landing for non-authenticated users (only in production with Clerk)
-  if (!isSignedIn && hasValidClerkKeys) {
+  // Show guest landing for non-authenticated users
+  if (!isSignedIn) {
     return (
       <GuestLanding
         onSignIn={() => {
@@ -210,21 +206,8 @@ export default function HomePage() {
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold mb-4">Welcome to Hangouts 3.0</h2>
               <p className="text-gray-600 mb-6">
-                {!isSignedIn && hasValidClerkKeys
-                  ? "Please sign in to view your hangouts and create new ones."
-                  : "No hangouts found. Create your first hangout!"
-                }
+                No hangouts found. Create your first hangout!
               </p>
-              {!isSignedIn && hasValidClerkKeys && (
-                <div className="space-x-4">
-                  <a href="/login" className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
-                    Sign In
-                  </a>
-                  <a href="/signup" className="border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50">
-                    Sign Up
-                  </a>
-                </div>
-              )}
             </div>
           )}
           {!loading && !error && sortedHangouts.length > 0 && (

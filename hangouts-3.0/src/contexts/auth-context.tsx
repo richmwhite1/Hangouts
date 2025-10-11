@@ -28,15 +28,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Check if Clerk keys are valid
-  const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-  
-  // Skip Clerk hooks if keys are invalid
-  const clerkAuth = hasValidClerkKeys ? useClerkAuth() : { isSignedIn: false, signOut: () => {}, isLoaded: true }
-  const clerkUser = hasValidClerkKeys ? useClerkUser() : { user: null }
-  
-  const { isSignedIn, signOut: clerkSignOut, isLoaded: clerkIsLoaded } = clerkAuth
-  const { user: clerkUserData } = clerkUser
+  const { isSignedIn, signOut: clerkSignOut, isLoaded: clerkIsLoaded } = useClerkAuth()
+  const { user: clerkUserData } = useClerkUser()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isClerkUser, setIsClerkUser] = useState(false)
@@ -51,13 +44,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
-      // Skip Clerk initialization if keys are invalid
-      if (!hasValidClerkKeys) {
-        // console.log('⚠️ Skipping Clerk authentication due to invalid keys'); // Removed for production
-        setIsLoading(false)
-        return
-      }
-
       if (!clerkIsLoaded) {
         setIsLoading(true)
         return
@@ -106,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     initializeAuth()
-  }, [isSignedIn, clerkUserData, clerkIsLoaded, hasValidClerkKeys])
+  }, [isSignedIn, clerkUserData, clerkIsLoaded])
 
   const signOut = async () => {
     try {
@@ -114,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearAuthState()
       
       // Then sign out from Clerk
-      if (hasValidClerkKeys && clerkSignOut) {
+      if (clerkSignOut) {
         await clerkSignOut()
       }
       
@@ -137,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isClerkUser,
     signOut,
     isLoading,
-    isAuthenticated: hasValidClerkKeys ? (isSignedIn || false) : false
+    isAuthenticated: isSignedIn || false
   }
 
   return (

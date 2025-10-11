@@ -7,19 +7,16 @@ import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHango
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
 
-// Check if Clerk keys are available
-const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
 export default function CreateHangoutPage() {
   const router = useRouter()
-  // Only use Clerk auth if keys are available
-  const clerkAuth = hasValidClerkKeys ? useAuth() : { isSignedIn: true, isLoaded: true }
-  const { isSignedIn, isLoaded } = clerkAuth
-  const user = hasValidClerkKeys ? (clerkAuth as any).user : { id: 'dev-user' }
+  const { isSignedIn, isLoaded, user } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
+
   useEffect(() => {
     setIsClient(true)
   }, [])
+
   // Wait for both client-side hydration and Clerk authentication to load
   if (!isClient || !isLoaded) {
     return (
@@ -31,8 +28,9 @@ export default function CreateHangoutPage() {
       </div>
     )
   }
-  // Show sign-in required only in production with Clerk
-  if ((!isSignedIn || !user) && hasValidClerkKeys) {
+
+  // Show sign-in required
+  if (!isSignedIn || !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="max-w-md mx-auto p-6">

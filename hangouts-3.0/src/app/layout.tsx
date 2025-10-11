@@ -16,33 +16,10 @@ export const metadata: Metadata = {
   description: 'Plan amazing hangouts with friends'}
 
 export default function RootLayout({
-  children}: {
+  children
+}: {
   children: React.ReactNode
 }) {
-  // Check if Clerk keys are valid
-  const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-  
-  if (!hasValidClerkKeys) {
-    // Render without Clerk provider if keys are invalid or empty
-    return (
-      <html lang="en">
-        <body className={inter.className}>
-          <GlobalErrorBoundary>
-            <AuthProvider>
-              <div className="min-h-screen bg-background text-foreground dark pb-20">
-                <main className="container mx-auto px-4 py-6 max-w-4xl">
-                  {children}
-                </main>
-                <BottomNavigation />
-              </div>
-            </AuthProvider>
-            <Toaster position="top-right" richColors />
-          </GlobalErrorBoundary>
-        </body>
-      </html>
-    )
-  }
-
   return (
     <ClerkProvider>
       <html lang="en">

@@ -15,7 +15,22 @@ interface UploadResult {
 export function useImageUpload() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { getToken } = useAuth()
+  
+  // Safely call useAuth with error handling
+  let clerkAuth
+  try {
+    clerkAuth = useAuth()
+  } catch (error) {
+    // Clerk not available, return empty state
+    return {
+      isUploading: false,
+      error: 'Authentication not available',
+      uploadImage: () => Promise.resolve(null),
+      updateProfileImage: () => Promise.resolve(false)
+    }
+  }
+
+  const { getToken } = clerkAuth
 
   const uploadImage = async (file: File, type: 'profile' | 'background' | 'hangout', hangoutId?: string): Promise<UploadResult | null> => {
     try {

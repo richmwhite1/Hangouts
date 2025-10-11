@@ -64,7 +64,23 @@ interface UserHangout {
 }
 
 export function useProfile() {
-  const { isSignedIn, isLoaded } = useAuth()
+  // Safely call useAuth with error handling
+  let clerkAuth
+  try {
+    clerkAuth = useAuth()
+  } catch (error) {
+    // Clerk not available, return empty state
+    return {
+      profile: null,
+      userHangouts: [],
+      isLoading: false,
+      error: 'Authentication not available',
+      refetch: () => Promise.resolve(),
+      updateProfile: () => Promise.resolve(false)
+    }
+  }
+
+  const { isSignedIn, isLoaded } = clerkAuth
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userHangouts, setUserHangouts] = useState<UserHangout[]>([])
   const [isLoading, setIsLoading] = useState(true)

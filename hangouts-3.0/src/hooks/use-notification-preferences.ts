@@ -20,7 +20,26 @@ export function useNotificationPreferences() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isSignedIn, isLoaded, getToken } = useAuth()
+  
+  // Safely call useAuth with error handling
+  let clerkAuth
+  try {
+    clerkAuth = useAuth()
+  } catch (error) {
+    // Clerk not available, return empty state
+    return {
+      preferences: null,
+      isLoading: false,
+      isSaving: false,
+      error: 'Authentication not available',
+      fetchPreferences: () => {},
+      updatePreferences: () => Promise.resolve(false),
+      togglePreference: () => Promise.resolve(false),
+      resetToDefaults: () => Promise.resolve(false)
+    }
+  }
+  
+  const { isSignedIn, isLoaded, getToken } = clerkAuth
   const fetchPreferences = useCallback(async () => {
     if (!isLoaded || !isSignedIn) {
       setPreferences(null)

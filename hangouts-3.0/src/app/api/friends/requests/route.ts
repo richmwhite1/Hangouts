@@ -6,25 +6,14 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 export async function GET(request: NextRequest) {
   try {
-    // In development mode without Clerk keys, use development user
-    let user
-    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')) {
-      user = {
-        id: 'cmgmmbehc0000jpzattv53v2o',
-        email: 'dev@example.com',
-        username: 'devuser',
-        name: 'Development User'
-      }
-    } else {
-      const { userId: clerkUserId } = await auth()
-      if (!clerkUserId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-      user = await getClerkApiUser()
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 401 })
-      }
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     // Get friend requests (both sent and received)

@@ -725,14 +725,7 @@ export function MergedDiscoveryPage() {
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
-                    // Check if Clerk keys are valid
-                    const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-                    if (hasValidClerkKeys) {
-                      window.location.href = '/signup'
-                    } else {
-                      // For local development without Clerk keys, redirect to local sign-in page
-                      window.location.href = '/local-signin'
-                    }
+                    window.location.href = '/signup'
                   }}
                 >
                   Get Started Free
@@ -742,14 +735,7 @@ export function MergedDiscoveryPage() {
                   variant="outline"
                   className="border-gray-600 text-white hover:bg-gray-700"
                   onClick={() => {
-                    // Check if Clerk keys are valid
-                    const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-                    if (hasValidClerkKeys) {
-                      window.location.href = '/signin'
-                    } else {
-                      // For local development without Clerk keys, redirect to local sign-in page
-                      window.location.href = '/local-signin'
-                    }
+                    window.location.href = '/signin'
                   }}
                 >
                   Sign In

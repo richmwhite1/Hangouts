@@ -21,8 +21,6 @@ import { toast } from 'sonner'
 
 import { logger } from '@/lib/logger'
 
-// Check if Clerk keys are available
-const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
 interface User {
   id: string
   username: string
@@ -51,10 +49,7 @@ interface Friendship {
 }
 
 export default function FriendsPage() {
-  // Only use Clerk auth if keys are available
-  const clerkAuth = hasValidClerkKeys ? useAuth() : { isSignedIn: true, isLoaded: true }
-  const { isSignedIn, isLoaded } = clerkAuth
-  const user = hasValidClerkKeys ? (clerkAuth as any).user : { id: 'dev-user' }
+  const { isSignedIn, isLoaded, user } = useAuth()
   const [friends, setFriends] = useState<Friendship[]>([])
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -264,19 +259,8 @@ export default function FriendsPage() {
     }
   }
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show sign-in required only in production with Clerk
-  if (!isSignedIn && hasValidClerkKeys) {
+  // Show sign-in required
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -292,6 +276,18 @@ export default function FriendsPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  // Show loading if Clerk is not loaded
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
       </div>
     )
   }
