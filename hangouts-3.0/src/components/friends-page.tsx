@@ -26,7 +26,7 @@ import {
   Globe
 } from "lucide-react"
 import { useFriends } from "@/hooks/use-friends"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { User } from "@/types/api"
 import Link from "next/link"
 interface Group {
@@ -59,7 +59,7 @@ export function FriendsPage() {
   // Group-related state
   const [groups, setGroups] = useState<Group[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(false)
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded, user, getToken } = useAuth()
   const {
     friends,
     sentRequests,
@@ -136,11 +136,12 @@ export function FriendsPage() {
   // Create direct message
   const createDirectMessage = async (friendId: string) => {
     try {
+      const token = await getToken()
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           type: 'DIRECT',
@@ -163,11 +164,12 @@ export function FriendsPage() {
       return
     }
     try {
+      const token = await getToken()
       const response = await fetch('/api/friends/unfriend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           friendId: friendId
@@ -187,23 +189,23 @@ export function FriendsPage() {
   }
   // Load groups on mount
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isSignedIn) {
       loadGroups()
     }
-  }, [isAuthenticated])
+  }, [isSignedIn])
   // Load all users when component mounts and when "Find People" tab is activated
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isSignedIn && user) {
       searchUsers('') // Load all users
     }
-  }, [isAuthenticated, user])
+  }, [isSignedIn, user])
   // Load users when "Find People" tab is activated
   useEffect(() => {
-    if (activeTab === 'find' && isAuthenticated && user) {
+    if (activeTab === 'find' && isSignedIn && user) {
       searchUsers('') // Load all users
     }
-  }, [activeTab, isAuthenticated, user])
-  if (!isAuthenticated) {
+  }, [activeTab, isSignedIn, user])
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-center">

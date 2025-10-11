@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { User } from '@/types/api'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 
 interface FriendRequest {
   id: string
@@ -27,7 +27,7 @@ interface UseFriendsReturn {
 }
 
 export const useFriends = (): UseFriendsReturn => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   const [friends, setFriends] = useState<User[]>([])
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -35,12 +35,12 @@ export const useFriends = (): UseFriendsReturn => {
   const [error, setError] = useState<string | null>(null)
 
   const fetchData = async () => {
-    // Don't fetch if auth is still loading or user is not authenticated
-    if (authLoading || !isAuthenticated) {
+    // Don't fetch if auth is still loading or user is not signed in
+    if (!isLoaded || !isSignedIn) {
       setFriends([])
       setSentRequests([])
       setReceivedRequests([])
-      setIsLoading(authLoading)
+      setIsLoading(!isLoaded)
       return
     }
 

@@ -40,7 +40,7 @@ import {
   Camera,
   Save
 } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { useWebSocket } from "@/contexts/websocket-context"
 import { User } from "@/types/api"
 import Link from "next/link"
@@ -108,7 +108,7 @@ interface Conversation {
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
-  const { isAuthenticated, user } = useAuth()
+  const { isSignedIn, user, getToken } = useAuth()
   const { socket, isConnected, typingUsers, onlineUsers, sendTypingIndicator, sendMessage, sendReaction, joinConversation, leaveConversation } = useWebSocket()
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -138,7 +138,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (isAuthenticated && resolvedParams.id) {
+    if (isSignedIn && resolvedParams.id) {
       fetchConversation()
       fetchMessages()
       

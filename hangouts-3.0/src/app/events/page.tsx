@@ -139,7 +139,7 @@ export default function EventsPage() {
   }
 
   // Show loading state while checking authentication
-  if (authLoading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -151,7 +151,7 @@ export default function EventsPage() {
   }
 
   // Show sign-in prompt if not authenticated
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">

@@ -134,41 +134,6 @@ export default function HangoutDetailPage() {
     }
   }
 
-  // Handle inviting friends
-  const handleInviteFriends = async () => {
-    if (selectedFriends.length === 0) {
-      toast.error('Please select at least one friend to invite')
-      return
-    }
-
-    setIsInviting(true)
-    try {
-      const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userIds: selectedFriends })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        toast.success(data.message || 'Friends invited successfully!')
-        setShowInviteModal(false)
-        setSelectedFriends([])
-        // Refresh hangout data
-        await fetchHangout()
-      } else {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to invite friends')
-      }
-    } catch (error) {
-      console.error('Error inviting friends:', error)
-      toast.error('Failed to invite friends')
-    } finally {
-      setIsInviting(false)
-    }
-  }
 
   const handleRemoveUser = async (participantId: string) => {
     if (! !hangoutId) return
