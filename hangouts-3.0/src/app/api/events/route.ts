@@ -169,9 +169,15 @@ export async function POST(request: NextRequest) {
     console.log('📊 Request body:', JSON.stringify(body, null, 2))
 
     // Get user ID from Clerk auth
-    const { userId } = await auth()
-    if (!userId) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get the actual user from database
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     const event = await db.content.create({
@@ -188,7 +194,7 @@ export async function POST(request: NextRequest) {
         endTime: body.endDate ? new Date(body.endDate) : null,
         status: 'PUBLISHED',
         privacyLevel: body.isPublic !== false ? 'PUBLIC' : 'PRIVATE',
-        creatorId: userId,
+        creatorId: user.id,
         updatedAt: new Date(),
         // Event-specific fields
         venue: body.venue || '',

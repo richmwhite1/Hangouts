@@ -257,13 +257,13 @@ export function ImprovedCreateEventModal() {
     }
   }
   const handleLocationSelect = (location: any) => {
-    const address = location.display_name || ''
+    const address = location.displayName || location.display_name || ''
     const parts = address ? address.split(', ') : []
     
     setFormData(prev => ({
       ...prev,
       venue: location.name || parts[0] || '',
-      address: location.display_name || '',
+      address: address,
       city: location.address?.city || location.address?.town || location.address?.village || '',
       state: location.address?.state || location.address?.county || '',
       zipCode: location.address?.postcode || '',
@@ -539,10 +539,10 @@ export function ImprovedCreateEventModal() {
                         onClick={() => handleLocationSelect(location)}
                       >
                         <div className="font-medium text-white">
-                          {location.name || (location.display_name ? location.display_name.split(',')[0] : 'Unknown Location')}
+                          {location.name || (location.displayName ? location.displayName.split(',')[0] : 'Unknown Location')}
                         </div>
                         <div className="text-sm text-gray-300">
-                          {location.display_name}
+                          {location.displayName || location.display_name}
                         </div>
                       </div>
                     ))}
@@ -605,7 +605,7 @@ export function ImprovedCreateEventModal() {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => handleInputChange('startDate', e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white relative z-50"
                     required
                   />
                 </div>
@@ -616,7 +616,7 @@ export function ImprovedCreateEventModal() {
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => handleInputChange('endDate', e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white relative z-50"
                   />
                 </div>
               </div>
@@ -662,7 +662,7 @@ export function ImprovedCreateEventModal() {
                     min="0"
                     step="0.01"
                     value={formData.priceMin}
-                    onChange={(e) => handleInputChange('priceMin', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('priceMin', e.target.value ? parseFloat(e.target.value) : 0)}
                     className="bg-gray-700 border-gray-600 text-white"
                   />
                 </div>
