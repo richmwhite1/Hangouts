@@ -20,6 +20,9 @@ import {
 import { toast } from 'sonner'
 
 import { logger } from '@/lib/logger'
+
+// Check if Clerk keys are available
+const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
 interface User {
   id: string
   username: string
@@ -48,7 +51,10 @@ interface Friendship {
 }
 
 export default function FriendsPage() {
-  const { user, isSignedIn, isLoaded } = useAuth()
+  // Only use Clerk auth if keys are available
+  const clerkAuth = hasValidClerkKeys ? useAuth() : { isSignedIn: true, isLoaded: true }
+  const { isSignedIn, isLoaded } = clerkAuth
+  const user = hasValidClerkKeys ? (clerkAuth as any).user : { id: 'dev-user' }
   const [friends, setFriends] = useState<Friendship[]>([])
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -269,32 +275,25 @@ export default function FriendsPage() {
     )
   }
 
-  // In development mode without Clerk keys, allow access for testing
-  const isDevelopmentMode = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-  
-  if (!isSignedIn) {
-    if (isDevelopmentMode) {
-      // Allow access in development mode for testing
-      console.log('🔧 Development mode: Allowing access to friends page for testing')
-    } else {
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle>Sign In Required</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-muted-foreground mb-4">
-                Please sign in to view your friends and manage friend requests.
-              </p>
-              <Button onClick={() => window.location.href = '/signin'}>
-                Sign In
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    }
+  // Show sign-in required only in production with Clerk
+  if (!isSignedIn && hasValidClerkKeys) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Sign In Required</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-muted-foreground mb-4">
+              Please sign in to view your friends and manage friend requests.
+            </p>
+            <Button onClick={() => window.location.href = '/signin'}>
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (loading) {
@@ -346,7 +345,7 @@ export default function FriendsPage() {
                     <p className="text-muted-foreground mb-4">
                       Start by searching for people to connect with
                     </p>
-                    <Button onClick={() => document.querySelector('[value="find"]')?.click()}>
+                    <Button onClick={() => (document.querySelector('[value="find"]') as HTMLElement)?.click()}>
                       Find People
                     </Button>
                   </CardContent>

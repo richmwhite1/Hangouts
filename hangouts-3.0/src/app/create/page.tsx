@@ -6,9 +6,15 @@ import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHango
 // Removed apiClient import - using direct fetch instead
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
+
+// Check if Clerk keys are available
+const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isSignedIn, isLoaded, user } = useAuth()
+  // Only use Clerk auth if keys are available
+  const clerkAuth = hasValidClerkKeys ? useAuth() : { isSignedIn: true, isLoaded: true }
+  const { isSignedIn, isLoaded } = clerkAuth
+  const user = hasValidClerkKeys ? (clerkAuth as any).user : { id: 'dev-user' }
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
   useEffect(() => {
@@ -25,57 +31,34 @@ export default function CreateHangoutPage() {
       </div>
     )
   }
-  // In development mode without Clerk keys, allow access for testing
-  const isDevelopmentMode = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-  
-  if (!isSignedIn || !user) {
-    if (isDevelopmentMode) {
-      // Allow access in development mode for testing
-      console.log('🔧 Development mode: Allowing access to create page for testing')
-    } else {
-      return (
-        <div className="min-h-screen bg-black flex items-center justify-center">
-          <div className="max-w-md mx-auto p-6">
-            <div className="bg-gray-900 rounded-lg p-8 text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">Sign In Required</h2>
-              <p className="text-gray-300 mb-6">
-                Please sign in to create hangouts and events
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => {
-                    // Check if Clerk keys are valid
-                    const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-                    if (hasValidClerkKeys) {
-                      window.location.href = '/signup'
-                    } else {
-                      window.location.href = '/local-signin'
-                    }
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
-                >
-                  Get Started Free
-                </button>
-                <button
-                  onClick={() => {
-                    // Check if Clerk keys are valid
-                    const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
-                    if (hasValidClerkKeys) {
-                      window.location.href = '/signin'
-                    } else {
-                      window.location.href = '/local-signin'
-                    }
-                  }}
-                  className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-3 rounded-lg font-medium"
-                >
-                  Sign In
-                </button>
-              </div>
+  // Show sign-in required only in production with Clerk
+  if ((!isSignedIn || !user) && hasValidClerkKeys) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="max-w-md mx-auto p-6">
+          <div className="bg-gray-900 rounded-lg p-8 text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Sign In Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please sign in to create hangouts and events
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.href = '/signup'}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                Get Started Free
+              </button>
+              <button
+                onClick={() => window.location.href = '/signin'}
+                className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-3 rounded-lg font-medium"
+              >
+                Sign In
+              </button>
             </div>
           </div>
         </div>
-      )
-    }
+      </div>
+    )
   }
   const handleCreateHangout = async (formData: NewHangoutFormData) => {
     try {
