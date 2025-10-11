@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner'
 
 import { logger } from '@/lib/logger'
+import { DebugAuth } from '@/components/debug-auth'
 interface User {
   id: string
   username: string
@@ -235,6 +236,7 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <DebugAuth />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Friends</h1>

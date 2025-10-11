@@ -6,6 +6,7 @@ import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHango
 // Removed apiClient import - using direct fetch instead
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
+import { DebugAuth } from '@/components/debug-auth'
 export default function CreateHangoutPage() {
   const router = useRouter()
   const { isSignedIn, isLoaded, user } = useAuth()
@@ -144,6 +145,7 @@ export default function CreateHangoutPage() {
   }
   return (
     <div className="min-h-screen bg-black">
+      <DebugAuth />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-6">
