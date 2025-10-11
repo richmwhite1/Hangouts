@@ -15,17 +15,21 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    // Verify authentication using Clerk
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
+
+    const user = await getClerkApiUser()
+    if (!user) {
       return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
     }
+
     const { id: hangoutId } = await params
     const body = await request.json()
     const { optionId, action } = VoteSchema.parse(body)
+
     // Get hangout with polls
     const hangout = await db.content.findUnique({
       where: { id: hangoutId },
@@ -33,17 +37,45 @@ export async function POST(
         polls: true
       }
     })
+
     if (!hangout) {
       return NextResponse.json(createErrorResponse('Hangout not found', 'Hangout does not exist'), { status: 404 })
     }
+
     const polls = hangout.polls
     if (!polls || polls.length === 0) {
       return NextResponse.json(createErrorResponse('No poll found', 'This hangout does not have a poll'), { status: 404 })
     }
+
     const poll = polls[0]
+
     // Check if hangout is in polling state
     if (poll.status !== 'ACTIVE') {
       return NextResponse.json(createErrorResponse('Voting not allowed', 'Poll is not active'), { status: 400 })
+    }
+
+    // Check if user is a participant, if not, add them as a participant
+    let participant = await db.content_participants.findFirst({
+      where: {
+        contentId: hangoutId,
+        userId: user.id
+      }
+    })
+
+    if (!participant) {
+      // Add user as a participant automatically
+      participant = await db.content_participants.create({
+        data: {
+          id: `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          contentId: hangoutId,
+          userId: user.id,
+          role: 'MEMBER',
+          canEdit: false,
+          isMandatory: false,
+          isCoHost: false,
+          joinedAt: new Date()
+        }
+      })
     }
     // Handle toggle voting system (click to vote/unvote)
     if (action === 'add' || action === 'toggle') {
