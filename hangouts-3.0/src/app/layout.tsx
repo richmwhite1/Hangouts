@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { WebSocketProvider } from '@/contexts/websocket-context'
 import { BottomNavigation } from '@/components/bottom-navigation'
+import { Navigation } from '@/components/navigation'
 import { GlobalErrorBoundary } from '@/components/global-error-boundary'
 import { Toaster } from 'sonner'
 
@@ -29,7 +30,7 @@ export default function RootLayout({
               <RealtimeProvider>
                 <WebSocketProvider>
                   <div className="min-h-screen bg-background text-foreground dark pb-20">
-                    {/* Navigation is handled by individual pages */}
+                    <Navigation />
                     <main className="container mx-auto px-4 py-6 max-w-4xl">
                       {children}
                     </main>
