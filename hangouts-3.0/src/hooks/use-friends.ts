@@ -96,7 +96,7 @@ export const useFriends = (): UseFriendsReturn => {
 
   useEffect(() => {
     fetchData()
-  }, [isAuthenticated, authLoading])
+  }, [isSignedIn, isLoaded])
 
   return {
     friends,

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/auth'
+import { auth } from '@clerk/nextjs/server'
+import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser()
-    if (!user) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     const { userId, message } = await request.json()

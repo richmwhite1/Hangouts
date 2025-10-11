@@ -300,17 +300,19 @@ export function FriendsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => createDirectMessage(friend.id)}
-                          className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 px-3 py-1.5 rounded-lg"
                         >
-                          <MessageSquare className="w-4 h-4" />
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          Message
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => unfriendUser(friend.id)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          className="text-gray-400 hover:text-red-400 hover:bg-red-900/20 px-3 py-1.5 rounded-lg"
                         >
-                          <UserMinus className="w-4 h-4" />
+                          <UserMinus className="w-4 h-4 mr-1" />
+                          Unfriend
                         </Button>
                       </div>
                     </div>
@@ -362,21 +364,26 @@ export function FriendsPage() {
                                 size="sm"
                                 onClick={() => handleRespondToRequest(request.id, 'ACCEPTED')}
                                 disabled={isResponding === request.id}
-                                className="bg-green-600 hover:bg-green-700"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-medium"
                               >
                                 {isResponding === request.id ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                  <Check className="w-4 h-4" />
+                                  "Accept"
                                 )}
                               </Button>
                               <Button
                                 size="sm"
-                                variant="destructive"
+                                variant="outline"
                                 onClick={() => handleRespondToRequest(request.id, 'DECLINED')}
                                 disabled={isResponding === request.id}
+                                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-1.5 rounded-lg font-medium"
                               >
-                                <X className="w-4 h-4" />
+                                {isResponding === request.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Decline"
+                                )}
                               </Button>
                             </div>
                           </div>
@@ -406,11 +413,11 @@ export function FriendsPage() {
                                 <h3 className="font-medium text-white">{request.receiver.name}</h3>
                                 <p className="text-sm text-gray-400">@{request.receiver.username}</p>
                                 <div className="flex items-center space-x-2 mt-1">
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-400">
                                     Pending
                                   </Badge>
                                   <span className="text-xs text-gray-500">
-                                    {new Date(request.createdAt).toLocaleDateString()}
+                                    Sent {new Date(request.createdAt).toLocaleDateString()}
                                   </span>
                                 </div>
                               </div>
@@ -488,7 +495,7 @@ export function FriendsPage() {
             </div>
           )}
         </TabsContent>
-        {/* Find People Tab */}
+        {/* Find People Tab - Instagram Style */}
         <TabsContent value="find" className="p-4 space-y-4">
           {searchQuery ? (
             <div>
@@ -528,16 +535,21 @@ export function FriendsPage() {
                               size="sm"
                               onClick={() => handleSendFriendRequest(user.id)}
                               disabled={sendingRequests.has(user.id)}
-                              className="bg-purple-600 hover:bg-purple-700"
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-medium"
                             >
                               {sendingRequests.has(user.id) ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <UserPlus className="w-4 h-4" />
+                                "Add Friend"
                               )}
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => createDirectMessage(user.id)}
+                              className="text-gray-400 hover:text-white hover:bg-gray-700 px-3 py-1.5 rounded-lg"
+                            >
+                              <MessageSquare className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
