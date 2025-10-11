@@ -8,14 +8,14 @@ import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isSignedIn, user } = useAuth()
+  const { isSignedIn, isLoaded, user } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
   useEffect(() => {
     setIsClient(true)
   }, [])
-  // Remove automatic redirect - let the component handle non-authenticated state
-  if (!isClient) {
+  // Wait for both client-side hydration and Clerk authentication to load
+  if (!isClient || !isLoaded) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">

@@ -40,8 +40,8 @@ export function ProfilePage() {
     { id: 'place_3', title: 'Brooklyn Bridge', mapLink: 'https://www.google.com/maps/search/?api=1&query=Brooklyn+Bridge' }
   ])
   const { isSignedIn, isLoaded, signOut } = useAuth()
-  const { profile, userHangouts, isLoading, error, refetch } = useProfile()
-  const { uploadImage, updateProfile, isUploading, error: uploadError, clearError } = useImageUpload()
+  const { profile, userHangouts, isLoading, error, refetch, updateProfile } = useProfile()
+  const { uploadImage, updateProfile: updateProfileImage, isUploading, error: uploadError, clearError } = useImageUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {

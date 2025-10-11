@@ -13,7 +13,7 @@ export default function CreateHangoutPage() {
   const { isSignedIn, isLoaded, user, getToken } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
 
-  // Redirect if not authenticated
+  // Wait for both client-side hydration and Clerk authentication to load
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
