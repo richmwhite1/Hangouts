@@ -65,6 +65,7 @@
     "multer": "^2.0.2",
     "next": "15.5.2",
     "next-themes": "latest",
+    "node-html-parser": "^7.0.1",
     "prisma": "^6.15.0",
     "puppeteer": "^24.22.0",
     "react": "19.1.0",

@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -19,18 +18,15 @@ import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
 import {
   Calendar,
   MapPin,
-  Clock,
   DollarSign,
   Camera,
   X,
   Plus,
-  Upload,
   Image as ImageIcon,
   Globe,
   Download,
   Loader2
 } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
 interface EventFormData {
   title: string
   description: string
@@ -70,7 +66,6 @@ const commonTags = [
   'dance', 'art', 'food', 'drinks', 'sports', 'fitness'
 ]
 export function ImprovedCreateEventModal() {
-  const { user, getToken } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isScraping, setIsScraping] = useState(false)
@@ -118,15 +113,15 @@ export function ImprovedCreateEventModal() {
     if (!time12h) return ''
     const time12hFormatRegex = /^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)$/i
     const match = time12h.match(time12hFormatRegex)
-    if (!match) {
+    if (!match || match.length < 4) {
       // If already in 24-hour format or invalid, return as is
       return time12h
     }
-    let [, hours, minutes, period] = match
-    let hour24 = parseInt(hours, 10)
-    if (period.toUpperCase() === 'PM' && hour24 !== 12) {
+    const [, hours, minutes, period] = match
+    let hour24 = parseInt(hours || '0', 10)
+    if (period && period.toUpperCase() === 'PM' && hour24 !== 12) {
       hour24 += 12
-    } else if (period.toUpperCase() === 'AM' && hour24 === 12) {
+    } else if (period && period.toUpperCase() === 'AM' && hour24 === 12) {
       hour24 = 0
     }
     return `${hour24.toString().padStart(2, '0')}:${minutes}`
@@ -200,12 +195,10 @@ export function ImprovedCreateEventModal() {
     
     setIsScraping(true)
     try {
-      const token = await getToken()
       const response = await fetch('/api/scrape-event', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ url: formData.eventUrl })
       })
@@ -274,8 +267,8 @@ export function ImprovedCreateEventModal() {
       city: location.address?.city || location.address?.town || location.address?.village || '',
       state: location.address?.state || location.address?.county || '',
       zipCode: location.address?.postcode || '',
-      latitude: parseFloat(location.lat),
-      longitude: parseFloat(location.lon)
+      latitude: location.lat ? parseFloat(location.lat) : null,
+      longitude: location.lon ? parseFloat(location.lon) : null
     }))
     
     setLocationSearch('')
@@ -490,11 +483,13 @@ export function ImprovedCreateEventModal() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1 mt-1">
                   {availableCategories.map((category) => (
                     <div key={category} className="flex items-center space-x-1">
-                      <Checkbox
+                      <input
+                        type="checkbox"
                         id={category}
                         checked={formData.categories.includes(category)}
-                        onCheckedChange={() => handleCategoryToggle(category)}
+                        onChange={() => handleCategoryToggle(category)}
                         disabled={!formData.categories.includes(category) && formData.categories.length >= 5}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
                       />
                       <Label htmlFor={category} className="text-xs text-white">
                         {category}
@@ -544,7 +539,7 @@ export function ImprovedCreateEventModal() {
                         onClick={() => handleLocationSelect(location)}
                       >
                         <div className="font-medium text-white">
-                          {location.name || location.display_name.split(',')[0]}
+                          {location.name || (location.display_name ? location.display_name.split(',')[0] : 'Unknown Location')}
                         </div>
                         <div className="text-sm text-gray-300">
                           {location.display_name}

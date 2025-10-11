@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
+import { parse } from 'node-html-parser'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,8 +41,7 @@ export async function POST(request: NextRequest) {
         'Accept-Encoding': 'gzip, deflate',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
-      },
-      timeout: 10000
+      }
     })
 
     if (!response.ok) {
@@ -49,23 +49,66 @@ export async function POST(request: NextRequest) {
     }
 
     const html = await response.text()
+    const root = parse(html)
     
-    // Simple regex-based extraction (more reliable than complex parsing)
+    // Extract data using CSS selectors
+    const title = root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+                 root.querySelector('title')?.text ||
+                 root.querySelector('h1')?.text || 
+                 'Event from URL'
+    
+    const description = root.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
+                       root.querySelector('meta[name="description"]')?.getAttribute('content') ||
+                       root.querySelector('p')?.text || 
+                       ''
+
+    const imageUrl = root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+                     root.querySelector('img')?.getAttribute('src') || 
+                     ''
+
+    // Basic extraction for location and date (can be improved with more specific selectors)
+    const location = root.querySelector('meta[name="location"]')?.getAttribute('content') ||
+                     root.querySelector('.event-location')?.text ||
+                     root.querySelector('[itemprop="location"]')?.text || 
+                     ''
+
+    const startDate = root.querySelector('meta[property="og:event:start_time"]')?.getAttribute('content') ||
+                      root.querySelector('[itemprop="startDate"]')?.getAttribute('content') ||
+                      root.querySelector('.event-date')?.text || 
+                      new Date().toISOString()
+
+    const endDate = root.querySelector('meta[property="og:event:end_time"]')?.getAttribute('content') ||
+                    root.querySelector('[itemprop="endDate"]')?.getAttribute('content') || 
+                    ''
+
+    const price = root.querySelector('.event-price')?.text || 
+                  root.querySelector('[itemprop="price"]')?.text || 
+                  ''
+
+    // Extract price value
+    let priceMin = 0
+    if (price) {
+      const priceMatch = price.match(/\$?(\d+(?:\.\d{2})?)/)
+      if (priceMatch && priceMatch[1]) {
+        priceMin = parseFloat(priceMatch[1])
+      }
+    }
+
     const scrapedData = {
-      title: extractTitle(html),
-      description: extractDescription(html),
-      venue: extractVenue(html),
-      address: '',
+      title: title.trim().substring(0, 200),
+      description: description.trim().substring(0, 500),
+      venue: location.trim(),
+      address: location.trim(),
       city: '',
       state: '',
       zipCode: '',
-      startDate: extractDate(html),
-      startTime: extractTime(html),
-      endTime: '',
-      priceMin: extractPrice(html),
+      startDate: startDate,
+      startTime: '',
+      endTime: endDate,
+      priceMin: priceMin,
       priceMax: null,
-      currency: 'USD',
-      coverImage: extractImage(html),
+      currency: price.includes('$') ? 'USD' : 'USD',
+      coverImage: imageUrl.trim(),
       categories: [],
       tags: []
     }
@@ -84,142 +127,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-// Helper functions for extraction
-function extractTitle(html: string): string {
-  // Try multiple selectors for title
-  const titleSelectors = [
-    /<title[^>]*>([^<]+)<\/title>/i,
-    /<h1[^>]*>([^<]+)<\/h1>/i,
-    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i,
-    /<meta[^>]*name=["']title["'][^>]*content=["']([^"']+)["']/i
-  ]
-  
-  for (const selector of titleSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      return match[1].trim().substring(0, 200)
-    }
-  }
-  
-  return 'Event from URL'
-}
-
-function extractDescription(html: string): string {
-  const descSelectors = [
-    /<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i,
-    /<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i,
-    /<p[^>]*class=["'][^"']*description[^"']*["'][^>]*>([^<]+)<\/p>/i
-  ]
-  
-  for (const selector of descSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      return match[1].trim().substring(0, 500)
-    }
-  }
-  
-  return ''
-}
-
-function extractVenue(html: string): string {
-  const venueSelectors = [
-    /<meta[^>]*property=["']og:venue["'][^>]*content=["']([^"']+)["']/i,
-    /<meta[^>]*property=["']event:venue["'][^>]*content=["']([^"']+)["']/i,
-    /<span[^>]*class=["'][^"']*venue[^"']*["'][^>]*>([^<]+)<\/span>/i
-  ]
-  
-  for (const selector of venueSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      return match[1].trim()
-    }
-  }
-  
-  return ''
-}
-
-function extractDate(html: string): string {
-  const dateSelectors = [
-    /<meta[^>]*property=["']event:start_time["'][^>]*content=["']([^"']+)["']/i,
-    /<meta[^>]*property=["']og:start_time["'][^>]*content=["']([^"']+)["']/i,
-    /<time[^>]*datetime=["']([^"']+)["']/i
-  ]
-  
-  for (const selector of dateSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      try {
-        const date = new Date(match[1])
-        if (!isNaN(date.getTime())) {
-          return date.toISOString()
-        }
-      } catch (e) {
-        continue
-      }
-    }
-  }
-  
-  return new Date().toISOString()
-}
-
-function extractTime(html: string): string {
-  const timeSelectors = [
-    /<meta[^>]*property=["']event:start_time["'][^>]*content=["']([^"']+)["']/i,
-    /<time[^>]*datetime=["']([^"']+)["']/i
-  ]
-  
-  for (const selector of timeSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      try {
-        const date = new Date(match[1])
-        if (!isNaN(date.getTime())) {
-          return date.toTimeString().substring(0, 5)
-        }
-      } catch (e) {
-        continue
-      }
-    }
-  }
-  
-  return '19:00'
-}
-
-function extractPrice(html: string): number {
-  const priceSelectors = [
-    /<meta[^>]*property=["']og:price["'][^>]*content=["']([^"']+)["']/i,
-    /\$(\d+(?:\.\d{2})?)/i,
-    /price[^>]*>.*?\$(\d+(?:\.\d{2})?)/i
-  ]
-  
-  for (const selector of priceSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      const price = parseFloat(match[1])
-      if (!isNaN(price)) {
-        return price
-      }
-    }
-  }
-  
-  return 0
-}
-
-function extractImage(html: string): string {
-  const imageSelectors = [
-    /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i,
-    /<meta[^>]*property=["']og:image:url["'][^>]*content=["']([^"']+)["']/i,
-    /<img[^>]*src=["']([^"']+)["'][^>]*class=["'][^"']*cover[^"']*["']/i
-  ]
-  
-  for (const selector of imageSelectors) {
-    const match = html.match(selector)
-    if (match && match[1]) {
-      return match[1].trim()
-    }
-  }
-  
-  return ''
 }
