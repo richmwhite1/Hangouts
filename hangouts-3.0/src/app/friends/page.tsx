@@ -201,24 +201,32 @@ export default function FriendsPage() {
     )
   }
 
+  // In development mode without Clerk keys, allow access for testing
+  const isDevelopmentMode = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
+  
   if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">
-              Please sign in to view your friends and manage friend requests.
-            </p>
-            <Button onClick={() => window.location.href = '/signin'}>
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    if (isDevelopmentMode) {
+      // Allow access in development mode for testing
+      console.log('🔧 Development mode: Allowing access to friends page for testing')
+    } else {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle>Sign In Required</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-muted-foreground mb-4">
+                Please sign in to view your friends and manage friend requests.
+              </p>
+              <Button onClick={() => window.location.href = '/signin'}>
+                Sign In
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
   }
 
   if (loading) {

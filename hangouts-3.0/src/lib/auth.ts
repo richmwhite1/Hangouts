@@ -163,6 +163,19 @@ export async function withAuth(handler: (req: any, user: TokenPayload) => Promis
  * This is what most API routes actually need
  */
 export async function getAuthUser() {
+  // In development mode without Clerk keys, return development user
+  if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')) {
+    return {
+      id: 'cmgmmbehc0000jpzattv53v2o', // Development user ID
+      userId: 'cmgmmbehc0000jpzattv53v2o', // For backward compatibility
+      email: 'dev@example.com',
+      username: 'devuser',
+      name: 'Development User',
+      role: 'USER',
+      avatar: null
+    }
+  }
+
   const { userId } = await auth()
   if (!userId) return null
 
