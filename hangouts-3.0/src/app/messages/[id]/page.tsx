@@ -154,7 +154,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         leaveConversation(resolvedParams.id)
       }
     }
-  }, [isAuthenticated, resolvedParams.id, isConnected])
+  }, [isSignedIn, resolvedParams.id, isConnected])
 
   // Real-time event listeners
   useEffect(() => {
@@ -603,7 +603,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-center">
