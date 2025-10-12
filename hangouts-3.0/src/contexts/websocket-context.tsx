@@ -16,17 +16,17 @@ interface WebSocketContextType {
 }
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined)
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, user } = useAuth()
+  const { userIdId, isSignedIn } = useAuth()
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [typingUsers, setTypingUsers] = useState<{ [conversationId: string]: string[] }>({})
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const typingTimeouts = useRef<{ [conversationId: string]: NodeJS.Timeout }>({})
   useEffect(() => {
-    if (isSignedIn && user?.id) {
+    if (isSignedIn && userId?.id) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
         auth: {
-          userId: user?.id
+          userIdId: userId?.id
         },
         transports: ['polling', 'websocket'],
         timeout: 20000,
@@ -39,7 +39,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         // console.log('🔌 WebSocket connected'); // Removed for production
         setIsConnected(true)
         // Authenticate with the server
-        newSocket.emit('authenticate', { userId: user?.id })
+        newSocket.emit('authenticate', { userIdId: userId?.id })
       })
       newSocket.on('disconnect', () => {
         // console.log('🔌 WebSocket disconnected'); // Removed for production
@@ -49,15 +49,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         setTypingUsers(prev => ({
           ...prev,
           [data.conversationId]: [
-            ...(prev[data.conversationId] || []).filter(id => id !== data.userId),
-            data.userId
+            ...(prev[data.conversationId] || []).filter(id => id !== data.userIdId),
+            data.userIdId
           ]
         }))
       })
       newSocket.on('typing:stop', (data) => {
         setTypingUsers(prev => ({
           ...prev,
-          [data.conversationId]: (prev[data.conversationId] || []).filter(id => id !== data.userId)
+          [data.conversationId]: (prev[data.conversationId] || []).filter(id => id !== data.userIdId)
         }))
       })
       newSocket.on('message:new', (data) => {
@@ -69,10 +69,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         // console.log('Message reaction received:', data); // Removed for production
       })
       newSocket.on('presence:online', (data) => {
-        setOnlineUsers(prev => [...new Set([...prev, data.userId])])
+        setOnlineUsers(prev => [...new Set([...prev, data.userIdId])])
       })
       newSocket.on('presence:offline', (data) => {
-        setOnlineUsers(prev => prev.filter(id => id !== data.userId))
+        setOnlineUsers(prev => prev.filter(id => id !== data.userIdId))
       })
       setSocket(newSocket)
       return () => {
@@ -91,7 +91,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         socket.disconnect()
       }
     }
-  }, [isSignedIn, user?.id])
+  }, [isSignedIn, userId?.id])
   const sendTypingIndicator = (conversationId: string, isTyping: boolean) => {
     if (!socket || !isConnected) return
     if (isTyping) {
