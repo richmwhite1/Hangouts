@@ -14,7 +14,6 @@ import {
   UserX, 
   Search,
   MessageCircle,
-  Calendar,
   Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -262,10 +261,44 @@ export default function FriendsPage() {
     }
   }
 
+  const startConversation = async (friendId: string) => {
+    try {
+      const token = await getToken()
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: 'DIRECT',
+          participantIds: [friendId]
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success('Conversation started')
+        // Navigate to the conversation
+        window.location.href = `/messages/${data.conversation.id}`
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Failed to start conversation')
+      }
+    } catch (error) {
+      logger.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation')
+    }
+  }
+
   const removeFriend = async (friendshipId: string) => {
     try {
+      const token = await getToken()
       const response = await fetch(`/api/friends/${friendshipId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       if (response.ok) {
@@ -399,13 +432,13 @@ export default function FriendsPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => startConversation(friendship.friend.id)}
+                        >
                           <MessageCircle className="w-4 h-4 mr-2" />
                           Message
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Invite
                         </Button>
                         <Button 
                           variant="outline" 

@@ -94,7 +94,7 @@ export default function MessagesPage() {
       
       if (response.ok) {
         const data = await response.json()
-        setConversations(data.data.conversations || [])
+        setConversations(data.conversations || [])
       }
     } catch (error) {
       logger.error('Error fetching conversations:', error);
@@ -142,7 +142,7 @@ export default function MessagesPage() {
         await fetchConversations()
         setShowNewChat(false)
         // Navigate to the conversation
-        router.push(`/messages/${data.data.conversation.id}`)
+        router.push(`/messages/${data.conversation.id}`)
       }
     } catch (error) {
       logger.error('Error starting conversation:', error);
@@ -188,7 +188,7 @@ export default function MessagesPage() {
         await fetchConversations()
         setShowNewChat(false)
         // Navigate to the conversation
-        router.push(`/messages/${data.data.conversation.id}`)
+        router.push(`/messages/${data.conversation.id}`)
       }
     } catch (error) {
       logger.error('Error starting group conversation:', error);
