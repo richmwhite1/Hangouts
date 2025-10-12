@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
-import { AuthProvider } from '@/contexts/auth-context'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { WebSocketProvider } from '@/contexts/websocket-context'
 import { BottomNavigation } from '@/components/bottom-navigation'
@@ -26,8 +25,7 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <GlobalErrorBoundary>
-            <AuthProvider>
-              <RealtimeProvider>
+            <RealtimeProvider>
                 <WebSocketProvider>
                   <div className="min-h-screen bg-background text-foreground dark pb-20">
                     <Navigation />
@@ -38,8 +36,7 @@ export default function RootLayout({
                   </div>
                   <Toaster position="top-right" richColors />
                 </WebSocketProvider>
-              </RealtimeProvider>
-            </AuthProvider>
+            </RealtimeProvider>
           </GlobalErrorBoundary>
         </body>
       </html>
