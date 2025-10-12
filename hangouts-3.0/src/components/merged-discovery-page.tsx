@@ -787,11 +787,6 @@ export function MergedDiscoveryPage() {
             rippleEffect={true}
           >
             <Filter className="w-5 h-5" />
-            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end || zipCode || maxDistance !== 'unlimited') && (
-              <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {[selectedCategory !== 'all' ? 1 : 0, selectedTags.length, priceRange.min ? 1 : 0, priceRange.max ? 1 : 0, dateRange.start ? 1 : 0, dateRange.end ? 1 : 0, zipCode ? 1 : 0, maxDistance !== 'unlimited' ? 1 : 0].reduce((a, b) => a + b, 0)}
-              </span>
-            )}
           </TouchButton>
         </div>
         {/* Comprehensive Filters */}

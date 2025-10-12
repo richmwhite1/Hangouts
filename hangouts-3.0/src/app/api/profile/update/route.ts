@@ -44,7 +44,8 @@ export async function PUT(request: NextRequest) {
         ...(bigFive !== undefined && { bigFive }),
         ...(loveLanguage !== undefined && { loveLanguage }),
         ...(favoriteActivities !== undefined && { favoriteActivities: JSON.stringify(favoriteActivities) }),
-        ...(favoritePlaces !== undefined && { favoritePlaces: JSON.stringify(favoritePlaces) })},
+        ...(favoritePlaces !== undefined && { favoritePlaces: JSON.stringify(favoritePlaces) })
+      },
       select: {
         id: true,
         email: true,
