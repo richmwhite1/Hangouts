@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Share2, Users, Globe, Link, Copy, Check, X, Clock, Download, MessageCircle } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { useFriends } from '@/hooks/use-friends'
 
 import { logger } from '@/lib/logger'

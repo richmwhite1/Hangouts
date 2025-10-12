@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 // Removed api-client import - using direct fetch calls
 import {
   X,
@@ -30,7 +30,7 @@ interface Conversation {
   participants: Array<{
     id: string
     name: string
-    username: string
+    userIdname: string
     avatar?: string
   }>
   lastMessage?: {
@@ -59,12 +59,12 @@ interface MessagesModalProps {
   selectedUser?: {
     id: string
     name: string
-    username: string
+    userIdname: string
     avatar?: string
   } | null
 }
 export default function MessagesModal({ isOpen, onClose, selectedUser }: MessagesModalProps) {
-  const { user } = useAuth()
+  const { userId } = useAuth()
   const [activeTab, setActiveTab] = useState<'conversations' | 'new'>('conversations')
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -74,16 +74,16 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
   const [friends, setFriends] = useState<Array<{
     id: string
     name: string
-    username: string
+    userIdname: string
     avatar?: string
   }>>([])
   const [isLoadingFriends, setIsLoadingFriends] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   // Load friends when modal opens
   const loadFriends = async () => {
-    // console.log('loadFriends called, user:', user); // Removed for production
-    if (!user) {
-      // console.log('No user available for loading friends'); // Removed for production
+    // console.log('loadFriends called, userId:', userId); // Removed for production
+    if (!userId) {
+      // console.log('No userId available for loading friends'); // Removed for production
       return
     }
     try {
@@ -98,7 +98,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
           setFriends(data.friends.map(friend => ({
             id: friend.id,
             name: friend.name,
-            username: friend.username,
+            userIdname: friend.userIdname,
             avatar: friend.avatar
           })))
         } else {
@@ -118,12 +118,12 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
   }
   // Load conversations and calculate unread count
   const loadConversations = async () => {
-    if (!user) return
+    if (!userId) return
     try {
       // Set the token on the apiClient before making the request
-      apiClient.setToken(user)
+      apiClient.setToken(userId)
       const response = await fetch('/api/conversations', {
-        headers: { 'Authorization': `Bearer ${user}` }
+        headers: { 'Authorization': `Bearer ${userId}` }
       })
       if (response.ok) {
         const data = await response.json()
@@ -138,11 +138,11 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
   }
   // Load data when modal opens
   useEffect(() => {
-    // console.log('Modal effect triggered, isOpen:', isOpen, 'user:', user); // Removed for production
-    if (isOpen && user) {
+    // console.log('Modal effect triggered, isOpen:', isOpen, 'userId:', userId); // Removed for production
+    if (isOpen && userId) {
       loadFriends()
       loadConversations()
-      // If a user is selected, switch to new tab and create conversation
+      // If a userId is selected, switch to new tab and create conversation
       if (selectedUser) {
         setActiveTab('new')
         // TODO: Create or find existing conversation with selectedUser
@@ -154,7 +154,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
           type: 'direct',
           name: 'Sarah Johnson',
           participants: [
-            { id: '2', name: 'Sarah Johnson', username: 'sarahj', avatar: '/placeholder-avatar.png' }
+            { id: '2', name: 'Sarah Johnson', userIdname: 'sarahj', avatar: '/placeholder-avatar.png' }
           ],
           lastMessage: {
             content: 'Hey! Are you coming to the hiking trip this weekend?',
@@ -169,9 +169,9 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
           type: 'group',
           name: 'Weekend Warriors',
           participants: [
-            { id: '2', name: 'Sarah Johnson', username: 'sarahj', avatar: '/placeholder-avatar.png' },
-            { id: '3', name: 'Mike Chen', username: 'mikec', avatar: '/placeholder-avatar.png' },
-            { id: '4', name: 'Emma Davis', username: 'emmad', avatar: '/placeholder-avatar.png' }
+            { id: '2', name: 'Sarah Johnson', userIdname: 'sarahj', avatar: '/placeholder-avatar.png' },
+            { id: '3', name: 'Mike Chen', userIdname: 'mikec', avatar: '/placeholder-avatar.png' },
+            { id: '4', name: 'Emma Davis', userIdname: 'emmad', avatar: '/placeholder-avatar.png' }
           ],
           lastMessage: {
             content: 'Mike: The weather looks perfect for Saturday!',
@@ -186,10 +186,10 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
           type: 'hangout',
           name: 'Beach Volleyball Tournament',
           participants: [
-            { id: '2', name: 'Sarah Johnson', username: 'sarahj', avatar: '/placeholder-avatar.png' },
-            { id: '3', name: 'Mike Chen', username: 'mikec', avatar: '/placeholder-avatar.png' },
-            { id: '4', name: 'Emma Davis', username: 'emmad', avatar: '/placeholder-avatar.png' },
-            { id: '5', name: 'Alex Rodriguez', username: 'alexr', avatar: '/placeholder-avatar.png' }
+            { id: '2', name: 'Sarah Johnson', userIdname: 'sarahj', avatar: '/placeholder-avatar.png' },
+            { id: '3', name: 'Mike Chen', userIdname: 'mikec', avatar: '/placeholder-avatar.png' },
+            { id: '4', name: 'Emma Davis', userIdname: 'emmad', avatar: '/placeholder-avatar.png' },
+            { id: '5', name: 'Alex Rodriguez', userIdname: 'alexr', avatar: '/placeholder-avatar.png' }
           ],
           lastMessage: {
             content: 'Emma: Don\'t forget to bring sunscreen!',
@@ -201,7 +201,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         }
       ])
     }
-  }, [isOpen, user])
+  }, [isOpen, userId])
   // Mock messages for selected conversation
   useEffect(() => {
     if (selectedConversation) {
@@ -217,7 +217,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         {
           id: '2',
           content: 'Yes! I\'m really excited about it. What time are we meeting?',
-          sender: { id: user?.id || '1', name: user?.name || 'You', avatar: user?.avatar },
+          sender: { id: userId?.id || '1', name: userId?.name || 'You', avatar: userId?.avatar },
           timestamp: '1m ago',
           type: 'text',
           isRead: true
@@ -232,13 +232,13 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         }
       ])
     }
-  }, [selectedConversation, user])
+  }, [selectedConversation, userId])
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return
     const message: Message = {
       id: Date.now().toString(),
       content: newMessage,
-      sender: { id: user?.id || '1', name: user?.name || 'You', avatar: user?.avatar },
+      sender: { id: userId?.id || '1', name: userId?.name || 'You', avatar: userId?.avatar },
       timestamp: 'now',
       type: 'text',
       isRead: true
@@ -246,14 +246,14 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
     setMessages(prev => [...prev, message])
     setNewMessage('')
   }
-  const handleViewProfile = (friend: { id: string; name: string; username: string }) => {
-    // Navigate to user profile page
-    window.location.href = `/profile/${friend.username}`
+  const handleViewProfile = (friend: { id: string; name: string; userIdname: string }) => {
+    // Navigate to userId profile page
+    window.location.href = `/profile/${friend.userIdname}`
   }
   const loadMessages = async (conversationId: string) => {
     try {
       const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        headers: { 'Authorization': `Bearer ${user}` }
+        headers: { 'Authorization': `Bearer ${userId}` }
       })
       if (response.ok) {
         const data = await response.json()
@@ -266,13 +266,13 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
   const handleStartConversation = async (friend: any) => {
     try {
       // Set the token on the apiClient before making the request
-      apiClient.setToken(user || null)
+      apiClient.setToken(userId || null)
       // Create or find existing conversation with this friend
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user}`
+          'Authorization': `Bearer ${userId}`
         },
         body: JSON.stringify({
           type: 'direct',
@@ -441,9 +441,9 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${message.sender.id === user?.id ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.sender.id === userId?.id ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`flex space-x-2 max-w-xs lg:max-w-md ${message.sender.id === user?.id ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                      <div className={`flex space-x-2 max-w-xs lg:max-w-md ${message.sender.id === userId?.id ? 'flex-row-reverse space-x-reverse' : ''}`}>
                         <Avatar className="h-8 w-8 rounded-md">
                           <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
                           <AvatarFallback className="text-xs rounded-md">
@@ -451,13 +451,13 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                           </AvatarFallback>
                         </Avatar>
                         <div className={`px-3 py-2 rounded-lg ${
-                          message.sender.id === user?.id
+                          message.sender.id === userId?.id
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                         }`}>
                           <p className="text-sm">{message.content}</p>
                           <p className={`text-xs mt-1 ${
-                            message.sender.id === user?.id
+                            message.sender.id === userId?.id
                               ? 'text-blue-100'
                               : 'text-gray-500 dark:text-gray-400'
                           }`}>
@@ -543,7 +543,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                   friends
                     .filter(friend =>
                       friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+                      friend.userIdname.toLowerCase().includes(searchQuery.toLowerCase())
                     )
                     .map((friend) => (
                       <div
@@ -566,7 +566,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                               {friend.name}
                             </h3>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                              @{friend.username}
+                              @{friend.userIdname}
                             </p>
                           </div>
                           <Button

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { SimplePollDisplay } from '@/components/polling/SimplePollDisplay'
 import { SimpleChat } from '@/components/simple-chat'

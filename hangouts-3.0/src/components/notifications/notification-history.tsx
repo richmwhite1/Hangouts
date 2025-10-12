@@ -16,7 +16,7 @@ import {
   TrendingUp,
   BarChart3
 } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { logger } from '@/lib/logger'
 interface Notification {
   id: string

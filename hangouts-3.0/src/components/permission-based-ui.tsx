@@ -1,6 +1,6 @@
 "use client"
 import { ReactNode, useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 import { rbac, Permission } from '@/lib/rbac'
 import { logger } from '@/lib/logger'
 // ============================================================================
@@ -11,7 +11,7 @@ interface PermissionGateProps {
   permissions: Permission | Permission[]
   fallback?: ReactNode
   requireAll?: boolean
-  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -38,11 +38,11 @@ export function PermissionGate({
   resourceId,
   action
 }: PermissionGateProps) {
-  const { user } = useAuth()
+  const { userId } = useAuth()
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setHasPermission(false)
       setIsLoading(false)
       return
@@ -52,15 +52,15 @@ export function PermissionGate({
         let result: boolean
         if (resourceType && resourceId && action) {
           // Check resource-specific access
-          const access = await rbac.canAccessResource(user.userId, resourceType, resourceId, action)
+          const access = await rbac.canAccessResource(userId.userIdId, resourceType, resourceId, action)
           result = access.granted
         } else {
           // Check general permissions
           const permissionArray = Array.isArray(permissions) ? permissions : [permissions]
           if (requireAll) {
-            result = await rbac.hasAllPermissions(user.userId, permissionArray)
+            result = await rbac.hasAllPermissions(userId.userIdId, permissionArray)
           } else {
-            result = await rbac.hasAnyPermission(user.userId, permissionArray)
+            result = await rbac.hasAnyPermission(userId.userIdId, permissionArray)
           }
         }
         setHasPermission(result)
@@ -72,7 +72,7 @@ export function PermissionGate({
       }
     }
     checkPermission()
-  }, [user, permissions, requireAll, resourceType, resourceId, action])
+  }, [userId, permissions, requireAll, resourceType, resourceId, action])
   if (isLoading) {
     return <div className="animate-pulse bg-gray-200 rounded h-4 w-20"></div>
   }
@@ -90,24 +90,24 @@ export function RoleGate({
   fallback = null,
   requireAll = false
 }: RoleGateProps) {
-  const { user } = useAuth()
+  const { userId } = useAuth()
   const [hasRole, setHasRole] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setHasRole(false)
       setIsLoading(false)
       return
     }
     const checkRole = async () => {
       try {
-        const userPermissions = await rbac.getUserPermissions(user.userId)
+        const userIdPermissions = await rbac.getUserPermissions(userId.userIdId)
         const roleArray = Array.isArray(roles) ? roles : [roles]
         let result: boolean
         if (requireAll) {
-          result = roleArray.every(role => userPermissions.role === role)
+          result = roleArray.every(role => userIdPermissions.role === role)
         } else {
-          result = roleArray.includes(userPermissions.role)
+          result = roleArray.includes(userIdPermissions.role)
         }
         setHasRole(result)
       } catch (error) {
@@ -118,7 +118,7 @@ export function RoleGate({
       }
     }
     checkRole()
-  }, [user, roles, requireAll])
+  }, [userId, roles, requireAll])
   if (isLoading) {
     return <div className="animate-pulse bg-gray-200 rounded h-4 w-20"></div>
   }
@@ -147,7 +147,7 @@ interface PermissionButtonProps {
   className?: string
   disabled?: boolean
   requireAll?: boolean
-  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -198,7 +198,7 @@ interface PermissionLinkProps {
   children: ReactNode
   className?: string
   requireAll?: boolean
-  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -243,7 +243,7 @@ interface PermissionFormProps {
   children: ReactNode
   className?: string
   requireAll?: boolean
-  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -282,18 +282,18 @@ export function PermissionForm({
 // PERMISSION HOOKS
 // ============================================================================
 export function usePermission(permission: Permission): boolean | null {
-  const { user } = useAuth()
+  const { userId } = useAuth()
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setHasPermission(false)
       setIsLoading(false)
       return
     }
     const checkPermission = async () => {
       try {
-        const result = await rbac.hasPermission(user.userId, permission)
+        const result = await rbac.hasPermission(userId.userIdId, permission)
         setHasPermission(result)
       } catch (error) {
         logger.error('Error checking permission:', error);
@@ -303,15 +303,15 @@ export function usePermission(permission: Permission): boolean | null {
       }
     }
     checkPermission()
-  }, [user, permission])
+  }, [userId, permission])
   return isLoading ? null : hasPermission
 }
 export function usePermissions(permissions: Permission[], requireAll = false): boolean | null {
-  const { user } = useAuth()
+  const { userId } = useAuth()
   const [hasPermissions, setHasPermissions] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setHasPermissions(false)
       setIsLoading(false)
       return
@@ -320,9 +320,9 @@ export function usePermissions(permissions: Permission[], requireAll = false): b
       try {
         let result: boolean
         if (requireAll) {
-          result = await rbac.hasAllPermissions(user.userId, permissions)
+          result = await rbac.hasAllPermissions(userId.userIdId, permissions)
         } else {
-          result = await rbac.hasAnyPermission(user.userId, permissions)
+          result = await rbac.hasAnyPermission(userId.userIdId, permissions)
         }
         setHasPermissions(result)
       } catch (error) {
@@ -333,23 +333,23 @@ export function usePermissions(permissions: Permission[], requireAll = false): b
       }
     }
     checkPermissions()
-  }, [user, permissions, requireAll])
+  }, [userId, permissions, requireAll])
   return isLoading ? null : hasPermissions
 }
 export function useRole(role: string): boolean | null {
-  const { user } = useAuth()
+  const { userId } = useAuth()
   const [hasRole, setHasRole] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setHasRole(false)
       setIsLoading(false)
       return
     }
     const checkRole = async () => {
       try {
-        const userPermissions = await rbac.getUserPermissions(user.userId)
-        setHasRole(userPermissions.role === role)
+        const userIdPermissions = await rbac.getUserPermissions(userId.userIdId)
+        setHasRole(userIdPermissions.role === role)
       } catch (error) {
         logger.error('Error checking role:', error);
         setHasRole(false)
@@ -358,7 +358,7 @@ export function useRole(role: string): boolean | null {
       }
     }
     checkRole()
-  }, [user, role])
+  }, [userId, role])
   return isLoading ? null : hasRole
 }
 // ============================================================================
