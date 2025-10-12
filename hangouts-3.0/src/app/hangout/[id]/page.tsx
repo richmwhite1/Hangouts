@@ -105,7 +105,7 @@ interface Hangout {
 export default function HangoutDetailPage() {
   const params = useParams()
   const hangoutId = params?.id as string
-  const { user, getToken } = useAuth()
+  const { userId, getToken } = useAuth()
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -315,8 +315,8 @@ export default function HangoutDetailPage() {
       // Optimistic UI update based on action
       setHangout(prev => {
         if (!prev) return prev
-        const currentUserVotes = prev.userVotes?.[user.id] || []
-        const currentUserPreferred = prev.userPreferred?.[user.id]
+        const currentUserVotes = prev.userVotes?.[userId] || []
+        const currentUserPreferred = prev.userPreferred?.[userId]
         let newUserVotes = [...currentUserVotes]
         let newUserPreferred = currentUserPreferred
         if (action === 'add' || action === 'toggle') {
@@ -342,11 +342,11 @@ export default function HangoutDetailPage() {
           ...prev,
           userVotes: {
             ...prev.userVotes,
-            [user.id]: newUserVotes
+            [userId]: newUserVotes
           },
           userPreferred: {
             ...prev.userPreferred,
-            [user.id]: newUserPreferred
+            [userId]: newUserPreferred
           }
         }
       })
@@ -380,7 +380,7 @@ export default function HangoutDetailPage() {
     }
   }
   const handleRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
-    if (! !hangoutId) {
+    if (!userId) {
       toast.error('Please sign in to RSVP', {
         action: {
           label: 'Sign In',
@@ -602,7 +602,7 @@ export default function HangoutDetailPage() {
         {(currentState === HANGOUT_STATES.POLLING || (hangout.options && hangout.options.length > 1)) && (
           <VotingSection
             hangout={hangout}
-            currentUser={user}
+            currentUser={{ id: userId }}
             onVote={handleVote}
             isVoting={isVoting}
           />
@@ -990,7 +990,7 @@ function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: stri
 function VotingSection({ hangout, currentUser, onVote, isVoting }: {
   hangout: Hangout,
   currentUser: any,
-  onVote: (optionId: string) => void,
+  onVote: (optionId: string, action?: string) => void,
   isVoting: boolean
 }) {
   const votedCount = Object.keys(hangout.votes || {}).length

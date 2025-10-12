@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { useAuth } from '@clerk/nextjs'
 import { useUnreadCounts } from "@/hooks/use-unread-counts"
+import { useRouter } from 'next/navigation'
 import Link from "next/link"
 
 import { logger } from '@/lib/logger'
@@ -37,6 +38,7 @@ interface Friend {
     isActive: boolean
   }
   friendshipCreatedAt: string
+  isActive?: boolean
 }
 
 interface Conversation {
@@ -62,7 +64,8 @@ interface Conversation {
 }
 
 export default function MessagesPage() {
-  const { isSignedIn, getToken, user } = useAuth()
+  const { isSignedIn, getToken, userId } = useAuth()
+  const router = useRouter()
   const { getUnreadCount, markConversationAsRead } = useUnreadCounts()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [friends, setFriends] = useState<Friend[]>([])
@@ -139,7 +142,7 @@ export default function MessagesPage() {
         await fetchConversations()
         setShowNewChat(false)
         // Navigate to the conversation
-        window.location.href = `/messages/${data.data.conversation.id}`
+        router.push(`/messages/${data.data.conversation.id}`)
       }
     } catch (error) {
       logger.error('Error starting conversation:', error);
@@ -166,9 +169,13 @@ export default function MessagesPage() {
 
   const startGroupConversation = async (friendIds: string[]) => {
     try {
+      const token = await getToken()
       const response = await fetch('/api/conversations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           type: 'GROUP',
           name: 'New Group Chat',
@@ -180,7 +187,8 @@ export default function MessagesPage() {
         const data = await response.json()
         await fetchConversations()
         setShowNewChat(false)
-        window.location.href = `/messages/${data.data.conversation.id}`
+        // Navigate to the conversation
+        router.push(`/messages/${data.data.conversation.id}`)
       }
     } catch (error) {
       logger.error('Error starting group conversation:', error);
@@ -306,7 +314,7 @@ export default function MessagesPage() {
               ) : (
                 <div className={`p-2 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" : "space-y-1"}`}>
                   {filteredConversations.map((conversation) => {
-                    const otherParticipant = conversation.participants.find(p => p.id !== user?.id)
+                    const otherParticipant = conversation.participants.find(p => p.id !== userId)
                     const isSelected = selectedConversations.includes(conversation.id)
                     const unreadCount = getUnreadCount(conversation.id)
                     
