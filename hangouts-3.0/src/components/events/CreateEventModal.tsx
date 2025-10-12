@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
   Dialog, 
@@ -16,19 +15,13 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog'
 import { 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  DollarSign, 
-  Camera, 
-  X, 
   Plus, 
+  X, 
   ChevronLeft, 
   ChevronRight,
-  Upload,
-  Image as ImageIcon
+  Camera
 } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@clerk/nextjs'
 
 import { logger } from '@/lib/logger'
 interface EventFormData {
@@ -81,7 +74,7 @@ const commonTags = [
 ]
 
 export function CreateEventModal() {
-  const { user } = useAuth()
+  const { getToken } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -268,15 +261,19 @@ export function CreateEventModal() {
         additionalImages: additionalImageUrls
       }
 
+      const token = await getToken()
       const response = await fetch('/api/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(eventData)
       })
 
       if (response.ok) {
-        const result = await response.json()
-        // console.log('✅ Event created:', result.event); // Removed for production
+        await response.json()
+        // console.log('✅ Event created'); // Removed for production
         setIsOpen(false)
         setCurrentStep(1)
         setFormData({

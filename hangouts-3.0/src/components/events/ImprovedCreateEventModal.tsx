@@ -1,19 +1,12 @@
 'use client'
 import { useState, useRef } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog'
 import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
 import { logger } from '@/lib/logger'
 import {
@@ -67,6 +60,7 @@ const commonTags = [
   'dance', 'art', 'food', 'drinks', 'sports', 'fitness'
 ]
 export function ImprovedCreateEventModal() {
+  const { getToken } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isScraping, setIsScraping] = useState(false)
@@ -93,7 +87,7 @@ export function ImprovedCreateEventModal() {
     startTime: '',
     endTime: '',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    priceMin: null,
+    priceMin: 0,
     priceMax: null,
     currency: 'USD',
     ticketUrl: '',
@@ -342,14 +336,18 @@ export function ImprovedCreateEventModal() {
         additionalImages: additionalImageUrls,
         eventUrl: formData.eventUrl
       }
+      const token = await getToken()
       const response = await fetch('/api/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(eventData)
       })
       if (response.ok) {
-        const result = await response.json()
-        // console.log('Event created successfully:', result); // Removed for production
+        await response.json()
+        // console.log('Event created successfully'); // Removed for production
         setIsOpen(false)
         // Reset form
         setFormData({
