@@ -444,12 +444,14 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                       className={`flex ${message.sender.id === userId?.id ? 'justify-end' : 'justify-start'}`}
                     >
                       <div className={`flex space-x-2 max-w-xs lg:max-w-md ${message.sender.id === userId?.id ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        <Avatar className="h-8 w-8 rounded-md">
-                          <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
-                          <AvatarFallback className="text-xs rounded-md">
-                            {message.sender.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
+                        {message.sender.id !== userId?.id && (
+                          <Avatar className="h-8 w-8 rounded-md">
+                            <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
+                            <AvatarFallback className="text-xs rounded-md">
+                              {message.sender.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
                         <div className={`px-3 py-2 rounded-lg ${
                           message.sender.id === userId?.id
                             ? 'bg-blue-500 text-white'
