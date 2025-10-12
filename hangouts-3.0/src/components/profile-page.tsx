@@ -11,6 +11,7 @@ import { useAuth } from "@clerk/nextjs"
 import { useImageUpload } from "@/hooks/use-image-upload"
 import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2 } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 import { logger } from '@/lib/logger'
 export function ProfilePage() {
@@ -427,7 +428,8 @@ export function ProfilePage() {
             <div className="overflow-x-auto">
               <div className="flex space-x-4 pb-2" style={{ width: 'max-content' }}>
                 {recentHangouts.slice(0, 6).map((hangout, index) => (
-                  <div key={index} className="group hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden bg-card border-border relative transform hover:scale-[1.02] flex-shrink-0" style={{ width: '300px' }}>
+                  <Link key={index} href={`/hangout/${hangout.id}`}>
+                    <div className="group hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden bg-card border-border relative transform hover:scale-[1.02] flex-shrink-0" style={{ width: '300px' }}>
                     {/* Full Image Background with Editorial Overlay */}
                     <div className="relative aspect-[4/3] overflow-hidden">
                       <img
@@ -485,6 +487,7 @@ export function ProfilePage() {
                       </div>
                     </div>
                   </div>
+                  </Link>
                 ))}
               </div>
             </div>
