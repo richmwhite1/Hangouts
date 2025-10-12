@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useParams } from 'next/navigation'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, MapPin, DollarSign, Users, Clock, Share2, Heart, CheckCircle, XCircle, HelpCircle } from 'lucide-react'
+import { Calendar, MapPin, DollarSign, Users, Share2, Heart, CheckCircle, XCircle, HelpCircle, TrendingUp } from 'lucide-react'
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner'
@@ -25,6 +25,7 @@ interface Event {
   startDate: string
   startTime: string
   coverImage: string
+  image?: string
   price: {
     min: number
     max?: number
@@ -33,6 +34,7 @@ interface Event {
   tags: string[]
   attendeeCount: number
   isPublic: boolean
+  privacyLevel?: string
   creator: {
     id: string
     name: string
@@ -44,26 +46,23 @@ interface Event {
 
 export default function EventDetailPage() {
   const params = useParams()
-  const router = useRouter()
-  const { isSignedIn, user, getToken } = useAuth()
+  const { isSignedIn } = useAuth()
   const [event, setEvent] = useState<Event | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [rsvpStatus, setRsvpStatus] = useState<'PENDING' | 'YES' | 'NO' | 'MAYBE' | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
   const [isRsvping, setIsRsvping] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
 
   useEffect(() => {
-    if (params.id) {
+    if (params?.id) {
       fetchEvent()
     }
-  }, [params.id])
+  }, [params?.id])
 
   const fetchEvent = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/events/${params.id}`)
+      const response = await fetch(`/api/events/${params?.id}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -115,7 +114,7 @@ export default function EventDetailPage() {
 
     try {
       setIsRsvping(true)
-      const response = await fetch(`/api/events/${params.id}/rsvp`, {
+      const response = await fetch(`/api/events/${params?.id}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -136,33 +135,6 @@ export default function EventDetailPage() {
     }
   }
 
-  const handleSaveEvent = async () => {
-    if (!isSignedIn) {
-      toast.error('Please sign in to save events')
-      return
-    }
-
-    try {
-      setIsSaving(true)
-      const response = await fetch(`/api/events/${params.id}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      if (response.ok) {
-        setIsSaved(true)
-        toast.success('Event saved to your feed!')
-      } else {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to save event')
-      }
-    } catch (error) {
-      logger.error('Error saving event:', error);
-      toast.error('Failed to save event')
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
 
   const handleShare = async () => {
@@ -174,7 +146,7 @@ export default function EventDetailPage() {
       image: event.coverImage || '',
       url: window.location.href,
       type: 'event' as const,
-      privacyLevel: event.privacyLevel || 'PUBLIC'
+      privacyLevel: (event.privacyLevel as 'PUBLIC' | 'FRIENDS_ONLY' | 'PRIVATE') || 'PUBLIC'
     }
 
     try {
@@ -235,10 +207,11 @@ export default function EventDetailPage() {
           </Button>
         </div>
         
-        {/* Category Badge */}
+        {/* Type Badge */}
         <div className="absolute top-4 left-4">
-          <Badge className="bg-purple-600 text-white">
-            {event.category}
+          <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            Event
           </Badge>
         </div>
       </div>
@@ -370,14 +343,14 @@ export default function EventDetailPage() {
             itemTitle={event.title}
             itemDescription={event.description || ''}
             itemImage={event.image || ''}
-            privacyLevel={event.privacyLevel || 'PUBLIC'}
-            isSaved={isSaved}
-            onSave={(id, type) => {
-              // console.log('Save event:', id, type); // Removed for production
-            }}
-            onUnsave={(id, type) => {
-              // console.log('Unsave event:', id, type); // Removed for production
-            }}
+            privacyLevel={(event.privacyLevel as 'PUBLIC' | 'FRIENDS_ONLY' | 'PRIVATE') || 'PUBLIC'}
+            isSaved={false}
+                        onSave={(_id, _type) => {
+                          // console.log('Save event:', id, type); // Removed for production
+                        }}
+                        onUnsave={(_id, _type) => {
+                          // console.log('Unsave event:', id, type); // Removed for production
+                        }}
           />
         </div>
 

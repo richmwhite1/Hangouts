@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Search, Filter, MapPin, Calendar, DollarSign, Plus } from 'lucide-react'
+import { Search, Filter, MapPin, Calendar, DollarSign, TrendingUp } from 'lucide-react'
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { useAuth } from '@clerk/nextjs'
@@ -405,20 +405,21 @@ export default function EventsPage() {
                         itemDescription={event.description || ''}
                         itemImage={event.coverImage || ''}
                         privacyLevel={event.isPublic ? 'PUBLIC' : 'PRIVATE'}
-                        onSave={(id, type) => {
+                        onSave={(_id, _type) => {
                           // console.log('Save event:', id, type); // Removed for production
                         }}
-                        onUnsave={(id, type) => {
+                        onUnsave={(_id, _type) => {
                           // console.log('Unsave event:', id, type); // Removed for production
                         }}
                         className="scale-75"
                       />
                     </div>
                     
-                    {/* Category Badge */}
+                    {/* Type Badge */}
                     <div className="absolute top-2 left-2">
-                      <Badge className="bg-purple-600 text-white">
-                        {event.category}
+                      <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        Event
                       </Badge>
                     </div>
                   </div>
