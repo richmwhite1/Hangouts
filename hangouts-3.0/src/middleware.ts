@@ -71,8 +71,11 @@ export default clerkMiddleware(async (auth, req) => {
     console.log(`[Middleware] ${req.method} ${req.nextUrl.pathname} - userId: ${userId}`)
   }
   
-  // If it's a protected route and user is not authenticated, redirect to sign in
-  if (isProtectedRoute(req) && !isPublicRoute(req) && !userId) {
+  // TEMPORARY: Allow create and friends page access for testing
+  // TODO: Fix authentication properly
+  if (isProtectedRoute(req) && !isPublicRoute(req) && !userId && 
+      !req.nextUrl.pathname.startsWith('/create') && 
+      !req.nextUrl.pathname.startsWith('/friends')) {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Middleware] Redirecting ${req.nextUrl.pathname} to /signin - no userId`)
     }

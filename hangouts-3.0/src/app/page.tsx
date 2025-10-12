@@ -1,5 +1,5 @@
 "use client"
-import { Navigation } from "@/components/navigation"
+// Navigation is now handled by the root layout
 import { HangoutCalendar } from "@/components/hangout-calendar"
 import { StackedHangoutTile } from "@/components/stacked-hangout-tile"
 import { GuestLanding } from "@/components/guest-landing"
@@ -169,7 +169,6 @@ export default function HomePage() {
       {...swipeGestures}
       className="min-h-screen pb-20"
     >
-      <Navigation />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
           <HangoutCalendar hangouts={hangouts} events={[]} />
