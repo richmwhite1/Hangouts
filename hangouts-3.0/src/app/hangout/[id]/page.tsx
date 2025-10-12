@@ -217,12 +217,12 @@ export default function HangoutDetailPage() {
     }
   }
 
-  const handleJoinHangout = async (hangoutId: string) => {
-    if (!user) return
+  const handleJoinHangout = async () => {
+    if (!userId || !hangout) return
     
     try {
       const token = await getToken()
-      const response = await fetch(`/api/hangouts/${hangoutId}/join`, {
+      const response = await fetch(`/api/hangouts/${hangout.id}/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -315,8 +315,8 @@ export default function HangoutDetailPage() {
       // Optimistic UI update based on action
       setHangout(prev => {
         if (!prev) return prev
-        const currentUserVotes = prev.userVotes?.[userId] || []
-        const currentUserPreferred = prev.userPreferred?.[userId]
+        const currentUserVotes = userId ? (prev.userVotes?.[userId] || []) : []
+        const currentUserPreferred = userId ? prev.userPreferred?.[userId] : undefined
         let newUserVotes = [...currentUserVotes]
         let newUserPreferred = currentUserPreferred
         if (action === 'add' || action === 'toggle') {
@@ -340,14 +340,14 @@ export default function HangoutDetailPage() {
         }
         return {
           ...prev,
-          userVotes: {
-            ...prev.userVotes,
+          userVotes: userId ? {
+            ...(prev.userVotes || {}),
             [userId]: newUserVotes
-          },
-          userPreferred: {
-            ...prev.userPreferred,
+          } : prev.userVotes,
+          userPreferred: userId ? {
+            ...(prev.userPreferred || {}),
             [userId]: newUserPreferred
-          }
+          } : prev.userPreferred
         }
       })
       const token = await getToken()
@@ -394,13 +394,13 @@ export default function HangoutDetailPage() {
       // Optimistic UI update
       setHangout(prev => {
         if (!prev) return prev
-        const existingRSVP = prev.rsvps?.find(r => r.user.id === user?.id)
+        const existingRSVP = prev.rsvps?.find(r => r.user.id === userId)
         if (existingRSVP) {
           // Update existing RSVP
           return {
             ...prev,
             rsvps: prev.rsvps?.map(r =>
-              r.user.id === user?.id
+              r.user.id === userId
                 ? { ...r, status, respondedAt: new Date().toISOString() }
                 : r
             ) || []
@@ -414,12 +414,12 @@ export default function HangoutDetailPage() {
               {
                 id: `rsvp_${Date.now()}`,
                 hangoutId: hangoutId,
-                userId: user?.id || '',
+                userId: userId || '',
                 status,
                 respondedAt: new Date().toISOString(),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                user: { id: user?.id || '', name: user?.name || '', username: user?.username || '', avatar: user?.avatar }
+                user: { id: userId || '', name: '', username: '', avatar: '' }
               }
             ]
           }
@@ -510,7 +510,7 @@ export default function HangoutDetailPage() {
     )
   }
   // Show sign-in prompt for non-authenticated users with private hangouts
-  if (!user && hangout && hangout.privacyLevel !== 'PUBLIC') {
+  if (!userId && hangout && hangout.privacyLevel !== 'PUBLIC') {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-center max-w-md mx-4">
@@ -532,9 +532,9 @@ export default function HangoutDetailPage() {
     )
   }
   const currentState = hangout.state || HANGOUT_STATES.POLLING
-  const isCreator = user?.id === hangout.creatorId
-  const isHost = isCreator || hangout.participants?.some(p => p.user.id === user?.id && p.role === 'CO_HOST')
-  const userRSVP = hangout.rsvps?.find(r => r.user.id === user?.id)?.status || 'PENDING'
+  const isCreator = userId === hangout.creatorId
+  const isHost = isCreator || hangout.participants?.some(p => p.user.id === userId && p.role === 'CO_HOST')
+  const userRSVP = hangout.rsvps?.find(r => r.user.id === userId)?.status || 'PENDING'
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
       // Debug logging
@@ -602,7 +602,7 @@ export default function HangoutDetailPage() {
         {(currentState === HANGOUT_STATES.POLLING || (hangout.options && hangout.options.length > 1)) && (
           <VotingSection
             hangout={hangout}
-            currentUser={{ id: userId }}
+            currentUser={userId ? { id: userId } : null}
             onVote={handleVote}
             isVoting={isVoting}
           />
@@ -639,7 +639,7 @@ export default function HangoutDetailPage() {
                   </div>
                   {/* Edit button for hosts/co-hosts */}
                   {hangout.participants?.some(p =>
-                    p.user.id === user?.id &&
+                    p.user.id === userId &&
                     (p.role === 'HOST' || p.role === 'CO_HOST')
                   ) && (
                     <button
@@ -850,7 +850,7 @@ export default function HangoutDetailPage() {
           <div className="mx-4 mb-6">
             <SimpleTaskManager
               hangoutId={hangout.id}
-              currentUser={user}
+              currentUser={userId ? { id: userId, name: '', username: '' } : undefined}
               isHost={isHost}
             />
           </div>
@@ -858,7 +858,7 @@ export default function HangoutDetailPage() {
         {/* Participant Status Section - Always show if has participants */}
         <ParticipantStatusSection
           hangout={hangout}
-          currentUser={user}
+          currentUser={userId ? { id: userId } : null}
           onOpenInviteModal={() => {
             loadFriends()
             setShowInviteModal(true)
@@ -919,7 +919,7 @@ export default function HangoutDetailPage() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleInviteFriends}
+                  onClick={() => handleInviteFriends(selectedFriends)}
                   disabled={isInviting || selectedFriends.length === 0}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
@@ -990,7 +990,7 @@ function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: stri
 function VotingSection({ hangout, currentUser, onVote, isVoting }: {
   hangout: Hangout,
   currentUser: any,
-  onVote: (optionId: string, action?: string) => void,
+  onVote: (optionId: string, action?: 'add' | 'remove' | 'preferred' | 'toggle') => void,
   isVoting: boolean
 }) {
   const votedCount = Object.keys(hangout.votes || {}).length
@@ -1251,7 +1251,7 @@ function ParticipantStatusSection({
           {/* Join Button for non-participants on public hangouts */}
           {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
             <Button
-              onClick={() => handleJoinHangout(hangout.id)}
+              onClick={handleJoinHangout}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
             >
