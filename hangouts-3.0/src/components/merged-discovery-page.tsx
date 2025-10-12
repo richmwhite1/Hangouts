@@ -28,7 +28,8 @@ import {
   GraduationCap,
   Heart as HealthIcon,
   Home,
-  TrendingUp
+  TrendingUp,
+  DollarSign
 } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
@@ -565,12 +566,15 @@ export function MergedDiscoveryPage() {
               Event
             </Badge>
           </div>
-          {/* Price Badge - Under Type Badge */}
-          <div className="absolute top-4 left-4 mt-10">
-            <Badge className="bg-green-600/95 text-white text-sm px-3 py-1.5 font-medium">
-              {formatPrice(event.price)}
-            </Badge>
-          </div>
+          {/* Price Badge - Under Type Badge - More Discreet */}
+          {event.price && event.price.min > 0 && (
+            <div className="absolute top-4 left-4 mt-10">
+              <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+                <DollarSign className="w-3 h-3 mr-1" />
+                {formatPrice(event.price)}
+              </Badge>
+            </div>
+          )}
           {/* Date - Top Right (if no distance) */}
           {!distance && (
             <div className="absolute top-4 right-4">

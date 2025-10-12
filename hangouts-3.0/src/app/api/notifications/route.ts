@@ -7,13 +7,14 @@ import { logger } from '@/lib/logger'
 // GET /api/notifications - Get user notifications
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
     }
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
@@ -52,13 +53,14 @@ export async function GET(request: NextRequest) {
 // POST /api/notifications - Create a new notification
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
     }
     const body = await request.json()
     const { userId, type, title, message, data } = body

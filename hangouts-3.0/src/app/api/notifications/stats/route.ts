@@ -7,13 +7,14 @@ import { logger } from '@/lib/logger'
 // GET /api/notifications/stats - Get notification statistics
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
     }
     const { searchParams } = new URL(request.url)
     const timeRange = searchParams.get('timeRange') || '7d'
