@@ -71,6 +71,7 @@
     "multer": "^2.0.2",
     "next": "15.5.2",
     "next-themes": "latest",
+    "node-fetch": "^3.3.2",
     "node-html-parser": "^7.0.1",
     "prisma": "^6.15.0",
     "react": "19.1.0",

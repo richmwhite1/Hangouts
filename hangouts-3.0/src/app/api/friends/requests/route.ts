@@ -4,7 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 
 import { logger } from '@/lib/logger'
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth()
     if (!clerkUserId) {
@@ -51,9 +51,14 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Separate sent and received requests
+    const sentRequests = friendRequests.filter(req => req.senderId === user.id)
+    const receivedRequests = friendRequests.filter(req => req.receiverId === user.id)
+
     return NextResponse.json({
       success: true,
-      requests: friendRequests
+      sent: sentRequests,
+      received: receivedRequests
     })
   } catch (error) {
     logger.error('Error fetching friend requests:', error);

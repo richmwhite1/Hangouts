@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User } from '@/types/api'
 import { useAuth } from '@clerk/nextjs'
+import { apiClient } from '@/lib/api-client'
 
 import { logger } from '@/lib/logger'
 interface FriendRequest {

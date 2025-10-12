@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Plus, X, Camera, MapPin, Clock, DollarSign, Users } from 'lucide-react'
-import { DateTimePicker } from '@/components/ui/datetime-picker'
+import { Plus, X, Camera, Users } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { EventSelectionModal } from '@/components/ui/event-selection-modal'
@@ -52,6 +52,7 @@ export interface NewHangoutFormData {
 }
 
 export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent }: NewHangoutFormProps) {
+  const { getToken } = useAuth()
   const [formData, setFormData] = useState<NewHangoutFormData>({
     title: '',
     description: '',
@@ -69,7 +70,6 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
     ]
   })
 
-  const [recentFriends, setRecentFriends] = useState<any[]>([])
   const [allFriends, setAllFriends] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoadingFriends, setIsLoadingFriends] = useState(false)
@@ -78,7 +78,6 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
   // Prefill form with event data if provided
   useEffect(() => {
     if (prefillEvent) {
-      const [date, time] = prefillEvent.dateTime.split('T')
       setFormData(prev => ({
         ...prev,
         title: `Hangout: ${prefillEvent.title}`,
@@ -115,7 +114,12 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         setIsLoadingFriends(true)
 
         // Fetch all friends
-        const friendsResponse = await fetch('/api/friends')
+        const token = await getToken()
+        const friendsResponse = await fetch('/api/friends', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
 
         if (friendsResponse.ok) {
           const friendsData = await friendsResponse.json()
@@ -131,7 +135,6 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
             location: friendship.friend.location
           }))
           setAllFriends(transformedFriends)
-          setRecentFriends(transformedFriends.slice(0, 10)) // Show 10 most recent
         } else {
           logger.error('Friends fetch failed:', friendsResponse.status);
         }
@@ -192,7 +195,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
       
       // If switching to quick_plan, ensure only one option
       if (field === 'type' && value === 'quick_plan') {
-        newData.options = [prev.options[0] || { id: `option_${Date.now()}_1`, title: '', description: '', location: '', dateTime: '', price: 0, hangoutUrl: '' }]
+        newData.options = [prev.options[0] ? { ...prev.options[0], id: prev.options[0].id || `option_${Date.now()}_1` } : { id: `option_${Date.now()}_1`, title: '', description: '', location: '', dateTime: '', price: 0, hangoutUrl: '' }]
       }
       
       // If switching to multi_option, ensure at least two options
@@ -211,7 +214,12 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
   const handleOptionChange = (index: number, field: keyof NewHangoutFormData['options'][0], value: any) => {
     const newOptions = [...formData.options]
-    newOptions[index] = { ...newOptions[index], [field]: value }
+    const updatedOption = { ...newOptions[index], [field]: value }
+    // Ensure id is always defined
+    if (!updatedOption.id) {
+      updatedOption.id = `option_${Date.now()}_${index}`
+    }
+    newOptions[index] = updatedOption as NewHangoutFormData['options'][0]
     handleInputChange('options', newOptions)
   }
 

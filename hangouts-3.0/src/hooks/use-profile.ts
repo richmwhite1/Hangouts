@@ -80,7 +80,7 @@ export function useProfile() {
     }
   }
 
-  const { isSignedIn, isLoaded } = clerkAuth
+  const { isSignedIn, isLoaded, getToken } = clerkAuth
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userHangouts, setUserHangouts] = useState<UserHangout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -259,10 +259,12 @@ export function useProfile() {
 
   const updateProfile = async (profileData: Partial<UserProfile>) => {
     try {
+      const token = await getToken()
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(profileData),
       })

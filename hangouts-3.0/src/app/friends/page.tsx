@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -49,7 +49,7 @@ interface Friendship {
 }
 
 export default function FriendsPage() {
-  const { isSignedIn, isLoaded, user } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const [friends, setFriends] = useState<Friendship[]>([])
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -59,17 +59,22 @@ export default function FriendsPage() {
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (isSignedIn && isLoaded && user) {
+    if (isSignedIn && isLoaded) {
       loadFriends()
       loadFriendRequests()
       // Load all users for discovery
       searchUsers('')
     }
-  }, [isSignedIn, isLoaded, user])
+  }, [isSignedIn, isLoaded])
 
   const loadFriends = async () => {
     try {
-      const response = await fetch('/api/friends')
+      const token = await getToken()
+      const response = await fetch('/api/friends', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setFriends(data.friends || [])
@@ -81,10 +86,15 @@ export default function FriendsPage() {
 
   const loadFriendRequests = async () => {
     try {
-      const response = await fetch('/api/friends/requests')
+      const token = await getToken()
+      const response = await fetch('/api/friends/requests', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
-        setFriendRequests(data.requests || [])
+        setFriendRequests([...data.sent, ...data.received])
       }
     } catch (error) {
       logger.error('Error loading friend requests:', error);
@@ -96,10 +106,18 @@ export default function FriendsPage() {
   const searchUsers = async (query: string) => {
     setSearching(true)
     try {
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+      const token = await getToken()
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setSearchResults(data.users || [])
+      } else {
+        logger.error('Error searching users:', response.status);
+        toast.error('Failed to search users')
       }
     } catch (error) {
       logger.error('Error searching users:', error);
@@ -114,10 +132,12 @@ export default function FriendsPage() {
       // Add to pending requests immediately for UI feedback
       setPendingRequests(prev => new Set(prev).add(userId))
       
+      const token = await getToken()
       const response = await fetch('/api/friends/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ userId }),
       })
@@ -149,10 +169,12 @@ export default function FriendsPage() {
 
   const respondToFriendRequest = async (requestId: string, status: 'ACCEPTED' | 'DECLINED') => {
     try {
+      const token = await getToken()
       const response = await fetch(`/api/friends/request/${requestId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status }),
       })
