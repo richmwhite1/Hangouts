@@ -22,17 +22,20 @@ import {
   Grid3X3,
   List
 } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from '@clerk/nextjs'
 import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import Link from "next/link"
 
 import { logger } from '@/lib/logger'
 interface Friend {
   id: string
-  name: string
-  username: string
-  avatar: string | null
-  isActive: boolean
+  friend: {
+    id: string
+    name: string
+    username: string
+    avatar: string | null
+    isActive: boolean
+  }
   friendshipCreatedAt: string
 }
 
@@ -59,7 +62,7 @@ interface Conversation {
 }
 
 export default function MessagesPage() {
-  const { isAuthenticated, user } = useAuth()
+  const { isSignedIn, getToken, user } = useAuth()
   const { getUnreadCount, markConversationAsRead } = useUnreadCounts()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [friends, setFriends] = useState<Friend[]>([])
@@ -71,15 +74,20 @@ export default function MessagesPage() {
   const [selectedConversations, setSelectedConversations] = useState<string[]>([])
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isSignedIn) {
       fetchConversations()
       fetchFriends()
     }
-  }, [isAuthenticated])
+  }, [isSignedIn])
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch('/api/conversations')
+      const token = await getToken()
+      const response = await fetch('/api/conversations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()
@@ -92,11 +100,16 @@ export default function MessagesPage() {
 
   const fetchFriends = async () => {
     try {
-      const response = await fetch('/api/friends')
+      const token = await getToken()
+      const response = await fetch('/api/friends', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()
-        setFriends(data.data.friends || [])
+        setFriends(data.friends || [])
       }
     } catch (error) {
       logger.error('Error fetching friends:', error);
@@ -107,9 +120,13 @@ export default function MessagesPage() {
 
   const startConversation = async (friendId: string) => {
     try {
+      const token = await getToken()
       const response = await fetch('/api/conversations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           type: 'DIRECT',
           participantIds: [friendId]
@@ -130,8 +147,8 @@ export default function MessagesPage() {
   }
 
   const filteredFriends = friends.filter(friend =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+    friend.friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const filteredConversations = conversations.filter(conversation => {
@@ -192,7 +209,7 @@ export default function MessagesPage() {
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-center">
@@ -419,19 +436,19 @@ export default function MessagesPage() {
                           >
                             <div className="flex items-center space-x-3">
                               <Avatar className="w-10 h-10 rounded-lg">
-                                <AvatarImage src={friend.avatar || "/placeholder-avatar.png"} alt={friend.name} />
-                                <AvatarFallback className="rounded-lg">{friend.name.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={friend.friend.avatar || "/placeholder-avatar.png"} alt={friend.friend.name} />
+                                <AvatarFallback className="rounded-lg">{friend.friend.name.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-medium text-white">{friend.name}</p>
-                                <p className="text-sm text-gray-400">@{friend.username}</p>
+                                <p className="font-medium text-white">{friend.friend.name}</p>
+                                <p className="text-sm text-gray-400">@{friend.friend.username}</p>
                               </div>
                               {friend.isActive && (
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                               )}
                             </div>
                             <Button
-                              onClick={() => startConversation(friend.id)}
+                              onClick={() => startConversation(friend.friend.id)}
                               size="sm"
                               className="bg-purple-600/80 hover:bg-purple-700/80"
                             >
@@ -463,19 +480,19 @@ export default function MessagesPage() {
                         >
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-10 h-10 rounded-lg">
-                              <AvatarImage src={friend.avatar || "/placeholder-avatar.png"} alt={friend.name} />
-                              <AvatarFallback className="rounded-lg">{friend.name.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={friend.friend.avatar || "/placeholder-avatar.png"} alt={friend.friend.name} />
+                              <AvatarFallback className="rounded-lg">{friend.friend.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-white">{friend.name}</p>
-                              <p className="text-sm text-gray-400">@{friend.username}</p>
+                              <p className="font-medium text-white">{friend.friend.name}</p>
+                              <p className="text-sm text-gray-400">@{friend.friend.username}</p>
                             </div>
                             {friend.isActive && (
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             )}
                           </div>
                           <Button
-                            onClick={() => startGroupConversation([friend.id])}
+                            onClick={() => startGroupConversation([friend.friend.id])}
                             size="sm"
                             className="bg-purple-600/80 hover:bg-purple-700/80"
                           >

@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Send, X, Search, Users, Check } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from '@clerk/nextjs'
 
 import { logger } from '@/lib/logger'
 interface Friend {
@@ -53,7 +53,7 @@ interface SimpleMessagingProps {
 }
 
 export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessagingProps) {
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const [friends, setFriends] = useState<Friend[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
@@ -82,11 +82,16 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
 
   const fetchFriends = async () => {
     try {
-      const response = await fetch('/api/friends')
+      const token = await getToken()
+      const response = await fetch('/api/friends', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()
-        setFriends(data.data.friends || [])
+        setFriends(data.friends || [])
       }
     } catch (error) {
       logger.error('Error fetching friends:', error);
@@ -95,7 +100,12 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch('/api/conversations')
+      const token = await getToken()
+      const response = await fetch('/api/conversations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()

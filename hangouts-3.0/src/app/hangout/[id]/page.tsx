@@ -105,7 +105,7 @@ interface Hangout {
 export default function HangoutDetailPage() {
   const params = useParams()
   const hangoutId = params?.id as string
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -124,7 +124,12 @@ export default function HangoutDetailPage() {
   // Load friends for invitation
   const loadFriends = async () => {
     try {
-      const response = await fetch('/api/friends')
+      const token = await getToken()
+      const response = await fetch('/api/friends', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setFriends(data.friends || [])
@@ -139,8 +144,12 @@ export default function HangoutDetailPage() {
   const handleRemoveUser = async (participantId: string) => {
     if (! !hangoutId) return
     try {
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/participants/${participantId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
       if (response.ok) {
         toast.success('User removed successfully!')
@@ -183,10 +192,12 @@ export default function HangoutDetailPage() {
     if (!hangoutId) return
     
     try {
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ friendIds })
       })
@@ -210,10 +221,12 @@ export default function HangoutDetailPage() {
     if (!user) return
     
     try {
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/join`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       })
 
@@ -233,13 +246,14 @@ export default function HangoutDetailPage() {
   const fetchHangout = async () => {
     if (!hangoutId) return
     try {
-      const headers = true ? { } : {}
+      const token = await getToken()
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
       const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
       if (!response.ok) throw new Error('Failed to fetch hangout')
       const data = await response.json()
       setHangout(data.hangout || data)
       // Check if hangout is saved (only for authenticated users)
-      {
+      if (token) {
         await checkSaveStatus()
       }
     } catch (error) {
@@ -252,7 +266,12 @@ export default function HangoutDetailPage() {
   const checkSaveStatus = async () => {
     if (! !hangoutId) return
     try {
-      const response = await fetch(`/api/content/${hangoutId}/save`)
+      const token = await getToken()
+      const response = await fetch(`/api/content/${hangoutId}/save`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setIsSaved(data.data?.saved || false)
@@ -266,8 +285,13 @@ export default function HangoutDetailPage() {
     try {
       setIsSaving(true)
       const action = isSaved ? 'unsave' : 'save'
+      const token = await getToken()
       const response = await fetch(`/api/content/${hangoutId}/save`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ action, type: 'hangout' })
       })
       if (response.ok) {
@@ -326,9 +350,13 @@ export default function HangoutDetailPage() {
           }
         }
       })
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/vote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ optionId, action })
       })
       if (response.ok) {
@@ -397,8 +425,13 @@ export default function HangoutDetailPage() {
           }
         }
       })
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/rsvp`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status })
       })
       if (response.ok) {
