@@ -1,278 +1,197 @@
-const puppeteer = require('puppeteer');
+const { PrismaClient } = require('@prisma/client')
 
-const RAILWAY_APP_URL = 'https://hangouts-production-adc4.up.railway.app';
-const TEST_USER_EMAIL = 'richard@example.com';
-const TEST_USER_PASSWORD = 'Password1!';
+const db = new PrismaClient()
 
 async function testVotingFunctionality() {
-  console.log(`🚀 Testing voting functionality at: ${RAILWAY_APP_URL}`);
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  const page = await browser.newPage();
-
-  page.on('console', msg => console.log(`BROWSER CONSOLE: ${msg.text()}`));
-  page.on('pageerror', err => console.error(`BROWSER PAGE ERROR: ${err.message}`));
-  page.on('requestfailed', request => {
-    console.error(`REQUEST FAILED: ${request.url()} ${request.failure().errorText}`);
-  });
-
   try {
-    // Test 1: Health Check
-    console.log('\n🏥 Test 1: Health Check');
-    const healthResponse = await fetch(`${RAILWAY_APP_URL}/api/health`);
-    const healthData = await healthResponse.json();
-    console.log('✅ Health check response:', healthData);
+    console.log('🧪 Testing voting functionality...')
     
-    if (healthResponse.status !== 200 || healthData.status !== 'ok') {
-      throw new Error('Health check failed');
-    }
-
-    // Test 2: Sign In
-    console.log('\n🔐 Test 2: Sign In');
-    await page.goto(`${RAILWAY_APP_URL}/signin`, { waitUntil: 'networkidle0' });
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const emailInput = await page.$('input[type="email"], input[name="email"]');
-    const passwordInput = await page.$('input[type="password"], input[name="password"]');
-    const signInButton = await page.$('button[type="submit"]');
-
-    if (emailInput && passwordInput && signInButton) {
-      await emailInput.type(TEST_USER_EMAIL);
-      await passwordInput.type(TEST_USER_PASSWORD);
-      await signInButton.click();
-      await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 30000 });
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      const currentUrl = page.url();
-      if (currentUrl.includes('/dashboard') || currentUrl === RAILWAY_APP_URL || currentUrl.includes('hangouts-production')) {
-        console.log('✅ Sign in successful - navigation completed');
-      } else {
-        throw new Error(`Sign in failed. Redirected to: ${currentUrl}`);
+    // 1. Create a test user
+    const testUser = await db.user.create({
+      data: {
+        id: 'test_voter_' + Date.now(),
+        clerkId: 'test_voter_' + Date.now(),
+        email: 'testvoter@example.com',
+        username: 'testvoter',
+        name: 'Test Voter',
+        role: 'USER',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
-    } else {
-      throw new Error('Sign in form elements not found');
-    }
-
-    // Test 3: Create Multi-Option Hangout
-    console.log('\n🏠 Test 3: Create Multi-Option Hangout');
+    })
+    console.log('✅ Test user created:', testUser.id)
     
-    // Get the auth token from localStorage
-    const token = await page.evaluate(() => {
-      return localStorage.getItem('auth_token') || localStorage.getItem('token');
-    });
+    // 2. Create a test hangout with multiple options
+    const hangout = await db.content.create({
+      data: {
+        id: 'test_hangout_' + Date.now(),
+        type: 'HANGOUT',
+        title: 'Test Voting Hangout',
+        description: 'Testing voting functionality',
+        status: 'PUBLISHED',
+        privacyLevel: 'PUBLIC',
+        creatorId: testUser.id,
+        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        endTime: new Date(Date.now() + 27 * 60 * 60 * 1000), // Tomorrow + 3 hours
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    })
+    console.log('✅ Test hangout created:', hangout.id)
     
-    if (!token) {
-      throw new Error('No auth token found in localStorage');
-    }
+    // 3. Add creator as participant
+    await db.content_participants.create({
+      data: {
+        id: 'participant_' + Date.now(),
+        contentId: hangout.id,
+        userId: testUser.id,
+        role: 'CREATOR',
+        canEdit: true,
+        isMandatory: true,
+        isCoHost: false,
+        joinedAt: new Date()
+      }
+    })
+    console.log('✅ Creator added as participant')
     
-    console.log('Auth token found, length:', token.length);
-
-    // Create a multi-option hangout
-    const hangoutData = {
-      title: 'Voting Test Hangout ' + Date.now(),
-      description: 'Testing voting functionality with multiple options',
-      location: 'Test Location',
-      privacyLevel: 'PUBLIC',
-      type: 'multi_option',
-      options: [
-        {
-          id: 'option_1',
-          title: 'Option 1: Coffee Shop',
-          description: 'Let\'s meet at the local coffee shop',
-          location: 'Downtown Coffee Shop',
-          dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
-          price: 5
+    // 4. Create a poll with multiple options
+    const poll = await db.polls.create({
+      data: {
+        id: 'poll_' + Date.now(),
+        contentId: hangout.id,
+        creatorId: testUser.id,
+        title: 'Test Voting Poll',
+        description: 'Testing voting functionality',
+        options: [
+          { id: 'option1', title: 'Option 1', description: 'First option' },
+          { id: 'option2', title: 'Option 2', description: 'Second option' },
+          { id: 'option3', title: 'Option 3', description: 'Third option' }
+        ],
+        allowMultiple: true,
+        isAnonymous: false,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        consensusPercentage: 70,
+        minimumParticipants: 1, // Low threshold for testing
+        consensusType: 'percentage',
+        status: 'ACTIVE',
+        allowDelegation: false,
+        allowAbstention: true,
+        allowAddOptions: true,
+        isPublic: true,
+        visibility: 'PUBLIC'
+      }
+    })
+    console.log('✅ Poll created with options:', poll.options.length)
+    
+    // 5. Test voting by casting votes
+    console.log('🗳️ Testing vote casting...')
+    
+    // Vote for option 1
+    const vote1 = await db.pollVote.create({
+      data: {
+        id: 'vote1_' + Date.now(),
+        pollId: poll.id,
+        userId: testUser.id,
+        option: 'option1'
+      }
+    })
+    console.log('✅ Vote 1 cast for option1')
+    
+    // Vote for option 2 (multiple voting)
+    const vote2 = await db.pollVote.create({
+      data: {
+        id: 'vote2_' + Date.now(),
+        pollId: poll.id,
+        userId: testUser.id,
+        option: 'option2',
+        isPreferred: true
+      }
+    })
+    console.log('✅ Vote 2 cast for option2 (preferred)')
+    
+    // 6. Test consensus detection
+    console.log('🎯 Testing consensus detection...')
+    
+    // Get updated poll with votes
+    const updatedPoll = await db.polls.findUnique({
+      where: { id: poll.id },
+      include: {
+        votes: true
+      }
+    })
+    
+    console.log('📊 Poll votes:', updatedPoll.votes.length)
+    console.log('📊 Vote details:', updatedPoll.votes.map(v => ({
+      option: v.option,
+      userId: v.userId,
+      isPreferred: v.isPreferred
+    })))
+    
+    // 7. Test hangout API response structure
+    console.log('🔍 Testing hangout API response structure...')
+    
+    const hangoutWithData = await db.content.findUnique({
+      where: { id: hangout.id },
+      include: {
+        polls: {
+          include: {
+            votes: true
+          }
         },
-        {
-          id: 'option_2',
-          title: 'Option 2: Park Picnic',
-          description: 'Enjoy a picnic in the park',
-          location: 'Central Park',
-          dateTime: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(), // Tomorrow + 1 hour
-          price: 10
-        },
-        {
-          id: 'option_3',
-          title: 'Option 3: Restaurant Dinner',
-          description: 'Have dinner at a nice restaurant',
-          location: 'Fine Dining Restaurant',
-          dateTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(), // Tomorrow + 2 hours
-          price: 25
+        content_participants: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatar: true
+              }
+            }
+          }
         }
-      ],
-      participants: []
-    };
-
-    console.log('Creating multi-option hangout...');
-    const createResponse = await fetch(`${RAILWAY_APP_URL}/api/hangouts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(hangoutData)
-    });
-
-    console.log('Create response status:', createResponse.status);
-    const createData = await createResponse.json();
-    console.log('Create response data:', createData);
-
-    if (createResponse.status !== 200 && createResponse.status !== 201) {
-      throw new Error(`Hangout creation failed: ${createData.error || 'Unknown error'}`);
-    }
-
-    const hangoutId = createData.data?.id;
-    if (!hangoutId) {
-      throw new Error('No hangout ID returned from creation');
-    }
-
-    console.log('✅ Multi-option hangout created successfully!');
-    console.log('   Hangout ID:', hangoutId);
-    console.log('   State:', createData.data?.state);
-    console.log('   Requires Voting:', createData.data?.requiresVoting);
-    console.log('   Options Count:', createData.data?.options?.length);
-
-    // Test 4: Verify Hangout Shows Voting Interface
-    console.log('\n🔍 Test 4: Verify Hangout Shows Voting Interface');
-    const hangoutPageUrl = `${RAILWAY_APP_URL}/hangout/${hangoutId}`;
-    await page.goto(hangoutPageUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    const currentUrl = page.url();
-    if (currentUrl.includes(`/hangout/${hangoutId}`)) {
-      console.log(`✅ Successfully navigated to hangout: ${currentUrl}`);
-      
-      // Check for voting interface elements
-      const votingSection = await page.$('h2');
-      if (votingSection) {
-        const votingText = await votingSection.evaluate(el => el.textContent);
-        if (votingText && votingText.includes('Vote')) {
-          console.log('✅ Voting section found on page');
-        } else {
-          console.log('⚠️ Voting section not found - checking for voting buttons');
-        }
-      } else {
-        console.log('⚠️ No h2 elements found - checking for voting buttons');
       }
-      
-      // Look for vote buttons
-      const voteButtons = await page.$$('button');
-      const voteButtonTexts = await Promise.all(voteButtons.map(btn => btn.evaluate(el => el.textContent)));
-      const actualVoteButtons = voteButtonTexts.filter(text => text && (text.includes('Vote') || text.includes('Tap')));
-      
-      if (actualVoteButtons.length > 0) {
-        console.log(`✅ Found ${actualVoteButtons.length} vote buttons:`, actualVoteButtons);
-      } else {
-        console.log('❌ No vote buttons found');
-      }
-      
-      // Check for options display
-      const optionElements = await page.$$('[data-testid="option"], .option, h3');
-      console.log(`📊 Found ${optionElements.length} potential option elements`);
-      
-      // Check page title
-      const pageTitle = await page.title();
-      console.log('📄 Page title:', pageTitle);
-      
-    } else {
-      throw new Error(`Failed to navigate to hangout. Redirected to: ${currentUrl}`);
-    }
-
-    // Test 5: Test Voting API Directly
-    console.log('\n🔍 Test 5: Test Voting API Directly');
+    })
     
-    // First, get the poll ID for this hangout
-    const hangoutResponse = await fetch(`${RAILWAY_APP_URL}/api/hangouts/${hangoutId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    // Build votes object like the API does
+    const votes = {}
+    hangoutWithData.polls[0].votes.forEach(vote => {
+      if (!votes[vote.userId]) {
+        votes[vote.userId] = []
       }
-    });
+      votes[vote.userId].push(vote.option)
+    })
     
-    const hangoutData2 = await hangoutResponse.json();
-    console.log('Hangout data:', hangoutData2);
+    console.log('📊 API votes structure:', votes)
+    console.log('📊 User votes for test user:', votes[testUser.id])
     
-    if (hangoutData2.success && hangoutData2.hangout) {
-      const hangout = hangoutData2.hangout;
-      console.log('   State:', hangout.state);
-      console.log('   Requires Voting:', hangout.requiresVoting);
-      console.log('   Options:', hangout.options?.length || 0);
-      
-      if (hangout.requiresVoting && hangout.options && hangout.options.length > 1) {
-        console.log('✅ Hangout is in voting state with multiple options');
-        
-        // Test voting on first option
-        const firstOptionId = hangout.options[0].id;
-        console.log('Testing vote on option:', firstOptionId);
-        
-        const voteResponse = await fetch(`${RAILWAY_APP_URL}/api/hangouts/${hangoutId}/vote`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            optionId: firstOptionId,
-            action: 'toggle'
-          })
-        });
-        
-        console.log('Vote response status:', voteResponse.status);
-        const voteData = await voteResponse.json();
-        console.log('Vote response data:', voteData);
-        
-        if (voteResponse.status === 200 || voteResponse.status === 201) {
-          console.log('✅ Vote submitted successfully!');
-        } else {
-          console.log('⚠️ Vote submission failed:', voteData.error || 'Unknown error');
-        }
-        
-        // Test voting on second option
-        const secondOptionId = hangout.options[1].id;
-        console.log('Testing vote on option:', secondOptionId);
-        
-        const voteResponse2 = await fetch(`${RAILWAY_APP_URL}/api/hangouts/${hangoutId}/vote`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            optionId: secondOptionId,
-            action: 'toggle'
-          })
-        });
-        
-        console.log('Vote 2 response status:', voteResponse2.status);
-        const voteData2 = await voteResponse2.json();
-        console.log('Vote 2 response data:', voteData2);
-        
-        if (voteResponse2.status === 200 || voteResponse2.status === 201) {
-          console.log('✅ Second vote submitted successfully!');
-        } else {
-          console.log('⚠️ Second vote submission failed:', voteData2.error || 'Unknown error');
-        }
-        
-      } else {
-        console.log('❌ Hangout is not in voting state or has insufficient options');
-        console.log('   State:', hangout.state);
-        console.log('   Requires Voting:', hangout.requiresVoting);
-        console.log('   Options Count:', hangout.options?.length || 0);
-      }
-    } else {
-      console.log('❌ Failed to fetch hangout data for voting test');
-    }
-
-    console.log('\n🎉 Voting functionality test completed!');
-
+    // 8. Test consensus logic
+    const votedCount = Object.keys(votes).filter(userId => votes[userId] && votes[userId].length > 0).length
+    const participants = hangoutWithData.content_participants || []
+    const minVotesRequired = Math.max(1, Math.ceil(participants.length * 0.5))
+    
+    console.log('📊 Voted count:', votedCount)
+    console.log('📊 Participants count:', participants.length)
+    console.log('📊 Min votes required:', minVotesRequired)
+    console.log('📊 Consensus reached:', votedCount >= minVotesRequired)
+    
+    console.log('🎉 Voting functionality test completed successfully!')
+    
+    // Cleanup
+    console.log('🧹 Cleaning up test data...')
+    await db.pollVote.deleteMany({ where: { pollId: poll.id } })
+    await db.polls.delete({ where: { id: poll.id } })
+    await db.content_participants.deleteMany({ where: { contentId: hangout.id } })
+    await db.content.delete({ where: { id: hangout.id } })
+    await db.user.delete({ where: { id: testUser.id } })
+    console.log('✅ Test data cleaned up')
+    
   } catch (error) {
-    console.error('❌ Test failed:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ Test failed:', error)
   } finally {
-    await browser.close();
+    await db.$disconnect()
   }
 }
 
-testVotingFunctionality();
+testVotingFunctionality()

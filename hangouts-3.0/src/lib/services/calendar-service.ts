@@ -76,6 +76,28 @@ export class CalendarService {
   }
 
   /**
+   * Add event to Outlook Calendar
+   */
+  static async addToOutlookCalendar(event: CalendarEvent): Promise<void> {
+    // Generate Outlook web calendar URL
+    const startDate = new Date(event.startTime)
+    const endDate = new Date(event.endTime)
+    
+    const formatDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    }
+
+    const title = encodeURIComponent(event.title)
+    const description = encodeURIComponent(event.description || '')
+    const location = encodeURIComponent(event.location || '')
+    const url = encodeURIComponent(event.url || '')
+    
+    const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&body=${description}&location=${location}&startdt=${formatDate(startDate)}&enddt=${formatDate(endDate)}&url=${url}`
+    
+    window.open(outlookUrl, '_blank')
+  }
+
+  /**
    * Format date for Google Calendar (YYYYMMDDTHHMMSSZ)
    */
   private static formatDateForGoogle(dateString: string): string {

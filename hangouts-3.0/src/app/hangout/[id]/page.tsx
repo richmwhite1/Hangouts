@@ -1006,6 +1006,16 @@ export default function HangoutDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Edit Hangout Modal */}
+        {showEditModal && hangout && (
+          <EditHangoutModal
+            hangout={hangout}
+            isOpen={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            onUpdate={handleHangoutUpdate}
+          />
+        )}
       </div>
     </div>
   )
@@ -1799,15 +1809,6 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
         </div>
       ) : null}
 
-      {/* Edit Hangout Modal */}
-      {showEditModal && hangout && (
-        <EditHangoutModal
-          hangout={hangout}
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          onUpdate={handleHangoutUpdate}
-        />
-      )}
     </div>
   )
 }

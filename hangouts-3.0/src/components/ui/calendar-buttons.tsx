@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Calendar, Download, ExternalLink } from 'lucide-react'
+import { Calendar, Download, ExternalLink, Mail } from 'lucide-react'
 import { calendarService, CalendarEvent } from '@/lib/services/calendar-service'
 import { toast } from 'sonner'
 

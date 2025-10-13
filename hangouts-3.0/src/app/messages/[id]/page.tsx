@@ -9,18 +9,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { 
   ArrowLeft, 
   Send, 
-  MoreVertical, 
-  Phone, 
-  Video, 
   Smile, 
   Paperclip, 
   Image, 
   File, 
   MapPin,
   Users,
-  Settings,
-  Star,
-  Archive,
   Trash2,
   Edit3,
   Reply,
@@ -31,7 +25,6 @@ import {
   Frown,
   Zap,
   Search,
-  Check,
   Download,
   MessageSquare,
   UserPlus,
@@ -95,6 +88,7 @@ interface Conversation {
   id: string
   type: string
   name: string
+  avatar?: string | null
   participants: Array<{
     id: string
     name: string
@@ -109,7 +103,7 @@ interface Conversation {
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
-  const { isSignedIn, user, getToken } = useAuth()
+  const { isSignedIn, userId } = useAuth()
   const { socket, isConnected, typingUsers, onlineUsers, sendTypingIndicator, sendMessage, sendReaction, joinConversation, leaveConversation } = useWebSocket()
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -134,6 +128,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [isEditingGroupName, setIsEditingGroupName] = useState(false)
   const [editingGroupName, setEditingGroupName] = useState("")
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -147,6 +142,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       if (isConnected) {
         joinConversation(resolvedParams.id)
       }
+      
+      // Fetch database user ID
+      fetchDatabaseUserId()
     }
     
     return () => {
@@ -155,6 +153,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       }
     }
   }, [isSignedIn, resolvedParams.id, isConnected])
+
+  const fetchDatabaseUserId = async () => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🔍 Database user ID fetched:', data.data?.id)
+        setDatabaseUserId(data.data?.id)
+      }
+    } catch (error) {
+      console.error('❌ Error fetching database user ID:', error)
+    }
+  }
 
   // Real-time event listeners
   useEffect(() => {
@@ -484,15 +495,33 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 Friends API response:', data)
+        
+        // The API returns { success: true, friends: [...] } where friends is an array of friendship objects
+        // Each friendship has { id, friend: { user data }, status, createdAt }
+        const friendships = data.friends || []
+        console.log('🔍 Raw friendships:', friendships)
+        
+        // Extract the actual friend user data from friendship objects
+        const friends = friendships.map((friendship: any) => friendship.friend)
+        console.log('🔍 Extracted friends:', friends)
+        
         // Filter out friends who are already participants
         const currentParticipantIds = conversation?.participants.map(p => p.id) || []
-        const available = data.data.friends.filter((friend: User) => 
+        console.log('🔍 Current participant IDs:', currentParticipantIds)
+        
+        const available = friends.filter((friend: User) => 
           !currentParticipantIds.includes(friend.id)
         )
+        console.log('🔍 Available friends after filtering:', available)
+        
         setAvailableFriends(available)
+      } else {
+        console.error('❌ Failed to fetch friends:', response.status, response.statusText)
       }
     } catch (error) {
       logger.error('Error loading friends:', error);
+      console.error('❌ Error loading friends:', error)
     } finally {
       setIsLoadingFriends(false)
     }
@@ -640,8 +669,16 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  const otherParticipant = conversation.participants.find(p => p.id !== user?.id)
-  const onlineParticipants = conversation.participants.filter(p => onlineUsers.includes(p.id) && p.id !== user?.id)
+  const otherParticipant = conversation.participants.find(p => p.id !== databaseUserId)
+  const onlineParticipants = conversation.participants.filter(p => onlineUsers.includes(p.id) && p.id !== databaseUserId)
+
+  // Debug logging for user icon issue
+  console.log('🔍 User icon debugging:')
+  console.log('  - Clerk userId:', userId)
+  console.log('  - Database userId:', databaseUserId)
+  console.log('  - Conversation participants:', conversation.participants)
+  console.log('  - Other participant:', otherParticipant)
+  console.log('  - Should show avatar:', otherParticipant?.avatar || "/placeholder-avatar.png")
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col pb-20">
@@ -940,7 +977,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
         ) : (
           messages.map((message) => {
-            const isOwn = message.sender.id === user?.id
+            const isOwn = message.sender.id === databaseUserId
             const isGroupChat = conversation.type === "GROUP"
             
             return (
@@ -1027,7 +1064,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       {message.reactions.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {Object.entries(
-                            message.reactions.reduce((acc, reaction) => {
+                            (message.reactions || []).reduce((acc, reaction) => {
+                              if (!reaction?.emoji) return acc
                               if (!acc[reaction.emoji]) acc[reaction.emoji] = []
                               acc[reaction.emoji].push(reaction)
                               return acc
@@ -1095,14 +1133,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         )}
         
         {/* Typing indicator */}
-        {typingUsers[resolvedParams.id] && typingUsers[resolvedParams.id].length > 0 && (
+        {typingUsers[resolvedParams.id] && typingUsers[resolvedParams.id]?.length > 0 && (
           <div className="flex items-center space-x-2 text-gray-400 text-sm">
             <div className="flex space-x-1">
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
-            <span>{typingUsers[resolvedParams.id].length} {typingUsers[resolvedParams.id].length === 1 ? 'person is' : 'people are'} typing...</span>
+            <span>{typingUsers[resolvedParams.id]?.length} {typingUsers[resolvedParams.id]?.length === 1 ? 'person is' : 'people are'} typing...</span>
           </div>
         )}
         
