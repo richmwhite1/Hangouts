@@ -385,13 +385,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Hangouts API - POST request received')
+    
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth()
+    console.log('Hangouts API - Clerk userId:', clerkUserId)
+    
     if (!clerkUserId) {
+      console.log('Hangouts API - No clerkUserId, returning 401')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     let user = await getClerkApiUser()
+    console.log('Hangouts API - Database user found:', user ? 'YES' : 'NO')
+    
     if (!user) {
       // Create a minimal user object as fallback
       user = {
@@ -407,10 +414,15 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = user.id
+    console.log('Hangouts API - Using userId:', userId)
+    
     const data = await request.json()
+    console.log('Hangouts API - Request data received:', { title: data.title, type: data.type })
 
     // Validate the request data
+    console.log('Hangouts API - Validating data...')
     const validatedData = createHangoutSchema.parse(data)
+    console.log('Hangouts API - Data validated successfully')
 
     // For the new flow, get start/end times from the first option or use defaults
     let startTime: Date
@@ -436,6 +448,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Create the hangout in the database
+    console.log('Hangouts API - Creating hangout in database...')
     const hangout = await db.content.create({
       data: {
         id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -462,8 +475,10 @@ export async function POST(request: NextRequest) {
         source: 'MANUAL'
       }
     })
+    console.log('Hangouts API - Hangout created successfully:', hangout.id)
 
     // Add creator as participant
+    console.log('Hangouts API - Adding creator as participant...')
     await db.content_participants.create({
       data: {
         id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -476,6 +491,7 @@ export async function POST(request: NextRequest) {
         joinedAt: new Date()
       }
     })
+    console.log('Hangouts API - Creator added as participant')
 
     // Add other participants if specified
     if (validatedData.participants && validatedData.participants.length > 0) {
@@ -550,11 +566,15 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error('Hangouts API - Error in POST:', error)
+    console.error('Hangouts API - Error message:', error.message)
+    console.error('Hangouts API - Error stack:', error.stack)
     logger.error('Error in POST /api/hangouts:', error)
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: 'Failed to create hangout'
+        message: 'Failed to create hangout',
+        details: error.message
       },
       { status: 500 }
     )
