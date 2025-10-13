@@ -71,7 +71,7 @@ interface Hangout {
       avatar?: string
     }
   }>
-  _count: {
+  counts: {
     content_participants: number
     comments: number
     content_likes: number

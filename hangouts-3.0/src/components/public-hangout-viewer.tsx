@@ -31,7 +31,7 @@ interface HangoutData {
     name: string
     avatar?: string
   }
-  _count: {
+  counts: {
     content_participants: number
   }
   state: string
@@ -215,7 +215,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
 
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-purple-400" />
-              <p>{hangout._count.content_participants} people going</p>
+              <p>{hangout.counts?.content_participants || 0} people going</p>
             </div>
 
             <div className="flex items-center gap-3">
