@@ -136,14 +136,25 @@ export default function HomePage() {
         setLoading(true)
         // Fetch user's personal feed (created + invited hangouts)
         const token = await getToken()
+        console.log('🔑 Token received:', token ? 'YES' : 'NO', token?.substring(0, 20) + '...')
+        
         const headers: HeadersInit = {
           'Content-Type': 'application/json',
           ...(token && { 'Authorization': `Bearer ${token}` })
         }
+        
+        console.log('📤 Making request with headers:', Object.keys(headers))
+        
         const response = await fetch('/api/feed-simple?type=home&contentType=all', {
           headers
         })
+        
+        console.log('📥 Response status:', response.status)
+        console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()))
+        
         const data = await response.json()
+        console.log('📥 Response data:', data)
+        
         if (data.success) {
           const hangoutsData = data.data.content || []
           setHangouts(hangoutsData)
@@ -152,6 +163,7 @@ export default function HomePage() {
           throw new Error(data.error || 'Failed to fetch hangouts')
         }
       } catch (err) {
+        console.error('❌ Error fetching hangouts:', err);
         logger.error('Error fetching hangouts:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch hangouts')
         setHangouts([])
