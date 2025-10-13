@@ -400,17 +400,33 @@ export async function POST(request: NextRequest) {
     console.log('Hangouts API - Database user found:', user ? 'YES' : 'NO')
     
     if (!user) {
-      // Create a minimal user object as fallback
-      user = {
-        id: clerkUserId,
-        email: 'temp@example.com',
-        username: 'temp_user',
-        name: 'Temp User',
-        role: 'USER' as const,
-        avatar: null,
-        isActive: true
+      // User exists in Clerk but not in database - create them
+      console.log('Hangouts API - Creating user in database...')
+      try {
+        user = await db.user.create({
+          data: {
+            id: clerkUserId,
+            clerkId: clerkUserId,
+            email: `${clerkUserId}@clerk.temp`,
+            username: `user_${clerkUserId.substring(0, 8)}`,
+            name: 'New User',
+            role: 'USER',
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        })
+        console.log('Hangouts API - User created successfully:', user.id)
+      } catch (dbError: any) {
+        console.error('Hangouts API - Error creating user:', dbError.message)
+        return NextResponse.json(
+          { 
+            error: 'Failed to create user',
+            message: dbError.message
+          },
+          { status: 500 }
+        )
       }
-      console.log('Hangouts API - Using fallback user:', user.id)
     }
 
     const userId = user.id
