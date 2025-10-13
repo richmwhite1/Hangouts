@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger'
 
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isSignedIn, isLoaded, user, getToken } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -30,7 +30,7 @@ export default function CreateHangoutPage() {
   }
 
   // Debug authentication state
-  console.log('Create page auth state:', { isSignedIn, isLoaded, user: user?.id, isClient })
+  console.log('Create page auth state:', { isSignedIn, isLoaded, isClient })
   
   // Debug token retrieval
   const debugToken = async () => {
@@ -39,7 +39,6 @@ export default function CreateHangoutPage() {
       console.log('Debug token result:', { 
         token: token ? token.substring(0, 20) + '...' : 'null',
         tokenLength: token?.length || 0,
-        userId: user?.id,
         isSignedIn
       })
     } catch (error) {
@@ -52,9 +51,9 @@ export default function CreateHangoutPage() {
     debugToken()
   }
 
-  // Check authentication state
-  if (!isSignedIn || !user) {
-    console.log('⚠️ User not authenticated:', { isSignedIn, user: user?.id });
+  // Check authentication state - only check isSignedIn, not user object
+  if (!isSignedIn) {
+    console.log('⚠️ User not authenticated:', { isSignedIn });
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="max-w-md mx-auto p-6">
@@ -129,7 +128,7 @@ export default function CreateHangoutPage() {
       console.log('Frontend - Token preview:', token ? token.substring(0, 20) + '...' : 'null')
       if (!token) {
         console.error('Frontend - No token available, user might not be authenticated')
-        console.error('Frontend - Auth state:', { isSignedIn, userId: user?.id, isLoaded })
+        console.error('Frontend - Auth state:', { isSignedIn, isLoaded })
         toast.error('Authentication required. Please sign in.')
         return
       }
@@ -181,7 +180,7 @@ export default function CreateHangoutPage() {
       console.log('Frontend - Hangout creation token length:', token?.length || 0)
       if (!token) {
         console.error('Frontend - No token available for hangout creation')
-        console.error('Frontend - Auth state:', { isSignedIn, userId: user?.id, isLoaded })
+        console.error('Frontend - Auth state:', { isSignedIn, isLoaded })
         toast.error('Authentication required. Please sign in.')
         return
       }
