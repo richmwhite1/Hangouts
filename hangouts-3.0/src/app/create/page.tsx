@@ -79,6 +79,8 @@ export default function CreateHangoutPage() {
           uploadFormData.append('file', formData.image)
           uploadFormData.append('type', 'hangout')
           const token = await getToken()
+          console.log('Frontend - Token retrieved:', token ? 'YES' : 'NO')
+          console.log('Frontend - Token length:', token?.length || 0)
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: {
@@ -123,6 +125,7 @@ export default function CreateHangoutPage() {
       }
       // console.log('Creating hangout with data:', hangoutData); // Removed for production
       const token = await getToken()
+      console.log('Frontend - Hangout creation token:', token ? 'YES' : 'NO')
       const response = await fetch('/api/hangouts', {
         method: 'POST',
         headers: { 
