@@ -142,7 +142,17 @@ export default function HangoutDetailPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        setFriends(data.friends || [])
+        // Transform friends data to match expected format
+        const friendsList = data.friends?.map((friendship: any) => ({
+          id: friendship.friend.id,
+          name: friendship.friend.name,
+          username: friendship.friend.username,
+          avatar: friendship.friend.avatar,
+          email: friendship.friend.email,
+          bio: friendship.friend.bio,
+          location: friendship.friend.location
+        })) || []
+        setFriends(friendsList)
       }
     } catch (error) {
       logger.error('Error loading friends:', error);
@@ -887,39 +897,58 @@ export default function HangoutDetailPage() {
         {showInviteModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-xl font-bold text-white mb-4">Invite Friends</h3>
-              <div className="space-y-4 max-h-60 overflow-y-auto">
-                {friends.map((friend: any) => (
-                  <div key={friend.id} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={friend.avatar || '/placeholder-avatar.png'}
-                        alt={friend.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <div className="text-white font-medium">{friend.name}</div>
-                        <div className="text-gray-400 text-sm">@{friend.username}</div>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={selectedFriends.includes(friend.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedFriends([...selectedFriends, friend.id])
-                        } else {
-                          setSelectedFriends(selectedFriends.filter((id: string) => id !== friend.id))
-                        }
-                      }}
-                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                    />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">Invite Friends</h3>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {friends.length === 0 ? (
+                  <div className="text-center py-4">
+                    <div className="text-gray-400 text-sm">No friends to invite</div>
                   </div>
-                ))}
+                ) : (
+                  friends.map((friend: any) => (
+                    <div key={friend.id} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-700/50">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={friend.avatar || '/placeholder-avatar.png'}
+                          alt={friend.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <div className="text-white font-medium">{friend.name}</div>
+                          <div className="text-gray-400 text-sm">@{friend.username}</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedFriends.includes(friend.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedFriends([...selectedFriends, friend.id])
+                          } else {
+                            setSelectedFriends(selectedFriends.filter((id: string) => id !== friend.id))
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  ))
+                )}
               </div>
               <div className="flex justify-end space-x-2 mt-6">
                 <Button
-                  onClick={() => setShowInviteModal(false)}
+                  onClick={() => {
+                    setShowInviteModal(false)
+                    setSelectedFriends([])
+                  }}
                   variant="outline"
                   className="border-gray-600 text-gray-300 hover:bg-gray-700"
                 >
@@ -1252,23 +1281,12 @@ function ParticipantStatusSection({
   // Always show participants section, even if empty
   return (
     <div className="px-4 py-3">
-      {/* Header with Add People and Action Buttons */}
+      {/* Header with Participants Count and Action Buttons */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold text-sm">
           Participants ({participants.length})
         </h3>
         <div className="flex items-center gap-2">
-          {/* Add People Button */}
-          {isHost && (
-            <Button
-              onClick={onOpenInviteModal}
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 h-7"
-            >
-              <UserPlus className="w-3 h-3 mr-1" />
-              Add People
-            </Button>
-          )}
           {/* Join Button for non-participants on public hangouts */}
           {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
             <Button
@@ -1277,7 +1295,7 @@ function ParticipantStatusSection({
               className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
             >
               <UserPlus className="w-3 h-3 mr-1" />
-              Join Hangout
+              Join
             </Button>
           )}
           {/* Action Buttons */}
@@ -1296,13 +1314,13 @@ function ParticipantStatusSection({
       {/* Show empty state if no participants */}
       {participants.length === 0 ? (
         <div className="text-center py-6">
-          <div className="text-gray-400 text-sm mb-2">No participants yet</div>
+          <div className="text-gray-500 text-sm mb-3">No participants yet</div>
           {isHost && (
             <Button
               onClick={onOpenInviteModal}
               size="sm"
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-300"
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Invite Friends
@@ -1381,12 +1399,12 @@ function ParticipantStatusSection({
           <div className="flex flex-col items-center text-center">
             <button
               onClick={onOpenInviteModal}
-              className="w-16 h-16 rounded-md border-2 border-dashed border-gray-500 bg-gray-800/50 hover:bg-gray-700/50 hover:border-gray-400 transition-colors flex items-center justify-center group"
+              className="w-16 h-16 rounded-md border-2 border-dashed border-gray-600 bg-gray-800/30 hover:bg-gray-700/40 hover:border-gray-500 transition-colors flex items-center justify-center group"
               title="Add more people"
             >
-              <UserPlus className="w-6 h-6 text-gray-400 group-hover:text-gray-300" />
+              <UserPlus className="w-5 h-5 text-gray-500 group-hover:text-gray-400" />
             </button>
-            <p className="text-gray-400 font-medium text-xs mt-2">Add People</p>
+            <p className="text-gray-500 font-medium text-xs mt-1">Add</p>
           </div>
         )}
       </div>
