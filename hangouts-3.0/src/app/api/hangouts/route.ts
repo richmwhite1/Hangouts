@@ -391,9 +391,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = await getClerkApiUser()
+    let user = await getClerkApiUser()
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+      // Create a minimal user object as fallback
+      user = {
+        id: clerkUserId,
+        email: 'temp@example.com',
+        username: 'temp_user',
+        name: 'Temp User',
+        role: 'USER' as const,
+        avatar: null,
+        isActive: true
+      }
+      console.log('Hangouts API - Using fallback user:', user.id)
     }
 
     const userId = user.id
