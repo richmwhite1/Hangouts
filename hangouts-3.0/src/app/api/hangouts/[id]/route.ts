@@ -22,7 +22,17 @@ export async function GET(
     const { userId: clerkUserId } = await auth()
     let user = null
     if (clerkUserId) {
-      user = await getClerkApiUser()
+      try {
+        user = await getClerkApiUser()
+        // If user doesn't exist in database, create a minimal user object
+        if (!user) {
+          user = { id: clerkUserId }
+        }
+      } catch (error) {
+        logger.error('Error getting user from Clerk:', error)
+        // Fallback to Clerk ID
+        user = { id: clerkUserId }
+      }
     }
 
     // Get hangout with all related data
