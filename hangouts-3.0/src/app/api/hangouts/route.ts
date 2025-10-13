@@ -386,6 +386,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log('Hangouts API - POST request received')
+    console.log('Hangouts API - Request headers:', Object.fromEntries(request.headers.entries()))
     
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth()
@@ -585,16 +586,20 @@ export async function POST(request: NextRequest) {
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Hangouts API - Error in POST:', error)
     console.error('Hangouts API - Error message:', error.message)
     console.error('Hangouts API - Error stack:', error.stack)
+    console.error('Hangouts API - Error name:', error.name)
+    console.error('Hangouts API - Error code:', error.code)
     logger.error('Error in POST /api/hangouts:', error)
     return NextResponse.json(
       { 
         error: 'Internal server error',
         message: 'Failed to create hangout',
-        details: error.message
+        details: error.message,
+        errorName: error.name,
+        errorCode: error.code
       },
       { status: 500 }
     )
