@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
+import EditHangoutModal from '@/components/hangout/EditHangoutModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
 import { logger } from '@/lib/logger'
@@ -130,6 +131,7 @@ export default function HangoutDetailPage() {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [friends, setFriends] = useState<any[]>([])
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
+  const [showEditModal, setShowEditModal] = useState(false)
 
   // Load friends for invitation
   const loadFriends = async () => {
@@ -238,6 +240,11 @@ export default function HangoutDetailPage() {
     } finally {
       setIsInviting(false)
     }
+  }
+
+  const handleHangoutUpdate = (updatedHangout: any) => {
+    setHangout(updatedHangout)
+    setShowEditModal(false)
   }
 
   const handleJoinHangout = async () => {
@@ -916,6 +923,7 @@ export default function HangoutDetailPage() {
           onShare={handleShare}
           onCopyLink={handleCopyLink}
           onJoinHangout={handleJoinHangout}
+          onOpenEditModal={() => setShowEditModal(true)}
         />
         {/* Chat Section - Always show */}
         <ChatSection
@@ -1296,7 +1304,8 @@ function ParticipantStatusSection({
   onRemoveUser,
   onShare: _onShare,
   onCopyLink: _onCopyLink,
-  onJoinHangout
+  onJoinHangout,
+  onOpenEditModal
 }: {
   hangout: Hangout,
   currentUser: any,
@@ -1304,7 +1313,8 @@ function ParticipantStatusSection({
   onRemoveUser: (participantId: string) => void,
   onShare: () => void,
   onCopyLink: () => void,
-  onJoinHangout: () => void
+  onJoinHangout: () => void,
+  onOpenEditModal: () => void
 }) {
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const participants = hangout.participants || []
@@ -1345,6 +1355,17 @@ function ParticipantStatusSection({
               </button>
             )}
           </div>
+          
+          {/* Edit Button - Only for hosts/co-hosts */}
+          {isHost && (
+            <button
+              onClick={onOpenEditModal}
+              className="p-1.5 rounded-full hover:bg-gray-700/50 transition-colors group"
+              title="Edit hangout details"
+            >
+              <Edit className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" />
+            </button>
+          )}
           
           <TileActions
             itemId={hangout.id}
@@ -1777,6 +1798,16 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
           </div>
         </div>
       ) : null}
+
+      {/* Edit Hangout Modal */}
+      {showEditModal && hangout && (
+        <EditHangoutModal
+          hangout={hangout}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onUpdate={handleHangoutUpdate}
+        />
+      )}
     </div>
   )
 }

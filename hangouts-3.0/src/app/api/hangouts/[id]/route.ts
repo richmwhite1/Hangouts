@@ -339,3 +339,151 @@ export async function GET(
     )
   }
 }
+
+// PUT /api/hangouts/[id] - Update hangout
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: hangoutId } = await params
+    
+    // Verify authentication using Clerk
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+    }
+
+    // Check if hangout exists and user has edit permissions
+    const hangout = await db.content.findUnique({
+      where: { id: hangoutId },
+      include: {
+        content_participants: {
+          where: { userId: user.id }
+        }
+      }
+    })
+
+    if (!hangout) {
+      return NextResponse.json({ error: 'Hangout not found' }, { status: 404 })
+    }
+
+    // Check if user can edit (creator or co-host with edit permissions)
+    const canEdit = hangout.creatorId === user.id || 
+                   hangout.content_participants.some((p: any) => p.canEdit)
+
+    if (!canEdit) {
+      return NextResponse.json({ error: 'You do not have permission to edit this hangout' }, { status: 403 })
+    }
+
+    // Parse request body
+    const body = await request.json()
+    
+    // Update hangout with only provided fields
+    const updateData: any = {
+      updatedAt: new Date()
+    }
+
+    if (body.title !== undefined) updateData.title = body.title
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.location !== undefined) updateData.location = body.location
+    if (body.latitude !== undefined) updateData.latitude = body.latitude
+    if (body.longitude !== undefined) updateData.longitude = body.longitude
+    if (body.startTime !== undefined) updateData.startTime = new Date(body.startTime)
+    if (body.endTime !== undefined) updateData.endTime = new Date(body.endTime)
+    if (body.privacyLevel !== undefined) updateData.privacyLevel = body.privacyLevel
+    if (body.maxParticipants !== undefined) updateData.maxParticipants = body.maxParticipants
+    if (body.weatherEnabled !== undefined) updateData.weatherEnabled = body.weatherEnabled
+    if (body.image !== undefined) updateData.image = body.image
+
+    // Update hangout
+    const updatedHangout = await db.content.update({
+      where: { id: hangoutId },
+      data: updateData,
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true
+          }
+        },
+        content_participants: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            content_participants: true,
+            comments: true,
+            content_likes: true,
+            content_shares: true,
+            messages: true
+          }
+        }
+      }
+    })
+
+    // Build participants array
+    const participants = updatedHangout.content_participants.map((p: any) => ({
+      id: p.id,
+      userId: p.userId,
+      role: p.role,
+      joinedAt: p.joinedAt,
+      rsvpStatus: 'PENDING',
+      canEdit: p.canEdit || p.role === 'CREATOR',
+      user: p.users
+    }))
+
+    const response = {
+      id: updatedHangout.id,
+      title: updatedHangout.title,
+      description: updatedHangout.description,
+      image: updatedHangout.image,
+      location: updatedHangout.location,
+      latitude: updatedHangout.latitude,
+      longitude: updatedHangout.longitude,
+      startTime: updatedHangout.startTime?.toISOString(),
+      endTime: updatedHangout.endTime?.toISOString(),
+      privacyLevel: updatedHangout.privacyLevel,
+      creatorId: updatedHangout.creatorId,
+      creator: updatedHangout.users,
+      participants,
+      state: updatedHangout.state || 'POLLING',
+      requiresVoting: false,
+      options: [],
+      counts: updatedHangout._count,
+      createdAt: updatedHangout.createdAt.toISOString(),
+      updatedAt: updatedHangout.updatedAt.toISOString()
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: response
+    })
+
+  } catch (error: any) {
+    logger.error('Error updating hangout:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to update hangout',
+        details: error.message
+      },
+      { status: 500 }
+    )
+  }
+}
