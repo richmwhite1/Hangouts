@@ -1281,34 +1281,48 @@ function ParticipantStatusSection({
   // Always show participants section, even if empty
   return (
     <div className="px-4 py-3">
-      {/* Header with Participants Count and Action Buttons */}
+      {/* Header with Participants Count */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold text-sm">
           Participants ({participants.length})
         </h3>
-        <div className="flex items-center gap-2">
-          {/* Join Button for non-participants on public hangouts */}
-          {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
-            <Button
-              onClick={onJoinHangout}
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
-            >
-              <UserPlus className="w-3 h-3 mr-1" />
-              Join
-            </Button>
-          )}
-          {/* Action Buttons */}
-          <TileActions
-            itemId={hangout.id}
-            itemType="hangout"
-            itemTitle={hangout.title}
-            itemDescription={hangout.description || ''}
-            itemImage={hangout.image || ''}
-            privacyLevel={hangout.privacyLevel}
-            className="scale-75"
-          />
-        </div>
+        {/* Action Buttons */}
+        <TileActions
+          itemId={hangout.id}
+          itemType="hangout"
+          itemTitle={hangout.title}
+          itemDescription={hangout.description || ''}
+          itemImage={hangout.image || ''}
+          privacyLevel={hangout.privacyLevel}
+          className="scale-75"
+        />
+      </div>
+
+      {/* Action Buttons Row */}
+      <div className="flex items-center gap-3 mb-4">
+        {/* Add People Button - Only for hosts */}
+        {isHost && (
+          <Button
+            onClick={onOpenInviteModal}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 h-9 flex items-center gap-2 rounded-lg font-medium"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add People
+          </Button>
+        )}
+        
+        {/* Join Button - Only for non-participants on public hangouts */}
+        {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
+          <Button
+            onClick={onJoinHangout}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 h-9 flex items-center gap-2 rounded-lg font-medium"
+          >
+            <UserPlus className="w-4 h-4" />
+            Join Hangout
+          </Button>
+        )}
       </div>
       
       {/* Show empty state if no participants */}
@@ -1393,20 +1407,6 @@ function ParticipantStatusSection({
             </div>
           )
         })}
-        
-        {/* Add People Icon - Show if host and there's space */}
-        {isHost && participants.length < 8 && (
-          <div className="flex flex-col items-center text-center">
-            <button
-              onClick={onOpenInviteModal}
-              className="w-16 h-16 rounded-md border-2 border-dashed border-gray-600 bg-gray-800/30 hover:bg-gray-700/40 hover:border-gray-500 transition-colors flex items-center justify-center group"
-              title="Add more people"
-            >
-              <UserPlus className="w-5 h-5 text-gray-500 group-hover:text-gray-400" />
-            </button>
-            <p className="text-gray-500 font-medium text-xs mt-1">Add</p>
-          </div>
-        )}
       </div>
       )}
     </div>
