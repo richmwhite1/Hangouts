@@ -151,43 +151,48 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const eventCallbacks = useRef<Map<string, Set<Function>>>(new Map())
   // Initialize socket connection
   useEffect(() => {
-    if (isSignedIn && userId) {
-      const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
-        auth: { userId: userId },
-        transports: ['polling', 'websocket'],
-        timeout: 2000,
-        retries: 3,
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 3,
-        maxReconnectionAttempts: 3,
-        forceNew: true,
-      })
+    // Disable WebSocket for now - no backend WebSocket server
+    if (false && isSignedIn && userId) {
+      try {
+        const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
+          auth: { userId: userId },
+          transports: ['polling', 'websocket'],
+          timeout: 2000,
+          retries: 3,
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 3,
+          maxReconnectionAttempts: 3,
+          forceNew: true,
+        })
 
-      newSocket.on('connect', () => {
-        // console.log('🔌 Realtime WebSocket connected'); // Removed for production
-        setIsConnected(true)
-        setConnectionError(null)
-        setReconnectAttempts(0)
-        // Authenticate with the server
-        newSocket.emit('authenticate', { userIdId: userId.id })
-      })
+        newSocket.on('connect', () => {
+          // console.log('🔌 Realtime WebSocket connected'); // Removed for production
+          setIsConnected(true)
+          setConnectionError(null)
+          setReconnectAttempts(0)
+          // Authenticate with the server
+          newSocket.emit('authenticate', { userId: userId })
+        })
 
-      newSocket.on('disconnect', () => {
-        // console.log('🔌 Realtime WebSocket disconnected'); // Removed for production
-        setIsConnected(false)
-      })
+        newSocket.on('disconnect', () => {
+          // console.log('🔌 Realtime WebSocket disconnected'); // Removed for production
+          setIsConnected(false)
+        })
 
-      newSocket.on('connect_error', (error) => {
-        logger.error('🔌 Realtime WebSocket connection error:', error);
-        setConnectionError(error.message)
-        setReconnectAttempts(prev => prev + 1)
-      })
+        newSocket.on('connect_error', (error) => {
+          logger.error('🔌 Realtime WebSocket connection error:', error);
+          setConnectionError(error.message)
+          setReconnectAttempts(prev => prev + 1)
+        })
 
-      setSocket(newSocket)
+        setSocket(newSocket)
 
-      return () => {
-        newSocket.disconnect()
+        return () => {
+          newSocket.disconnect()
+        }
+      } catch (error) {
+        logger.error('Failed to initialize WebSocket:', error);
       }
     } else {
       if (socket) {

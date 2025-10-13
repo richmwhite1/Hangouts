@@ -23,18 +23,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const typingTimeouts = useRef<{ [conversationId: string]: NodeJS.Timeout }>({})
   useEffect(() => {
-    if (isSignedIn && userId) {
-      const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
-        auth: {
-          userId: userId
-        },
-        transports: ['polling', 'websocket'],
-        timeout: 20000,
-        forceNew: true,
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5
-      })
+    // Disable WebSocket for now - no backend WebSocket server
+    if (false && isSignedIn && userId) {
+      try {
+        const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
+          auth: {
+            userId: userId
+          },
+          transports: ['polling', 'websocket'],
+          timeout: 20000,
+          forceNew: true,
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5
+        })
       newSocket.on('connect', () => {
         // console.log('🔌 WebSocket connected'); // Removed for production
         setIsConnected(true)
@@ -74,9 +76,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       newSocket.on('presence:offline', (data) => {
         setOnlineUsers(prev => prev.filter(id => id !== data.userIdId))
       })
-      setSocket(newSocket)
-      return () => {
-        newSocket.close()
+        setSocket(newSocket)
+        return () => {
+          newSocket.close()
+        }
+      } catch (error) {
+        logger.error('Failed to initialize WebSocket:', error);
       }
     } else {
       if (socket) {
