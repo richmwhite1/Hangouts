@@ -30,7 +30,7 @@ interface SimpleTaskManagerProps {
   isHost: boolean
 }
 export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: SimpleTaskManagerProps) {
-  const { getToken } = useAuth()
+  const { getToken, isSignedIn, isLoaded } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskText, setNewTaskText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -38,6 +38,12 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
 
   // Load tasks from API
   const fetchTasks = async () => {
+    // Don't fetch tasks if user is not authenticated
+    if (!isSignedIn || !isLoaded) {
+      setIsLoading(false)
+      return
+    }
+    
     try {
       setIsLoading(true)
       const token = await getToken()
@@ -61,7 +67,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
   }
   useEffect(() => {
     fetchTasks()
-  }, [hangoutId])
+  }, [hangoutId, isSignedIn, isLoaded])
   // Auto-expand when tasks are loaded and there are tasks
   useEffect(() => {
     if (tasks.length > 0) {
@@ -69,7 +75,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
     }
   }, [tasks])
   const addTask = async () => {
-    if (!newTaskText.trim()) return
+    if (!newTaskText.trim() || !isSignedIn) return
     try {
       setIsLoading(true)
       const token = await getToken()
@@ -97,6 +103,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
     }
   }
   const toggleTaskAssignment = async (taskId: string) => {
+    if (!isSignedIn) return
     try {
       const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/tasks/${taskId}/assign`, {
@@ -148,8 +155,8 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
       </div>
       {isExpanded && (
         <>
-          {/* Add new task - only for host/co-host */}
-          {isHost && (
+          {/* Add new task - only for host/co-host and authenticated users */}
+          {isHost && isSignedIn && (
             <div className="mb-3 mt-3">
               <div className="flex gap-2">
                 <input
@@ -210,15 +217,17 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  {/* Checkbox for assignment */}
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={task.assignedTo.some(user => user.id === currentUser.id)}
-                      onChange={() => toggleTaskAssignment(task.id)}
-                      className="w-3.5 h-3.5 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-1"
-                    />
-                  </div>
+                  {/* Checkbox for assignment - only for authenticated users */}
+                  {isSignedIn && (
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={task.assignedTo.some(user => user.id === currentUser.id)}
+                        onChange={() => toggleTaskAssignment(task.id)}
+                        className="w-3.5 h-3.5 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-1"
+                      />
+                    </div>
+                  )}
                   {/* Delete button - only for host/co-host */}
                   {isHost && (
                     <button

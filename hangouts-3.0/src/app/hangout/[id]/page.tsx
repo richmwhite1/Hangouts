@@ -105,20 +105,20 @@ interface Hangout {
 export default function HangoutDetailPage() {
   const params = useParams()
   const hangoutId = params?.id as string
-  const { userId, getToken } = useAuth()
+  const { userId, getToken, isSignedIn, isLoaded } = useAuth()
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
   console.log('Hangout detail page - Component initialized with hangoutId:', hangoutId)
   
-  // Fetch hangout data when component mounts
+  // Fetch hangout data when component mounts or authentication state changes
   useEffect(() => {
-    console.log('Hangout detail page - useEffect triggered, hangoutId:', hangoutId)
-    if (hangoutId) {
+    console.log('Hangout detail page - useEffect triggered, hangoutId:', hangoutId, 'isSignedIn:', isSignedIn, 'isLoaded:', isLoaded)
+    if (hangoutId && isLoaded) {
       fetchHangout()
     }
-  }, [hangoutId])
+  }, [hangoutId, isSignedIn, isLoaded])
   
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false)
   const [isVoting, setIsVoting] = useState(false)
@@ -547,6 +547,39 @@ export default function HangoutDetailPage() {
       </div>
     )
   }
+
+  // Show loading state
+  if (isLoading || !isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <p className="text-white">Loading hangout...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error || !hangout) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-4">
+          <div className="text-red-500 mb-4">
+            <X className="h-12 w-12 mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Hangout Not Found</h2>
+          <p className="text-gray-400 mb-6">
+            {error || 'This hangout may have been deleted or you may not have permission to view it.'}
+          </p>
+          <Button onClick={() => window.location.href = '/'} className="w-full">
+            Go Home
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const isCreator = userId === hangout.creatorId
   const isHost = isCreator || hangout.participants?.some(p => p.user.id === userId && p.role === 'CO_HOST')
