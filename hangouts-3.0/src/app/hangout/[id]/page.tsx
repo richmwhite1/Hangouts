@@ -1287,43 +1287,44 @@ function ParticipantStatusSection({
           Participants ({participants.length})
         </h3>
         {/* Action Buttons */}
-        <TileActions
-          itemId={hangout.id}
-          itemType="hangout"
-          itemTitle={hangout.title}
-          itemDescription={hangout.description || ''}
-          itemImage={hangout.image || ''}
-          privacyLevel={hangout.privacyLevel}
-          className="scale-75"
-        />
+        <div className="flex items-center gap-1">
+          {/* Discreet Action Icons */}
+          <div className="flex items-center gap-1">
+            {/* +People Icon - Only for hosts */}
+            {isHost && (
+              <button
+                onClick={onOpenInviteModal}
+                className="p-1.5 rounded-full hover:bg-gray-700/50 transition-colors group"
+                title="Invite friends"
+              >
+                <UserPlus className="w-4 h-4 text-gray-400 group-hover:text-blue-400" />
+              </button>
+            )}
+            
+            {/* Join Icon - Only for non-participants on public hangouts */}
+            {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
+              <button
+                onClick={onJoinHangout}
+                className="p-1.5 rounded-full hover:bg-gray-700/50 transition-colors group"
+                title="Join hangout"
+              >
+                <UserPlus className="w-4 h-4 text-gray-400 group-hover:text-green-400" />
+              </button>
+            )}
+          </div>
+          
+          <TileActions
+            itemId={hangout.id}
+            itemType="hangout"
+            itemTitle={hangout.title}
+            itemDescription={hangout.description || ''}
+            itemImage={hangout.image || ''}
+            privacyLevel={hangout.privacyLevel}
+            className="scale-75"
+          />
+        </div>
       </div>
 
-      {/* Action Buttons Row */}
-      <div className="flex items-center gap-3 mb-4">
-        {/* Add People Button - Only for hosts */}
-        {isHost && (
-          <Button
-            onClick={onOpenInviteModal}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 h-9 flex items-center gap-2 rounded-lg font-medium"
-          >
-            <UserPlus className="w-4 h-4" />
-            Add People
-          </Button>
-        )}
-        
-        {/* Join Button - Only for non-participants on public hangouts */}
-        {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
-          <Button
-            onClick={onJoinHangout}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 h-9 flex items-center gap-2 rounded-lg font-medium"
-          >
-            <UserPlus className="w-4 h-4" />
-            Join Hangout
-          </Button>
-        )}
-      </div>
       
       {/* Show empty state if no participants */}
       {participants.length === 0 ? (
