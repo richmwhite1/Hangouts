@@ -52,7 +52,7 @@ interface Hangout {
   createdAt?: string
 }
 export default function HomePage() {
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const router = useRouter()
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [loading, setLoading] = useState(true)
@@ -127,8 +127,10 @@ export default function HomePage() {
       try {
         setLoading(true)
         // Fetch user's personal feed (created + invited hangouts)
+        const token = await getToken()
         const headers: HeadersInit = {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         }
         const response = await fetch('/api/feed-simple?type=home&contentType=all', {
           headers
