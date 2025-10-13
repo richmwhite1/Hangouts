@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Clock, Users, Calendar, Lock, UserPlus, Share2, Link as LinkIcon, Heart } from 'lucide-react'
+import { MapPin, Clock, Users, Calendar, Lock, UserPlus, Share2, Link as LinkIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { sharingService } from '@/lib/services/sharing-service'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
@@ -64,7 +64,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setHangout(data.hangout)
+        setHangout(data.data)
       } else {
         if (response.status === 403) {
           setError('This hangout is not public')
