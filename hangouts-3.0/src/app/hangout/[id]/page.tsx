@@ -488,15 +488,7 @@ export default function HangoutDetailPage() {
       </div>
     )
   }
-  // Check for public access first before requiring authentication
-  if (! hangout && hangout.privacyLevel === 'PUBLIC') {
-    return (
-      <PublicHangoutViewer
-        hangoutId={hangoutId as string}
-        onSignInRequired={() => window.location.href = '/signin'}
-      />
-    )
-  }
+  // Show error first if hangout not found
   if (error || !hangout) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -507,6 +499,15 @@ export default function HangoutDetailPage() {
           </p>
         </div>
       </div>
+    )
+  }
+  // Check for public access for non-authenticated users
+  if (!userId && hangout.privacyLevel === 'PUBLIC') {
+    return (
+      <PublicHangoutViewer
+        hangoutId={hangoutId as string}
+        onSignInRequired={() => window.location.href = '/signin'}
+      />
     )
   }
   // Show sign-in prompt for non-authenticated users with private hangouts
