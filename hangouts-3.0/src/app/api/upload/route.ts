@@ -4,8 +4,11 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import sharp from 'sharp'
 import { filterPhotoContent } from '@/lib/content-filter'
 import { uploadImage } from '@/lib/cloudinary'
+import { PrismaClient } from '@prisma/client'
 
 import { logger } from '@/lib/logger'
+
+const db = new PrismaClient()
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
@@ -23,9 +26,6 @@ export async function POST(request: NextRequest) {
     if (!user) {
       console.log('Upload API - No database user, creating user in database...')
       try {
-        const { PrismaClient } = await import('@prisma/client')
-        const db = new PrismaClient()
-        
         user = await db.user.create({
           data: {
             id: clerkUserId,
@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
           }
         })
         console.log('Upload API - User created successfully:', user.id)
-        await db.$disconnect()
       } catch (dbError: any) {
         console.error('Upload API - Error creating user:', dbError.message)
         return NextResponse.json(
@@ -266,5 +265,7 @@ export async function POST(request: NextRequest) {
       { error: 'Upload failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
+  } finally {
+    await db.$disconnect()
   }
 }
