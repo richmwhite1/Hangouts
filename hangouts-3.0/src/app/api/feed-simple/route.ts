@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         logger.info('No user ID, returning public content')
         const publicContent = await db.content.findMany({
           where: {
-            status: 'ACTIVE',
+            status: 'PUBLISHED',
             privacyLevel: 'PUBLIC',
             type: 'HANGOUT'
           },
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
         const total = await db.content.count({
           where: {
-            status: 'ACTIVE',
+            status: 'PUBLISHED',
             privacyLevel: 'PUBLIC',
             type: 'HANGOUT'
           }
