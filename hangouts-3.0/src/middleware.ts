@@ -75,7 +75,8 @@ export default clerkMiddleware(async (auth, req) => {
   // TODO: Fix authentication properly
   if (isProtectedRoute(req) && !isPublicRoute(req) && !userId && 
       !req.nextUrl.pathname.startsWith('/create') && 
-      !req.nextUrl.pathname.startsWith('/friends')) {
+      !req.nextUrl.pathname.startsWith('/friends') &&
+      !req.nextUrl.pathname.startsWith('/api/')) {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Middleware] Redirecting ${req.nextUrl.pathname} to /signin - no userId`)
     }
