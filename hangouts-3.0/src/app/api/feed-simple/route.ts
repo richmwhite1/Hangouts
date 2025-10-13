@@ -1,32 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
-import { db } from '@/lib/db'
-
+import { getOptimizedFeed } from '@/lib/database-optimization'
+import { apiCache, cacheKeys } from '@/lib/api-cache'
+import { checkRateLimit, rateLimitConfigs } from '@/lib/enhanced-rate-limit'
 import { logger } from '@/lib/logger'
+
 export async function GET(request: NextRequest) {
+  // Check rate limit first
+  const rateLimitResult = checkRateLimit(request, rateLimitConfigs.feed)
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!
+  }
+
   const { searchParams } = new URL(request.url)
   const feedType = searchParams.get('type') || 'home'
   const contentType = searchParams.get('contentType') || 'all'
   const limit = parseInt(searchParams.get('limit') || '20')
   const offset = parseInt(searchParams.get('offset') || '0')
 
-  // Get user ID for friend context (optional for discover page)
+  // Get authenticated user
   let userId: string | null = null
-
-  // Try Clerk authentication
-  const { userId: clerkUserId } = await auth()
-  if (clerkUserId) {
-    const clerkUser = await getClerkApiUser()
-    if (clerkUser) {
-      userId = clerkUser.id
-      // console.log('Simple Feed API: Using Clerk user ID:', userId); // Removed for production
+  try {
+    const { userId: clerkUserId } = await auth()
+    if (clerkUserId) {
+      const clerkUser = await getClerkApiUser()
+      if (clerkUser) {
+        userId = clerkUser.id
+      }
     }
+  } catch (error) {
+    logger.error('Auth error in feed:', error)
   }
   
   // For unauthenticated users, return empty feed
   if (!userId) {
-    // console.log('Simple Feed API: No authenticated user, returning empty feed'); // Removed for production
     return NextResponse.json({ 
       success: true,
       data: { 
@@ -37,172 +45,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // console.log('Simple Feed API: Starting request processing'); // Removed for production
-    // console.log('Simple Feed API: User ID:', userId); // Removed for production
-    // console.log('Simple Feed API: Feed type:', feedType); // Removed for production
-    // console.log('Simple Feed API: Content type:', contentType); // Removed for production
-
-    // Build where clause based on feed type
-    let whereClause: any = {
-      status: 'PUBLISHED'
+    // Check cache first
+    const cacheKey = cacheKeys.userFeed(userId, feedType, offset)
+    const cached = apiCache.get(cacheKey)
+    if (cached) {
+      return NextResponse.json({
+        success: true,
+        data: cached,
+        cached: true
+      })
     }
 
-    // Content type filter
-    if (contentType === 'hangouts') {
-      whereClause.type = 'HANGOUT'
-    } else if (contentType === 'events') {
-      whereClause.type = 'EVENT'
-    }
+    // Use optimized feed query
+    const { content, totalCount, hasMore } = await getOptimizedFeed(
+      userId,
+      feedType as 'home' | 'discover',
+      limit,
+      offset
+    )
 
-    // Privacy and access control
-    if (feedType === 'discover' || contentType === 'events') {
-      // DISCOVER PAGE & EVENTS PAGE: Show public content + friends' content
-      whereClause.OR = [
-        // Public content (everyone can see)
-        { privacyLevel: 'PUBLIC' },
-        // Friends-only content from user's friends (if authenticated)
-        ...(userId ? [{
-          AND: [
-            { privacyLevel: 'FRIENDS_ONLY' },
-            { creatorId: userId }
-          ]
-        }] : [])
-      ]
-    } else {
-      // HOME FEED: Show content user created, was invited to, or has saved/RSVP'd
-      if (userId) {
-        whereClause.OR = [
-          // User's own content (all privacy levels)
-          { creatorId: userId },
-          // Content where user is a participant (invited)
-          {
-            content_participants: {
-              some: { userId: userId }
-            }
-          },
-          // Content user has liked/saved
-          {
-            content_likes: {
-              some: { userId: userId }
-            }
-          },
-          // Content user has saved (events)
-          {
-            eventSaves: {
-              some: { userId: userId }
-            }
-          },
-          // Content user has RSVP'd to (for events)
-          {
-            rsvps: {
-              some: { 
-                userId: userId,
-                status: { in: ['YES', 'MAYBE'] }
-              }
-            }
-          }
-        ]
-        // console.log('Simple Feed API: Using OR filter for user:', userId); // Removed for production
-      } else {
-        // If no user, show nothing for home feed
-        whereClause.id = 'nonexistent'
-      }
-    }
-    
-    // For home feed, show user's content, invited content, and saved content
-    if (userId && feedType === 'home') {
-      whereClause = {
-        status: 'PUBLISHED',
-        OR: [
-          // User's own content (all types)
-          { creatorId: userId },
-          // Content where user is a participant (invited)
-          {
-            content_participants: {
-              some: { userId: userId }
-            }
-          },
-          // Content user has liked/saved
-          {
-            content_likes: {
-              some: { userId: userId }
-            }
-          },
-          // Content user has saved (events)
-          {
-            eventSaves: {
-              some: { userId: userId }
-            }
-          },
-          // Content user has RSVP'd to (for events)
-          {
-            rsvps: {
-              some: { 
-                userId: userId,
-                status: { in: ['YES', 'MAYBE'] }
-              }
-            }
-          }
-        ]
-      }
-      // console.log('Simple Feed API: Using comprehensive where clause for home feed'); // Removed for production
-    }
-
-    // console.log('Simple Feed API: Executing content query with whereClause:', JSON.stringify(whereClause, null, 2); // Removed for production)
-    
-    // Test the where clause step by step
-    // console.log('Simple Feed API: Testing where clause components...'); // Removed for production
-    // console.log('  - status:', whereClause.status); // Removed for production
-    // console.log('  - type:', whereClause.type); // Removed for production
-    // console.log('  - OR clause:', whereClause.OR ? whereClause.OR.length : 'none'); // Removed for production
-
-    // Simple query with minimal fields
-    const content = await db.content.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        description: true,
-        image: true,
-        location: true,
-        startTime: true,
-        endTime: true,
-        privacyLevel: true,
-        createdAt: true,
-        updatedAt: true,
-        creatorId: true,
-        // Creator info
-        users: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true
-          }
-        },
-        // Counts
-        _count: {
-          select: {
-            content_participants: true,
-            comments: true,
-            content_likes: true,
-            content_shares: true,
-            messages: true,
-            photos: true,
-            rsvps: true,
-            eventSaves: true
-          }
-        }
-      },
-      orderBy: feedType === 'home' ? { createdAt: 'desc' } : { startTime: 'asc' },
-      take: limit,
-      skip: offset})
-
-    // console.log('Simple Feed API: Raw content found:', content.length, 'items'); // Removed for production
-    // console.log('Simple Feed API: First content item:', content[0] ? { id: content[0].id, title: content[0].title } : 'None'); // Removed for production
-
-    // Simple transformation
+    // Transform content for frontend
     const transformedContent = content.map(item => ({
       id: item.id,
       type: item.type,
@@ -210,61 +72,43 @@ export async function GET(request: NextRequest) {
       description: item.description,
       image: item.image,
       location: item.location,
-      startTime: item.startTime?.toISOString(),
-      endTime: item.endTime?.toISOString(),
+      startTime: item.startTime,
+      endTime: item.endTime,
       privacyLevel: item.privacyLevel,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-      creator: item.users, // This should match what StackedHangoutTile expects
-      users: item.users, // Also include users field for compatibility
-      myRsvpStatus: 'PENDING',
-      participants: [],
-      _count: {
-        participants: item._count?.content_participants || 0,
-        comments: item._count?.comments || 0,
-        content_likes: item._count?.content_likes || 0,
-        content_shares: item._count?.content_shares || 0,
-        messages: item._count?.messages || 0,
-        photos: item._count?.photos || 0,
-        rsvps: item._count?.rsvps || 0,
-        eventSaves: item._count?.eventSaves || 0
-      },
-      counts: {
-        participants: item._count?.content_participants || 0,
-        comments: item._count?.comments || 0,
-        likes: item._count?.content_likes || 0,
-        shares: item._count?.content_shares || 0,
-        messages: item._count?.messages || 0,
-        photos: item._count?.photos || 0,
-        rsvps: item._count?.rsvps || 0,
-        saves: item._count?.eventSaves || 0
-      }
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      creator: item.users,
+      creatorId: item.creatorId,
+      counts: item._count
     }))
 
-    // console.log('Simple Feed API: Transformed content:', transformedContent.length, 'items'); // Removed for production
-
-    return NextResponse.json({ 
-      success: true,
-      data: { 
-        content: transformedContent,
-        pagination: {
-          limit,
-          offset,
-          total: transformedContent.length,
-          hasMore: transformedContent.length === limit
-        }
+    // Cache the response for 2 minutes
+    const responseData = {
+      content: transformedContent,
+      total: totalCount,
+      hasMore,
+      pagination: {
+        limit,
+        offset,
+        total: totalCount
       }
-    })
-  } catch (error) {
-    logger.error('Simple Feed API: Database error:', error);
-    if (error instanceof Error) {
-      logger.error('Simple Feed API: Error stack:', error.stack);
-      logger.error('Simple Feed API: Error message:', error.message);
     }
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Database error',
-      message: 'Failed to fetch feed content' 
-    }, { status: 500 })
+    apiCache.set(cacheKey, responseData, 2 * 60 * 1000)
+
+    return NextResponse.json({
+      success: true,
+      data: responseData
+    })
+
+  } catch (error) {
+    logger.error('Error fetching feed:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to fetch feed',
+        message: 'An error occurred while loading content'
+      },
+      { status: 500 }
+    )
   }
 }

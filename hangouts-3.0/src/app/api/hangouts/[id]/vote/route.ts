@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { checkAndFinalizeIfReady, calculateWinner } from '@/lib/hangout-flow'
+import { checkRateLimit, rateLimitConfigs } from '@/lib/enhanced-rate-limit'
 import { logger } from '@/lib/logger'
 const VoteSchema = z.object({
   optionId: z.string().min(1, 'Option ID is required'),
@@ -16,6 +17,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check rate limit first
+    const rateLimitResult = checkRateLimit(request, rateLimitConfigs.voting)
+    if (!rateLimitResult.allowed) {
+      return rateLimitResult.response!
+    }
+
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth()
     if (!clerkUserId) {

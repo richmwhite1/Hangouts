@@ -1,71 +1,49 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { apiCache } from '@/lib/api-cache'
+import { getHealthCheckData } from '@/lib/error-handling'
+import { config } from '@/lib/config-enhanced'
 
-import { logger } from '@/lib/logger'
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // console.log('🏥 Health check requested'); // Removed for production
+    const healthData = getHealthCheckData()
     
-    // Simple health check for Railway
-    const healthData = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      port: process.env.PORT || '8080',
-      version: process.version
+    // Add cache statistics
+    const cacheStats = apiCache.getStats()
+    
+    // Add configuration info
+    const configInfo = {
+      environment: config.app.environment,
+      features: config.features,
+      cache: {
+        enabled: config.cache.enabled,
+        maxSize: config.cache.maxSize
+      },
+      rateLimit: {
+        enabled: config.rateLimit.enabled
+      }
     }
-    
-    // console.log('✅ Health check response:', healthData); // Removed for production
-    
-    return NextResponse.json(healthData, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    })
-  } catch (error) {
-    logger.error('❌ Health check failed:', error);
-    
+
     return NextResponse.json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Access-Control-Allow-Origin': '*'
+      ...healthData,
+      cache: cacheStats,
+      config: configInfo,
+      optimizations: {
+        databaseOptimization: 'enabled',
+        apiCaching: 'enabled',
+        rateLimiting: 'enabled',
+        errorHandling: 'enabled',
+        configurationManagement: 'enabled'
       }
     })
+
+  } catch (error) {
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        error: 'Health check failed',
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    )
   }
 }
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    }
-  })
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-

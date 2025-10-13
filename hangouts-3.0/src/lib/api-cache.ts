@@ -5,6 +5,8 @@
  * and improve response times.
  */
 
+import config from './config-enhanced'
+
 interface CacheItem {
   data: any
   timestamp: number
@@ -13,13 +15,15 @@ interface CacheItem {
 
 class SimpleCache {
   private cache = new Map<string, CacheItem>()
-  private maxSize = 1000 // Maximum cache entries
+  private maxSize = config.cache.maxSize
 
   set(key: string, data: any, ttlMs: number = 5 * 60 * 1000) {
     // Remove oldest entries if cache is full
     if (this.cache.size >= this.maxSize) {
       const oldestKey = this.cache.keys().next().value
-      this.cache.delete(oldestKey)
+      if (oldestKey) {
+        this.cache.delete(oldestKey)
+      }
     }
 
     this.cache.set(key, {
@@ -90,8 +94,8 @@ export function withCache<T>(
   ttlMs: number = 5 * 60 * 1000
 ) {
   return function(
-    target: any,
-    propertyName: string,
+    _target: any,
+    _propertyName: string,
     descriptor: PropertyDescriptor
   ) {
     const method = descriptor.value

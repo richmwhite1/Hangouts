@@ -26,6 +26,10 @@ export async function getHangoutWithAllData(hangoutId: string) {
       createdAt: true,
       updatedAt: true,
       maxParticipants: true,
+      priceMin: true,
+      priceMax: true,
+      ticketUrl: true,
+      weatherEnabled: true,
       // Creator info (single query)
       users: {
         select: {
@@ -50,22 +54,8 @@ export async function getHangoutWithAllData(hangoutId: string) {
           }
         }
       },
-      // Polls with votes (single query)
-      polls: {
-        include: {
-          pollVotes: {
-            include: {
-              users: {
-                select: {
-                  id: true,
-                  username: true,
-                  name: true
-                }
-              }
-            }
-          }
-        }
-      },
+      // Polls (single query)
+      polls: true,
       // RSVPs (single query)
       rsvps: {
         include: {
@@ -102,22 +92,22 @@ export async function getOptimizedFeed(
   limit: number = 20,
   offset: number = 0
 ) {
-  const whereClause = {
+  const whereClause: any = {
     status: 'ACTIVE',
-    type: 'HANGOUT',
-    OR: feedType === 'home' ? [
+    type: 'HANGOUT'
+  }
+
+  if (feedType === 'home') {
+    whereClause.OR = [
       { creatorId: userId },
       {
-        AND: [
-          { privacyLevel: 'PUBLIC' },
-          {
-            content_participants: {
-              some: { userId }
-            }
-          }
-        ]
+        content_participants: {
+          some: { userId }
+        }
       }
-    ] : [
+    ]
+  } else {
+    whereClause.OR = [
       { privacyLevel: 'PUBLIC' },
       { creatorId: userId }
     ]
@@ -190,19 +180,19 @@ export async function getVotingData(hangoutId: string) {
   if (!poll) return null
 
   // Calculate vote counts efficiently
-  const voteCounts = poll.pollVotes.reduce((acc, vote) => {
+  const voteCounts: Record<string, { count: number; voters: any[] }> = {}
+  poll.pollVotes.forEach(vote => {
     const optionId = vote.optionId
-    if (!acc[optionId]) {
-      acc[optionId] = { count: 0, voters: [] }
+    if (!voteCounts[optionId]) {
+      voteCounts[optionId] = { count: 0, voters: [] }
     }
-    acc[optionId].count++
-    acc[optionId].voters.push({
+    voteCounts[optionId].count++
+    voteCounts[optionId].voters.push({
       id: vote.users.id,
       username: vote.users.username,
       name: vote.users.name
     })
-    return acc
-  }, {} as Record<string, { count: number; voters: any[] }>)
+  })
 
   return {
     poll,
@@ -218,7 +208,7 @@ export async function getVotingData(hangoutId: string) {
 export async function getBatchUserData(userIds: string[]) {
   if (userIds.length === 0) return []
   
-  return await db.users.findMany({
+  return await db.user.findMany({
     where: {
       id: { in: userIds }
     },
