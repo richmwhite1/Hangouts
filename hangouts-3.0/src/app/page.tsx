@@ -124,6 +124,14 @@ export default function HomePage() {
         setLoading(true)
         return
       }
+      
+      // Don't fetch if user is not signed in
+      if (!isSignedIn) {
+        setLoading(false)
+        setHangouts([])
+        return
+      }
+      
       try {
         setLoading(true)
         // Fetch user's personal feed (created + invited hangouts)
@@ -152,7 +160,7 @@ export default function HomePage() {
       }
     }
     fetchHangouts()
-  }, [isLoaded])
+  }, [isLoaded, isSignedIn])
   // Show guest landing for non-authenticated users
   if (!isSignedIn) {
     return (
