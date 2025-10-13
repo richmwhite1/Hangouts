@@ -2,23 +2,30 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { db } from './db'
 
 export async function getClerkApiUser() {
-  const { userId } = await auth()
-  if (!userId) return null
-  
-  const user = await db.user.findUnique({
-    where: { clerkId: userId },
-    select: { 
-      id: true, 
-      email: true, 
-      username: true, 
-      name: true, 
-      role: true,
-      avatar: true,
-      isActive: true
-    }
-  })
-  
-  return user
+  try {
+    const { userId } = await auth()
+    console.log('getClerkApiUser - Clerk userId:', userId)
+    if (!userId) return null
+    
+    const user = await db.user.findUnique({
+      where: { clerkId: userId },
+      select: { 
+        id: true, 
+        email: true, 
+        username: true, 
+        name: true, 
+        role: true,
+        avatar: true,
+        isActive: true
+      }
+    })
+    
+    console.log('getClerkApiUser - Database user found:', user ? 'YES' : 'NO')
+    return user
+  } catch (error) {
+    console.error('getClerkApiUser - Error:', error)
+    return null
+  }
 }
 
 export async function getClerkUserData() {
