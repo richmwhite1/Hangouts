@@ -897,6 +897,7 @@ export default function HangoutDetailPage() {
           onRemoveUser={handleRemoveUser}
           onShare={handleShare}
           onCopyLink={handleCopyLink}
+          onJoinHangout={handleJoinHangout}
         />
         {/* Chat Section - Always show */}
         <ChatSection
@@ -1257,14 +1258,16 @@ function ParticipantStatusSection({
   onOpenInviteModal,
   onRemoveUser,
   onShare,
-  onCopyLink
+  onCopyLink,
+  onJoinHangout
 }: {
   hangout: Hangout,
   currentUser: any,
   onOpenInviteModal: () => void,
   onRemoveUser: (participantId: string) => void,
   onShare: () => void,
-  onCopyLink: () => void
+  onCopyLink: () => void,
+  onJoinHangout: () => void
 }) {
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const participants = hangout.participants || []
@@ -1294,7 +1297,7 @@ function ParticipantStatusSection({
           {/* Join Button for non-participants on public hangouts */}
           {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
             <Button
-              onClick={handleJoinHangout}
+              onClick={onJoinHangout}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
             >
