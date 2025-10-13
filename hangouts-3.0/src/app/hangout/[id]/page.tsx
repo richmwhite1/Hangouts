@@ -4,14 +4,13 @@ import { useParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { HANGOUT_STATES, getVoteCount, checkMandatoryRSVP } from '@/lib/hangout-flow'
-import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
+import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, X, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
-import { InviteModal } from '@/components/hangout/InviteModal'
 import { logger } from '@/lib/logger'
 interface Hangout {
   id: string
@@ -115,11 +114,9 @@ export default function HangoutDetailPage() {
   const [isChatExpanded, setIsChatExpanded] = useState(true)
   const [, setSelectedOption] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [friends, setFriends] = useState<any[]>([])
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
-  const [isInviting, setIsInviting] = useState(false)
 
   // Load friends for invitation
   const loadFriends = async () => {
@@ -473,11 +470,19 @@ export default function HangoutDetailPage() {
       window.open(appleUrl, '_blank')
     }
   }
+  // Add periodic refresh for voting data (every 30 seconds)
   useEffect(() => {
-    if (hangoutId) {
-      fetchHangout()
-    }
-  }, [hangoutId])
+    if (!hangout || !hangout.requiresVoting) return
+
+    const interval = setInterval(() => {
+      // Only refresh if we're in voting phase and not currently voting
+      if (hangout.state === 'polling' && !isVoting) {
+        fetchHangout()
+      }
+    }, 30000) // Refresh every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [hangout, isVoting])
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -1002,12 +1007,24 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
     <div className="p-4">
       {/* Voting Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-2">Vote for Your Options</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-white">Vote for Your Options</h2>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded border border-gray-600 hover:border-gray-400 transition-colors"
+            title="Refresh voting data"
+          >
+            🔄 Refresh
+          </button>
+        </div>
         <p className="text-gray-400 text-sm">
           {votedCount} of {totalParticipants} friends have voted
         </p>
         <p className="text-gray-400 text-xs mt-1">
           You can vote for multiple options and mark one as preferred
+        </p>
+        <p className="text-gray-500 text-xs mt-1">
+          💡 Data refreshes automatically every 30 seconds
         </p>
       </div>
       {/* Voting Options */}
