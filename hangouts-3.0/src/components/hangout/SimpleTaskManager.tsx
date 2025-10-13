@@ -36,6 +36,15 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
+  // Debug logging for task manager
+  console.log('🔍 Task Manager Debug:', {
+    hangoutId,
+    currentUser,
+    isHost,
+    isSignedIn,
+    isLoaded
+  })
+
   // Load tasks from API
   const fetchTasks = async () => {
     // Don't fetch tasks if user is not authenticated

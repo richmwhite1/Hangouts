@@ -601,6 +601,16 @@ export default function HangoutDetailPage() {
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const isCreator = userId === hangout.creatorId
   const isHost = isCreator || hangout.participants?.some(p => p.user.id === userId && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
+  
+  // Debug logging for host recognition
+  console.log('🔍 Host Recognition Debug:', {
+    userId,
+    hangoutCreatorId: hangout.creatorId,
+    isCreator,
+    participants: hangout.participants,
+    isHost,
+    currentState
+  })
   const userRSVP = hangout.rsvps?.find(r => r.user.id === userId)?.status || 'PENDING'
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
@@ -674,6 +684,167 @@ export default function HangoutDetailPage() {
             isVoting={isVoting}
           />
         )}
+        {/* Plan Details Section - Always show for all hangouts */}
+        {hangout && (
+          <div className="p-4">
+            {/* Plan Details Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <div className={`w-2 h-2 rounded-full ${currentState === HANGOUT_STATES.CONFIRMED ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                <span>{currentState === HANGOUT_STATES.CONFIRMED ? 'Plan Confirmed' : 'Plan Details'}</span>
+              </div>
+              {/* Edit button for hosts/co-hosts */}
+              {(hangout.creatorId === userId || hangout.participants?.some(p =>
+                p.user.id === userId &&
+                (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
+              )) && (
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+                  title="Edit plan details"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 space-y-3">
+              {/* Show finalized option if confirmed, otherwise show basic hangout details */}
+              {currentState === HANGOUT_STATES.CONFIRMED && hangout.finalizedOption ? (
+                <>
+                  {/* Finalized Option Text */}
+                  {(hangout.finalizedOption.optionText || hangout.finalizedOption.title) && (
+                <div>
+                  <h3 className="text-lg font-medium text-white mb-2">{hangout.finalizedOption.optionText || hangout.finalizedOption.title}</h3>
+                  {(hangout.finalizedOption.optionDescription || hangout.finalizedOption.description) && (
+                    <p className="text-gray-300 text-sm">{hangout.finalizedOption.optionDescription || hangout.finalizedOption.description}</p>
+                  )}
+                </div>
+              )}
+              {/* Option-specific Date & Time */}
+              {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-300 text-sm">
+                    {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'EEEE, MMMM d, yyyy')}
+                  </span>
+                </div>
+              )}
+              {/* Option-specific Time */}
+              {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-300 text-sm">
+                    {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'h:mm a')}
+                  </span>
+                </div>
+              )}
+              {/* Option-specific Location with Map Icon */}
+              {(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location) && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-300 text-sm flex-1">{hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location}</span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 p-1 rounded"
+                    title="Open in Google Maps"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+              {/* Option-specific Price */}
+              {((hangout.finalizedOption.metadata?.price !== undefined && hangout.finalizedOption.metadata.price > 0) || (hangout.finalizedOption.price !== undefined && hangout.finalizedOption.price > 0)) && (
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-300 text-sm">
+                    ${(hangout.finalizedOption.metadata?.price || hangout.finalizedOption.price).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {/* Option-specific Event Image */}
+              {hangout.finalizedOption.metadata?.eventImage && (
+                <div className="mt-3">
+                  <img
+                    src={hangout.finalizedOption.metadata.eventImage}
+                    alt={hangout.finalizedOption.optionText || 'Plan option'}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+              {/* Option-specific Hangout URL */}
+              {hangout.finalizedOption.metadata?.hangoutUrl && (
+                <div className="mt-3">
+                  <a
+                    href={hangout.finalizedOption.metadata.hangoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                  >
+                    🔗 Open Hangout Link
+                  </a>
+                </div>
+              )}
+              {/* Consensus Info for voted options */}
+              {hangout.finalizedOption.consensusLevel && (
+                <div className="mt-3 p-2 bg-green-900/20 border border-green-700/30 rounded-lg">
+                  <p className="text-green-400 text-xs">
+                    Consensus reached: {hangout.finalizedOption.consensusLevel.toFixed(1)}%
+                    ({hangout.finalizedOption.totalVotes} votes)
+                  </p>
+                </div>
+              )}
+                </>
+              ) : (
+                <>
+                  {/* Show basic hangout details for polling state */}
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">{hangout.title}</h3>
+                    {hangout.description && (
+                      <p className="text-gray-300 text-sm">{hangout.description}</p>
+                    )}
+                  </div>
+                  {/* Basic Date & Time */}
+                  {hangout.startTime && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm">
+                        {format(new Date(hangout.startTime), 'EEEE, MMMM d, yyyy')}
+                      </span>
+                    </div>
+                  )}
+                  {/* Basic Time */}
+                  {hangout.startTime && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm">
+                        {format(new Date(hangout.startTime), 'h:mm a')}
+                      </span>
+                    </div>
+                  )}
+                  {/* Basic Location */}
+                  {hangout.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm flex-1">{hangout.location}</span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 p-1 rounded"
+                        title="Open in Google Maps"
+                      >
+                        <MapPin className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Stage 2: Confirmed Plan Interface - Show after decision made */}
         {(currentState === HANGOUT_STATES.CONFIRMED || currentState === HANGOUT_STATES.COMPLETED) && (
           <>
@@ -695,7 +866,6 @@ export default function HangoutDetailPage() {
                 </div>
               </div>
             )}
-            {/* Plan Details Section - Show complete plan information */}
             {hangout && (
               <div className="p-4">
                 {/* Plan Details Header */}
