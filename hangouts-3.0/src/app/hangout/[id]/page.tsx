@@ -139,7 +139,7 @@ export default function HangoutDetailPage() {
 
 
   const handleRemoveUser = async (participantId: string) => {
-    if (! !hangoutId) return
+    if (!hangoutId) return
     try {
       const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/participants/${participantId}`, {
@@ -243,44 +243,56 @@ export default function HangoutDetailPage() {
   const fetchHangout = async () => {
     if (!hangoutId) return
     try {
+      console.log('Hangout detail - Starting fetch for:', hangoutId)
       const token = await getToken()
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+      console.log('Hangout detail - Headers:', headers)
       const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
+      console.log('Hangout detail - Response status:', response.status)
       if (!response.ok) throw new Error('Failed to fetch hangout')
       const data = await response.json()
       console.log('Hangout detail - API response:', data)
       console.log('Hangout detail - Setting hangout to:', data.data || data)
       setHangout(data.data || data)
+      console.log('Hangout detail - Hangout set successfully')
       // Check if hangout is saved (only for authenticated users)
       if (token) {
         await checkSaveStatus()
       }
     } catch (error) {
+      console.error('Hangout detail - Error fetching hangout:', error);
       logger.error('Error fetching hangout:', error);
       setError('Failed to load hangout')
     } finally {
+      console.log('Hangout detail - Setting loading to false')
       setIsLoading(false)
     }
   }
   const checkSaveStatus = async () => {
-    if (! !hangoutId) return
+    if (!hangoutId) return
     try {
+      console.log('Hangout detail - Checking save status for:', hangoutId)
       const token = await getToken()
       const response = await fetch(`/api/content/${hangoutId}/save`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
+      console.log('Hangout detail - Save status response:', response.status)
       if (response.ok) {
         const data = await response.json()
+        console.log('Hangout detail - Save status data:', data)
         setIsSaved(data.data?.saved || false)
+      } else {
+        console.log('Hangout detail - Save status failed, ignoring')
       }
     } catch (error) {
+      console.log('Hangout detail - Save status error, ignoring:', error)
       logger.error('Error checking save status:', error);
     }
   }
   const handleSave = async () => {
-    if (! !hangoutId) return
+    if (!hangoutId) return
     try {
       setIsSaving(true)
       const action = isSaved ? 'unsave' : 'save'
