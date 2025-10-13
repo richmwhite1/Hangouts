@@ -21,18 +21,36 @@ export async function POST(request: NextRequest) {
     console.log('Upload API - Database user:', user?.id)
     
     if (!user) {
-      console.log('Upload API - No database user, creating fallback user')
-      // Create a minimal user object as fallback
-      user = {
-        id: clerkUserId,
-        email: 'temp@example.com',
-        username: 'temp_user',
-        name: 'Temp User',
-        role: 'USER' as const,
-        avatar: null,
-        isActive: true
+      console.log('Upload API - No database user, creating user in database...')
+      try {
+        const { PrismaClient } = await import('@prisma/client')
+        const db = new PrismaClient()
+        
+        user = await db.user.create({
+          data: {
+            id: clerkUserId,
+            clerkId: clerkUserId,
+            email: `${clerkUserId}@clerk.temp`,
+            username: `user_${clerkUserId.substring(0, 8)}`,
+            name: 'New User',
+            role: 'USER',
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        })
+        console.log('Upload API - User created successfully:', user.id)
+        await db.$disconnect()
+      } catch (dbError: any) {
+        console.error('Upload API - Error creating user:', dbError.message)
+        return NextResponse.json(
+          { 
+            error: 'Failed to create user',
+            message: dbError.message
+          },
+          { status: 500 }
+        )
       }
-      console.log('Upload API - Using fallback user:', user.id)
     }
 
     const formData = await request.formData()
