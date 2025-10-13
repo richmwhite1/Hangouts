@@ -34,6 +34,20 @@ interface HangoutData {
   counts: {
     content_participants: number
   }
+  participants?: Array<{
+    id: string
+    userId: string
+    role: string
+    joinedAt: string
+    rsvpStatus: string
+    canEdit: boolean
+    user: {
+      id: string
+      username: string
+      name: string
+      avatar?: string
+    }
+  }>
   state: string
   finalizedOption?: any
   requiresVoting: boolean
@@ -215,12 +229,48 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
 
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-purple-400" />
-              <p>{hangout.counts?.content_participants || 0} people going</p>
+              <div className="flex items-center gap-2">
+                <p>{hangout.counts?.content_participants || 0} people going</p>
+                {/* Show participant avatars */}
+                {hangout.participants && hangout.participants.length > 0 && (
+                  <div className="flex -space-x-2">
+                    {hangout.participants.slice(0, 5).map((participant: any) => (
+                      <img
+                        key={participant.userId}
+                        src={participant.user.avatar || '/placeholder-avatar.png'}
+                        alt={participant.user.name}
+                        className="w-6 h-6 rounded-full border-2 border-gray-800 object-cover"
+                        title={participant.user.name}
+                      />
+                    ))}
+                    {hangout.participants.length > 5 && (
+                      <div className="w-6 h-6 rounded-full border-2 border-gray-800 bg-gray-700 flex items-center justify-center">
+                        <span className="text-xs text-gray-300">+{hangout.participants.length - 5}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
               <UserPlus className="h-5 w-5 text-orange-400" />
               <p>Created by {hangout.creator.name}</p>
+            </div>
+            
+            {/* Calendar Buttons for All Hangouts */}
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-gray-300 text-sm mb-3">Add to your calendar:</p>
+              <CalendarButtons
+                event={{
+                  title: hangout.title,
+                  description: hangout.description || '',
+                  location: hangout.location || '',
+                  startTime: hangout.startTime,
+                  endTime: hangout.endTime,
+                  url: typeof window !== 'undefined' ? window.location.href : ''
+                }}
+              />
             </div>
           </CardContent>
         </Card>
