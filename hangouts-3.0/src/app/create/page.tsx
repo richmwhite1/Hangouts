@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger'
 
 export default function CreateHangoutPage() {
   const router = useRouter()
-  const { isSignedIn, isLoaded, user } = useAuth()
+  const { isSignedIn, isLoaded, user, getToken } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -78,8 +78,12 @@ export default function CreateHangoutPage() {
           const uploadFormData = new FormData()
           uploadFormData.append('file', formData.image)
           uploadFormData.append('type', 'hangout')
+          const token = await getToken()
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
+            headers: {
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            },
             body: uploadFormData
           })
           if (uploadResponse.ok) {
@@ -118,9 +122,13 @@ export default function CreateHangoutPage() {
           }))
       }
       // console.log('Creating hangout with data:', hangoutData); // Removed for production
+      const token = await getToken()
       const response = await fetch('/api/hangouts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         body: JSON.stringify(hangoutData)})
       const responseData = await response.json()
       if (responseData.success) {

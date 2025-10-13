@@ -1,4 +1,6 @@
-import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-handler'
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createHangoutFlow } from '@/lib/hangout-flow'
@@ -275,12 +277,239 @@ async function createHangoutHandler(request: AuthenticatedRequest, validatedData
 }
 
 // Export handlers with middleware
-export const GET = createApiHandler(getHangoutsHandler, {
-  requireAuth: true,
-  enableCORS: true
-})
+export async function GET(request: NextRequest) {
+  try {
+    // Verify authentication using Clerk
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
 
-export const POST = createApiHandler(createHangoutHandler, {
-  requireAuth: true,
-  enableCORS: true
-})
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+    }
+
+    const userId = user.id
+    const { searchParams } = new URL(request.url)
+    const discover = searchParams.get('discover') === 'true'
+
+    // Build where clause based on feed type
+    let whereClause: any
+    if (discover) {
+      // DISCOVER LOGIC: Show all public hangouts
+      whereClause = {
+        privacyLevel: 'PUBLIC' as const
+      }
+    } else {
+      // HOME FEED LOGIC: Only show hangouts user created or was invited to
+      whereClause = {
+        OR: [
+          // User's own hangouts (all privacy levels)
+          { creatorId: userId },
+          // Private hangouts where user is a participant (invited)
+          {
+            AND: [
+              { privacyLevel: 'PRIVATE' as const },
+              {
+                content_participants: {
+                  some: { userId: userId }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+    const hangouts = await db.content.findMany({
+      where: {
+        type: 'HANGOUT',
+        ...whereClause
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        startTime: true,
+        endTime: true,
+        privacyLevel: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true,
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
+            lastSeen: true,
+            isActive: true
+          }
+        },
+        _count: {
+          select: {
+            content_participants: true,
+            comments: true,
+            messages: true,
+            photos: true,
+            rsvps: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 20
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: hangouts
+    })
+
+  } catch (error) {
+    logger.error('Error in GET /api/hangouts:', error)
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        message: 'Failed to fetch hangouts'
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Verify authentication using Clerk
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+    }
+
+    const userId = user.id
+    const data = await request.json()
+
+    // Validate the request data
+    const validatedData = createHangoutSchema.parse(data)
+
+    // For the new flow, get start/end times from the first option or use defaults
+    let startTime: Date
+    let endTime: Date
+    
+    if (validatedData.options && validatedData.options.length > 0) {
+      // Use the first option's dateTime as start time
+      const firstOption = validatedData.options[0]
+      startTime = new Date(firstOption.dateTime || new Date())
+      // End time is 3 hours after start time
+      endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
+    } else {
+      // Default times if no options
+      startTime = new Date()
+      endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
+    }
+
+    // Create hangout using the flow
+    const flowResult = await createHangoutFlow({
+      title: validatedData.title,
+      description: validatedData.description || '',
+      location: validatedData.location || null,
+      latitude: validatedData.latitude || null,
+      longitude: validatedData.longitude || null,
+      startTime,
+      endTime,
+      privacyLevel: validatedData.privacyLevel || 'PUBLIC',
+      weatherEnabled: validatedData.weatherEnabled ?? false,
+      image: validatedData.image || null,
+      creatorId: userId,
+      maxParticipants: validatedData.maxParticipants || null,
+      participants: validatedData.participants || [],
+      mandatoryParticipants: validatedData.mandatoryParticipants || [],
+      coHosts: validatedData.coHosts || []
+    })
+
+    if (!flowResult.success) {
+      return NextResponse.json({ 
+        error: 'Failed to create hangout', 
+        details: flowResult.error 
+      }, { status: 500 })
+    }
+
+    const hangout = flowResult.data
+    const flowData = flowResult.flowData
+
+    // Create poll for all hangouts with options (both quick_plan and multi_option)
+    if (flowData.options.length > 0) {
+      try {
+        const pollData = {
+          id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          contentId: hangout?.id || '',
+          creatorId: userId,
+          title: validatedData.title,
+          description: validatedData.description || '',
+          options: flowData.options,
+          allowMultiple: validatedData.type === 'multi_option',
+          isAnonymous: false,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+          consensusPercentage: validatedData.consensusPercentage || 70,
+          minimumParticipants: Math.max(2, validatedData.participants?.length || 2),
+          consensusType: 'percentage',
+          status: 'ACTIVE',
+          allowDelegation: false,
+          allowAbstention: true,
+          allowAddOptions: true,
+          isPublic: validatedData.privacyLevel === 'PUBLIC',
+          visibility: validatedData.privacyLevel === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'
+        }
+
+        await db.polls.create({
+          data: pollData
+        })
+
+        logger.info('Poll created successfully for hangout:', hangout?.id)
+      } catch (pollError) {
+        logger.error('Error creating poll:', pollError)
+        // Don't fail the entire request if poll creation fails
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: hangout?.id,
+        title: hangout?.title,
+        description: hangout?.description,
+        location: hangout?.location,
+        startTime: hangout?.startTime,
+        endTime: hangout?.endTime,
+        privacyLevel: hangout?.privacyLevel,
+        image: hangout?.image,
+        creatorId: hangout?.creatorId,
+        createdAt: hangout?.createdAt,
+        updatedAt: hangout?.updatedAt,
+        requiresVoting: flowResult.requiresVoting,
+        options: flowData.options,
+        participants: flowData.participants
+      }
+    })
+
+  } catch (error) {
+    logger.error('Error in POST /api/hangouts:', error)
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        message: 'Failed to create hangout'
+      },
+      { status: 500 }
+    )
+  }
+}
