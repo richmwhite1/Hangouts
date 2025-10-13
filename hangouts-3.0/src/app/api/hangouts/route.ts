@@ -9,8 +9,8 @@ import { TransactionQueries } from '@/lib/db-queries'
 import { logger } from '@/lib/logger'
 const createHangoutSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
-  description: z.string().max(500, 'Description too long').optional(),
-  location: z.string().max(200, 'Location too long').optional(),
+  description: z.string().max(500, 'Description too long').nullable().optional(),
+  location: z.string().max(200, 'Location too long').nullable().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   startTime: z.string().datetime('Invalid start time').optional(),
@@ -18,7 +18,7 @@ const createHangoutSchema = z.object({
   privacyLevel: z.enum(['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC']).default('PUBLIC'),
   maxParticipants: z.number().min(2, 'Must allow at least 2 participants').max(100, 'Too many participants').optional(),
   weatherEnabled: z.boolean().default(false),
-  image: z.string().optional(),
+  image: z.string().nullable().optional(),
   participants: z.array(z.string()).optional(), // Array of user IDs to invite
   mandatoryParticipants: z.array(z.string()).optional(), // Array of mandatory user IDs
   coHosts: z.array(z.string()).optional(), // Array of co-host user IDs
