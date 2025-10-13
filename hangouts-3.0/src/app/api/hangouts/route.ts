@@ -434,7 +434,17 @@ export async function POST(request: NextRequest) {
     console.log('Hangouts API - Using userId:', userId)
     
     const data = await request.json()
-    console.log('Hangouts API - Request data received:', { title: data.title, type: data.type })
+    console.log('Hangouts API - Request data received:', { 
+      title: data.title, 
+      type: data.type,
+      hasOptions: !!data.options,
+      optionsCount: data.options?.length || 0,
+      hasParticipants: !!data.participants,
+      participantsCount: data.participants?.length || 0,
+      privacyLevel: data.privacyLevel,
+      hasImage: !!data.image
+    })
+    console.log('Hangouts API - Full request data:', JSON.stringify(data, null, 2))
 
     // Validate the request data
     console.log('Hangouts API - Validating data...')
