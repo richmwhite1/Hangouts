@@ -466,18 +466,25 @@ export default function HangoutDetailPage() {
       setIsUpdatingRSVP(false)
     }
   }
-  const addToCalendar = (type: 'google' | 'apple') => {
+  const addToCalendar = (type: 'google' | 'apple' | 'outlook') => {
     if (!hangout) return
     const startTime = new Date(hangout.startTime)
     const endTime = new Date(hangout.endTime)
     const formatDate = (date: Date) => {
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
     }
+    const formatOutlookDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    }
     const start = formatDate(startTime)
     const end = formatDate(endTime)
+    const outlookStart = formatOutlookDate(startTime)
+    const outlookEnd = formatOutlookDate(endTime)
     const title = encodeURIComponent(hangout.title)
     const description = encodeURIComponent(hangout.description || '')
     const location = encodeURIComponent(hangout.location || '')
+    const url = encodeURIComponent(window.location.href)
+    
     if (type === 'google') {
       const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${description}&location=${location}`
       window.open(googleUrl, '_blank')
@@ -485,6 +492,10 @@ export default function HangoutDetailPage() {
       // Apple Calendar uses a different format
       const appleUrl = `webcal://calendar.google.com/calendar/event?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${description}&location=${location}`
       window.open(appleUrl, '_blank')
+    } else if (type === 'outlook') {
+      // Outlook Calendar URL format
+      const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&body=${description}&location=${location}&startdt=${outlookStart}&enddt=${outlookEnd}&url=${url}`
+      window.open(outlookUrl, '_blank')
     }
   }
   // Add periodic refresh for voting data (every 30 seconds)
@@ -896,6 +907,13 @@ export default function HangoutDetailPage() {
                 >
                   <span className="text-xs">📅</span>
                   <span className="text-xs">Apple</span>
+                </button>
+                <button
+                  onClick={() => addToCalendar('outlook')}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <span className="text-xs">📅</span>
+                  <span className="text-xs">Outlook</span>
                 </button>
               </div>
             </div>

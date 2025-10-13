@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Calendar, Download, ExternalLink, Mail } from 'lucide-react'
-import { calendarService, CalendarEvent } from '@/lib/services/calendar-service'
+import { Download, ExternalLink, Mail } from 'lucide-react'
+import { CalendarService, CalendarEvent } from '@/lib/services/calendar-service'
 import { toast } from 'sonner'
 
 import { logger } from '@/lib/logger'
@@ -18,7 +18,7 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
   const handleGoogleCalendar = async () => {
     try {
       setIsLoading(true)
-      await calendarService.addToGoogleCalendar(event)
+      await CalendarService.addToGoogleCalendar(event)
       toast.success('Opening Google Calendar...')
     } catch (error) {
       logger.error('Error adding to Google Calendar:', error);
@@ -31,7 +31,7 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
   const handleAppleCalendar = async () => {
     try {
       setIsLoading(true)
-      await calendarService.addToAppleCalendar(event)
+      await CalendarService.addToAppleCalendar(event)
       toast.success('Calendar event downloaded')
     } catch (error) {
       logger.error('Error adding to Apple Calendar:', error);
@@ -41,7 +41,20 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
     }
   }
 
-  if (!calendarService.isCalendarSupported()) {
+  const handleOutlookCalendar = async () => {
+    try {
+      setIsLoading(true)
+      await CalendarService.addToOutlookCalendar(event)
+      toast.success('Opening Outlook Calendar...')
+    } catch (error) {
+      logger.error('Error adding to Outlook Calendar:', error);
+      toast.error('Failed to open Outlook Calendar')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (!CalendarService.isCalendarSupported()) {
     return null
   }
 
@@ -69,6 +82,18 @@ export function CalendarButtons({ event, className = '' }: CalendarButtonsProps)
       >
         <Download className="w-4 h-4 mr-2" />
         Apple
+      </Button>
+      
+      <Button
+        onClick={handleOutlookCalendar}
+        disabled={isLoading}
+        variant="outline"
+        size="sm"
+        className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 flex-1"
+        title="Add to Outlook Calendar"
+      >
+        <Mail className="w-4 h-4 mr-2" />
+        Outlook
       </Button>
     </div>
   )
