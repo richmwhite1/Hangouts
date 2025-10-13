@@ -108,6 +108,8 @@ export default function HangoutDetailPage() {
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  console.log('Hangout detail page - Component initialized with hangoutId:', hangoutId)
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false)
   const [isVoting, setIsVoting] = useState(false)
   const [newMessage, setNewMessage] = useState('')
