@@ -18,7 +18,7 @@ export async function GET(
   }
 
   try {
-    // Get user from Clerk auth
+    // Get user from Clerk auth (optional for public hangouts)
     const { userId: clerkUserId } = await auth()
     let user = null
     if (clerkUserId) {

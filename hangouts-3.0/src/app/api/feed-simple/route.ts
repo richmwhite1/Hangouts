@@ -25,15 +25,75 @@ export async function GET(request: NextRequest) {
     logger.error('Auth error in feed:', error)
   }
   
-  // For unauthenticated users, return empty feed
+  // For unauthenticated users, return public content only
   if (!userId) {
-    return NextResponse.json({ 
-      success: true,
-      data: { 
-        content: [], 
-        total: 0 
-      } 
-    })
+    try {
+      const publicContent = await db.content.findMany({
+        where: {
+          status: 'ACTIVE',
+          privacyLevel: 'PUBLIC',
+          type: 'HANGOUT'
+        },
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          description: true,
+          image: true,
+          location: true,
+          startTime: true,
+          endTime: true,
+          privacyLevel: true,
+          createdAt: true,
+          updatedAt: true,
+          creatorId: true,
+          users: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              avatar: true
+            }
+          },
+          _count: {
+            select: {
+              content_participants: true,
+              comments: true,
+              photos: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset
+      })
+
+      const total = await db.content.count({
+        where: {
+          status: 'ACTIVE',
+          privacyLevel: 'PUBLIC',
+          type: 'HANGOUT'
+        }
+      })
+
+      return NextResponse.json({ 
+        success: true,
+        data: { 
+          content: publicContent, 
+          total,
+          hasMore: offset + publicContent.length < total
+        } 
+      })
+    } catch (error) {
+      logger.error('Error fetching public feed:', error)
+      return NextResponse.json({ 
+        success: true,
+        data: { 
+          content: [], 
+          total: 0 
+        } 
+      })
+    }
   }
 
   try {
