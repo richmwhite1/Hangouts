@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: hangoutId } = await params
@@ -18,17 +18,24 @@ export async function GET(
   }
 
   try {
+    console.log('Hangout API - Starting fetch for hangout:', hangoutId)
+    
     // Get user from Clerk auth (optional for public hangouts)
     const { userId: clerkUserId } = await auth()
+    console.log('Hangout API - Clerk userId:', clerkUserId)
+    
     let user = null
     if (clerkUserId) {
       try {
         user = await getClerkApiUser()
+        console.log('Hangout API - Database user found:', user ? 'YES' : 'NO')
         // If user doesn't exist in database, create a minimal user object
         if (!user) {
           user = { id: clerkUserId }
+          console.log('Hangout API - Using Clerk ID as fallback')
         }
       } catch (error) {
+        console.error('Hangout API - Error getting user from Clerk:', error)
         logger.error('Error getting user from Clerk:', error)
         // Fallback to Clerk ID
         user = { id: clerkUserId }
@@ -102,6 +109,8 @@ export async function GET(
       }
     })
 
+    console.log('Hangout API - Database query completed, hangout found:', hangout ? 'YES' : 'NO')
+    
     if (!hangout) {
       return NextResponse.json(
         { 
@@ -114,62 +123,136 @@ export async function GET(
     }
 
     // Process voting data if polls exist
-    let options = []
-    let votes = {}
+    let options: any[] = []
+    let votes: Record<string, string[]> = {}
     let votingDeadline = null
     let requiresVoting = false
     let hangoutState = 'confirmed'
 
+    console.log('Hangout API - Processing polls, count:', hangout.polls?.length || 0)
+
     if (hangout.polls && hangout.polls.length > 0) {
       const poll = hangout.polls[0]
-      const pollOptions = Array.isArray(poll.options) ? poll.options : []
+      if (!poll) {
+        console.log('Hangout API - Poll is undefined, skipping poll processing')
+        return NextResponse.json({
+          success: true,
+          data: {
+            id: hangout.id,
+            title: hangout.title,
+            description: hangout.description,
+            location: hangout.location,
+            startTime: hangout.startTime,
+            endTime: hangout.endTime,
+            status: hangout.status,
+            privacyLevel: hangout.privacyLevel,
+            creatorId: hangout.creatorId,
+            createdAt: hangout.createdAt,
+            updatedAt: hangout.updatedAt,
+            priceMin: hangout.priceMin,
+            priceMax: hangout.priceMax,
+            ticketUrl: hangout.ticketUrl,
+            image: hangout.image,
+            weatherEnabled: hangout.weatherEnabled,
+            creator: hangout.users,
+            participants: hangout.content_participants.map(p => ({
+              id: p.id,
+              userId: p.userId,
+              role: p.role,
+              joinedAt: p.joinedAt,
+              rsvpStatus: 'PENDING',
+              canEdit: p.canEdit || p.role === 'CREATOR',
+              user: p.users
+            })),
+            rsvps: hangout.rsvps.map(r => ({
+              id: r.id,
+              userId: r.userId,
+              status: r.status,
+              respondedAt: r.respondedAt,
+              user: r.users
+            })),
+            options: [],
+            votes: {},
+            userVotes: {},
+            currentUserVotes: [],
+            userRSVP: null,
+            requiresVoting: false,
+            state: 'confirmed',
+            votingDeadline: null,
+            counts: hangout._count
+          }
+        })
+      }
+      
+      const pollOptions = Array.isArray(poll.options) ? poll.options as any[] : []
       
       if (poll.status === 'ACTIVE' && pollOptions.length > 1) {
         hangoutState = 'polling'
         requiresVoting = true
-        options = pollOptions.map(option => ({
-          id: option.id,
-          title: option.title,
-          description: option.description,
-          location: option.location,
-          dateTime: option.dateTime,
-          price: option.price,
-          hangoutUrl: option.hangoutUrl,
-          eventImage: option.eventImage
+        options = pollOptions.map((option: any) => ({
+          id: option?.id || '',
+          title: option?.title || '',
+          description: option?.description || '',
+          location: option?.location || '',
+          dateTime: option?.dateTime || '',
+          price: option?.price || 0,
+          hangoutUrl: option?.hangoutUrl || '',
+          eventImage: option?.eventImage || ''
         }))
         votingDeadline = poll.expiresAt
         
         // Build votes object from poll votes
-        votes = {}
-        poll.votes.forEach(vote => {
-          if (!votes[vote.userId]) {
-            votes[vote.userId] = []
-          }
-          votes[vote.userId].push(vote.option)
-        })
+        const votesObj: Record<string, string[]> = {}
+        if (poll.votes) {
+          poll.votes.forEach(vote => {
+            if (!votesObj[vote.userId]) {
+              votesObj[vote.userId] = []
+            }
+            votesObj[vote.userId]!.push(vote.option)
+          })
+        }
+        votes = votesObj
       } else if (poll.status === 'CONSENSUS_REACHED' && pollOptions.length > 0) {
         // Find the winning option based on votes
-        const optionVoteCounts = {}
-        poll.votes.forEach(vote => {
-          optionVoteCounts[vote.option] = (optionVoteCounts[vote.option] || 0) + 1
-        })
+        const optionVoteCounts = {} as Record<string, number>
+        if (poll.votes) {
+          poll.votes.forEach(vote => {
+            optionVoteCounts[vote.option] = (optionVoteCounts[vote.option] || 0) + 1
+          })
+        }
         
-        const winningOptionId = Object.keys(optionVoteCounts).reduce((a, b) => 
-          optionVoteCounts[a] > optionVoteCounts[b] ? a : b
-        )
+        const winningOptionId = Object.keys(optionVoteCounts).length > 0 
+          ? Object.keys(optionVoteCounts).reduce((a, b) => 
+              optionVoteCounts[a]! > optionVoteCounts[b]! ? a : b
+            )
+          : null
         
-        const winningOption = pollOptions.find(opt => opt.id === winningOptionId)
-        if (winningOption) {
-          options = [{
-            id: winningOption.id,
-            title: winningOption.title,
-            description: winningOption.description,
-            location: winningOption.location,
-            dateTime: winningOption.dateTime,
-            price: winningOption.price,
-            hangoutUrl: winningOption.hangoutUrl,
-            eventImage: winningOption.eventImage
-          }]
+        if (winningOptionId) {
+          const winningOption = pollOptions.find((opt: any) => opt?.id === winningOptionId)
+          if (winningOption) {
+            options = [{
+              id: winningOption.id || '',
+              title: winningOption.title || '',
+              description: winningOption.description || '',
+              location: winningOption.location || '',
+              dateTime: winningOption.dateTime || '',
+              price: winningOption.price || 0,
+              hangoutUrl: winningOption.hangoutUrl || '',
+              eventImage: winningOption.eventImage || ''
+            }]
+          }
+        } else {
+          // No votes yet, show all options
+          options = pollOptions.map((option: any) => ({
+            id: option?.id || '',
+            title: option?.title || '',
+            description: option?.description || '',
+            location: option?.location || '',
+            dateTime: option?.dateTime || '',
+            price: option?.price || 0,
+            hangoutUrl: option?.hangoutUrl || '',
+            eventImage: option?.eventImage || ''
+          }))
         }
       }
     }
@@ -198,10 +281,12 @@ export async function GET(
     }))
 
     // Calculate user's vote status
-    const currentUserVotes = user ? (votes[user.id] || []) : []
+    const currentUserVotes = user ? ((votes as Record<string, string[]>)[user.id] || []) : []
     const userRSVP = user ? rsvps.find(r => r.userId === user.id) : null
 
     // Build response
+    console.log('Hangout API - Building response for hangout:', hangout.id)
+    
     const response = {
       id: hangout.id,
       title: hangout.title,
@@ -233,17 +318,22 @@ export async function GET(
       counts: hangout._count
     }
 
+    console.log('Hangout API - Response built successfully, returning 200')
+    
     return NextResponse.json({
       success: true,
       data: response
     })
 
   } catch (error) {
+    console.error('Hangout API - Error fetching hangout:', error)
     logger.error('Error fetching hangout:', error)
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: 'Failed to fetch hangout data'
+        message: 'Failed to fetch hangout data',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        hangoutId: hangoutId
       },
       { status: 500 }
     )
