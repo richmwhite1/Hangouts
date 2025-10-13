@@ -13,8 +13,8 @@ const createHangoutSchema = z.object({
   location: z.string().max(200, 'Location too long').optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  startTime: z.string().datetime('Invalid start time'),
-  endTime: z.string().datetime('Invalid end time'),
+  startTime: z.string().datetime('Invalid start time').optional(),
+  endTime: z.string().datetime('Invalid end time').optional(),
   privacyLevel: z.enum(['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC']).default('PUBLIC'),
   maxParticipants: z.number().min(2, 'Must allow at least 2 participants').max(100, 'Too many participants').optional(),
   weatherEnabled: z.boolean().default(false),
@@ -34,7 +34,7 @@ const createHangoutSchema = z.object({
     dateTime: z.string().optional(),
     price: z.number().optional(),
     hangoutUrl: z.string().optional()
-  })).min(1, 'At least one option is required')})
+  })).optional()})
 
 async function getHangoutsHandler(request: AuthenticatedRequest) {
   const userId = request.user?.userId
