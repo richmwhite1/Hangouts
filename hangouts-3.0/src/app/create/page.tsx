@@ -35,7 +35,7 @@ export default function CreateHangoutPage() {
   // Debug token retrieval
   const debugToken = async () => {
     try {
-      const token = await getToken({ template: 'default' })
+      const token = await getToken()
       console.log('Debug token result:', { 
         token: token ? token.substring(0, 20) + '...' : 'null',
         tokenLength: token?.length || 0,
@@ -123,12 +123,13 @@ export default function CreateHangoutPage() {
           const uploadFormData = new FormData()
           uploadFormData.append('file', formData.image)
           uploadFormData.append('type', 'hangout')
-      const token = await getToken({ template: 'default' })
+      const token = await getToken()
       console.log('Frontend - Token retrieved:', token ? 'YES' : 'NO')
       console.log('Frontend - Token length:', token?.length || 0)
       console.log('Frontend - Token preview:', token ? token.substring(0, 20) + '...' : 'null')
       if (!token) {
         console.error('Frontend - No token available, user might not be authenticated')
+        console.error('Frontend - Auth state:', { isSignedIn, userId: user?.id, isLoaded })
         toast.error('Authentication required. Please sign in.')
         return
       }
@@ -175,11 +176,12 @@ export default function CreateHangoutPage() {
           }))
       }
       // console.log('Creating hangout with data:', hangoutData); // Removed for production
-      const token = await getToken({ template: 'default' })
+      const token = await getToken()
       console.log('Frontend - Hangout creation token:', token ? 'YES' : 'NO')
       console.log('Frontend - Hangout creation token length:', token?.length || 0)
       if (!token) {
         console.error('Frontend - No token available for hangout creation')
+        console.error('Frontend - Auth state:', { isSignedIn, userId: user?.id, isLoaded })
         toast.error('Authentication required. Please sign in.')
         return
       }
