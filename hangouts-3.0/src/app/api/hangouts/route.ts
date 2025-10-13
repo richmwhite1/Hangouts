@@ -418,49 +418,86 @@ export async function POST(request: NextRequest) {
       endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
     }
 
-    // Create hangout using the flow
-    const flowResult = await createHangoutFlow({
-      title: validatedData.title,
-      description: validatedData.description || '',
-      location: validatedData.location || null,
-      latitude: validatedData.latitude || null,
-      longitude: validatedData.longitude || null,
-      startTime,
-      endTime,
-      privacyLevel: validatedData.privacyLevel || 'PUBLIC',
-      weatherEnabled: validatedData.weatherEnabled ?? false,
-      image: validatedData.image || null,
-      creatorId: userId,
-      maxParticipants: validatedData.maxParticipants || null,
-      participants: validatedData.participants || [],
-      mandatoryParticipants: validatedData.mandatoryParticipants || [],
-      coHosts: validatedData.coHosts || []
+    // Determine the flow
+    const flowResult = createHangoutFlow({
+      type: validatedData.type || 'multi_option',
+      options: validatedData.options || [],
+      participants: validatedData.participants || []
     })
 
-    if (!flowResult.success) {
-      return NextResponse.json({ 
-        error: 'Failed to create hangout', 
-        details: flowResult.error 
-      }, { status: 500 })
+    // Create the hangout in the database
+    const hangout = await db.content.create({
+      data: {
+        id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: 'HANGOUT',
+        title: validatedData.title,
+        description: validatedData.description || null,
+        location: validatedData.location || null,
+        latitude: validatedData.latitude || null,
+        longitude: validatedData.longitude || null,
+        startTime,
+        endTime,
+        status: 'PUBLISHED',
+        privacyLevel: validatedData.privacyLevel || 'PUBLIC',
+        creatorId: userId,
+        image: validatedData.image || null,
+        weatherEnabled: validatedData.weatherEnabled ?? false,
+        maxParticipants: validatedData.maxParticipants || null,
+        priceMin: 0,
+        priceMax: null,
+        currency: 'USD',
+        ticketUrl: null,
+        attendeeCount: 0,
+        externalEventId: null,
+        source: 'MANUAL'
+      }
+    })
+
+    // Add creator as participant
+    await db.content_participants.create({
+      data: {
+        id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        contentId: hangout.id,
+        userId: userId,
+        role: 'CREATOR',
+        canEdit: true,
+        isMandatory: true,
+        isCoHost: false,
+        joinedAt: new Date()
+      }
+    })
+
+    // Add other participants if specified
+    if (validatedData.participants && validatedData.participants.length > 0) {
+      for (const participantId of validatedData.participants) {
+        await db.content_participants.create({
+          data: {
+            id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            contentId: hangout.id,
+            userId: participantId,
+            role: 'MEMBER',
+            canEdit: false,
+            isMandatory: false,
+            isCoHost: false
+          }
+        })
+      }
     }
 
-    const hangout = flowResult.data
-    const flowData = flowResult.flowData
-
-    // Create poll for all hangouts with options (both quick_plan and multi_option)
-    if (flowData.options.length > 0) {
+    // Create poll for hangouts with multiple options
+    if (validatedData.options && validatedData.options.length > 1) {
       try {
         const pollData = {
           id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          contentId: hangout?.id || '',
+          contentId: hangout.id,
           creatorId: userId,
           title: validatedData.title,
           description: validatedData.description || '',
-          options: flowData.options,
+          options: validatedData.options,
           allowMultiple: validatedData.type === 'multi_option',
           isAnonymous: false,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-          consensusPercentage: validatedData.consensusPercentage || 70,
+          consensusPercentage: 70,
           minimumParticipants: Math.max(2, validatedData.participants?.length || 2),
           consensusType: 'percentage',
           status: 'ACTIVE',
@@ -475,7 +512,7 @@ export async function POST(request: NextRequest) {
           data: pollData
         })
 
-        logger.info('Poll created successfully for hangout:', hangout?.id)
+        logger.info('Poll created successfully for hangout:', hangout.id)
       } catch (pollError) {
         logger.error('Error creating poll:', pollError)
         // Don't fail the entire request if poll creation fails
@@ -485,20 +522,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        id: hangout?.id,
-        title: hangout?.title,
-        description: hangout?.description,
-        location: hangout?.location,
-        startTime: hangout?.startTime,
-        endTime: hangout?.endTime,
-        privacyLevel: hangout?.privacyLevel,
-        image: hangout?.image,
-        creatorId: hangout?.creatorId,
-        createdAt: hangout?.createdAt,
-        updatedAt: hangout?.updatedAt,
+        id: hangout.id,
+        title: hangout.title,
+        description: hangout.description,
+        location: hangout.location,
+        startTime: hangout.startTime,
+        endTime: hangout.endTime,
+        privacyLevel: hangout.privacyLevel,
+        image: hangout.image,
+        creatorId: hangout.creatorId,
+        createdAt: hangout.createdAt,
+        updatedAt: hangout.updatedAt,
         requiresVoting: flowResult.requiresVoting,
-        options: flowData.options,
-        participants: flowData.participants
+        options: validatedData.options || [],
+        participants: validatedData.participants || []
       }
     })
 
