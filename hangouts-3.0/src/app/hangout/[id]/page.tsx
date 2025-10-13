@@ -248,7 +248,7 @@ export default function HangoutDetailPage() {
       const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
       if (!response.ok) throw new Error('Failed to fetch hangout')
       const data = await response.json()
-      setHangout(data.hangout || data)
+      setHangout(data.data || data)
       // Check if hangout is saved (only for authenticated users)
       if (token) {
         await checkSaveStatus()
