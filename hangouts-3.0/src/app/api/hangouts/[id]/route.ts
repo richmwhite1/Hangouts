@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
-import { getHangoutWithAllData } from '@/lib/database-optimization'
-import { apiCache, cacheKeys } from '@/lib/api-cache'
-import { createErrorResponse, createSuccessResponse, errors } from '@/lib/error-handling'
+import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 
 export async function GET(
@@ -13,17 +11,13 @@ export async function GET(
   const { id: hangoutId } = await params
   
   if (!hangoutId) {
-    return createErrorResponse(errors.validationError('Hangout ID is required'))
+    return NextResponse.json(
+      { error: 'Hangout ID is required' },
+      { status: 400 }
+    )
   }
 
   try {
-    // Check cache first
-    const cacheKey = cacheKeys.hangout(hangoutId)
-    const cached = apiCache.get(cacheKey)
-    if (cached) {
-      return createSuccessResponse(cached, 'Hangout retrieved from cache')
-    }
-
     // Get user from Clerk auth
     const { userId: clerkUserId } = await auth()
     let user = null
@@ -31,11 +25,82 @@ export async function GET(
       user = await getClerkApiUser()
     }
 
-    // Use optimized single query to get all hangout data
-    const hangout = await getHangoutWithAllData(hangoutId)
+    // Get hangout with all related data
+    const hangout = await db.content.findUnique({
+      where: { id: hangoutId },
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
+            lastSeen: true,
+            isActive: true
+          }
+        },
+        content_participants: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true,
+                lastSeen: true,
+                isActive: true
+              }
+            }
+          }
+        },
+        polls: {
+          include: {
+            pollVotes: {
+              include: {
+                users: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        rsvps: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            content_participants: true,
+            comments: true,
+            messages: true,
+            photos: true,
+            rsvps: true
+          }
+        }
+      }
+    })
 
     if (!hangout) {
-      return createErrorResponse(errors.notFound('Hangout'))
+      return NextResponse.json(
+        { 
+          error: 'Hangout not found',
+          message: 'The requested hangout does not exist or has been removed',
+          hangoutId: hangoutId
+        },
+        { status: 404 }
+      )
     }
 
     // Process voting data if polls exist
@@ -152,13 +217,19 @@ export async function GET(
       counts: hangout._count
     }
 
-    // Cache the response for 5 minutes
-    apiCache.set(cacheKey, response, 5 * 60 * 1000)
-
-    return createSuccessResponse(response, 'Hangout retrieved successfully')
+    return NextResponse.json({
+      success: true,
+      data: response
+    })
 
   } catch (error) {
     logger.error('Error fetching hangout:', error)
-    return createErrorResponse(error as Error)
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        message: 'Failed to fetch hangout data'
+      },
+      { status: 500 }
+    )
   }
 }

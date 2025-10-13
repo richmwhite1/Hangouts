@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
-import { getOptimizedFeed } from '@/lib/database-optimization'
-import { apiCache, cacheKeys } from '@/lib/api-cache'
-import { checkRateLimit, rateLimitConfigs } from '@/lib/enhanced-rate-limit'
+import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
-  // Check rate limit first
-  const rateLimitResult = checkRateLimit(request, rateLimitConfigs.feed)
-  if (!rateLimitResult.allowed) {
-    return rateLimitResult.response!
-  }
-
   const { searchParams } = new URL(request.url)
   const feedType = searchParams.get('type') || 'home'
   const contentType = searchParams.get('contentType') || 'all'
@@ -45,59 +37,105 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Check cache first
-    const cacheKey = cacheKeys.userFeed(userId, feedType, offset)
-    const cached = apiCache.get(cacheKey)
-    if (cached) {
-      return NextResponse.json({
-        success: true,
-        data: cached,
-        cached: true
-      })
+    // Build where clause based on feed type
+    let whereClause: any = {
+      status: 'ACTIVE'
     }
 
-    // Use optimized feed query
-    const { content, totalCount, hasMore } = await getOptimizedFeed(
-      userId,
-      feedType as 'home' | 'discover',
-      limit,
-      offset
-    )
-
-    // Transform content for frontend
-    const transformedContent = content.map(item => ({
-      id: item.id,
-      type: item.type,
-      title: item.title,
-      description: item.description,
-      image: item.image,
-      location: item.location,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      privacyLevel: item.privacyLevel,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      creator: item.users,
-      creatorId: item.creatorId,
-      counts: item._count
-    }))
-
-    // Cache the response for 2 minutes
-    const responseData = {
-      content: transformedContent,
-      total: totalCount,
-      hasMore,
-      pagination: {
-        limit,
-        offset,
-        total: totalCount
-      }
+    // Content type filter
+    if (contentType === 'hangouts') {
+      whereClause.type = 'HANGOUT'
+    } else if (contentType === 'events') {
+      whereClause.type = 'EVENT'
     }
-    apiCache.set(cacheKey, responseData, 2 * 60 * 1000)
+
+    // Privacy and access control
+    if (feedType === 'discover' || contentType === 'events') {
+      // DISCOVER PAGE & EVENTS PAGE: Show public content + friends' content
+      whereClause.OR = [
+        // Public content (everyone can see)
+        { privacyLevel: 'PUBLIC' },
+        // Friends-only content from user's friends (if authenticated)
+        ...(userId ? [{
+          AND: [
+            { privacyLevel: 'FRIENDS_ONLY' },
+            { creatorId: userId }
+          ]
+        }] : [])
+      ]
+    } else if (feedType === 'home') {
+      // HOME PAGE: Show user's own content + content they're invited to
+      whereClause.OR = [
+        // User's own content (all privacy levels)
+        { creatorId: userId },
+        // Content where user is a participant
+        {
+          content_participants: {
+            some: { userId: userId }
+          }
+        }
+      ]
+    }
+
+    // Simple query with minimal fields
+    const content = await db.content.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        description: true,
+        image: true,
+        location: true,
+        startTime: true,
+        endTime: true,
+        privacyLevel: true,
+        createdAt: true,
+        updatedAt: true,
+        creatorId: true,
+        // Creator info
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true
+          }
+        },
+        // Counts
+        _count: {
+          select: {
+            content_participants: true,
+            comments: true,
+            content_likes: true,
+            content_shares: true,
+            messages: true,
+            photos: true,
+            rsvps: true,
+            eventSaves: true
+          }
+        }
+      },
+      orderBy: feedType === 'home' ? { createdAt: 'desc' } : { startTime: 'asc' },
+      take: limit,
+      skip: offset
+    })
+
+    // Get total count for pagination
+    const total = await db.content.count({ where: whereClause })
 
     return NextResponse.json({
       success: true,
-      data: responseData
+      data: {
+        content,
+        total,
+        hasMore: offset + content.length < total,
+        pagination: {
+          limit,
+          offset,
+          total
+        }
+      }
     })
 
   } catch (error) {
