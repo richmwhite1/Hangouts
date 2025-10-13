@@ -32,10 +32,35 @@ export default function CreateHangoutPage() {
   // Debug authentication state
   console.log('Create page auth state:', { isSignedIn, isLoaded, user: user?.id, isClient })
 
-  // TEMPORARY: Allow access to create page for testing
-  // TODO: Fix authentication properly
+  // Check authentication state
   if (!isSignedIn || !user) {
-    console.log('⚠️ User not authenticated, but allowing access for testing');
+    console.log('⚠️ User not authenticated:', { isSignedIn, user: user?.id });
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="max-w-md mx-auto p-6">
+          <div className="bg-gray-900 rounded-lg p-8 text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Sign In Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please sign in to create hangouts and events
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.href = '/signup'}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                Sign Up
+              </button>
+              <button
+                onClick={() => window.location.href = '/signin'}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
     // return (
     //   <div className="min-h-screen bg-black flex items-center justify-center">
     //     <div className="max-w-md mx-auto p-6">
@@ -78,9 +103,15 @@ export default function CreateHangoutPage() {
           const uploadFormData = new FormData()
           uploadFormData.append('file', formData.image)
           uploadFormData.append('type', 'hangout')
-          const token = await getToken()
-          console.log('Frontend - Token retrieved:', token ? 'YES' : 'NO')
-          console.log('Frontend - Token length:', token?.length || 0)
+      const token = await getToken()
+      console.log('Frontend - Token retrieved:', token ? 'YES' : 'NO')
+      console.log('Frontend - Token length:', token?.length || 0)
+      console.log('Frontend - Token preview:', token ? token.substring(0, 20) + '...' : 'null')
+      if (!token) {
+        console.error('Frontend - No token available, user might not be authenticated')
+        toast.error('Authentication required. Please sign in.')
+        return
+      }
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: {
@@ -126,6 +157,12 @@ export default function CreateHangoutPage() {
       // console.log('Creating hangout with data:', hangoutData); // Removed for production
       const token = await getToken()
       console.log('Frontend - Hangout creation token:', token ? 'YES' : 'NO')
+      console.log('Frontend - Hangout creation token length:', token?.length || 0)
+      if (!token) {
+        console.error('Frontend - No token available for hangout creation')
+        toast.error('Authentication required. Please sign in.')
+        return
+      }
       const response = await fetch('/api/hangouts', {
         method: 'POST',
         headers: { 
