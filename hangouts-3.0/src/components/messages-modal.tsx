@@ -217,7 +217,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
         {
           id: '2',
           content: 'Yes! I\'m really excited about it. What time are we meeting?',
-          sender: { id: userId?.id || '1', name: userId?.name || 'You', avatar: userId?.avatar },
+          sender: { id: userId || '1', name: 'You', avatar: '' },
           timestamp: '1m ago',
           type: 'text',
           isRead: true
@@ -238,7 +238,7 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
     const message: Message = {
       id: Date.now().toString(),
       content: newMessage,
-      sender: { id: userId?.id || '1', name: userId?.name || 'You', avatar: userId?.avatar },
+      sender: { id: userId || '1', name: 'You', avatar: '' },
       timestamp: 'now',
       type: 'text',
       isRead: true
@@ -441,10 +441,10 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${message.sender.id === userId?.id ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.sender.id === userId ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`flex space-x-2 max-w-xs lg:max-w-md ${message.sender.id === userId?.id ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        {message.sender.id !== userId?.id && (
+                      <div className={`flex space-x-2 max-w-xs lg:max-w-md ${message.sender.id === userId ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                        {message.sender.id !== userId && (
                           <Avatar className="h-8 w-8 rounded-md">
                             <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
                             <AvatarFallback className="text-xs rounded-md">
@@ -453,13 +453,13 @@ export default function MessagesModal({ isOpen, onClose, selectedUser }: Message
                           </Avatar>
                         )}
                         <div className={`px-3 py-2 rounded-lg ${
-                          message.sender.id === userId?.id
+                          message.sender.id === userId
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                         }`}>
                           <p className="text-sm">{message.content}</p>
                           <p className={`text-xs mt-1 ${
-                            message.sender.id === userId?.id
+                            message.sender.id === userId
                               ? 'text-blue-100'
                               : 'text-gray-500 dark:text-gray-400'
                           }`}>

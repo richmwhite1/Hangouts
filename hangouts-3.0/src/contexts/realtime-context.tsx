@@ -25,14 +25,14 @@ interface PollOption {
 }
 interface PollParticipant {
   id: string
-  userIdId: string
+  userId: string
   status: 'INVITED' | 'VOTED' | 'ABSTAINED'
   canVote: boolean
   canDelegate: boolean
 }
 interface PollVote {
   id: string
-  userIdId: string
+  userId: string
   optionId: string
   weight: number
   createdAt: string
@@ -53,13 +53,13 @@ interface VoteData {
 }
 interface Message {
   id: string
-  userIdId: string
+  userId: string
   content: string
   timestamp: string
   type: 'text' | 'image' | 'poll' | 'system'
 }
 interface RSVPData {
-  userIdId: string
+  userId: string
   status: 'YES' | 'NO' | 'MAYBE' | 'PENDING'
   timestamp: string
 }
@@ -75,7 +75,7 @@ interface HangoutData {
     userId: {
       id: string
       name: string
-      userIdname: string
+      userId: string
       avatar?: string
     }
     rsvpStatus: 'YES' | 'NO' | 'MAYBE' | 'PENDING'
@@ -118,10 +118,10 @@ interface RealtimeContextType {
   offRSVPUpdate: (callback: (data: RSVPData) => void) => void
   onHangoutUpdate: (callback: (hangout: HangoutData) => void) => void
   offHangoutUpdate: (callback: (hangout: HangoutData) => void) => void
-  onParticipantJoined: (callback: (data: { userIdId: string; hangoutId: string }) => void) => void
-  offParticipantJoined: (callback: (data: { userIdId: string; hangoutId: string }) => void) => void
-  onParticipantLeft: (callback: (data: { userIdId: string; hangoutId: string }) => void) => void
-  offParticipantLeft: (callback: (data: { userIdId: string; hangoutId: string }) => void) => void
+  onParticipantJoined: (callback: (data: { userId: string; hangoutId: string }) => void) => void
+  offParticipantJoined: (callback: (data: { userId: string; hangoutId: string }) => void) => void
+  onParticipantLeft: (callback: (data: { userId: string; hangoutId: string }) => void) => void
+  offParticipantLeft: (callback: (data: { userId: string; hangoutId: string }) => void) => void
   onNotification: (callback: (notification: Notification) => void) => void
   offNotification: (callback: (notification: Notification) => void) => void
   // Event handlers - Polling
@@ -147,13 +147,13 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [isConnected, setIsConnected] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
-  const { userIdId, isSignedIn } = useAuth()
+  const { userId, isSignedIn } = useAuth()
   const eventCallbacks = useRef<Map<string, Set<Function>>>(new Map())
   // Initialize socket connection
   useEffect(() => {
-    if (isSignedIn && userId?.id) {
+    if (isSignedIn && userId) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
-        auth: { userIdId: userId.id },
+        auth: { userId: userId },
         transports: ['polling', 'websocket'],
         timeout: 2000,
         retries: 3,
@@ -196,7 +196,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
         setIsConnected(false)
       }
     }
-  }, [isSignedIn, userId?.id])
+  }, [isSignedIn, userId])
   // Hangout management
   const joinHangout = useCallback((hangoutId: string) => {
     if (socket && isConnected) {

@@ -1,161 +1,67 @@
-import { NextRequest } from 'next/server'
-import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { getClerkApiUser } from '@/lib/clerk-auth'
+import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-
 import { logger } from '@/lib/logger'
+
 const rsvpSchema = z.object({
-  status: z.enum(['YES', 'NO', 'MAYBE'])})
+  status: z.enum(['YES', 'NO', 'MAYBE', 'PENDING'])
+})
 
-async function updateRSVPHandler(request: AuthenticatedRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id: contentId } = await params
-    const userId = request.user?.userId
-
-    if (!userId) {
-      return createErrorResponse('Authentication required', 'User ID not provided', 401)
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
 
-    const body = await request.json()
-    const { status } = rsvpSchema.parse(body)
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
+    }
 
-    // Check if content exists and user has access
+    const { id } = await params
+    const data = await request.json()
+    const validatedData = rsvpSchema.parse(data)
+
+    // Check if content exists
     const content = await db.content.findUnique({
-      where: { id: contentId },
-      select: {
-        id: true,
-        type: true,
-        privacyLevel: true,
-        creatorId: true,
-        content_participants: {
-          select: {
-            userId: true
-          }
-        }
-      }
+      where: { id }
     })
 
     if (!content) {
-      return createErrorResponse('Not found', 'Content not found', 404)
+      return NextResponse.json(createErrorResponse('Not found', 'Content not found'), { status: 404 })
     }
 
-    // Check access permissions
-    if (content.privacyLevel === 'PRIVATE') {
-      const isParticipant = content.content_participants.some(p => p.userId === userId)
-      const isCreator = content.creatorId === userId
-      
-      if (!isParticipant && !isCreator) {
-        return createErrorResponse('Forbidden', 'Access denied', 403)
-      }
-    }
-
-    // Check if RSVP already exists
-    const existingRSVP = await db.rsvp.findUnique({
+    // Update or create RSVP
+    const rsvp = await db.rsvp.upsert({
       where: {
         contentId_userId: {
-          contentId: contentId,
-          userId: userId
+          contentId: id,
+          userId: user.id
         }
+      },
+      update: {
+        status: validatedData.status,
+        respondedAt: new Date()
+      },
+      create: {
+        id: `rsvp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        contentId: id,
+        userId: user.id,
+        status: validatedData.status,
+        respondedAt: new Date()
       }
     })
 
-    if (existingRSVP) {
-      // Update existing RSVP
-      const updatedRSVP = await db.rsvp.update({
-        where: {
-          contentId_userId: {
-            contentId: contentId,
-            userId: userId
-          }
-        },
-        data: {
-          status: status,
-          respondedAt: new Date(),
-          updatedAt: new Date()
-        },
-        include: {
-          users: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true
-            }
-          }
-        }
-      })
-
-      return createSuccessResponse({
-        rsvp: {
-          id: updatedRSVP.id,
-          contentId: updatedRSVP.contentId,
-          userId: updatedRSVP.userId,
-          status: updatedRSVP.status,
-          respondedAt: updatedRSVP.respondedAt?.toISOString(),
-          createdAt: updatedRSVP.createdAt.toISOString(),
-          updatedAt: updatedRSVP.updatedAt.toISOString(),
-          user: updatedRSVP.users
-        }
-      }, 'RSVP updated successfully')
-    } else {
-      // Create new RSVP
-      const newRSVP = await db.rsvp.create({
-        data: {
-          contentId: contentId,
-          userId: userId,
-          status: status,
-          respondedAt: new Date()
-        },
-        include: {
-          users: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true
-            }
-          }
-        }
-      })
-
-      return createSuccessResponse({
-        rsvp: {
-          id: newRSVP.id,
-          contentId: newRSVP.contentId,
-          userId: newRSVP.userId,
-          status: newRSVP.status,
-          respondedAt: newRSVP.respondedAt?.toISOString(),
-          createdAt: newRSVP.createdAt.toISOString(),
-          updatedAt: newRSVP.updatedAt.toISOString(),
-          user: newRSVP.users
-        }
-      }, 'RSVP created successfully')
-    }
+    return NextResponse.json(createSuccessResponse(rsvp, 'RSVP updated successfully'))
   } catch (error) {
-    logger.error('Error in updateRSVPHandler:', error);
-    return createErrorResponse('Internal error', `Failed to update RSVP: ${error.message}`, 500)
+    logger.error('Error updating RSVP:', error)
+    return NextResponse.json(createErrorResponse('Internal error', error.message), { status: 500 })
   }
 }
-
-export const POST = createApiHandler(updateRSVPHandler, {
-  requireAuth: true,
-  enableRateLimit: true,
-  enableCORS: true
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

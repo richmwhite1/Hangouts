@@ -64,7 +64,7 @@ interface Hangout {
   creatorId: string
   creator: { 
     name: string
-    userIdname: string
+    username: string
     avatar?: string
   }
   participants: Array<{
@@ -72,7 +72,7 @@ interface Hangout {
     userId: {
       id: string
       name: string
-      userIdname: string
+      username: string
       avatar?: string
     }
     rsvpStatus: 'YES' | 'NO' | 'MAYBE' | 'PENDING'
@@ -105,7 +105,7 @@ interface Comment {
   userId: {
     id: string
     name: string
-    userIdname: string
+    username: string
     avatar?: string
   }
 }
@@ -177,11 +177,11 @@ export default function HangoutDetailModern({
 
   const getUserRSVP = () => {
     if (!userId) return null
-    return hangout.participants.find(p => p.userId.id === userId.id)
+    return hangout.participants.find(p => p.userId.id === userId)
   }
 
   const userIdRSVP = getUserRSVP()
-  const isCreator = hangout.creatorId === userId?.id
+  const isCreator = hangout.creatorId === userId
   const canEdit = isCreator || userIdRSVP?.canEdit
 
   const getRSVPCounts = () => {

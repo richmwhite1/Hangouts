@@ -16,17 +16,17 @@ interface WebSocketContextType {
 }
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined)
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { userIdId, isSignedIn } = useAuth()
+  const { userId, isSignedIn } = useAuth()
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [typingUsers, setTypingUsers] = useState<{ [conversationId: string]: string[] }>({})
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const typingTimeouts = useRef<{ [conversationId: string]: NodeJS.Timeout }>({})
   useEffect(() => {
-    if (isSignedIn && userId?.id) {
+    if (isSignedIn && userId) {
       const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'), {
         auth: {
-          userIdId: userId?.id
+          userId: userId
         },
         transports: ['polling', 'websocket'],
         timeout: 20000,
@@ -39,7 +39,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         // console.log('🔌 WebSocket connected'); // Removed for production
         setIsConnected(true)
         // Authenticate with the server
-        newSocket.emit('authenticate', { userIdId: userId?.id })
+        newSocket.emit('authenticate', { userId: userId })
       })
       newSocket.on('disconnect', () => {
         // console.log('🔌 WebSocket disconnected'); // Removed for production
@@ -91,7 +91,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         socket.disconnect()
       }
     }
-  }, [isSignedIn, userId?.id])
+  }, [isSignedIn, userId])
   const sendTypingIndicator = (conversationId: string, isTyping: boolean) => {
     if (!socket || !isConnected) return
     if (isTyping) {

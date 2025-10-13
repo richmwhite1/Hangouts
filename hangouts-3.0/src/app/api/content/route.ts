@@ -1,7 +1,9 @@
-import { NextRequest } from 'next/server'
-import { createApiHandler, createSuccessResponse, createErrorResponse, AuthenticatedRequest } from '@/lib/api-middleware'
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
 import { logger } from '@/lib/logger'
 const createContentSchema = z.object({
@@ -50,63 +52,61 @@ const createContentSchema = z.object({
     eventImage: z.string().optional()
   })).optional()})
 
-async function createContentHandler(request: AuthenticatedRequest, validatedData?: z.infer<typeof createContentSchema>) {
+export async function POST(request: NextRequest) {
   try {
-    const userId = request.user?.userId
-    if (!userId) {
-      return createErrorResponse('Authentication required', 'User ID not provided', 401)
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
 
-    // Get data from request body if validation is disabled
-    let data = validatedData
-    if (!data) {
-      try {
-        data = await request.json()
-      } catch (error) {
-        return createErrorResponse('Invalid request', 'Could not parse request body', 400)
-      }
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
     }
+
+    const data = await request.json()
+    const validatedData = createContentSchema.parse(data)
 
     // Validate start and end times
-    const startTime = new Date(data.startTime)
-    const endTime = new Date(data.endTime)
+    const startTime = new Date(validatedData.startTime)
+    const endTime = new Date(validatedData.endTime)
     
     if (endTime <= startTime) {
-      return createErrorResponse('Invalid time range', 'End time must be after start time', 400)
+      return NextResponse.json(createErrorResponse('Invalid time range', 'End time must be after start time'), { status: 400 })
     }
 
     // Create content record
     const content = await db.content.create({
       data: {
-        id: `${data.type.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: data.type,
-        title: data.title,
-        description: data.description,
-        image: data.image,
-        location: data.location,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        id: `${validatedData.type.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: validatedData.type,
+        title: validatedData.title,
+        description: validatedData.description,
+        image: validatedData.image,
+        location: validatedData.location,
+        latitude: validatedData.latitude,
+        longitude: validatedData.longitude,
         startTime: startTime,
         endTime: endTime,
         status: 'PUBLISHED',
-        privacyLevel: data.privacyLevel,
-        creatorId: userId,
+        privacyLevel: validatedData.privacyLevel,
+        creatorId: user.id,
         // Event-specific fields
-        venue: data.venue,
-        address: data.address,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zipCode,
-        priceMin: data.priceMin,
-        priceMax: data.priceMax,
-        currency: data.currency,
-        ticketUrl: data.ticketUrl,
-        attendeeCount: data.attendeeCount,
-        externalEventId: data.externalEventId,
-        source: data.source,
+        venue: validatedData.venue,
+        address: validatedData.address,
+        city: validatedData.city,
+        state: validatedData.state,
+        zipCode: validatedData.zipCode,
+        priceMin: validatedData.priceMin,
+        priceMax: validatedData.priceMax,
+        currency: validatedData.currency,
+        ticketUrl: validatedData.ticketUrl,
+        attendeeCount: validatedData.attendeeCount,
+        externalEventId: validatedData.externalEventId,
+        source: validatedData.source,
         // Hangout-specific fields
-        maxParticipants: data.maxParticipants,
-        weatherEnabled: data.weatherEnabled
+        maxParticipants: validatedData.maxParticipants,
+        weatherEnabled: validatedData.weatherEnabled
       }
     })
 
@@ -115,7 +115,7 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
       data: {
         id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         contentId: content.id,
-        userId: userId,
+        userId: user.id,
         role: 'CREATOR',
         canEdit: true,
         isMandatory: false,
@@ -125,15 +125,15 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
     })
 
     // Add other participants
-    if (data.participants && data.participants.length > 0) {
-      const participantData = data.participants.map(participantId => ({
+    if (validatedData.participants && validatedData.participants.length > 0) {
+      const participantData = validatedData.participants.map(participantId => ({
         id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         contentId: content.id,
         userId: participantId,
         role: 'MEMBER',
         canEdit: false,
-        isMandatory: data.mandatoryParticipants?.includes(participantId) || false,
-        isCoHost: data.coHosts?.includes(participantId) || false,
+        isMandatory: validatedData.mandatoryParticipants?.includes(participantId) || false,
+        isCoHost: validatedData.coHosts?.includes(participantId) || false,
         invitedAt: new Date()
       }))
 
@@ -143,15 +143,15 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
     }
 
     // Create poll for hangouts with multiple options
-    if (data.type === 'HANGOUT' && data.options && data.options.length > 1) {
+    if (validatedData.type === 'HANGOUT' && validatedData.options && validatedData.options.length > 1) {
       const poll = await db.polls.create({
         data: {
           id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           contentId: content.id,
-          creatorId: userId,
-          title: data.title,
-          description: data.description || '',
-          options: data.options.map(option => ({
+          creatorId: user.id,
+          title: validatedData.title,
+          description: validatedData.description || '',
+          options: validatedData.options.map(option => ({
             id: option.id || `option_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             title: option.title,
             description: option.description,
@@ -163,7 +163,7 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
           allowMultiple: false,
           isAnonymous: false,
           status: 'ACTIVE',
-          consensusPercentage: data.consensusPercentage,
+          consensusPercentage: validatedData.consensusPercentage,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
         }
       })
@@ -183,19 +183,19 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
       await db.rsvp.createMany({
         data: rsvpData
       })
-    } else if (data.type === 'EVENT') {
+    } else if (validatedData.type === 'EVENT') {
       // Create RSVP records for events
       const rsvpData = [
         {
           id: `rsvp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           contentId: content.id,
-          userId: userId,
+          userId: user.id,
           status: 'YES' as const,
           respondedAt: new Date()}
       ]
 
-      if (data.participants && data.participants.length > 0) {
-        data.participants.forEach(participantId => {
+      if (validatedData.participants && validatedData.participants.length > 0) {
+        validatedData.participants.forEach(participantId => {
           rsvpData.push({
             id: `rsvp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             contentId: content.id,
@@ -211,8 +211,8 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
     }
 
     // Create event tags if provided
-    if (data.type === 'EVENT' && data.tags && data.tags.length > 0) {
-      const tagData = data.tags.map(tag => ({
+    if (validatedData.type === 'EVENT' && validatedData.tags && validatedData.tags.length > 0) {
+      const tagData = validatedData.tags.map(tag => ({
         id: `tag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         contentId: content.id,
         tag: tag
@@ -235,18 +235,12 @@ async function createContentHandler(request: AuthenticatedRequest, validatedData
       privacyLevel: content.privacyLevel,
       createdAt: content.createdAt.toISOString(),
       updatedAt: content.updatedAt.toISOString()
-    }, `${data.type} created successfully`)
+    }, `${validatedData.type} created successfully`)
   } catch (error) {
     logger.error('Error in createContentHandler:', error);
-    return createErrorResponse('Internal error', `Failed to create ${data?.type || 'content'}: ${error.message}`, 500)
+    return NextResponse.json(createErrorResponse('Internal error', `Failed to create ${validatedData?.type || 'content'}: ${error.message}`), { status: 500 })
   }
 }
-
-export const POST = createApiHandler(createContentHandler, {
-  requireAuth: true,
-  enableRateLimit: false,
-  enableCORS: true
-})
 
 
 
