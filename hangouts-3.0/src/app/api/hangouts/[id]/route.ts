@@ -65,9 +65,9 @@ export async function GET(
         },
         polls: {
           include: {
-            pollVotes: {
+            votes: {
               include: {
-                users: {
+                user: {
                   select: {
                     id: true,
                     username: true,
@@ -141,17 +141,17 @@ export async function GET(
         
         // Build votes object from poll votes
         votes = {}
-        poll.pollVotes.forEach(vote => {
+        poll.votes.forEach(vote => {
           if (!votes[vote.userId]) {
             votes[vote.userId] = []
           }
-          votes[vote.userId].push(vote.optionId)
+          votes[vote.userId].push(vote.option)
         })
       } else if (poll.status === 'CONSENSUS_REACHED' && pollOptions.length > 0) {
         // Find the winning option based on votes
         const optionVoteCounts = {}
-        poll.pollVotes.forEach(vote => {
-          optionVoteCounts[vote.optionId] = (optionVoteCounts[vote.optionId] || 0) + 1
+        poll.votes.forEach(vote => {
+          optionVoteCounts[vote.option] = (optionVoteCounts[vote.option] || 0) + 1
         })
         
         const winningOptionId = Object.keys(optionVoteCounts).reduce((a, b) => 
