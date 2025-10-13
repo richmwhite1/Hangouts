@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       
       // Build where clause based on feed type
       let whereClause: any = {
-        status: 'ACTIVE'
+        status: 'PUBLISHED'
       }
 
       // Content type filter
