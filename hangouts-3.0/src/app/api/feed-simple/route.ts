@@ -12,7 +12,20 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    logger.info('Feed API called:', { feedType, contentType, limit, offset })
+    // Log request details for debugging
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+    const authorization = request.headers.get('authorization') || 'none'
+    const origin = request.headers.get('origin') || 'none'
+    
+    logger.info('Feed API called:', { 
+      feedType, 
+      contentType, 
+      limit, 
+      offset,
+      userAgent: userAgent.substring(0, 50),
+      hasAuth: authorization !== 'none',
+      origin: origin.substring(0, 50)
+    })
 
     // Get authenticated user
     let userId: string | null = null
