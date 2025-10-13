@@ -175,13 +175,18 @@ export async function GET(
     }
 
     // Build participants array
-    const participants = hangout.content_participants.map(p => ({
-      id: p.id,
-      userId: p.userId,
-      role: p.role,
-      joinedAt: p.joinedAt,
-      user: p.users
-    }))
+    const participants = hangout.content_participants.map(p => {
+      const userRSVP = hangout.rsvps.find(r => r.userId === p.userId)
+      return {
+        id: p.id,
+        userId: p.userId,
+        role: p.role,
+        joinedAt: p.joinedAt,
+        rsvpStatus: userRSVP?.status || 'PENDING',
+        canEdit: p.canEdit || p.role === 'CREATOR',
+        user: p.users
+      }
+    })
 
     // Build RSVPs array
     const rsvps = hangout.rsvps.map(r => ({
