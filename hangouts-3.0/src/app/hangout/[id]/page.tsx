@@ -85,6 +85,7 @@ interface Hangout {
   requiresRSVP: boolean
   votes: Record<string, string>
   userVotes?: Record<string, string[]>
+  currentUserVotes?: string[]
   userPreferred?: Record<string, string>
   votingDeadline?: string
   type?: string
@@ -121,6 +122,7 @@ export default function HangoutDetailPage() {
   
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false)
   const [isVoting, setIsVoting] = useState(false)
+  const [isInviting, setIsInviting] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const [isChatExpanded, setIsChatExpanded] = useState(true)
   const [, setSelectedOption] = useState<string | null>(null)
@@ -200,6 +202,7 @@ export default function HangoutDetailPage() {
     if (!hangoutId) return
     
     try {
+      setIsInviting(true)
       const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/invite`, {
         method: 'POST',
@@ -222,6 +225,8 @@ export default function HangoutDetailPage() {
     } catch (error) {
       logger.error('Error inviting friends:', error);
       toast.error('Failed to invite friends')
+    } finally {
+      setIsInviting(false)
     }
   }
 
@@ -302,45 +307,18 @@ export default function HangoutDetailPage() {
       logger.error('Error checking save status:', error);
     }
   }
-  const handleSave = async () => {
-    if (!hangoutId) return
-    try {
-      setIsSaving(true)
-      const action = isSaved ? 'unsave' : 'save'
-      const token = await getToken()
-      const response = await fetch(`/api/content/${hangoutId}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ action, type: 'hangout' })
-      })
-      if (response.ok) {
-        setIsSaved(!isSaved)
-        toast.success(isSaved ? 'Removed from saved' : 'Added to saved')
-      } else {
-        toast.error('Failed to update save status')
-      }
-    } catch (error) {
-      logger.error('Error saving hangout:', error);
-      toast.error('Failed to save hangout')
-    } finally {
-      setIsSaving(false)
-    }
-  }
   const handleVote = async (optionId: string, action: 'add' | 'remove' | 'preferred' | 'toggle' = 'add') => {
-    if (! !hangout) return
+    if (!hangout) return
     try {
       setIsVoting(true)
       setSelectedOption(optionId)
       // Optimistic UI update based on action
       setHangout(prev => {
         if (!prev) return prev
-        const currentUserVotes = userId ? (prev.userVotes?.[userId] || []) : []
+        const currentUserVotes = prev.currentUserVotes || []
         const currentUserPreferred = userId ? prev.userPreferred?.[userId] : undefined
         let newUserVotes = [...currentUserVotes]
-        let newUserPreferred = currentUserPreferred
+        let newUserPreferred = currentUserPreferred || undefined
         if (action === 'add' || action === 'toggle') {
           if (newUserVotes.includes(optionId)) {
             // Toggle off - remove vote
@@ -362,14 +340,11 @@ export default function HangoutDetailPage() {
         }
         return {
           ...prev,
-          userVotes: userId ? {
-            ...(prev.userVotes || {}),
-            [userId]: newUserVotes
-          } : prev.userVotes,
-          userPreferred: userId ? {
+          currentUserVotes: newUserVotes,
+          userPreferred: userId && newUserPreferred ? {
             ...(prev.userPreferred || {}),
             [userId]: newUserPreferred
-          } : prev.userPreferred
+          } : prev.userPreferred || {}
         }
       })
       const token = await getToken()
@@ -595,10 +570,10 @@ export default function HangoutDetailPage() {
                 itemImage={hangout.image || ''}
                 privacyLevel={hangout.privacyLevel}
                 isSaved={isSaved}
-                onSave={(id, type) => {
+                onSave={(_id, _type) => {
                   // console.log('Save hangout:', id, type); // Removed for production
                 }}
-                onUnsave={(id, type) => {
+                onUnsave={(_id, _type) => {
                   // console.log('Unsave hangout:', id, type); // Removed for production
                 }}
                 className="scale-75"
@@ -881,7 +856,7 @@ export default function HangoutDetailPage() {
           <div className="mx-4 mb-6">
             <SimpleTaskManager
               hangoutId={hangout.id}
-              currentUser={userId ? { id: userId, name: '', username: '' } : undefined}
+              currentUser={userId ? { id: userId, name: '', username: '' } : { id: '', name: '', username: '' }}
               isHost={isHost}
             />
           </div>
@@ -1027,7 +1002,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
 }) {
   const votedCount = Object.keys(hangout.votes || {}).length
   const totalParticipants = hangout.participants?.length || 0
-  const userVotes = hangout.userVotes?.[currentUser?.id] || []
+  const userVotes = hangout.currentUserVotes || []
   const userPreferred = hangout.userPreferred?.[currentUser?.id]
   return (
     <div className="p-4">
@@ -1257,8 +1232,8 @@ function ParticipantStatusSection({
   currentUser,
   onOpenInviteModal,
   onRemoveUser,
-  onShare,
-  onCopyLink,
+  onShare: _onShare,
+  onCopyLink: _onCopyLink,
   onJoinHangout
 }: {
   hangout: Hangout,

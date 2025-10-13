@@ -198,7 +198,7 @@ export async function GET(
     }))
 
     // Calculate user's vote status
-    const userVotes = user ? (votes[user.id] || []) : []
+    const currentUserVotes = user ? (votes[user.id] || []) : []
     const userRSVP = user ? rsvps.find(r => r.userId === user.id) : null
 
     // Build response
@@ -224,7 +224,8 @@ export async function GET(
       rsvps,
       options,
       votes,
-      userVotes,
+      userVotes: votes, // Complete userVotes object for consensus checking
+      currentUserVotes, // Current user's votes array for UI
       userRSVP: userRSVP?.status || null,
       requiresVoting,
       state: hangoutState,
