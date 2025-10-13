@@ -495,6 +495,7 @@ export async function POST(request: NextRequest) {
 
     // Add other participants if specified
     if (validatedData.participants && validatedData.participants.length > 0) {
+      console.log('Hangouts API - Adding other participants...')
       for (const participantId of validatedData.participants) {
         await db.content_participants.create({
           data: {
@@ -508,10 +509,12 @@ export async function POST(request: NextRequest) {
           }
         })
       }
+      console.log('Hangouts API - Other participants added')
     }
 
     // Create poll for hangouts with multiple options
     if (validatedData.options && validatedData.options.length > 1) {
+      console.log('Hangouts API - Creating poll...')
       try {
         const pollData = {
           id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -538,13 +541,14 @@ export async function POST(request: NextRequest) {
           data: pollData
         })
 
-        logger.info('Poll created successfully for hangout:', hangout.id)
+        console.log('Hangouts API - Poll created successfully for hangout:', hangout.id)
       } catch (pollError) {
-        logger.error('Error creating poll:', pollError)
+        console.error('Hangouts API - Error creating poll:', pollError)
         // Don't fail the entire request if poll creation fails
       }
     }
 
+    console.log('Hangouts API - Returning success response')
     return NextResponse.json({
       success: true,
       data: {

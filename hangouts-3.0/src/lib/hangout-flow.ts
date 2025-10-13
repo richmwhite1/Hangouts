@@ -49,7 +49,7 @@ export const determineHangoutFlow = (userSelections: HangoutFlowData): 'SKIP_TO_
 /**
  * Create hangout with appropriate flow
  */
-export const createHangoutFlow = async (hangoutData: any): Promise<HangoutFlowResult> => {
+export const createHangoutFlow = (hangoutData: any): HangoutFlowResult => {
   const flow = determineHangoutFlow(hangoutData);
   
   if (flow === 'SKIP_TO_RSVP') {
