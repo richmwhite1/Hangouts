@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { CheckCircle, Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { logger } from '@/lib/logger'
 interface Task {
@@ -29,17 +30,21 @@ interface SimpleTaskManagerProps {
   isHost: boolean
 }
 export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: SimpleTaskManagerProps) {
+  const { getToken } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskText, setNewTaskText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+
   // Load tasks from API
   const fetchTasks = async () => {
     try {
       setIsLoading(true)
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/tasks`, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         }
       })
       if (response.ok) {
@@ -67,10 +72,12 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
     if (!newTaskText.trim()) return
     try {
       setIsLoading(true)
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/tasks`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({ text: newTaskText.trim() })
       })
@@ -91,10 +98,12 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
   }
   const toggleTaskAssignment = async (taskId: string) => {
     try {
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/tasks/${taskId}/assign`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         }
       })
       if (response.ok) {
@@ -154,11 +163,11 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
                 />
                 <button
                   onClick={addTask}
-                  disabled={!newTaskText.trim()}
+                  disabled={!newTaskText.trim() || isLoading}
                   className="px-2 py-1.5 bg-purple-600/80 text-white text-xs rounded hover:bg-purple-700/80 disabled:bg-gray-700/50 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3" />
-                  Add
+                  {isLoading ? 'Adding...' : 'Add'}
                 </button>
               </div>
             </div>

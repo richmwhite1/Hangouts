@@ -6,18 +6,21 @@ import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 // POST /api/hangouts/[id]/tasks/[taskId]/assign - Assign/unassign user to task
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string, taskId: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    // Verify authentication using Clerk
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
+
+    const user = await getClerkApiUser()
+    if (!user) {
       return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
     }
+
     const { id: hangoutId, taskId } = await params
     // Check if the hangout exists and user has access
     const hangout = await db.content.findUnique({
