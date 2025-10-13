@@ -600,7 +600,7 @@ export default function HangoutDetailPage() {
 
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const isCreator = userId === hangout.creatorId
-  const isHost = isCreator || hangout.participants?.some(p => p.user.id === userId && p.role === 'CO_HOST')
+  const isHost = isCreator || hangout.participants?.some(p => p.user.id === userId && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
   const userRSVP = hangout.rsvps?.find(r => r.user.id === userId)?.status || 'PENDING'
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
@@ -705,12 +705,12 @@ export default function HangoutDetailPage() {
                     <span>{currentState === HANGOUT_STATES.CONFIRMED ? 'Plan Confirmed' : 'Plan Details'}</span>
                   </div>
                   {/* Edit button for hosts/co-hosts */}
-                  {hangout.participants?.some(p =>
+                  {(hangout.creatorId === userId || hangout.participants?.some(p =>
                     p.user.id === userId &&
-                    (p.role === 'HOST' || p.role === 'CO_HOST')
-                  ) && (
+                    (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
+                  )) && (
                     <button
-                      onClick={() => {}}
+                      onClick={() => setShowEditModal(true)}
                       className="text-gray-400 hover:text-white transition-colors p-1 rounded"
                       title="Edit plan details"
                     >
@@ -1347,7 +1347,7 @@ function ParticipantStatusSection({
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const participants = hangout.participants || []
   const isCreator = currentUser?.id === hangout.creatorId
-  const isHost = isCreator || participants?.some(p => p.user.id === currentUser?.id && p.role === 'CO_HOST')
+  const isHost = isCreator || participants?.some(p => p.user.id === currentUser?.id && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
   
   // Always show participants section, even if empty
   return (
