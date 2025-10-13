@@ -110,6 +110,15 @@ export default function HangoutDetailPage() {
   const [error, setError] = useState<string | null>(null)
   
   console.log('Hangout detail page - Component initialized with hangoutId:', hangoutId)
+  
+  // Fetch hangout data when component mounts
+  useEffect(() => {
+    console.log('Hangout detail page - useEffect triggered, hangoutId:', hangoutId)
+    if (hangoutId) {
+      fetchHangout()
+    }
+  }, [hangoutId])
+  
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false)
   const [isVoting, setIsVoting] = useState(false)
   const [newMessage, setNewMessage] = useState('')
