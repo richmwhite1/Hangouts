@@ -26,9 +26,15 @@ export async function GET(request: NextRequest) {
           logger.info('Clerk user result:', { userId: clerkUser?.id })
           if (clerkUser) {
             userId = clerkUser.id
+          } else {
+            // User exists in Clerk but not in database - use Clerk ID as fallback
+            logger.warn('User exists in Clerk but not in database, using Clerk ID as fallback')
+            userId = clerkUserId
           }
         } catch (userError) {
           logger.error('Error getting Clerk user:', userError)
+          // Fallback to Clerk ID if database lookup fails
+          userId = clerkUserId
         }
       }
     } catch (error) {
