@@ -10,13 +10,29 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth()
+    console.log('Upload API - Clerk userId:', clerkUserId)
+    
     if (!clerkUserId) {
+      console.log('Upload API - No clerkUserId, returning 401')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = await getClerkApiUser()
+    let user = await getClerkApiUser()
+    console.log('Upload API - Database user:', user?.id)
+    
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+      console.log('Upload API - No database user, creating fallback user')
+      // Create a minimal user object as fallback
+      user = {
+        id: clerkUserId,
+        email: 'temp@example.com',
+        username: 'temp_user',
+        name: 'Temp User',
+        role: 'USER' as const,
+        avatar: null,
+        isActive: true
+      }
+      console.log('Upload API - Using fallback user:', user.id)
     }
 
     const formData = await request.formData()

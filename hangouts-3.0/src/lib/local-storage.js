@@ -30,8 +30,16 @@ export async function saveFileLocally(buffer, originalName, type = 'hangout') {
     await ensureUploadDir()
     
     const filename = generateFilename(originalName, type)
-    const filePath = path.join(UPLOAD_DIR, filename)
-    const publicUrl = `${UPLOAD_URL}/${filename}`
+    // Create subdirectory for type if it doesn't exist
+    const typeDir = path.join(UPLOAD_DIR, type)
+    try {
+      await fs.access(typeDir)
+    } catch {
+      await fs.mkdir(typeDir, { recursive: true })
+    }
+    
+    const filePath = path.join(typeDir, filename)
+    const publicUrl = `${UPLOAD_URL}/${type}/${filename}`
     
     await fs.writeFile(filePath, buffer)
     
