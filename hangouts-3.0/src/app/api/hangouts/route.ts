@@ -499,7 +499,9 @@ export async function POST(request: NextRequest) {
         ticketUrl: null,
         attendeeCount: 0,
         externalEventId: null,
-        source: 'MANUAL'
+        source: 'MANUAL',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     })
     console.log('Hangouts API - Hangout created successfully:', hangout.id)
