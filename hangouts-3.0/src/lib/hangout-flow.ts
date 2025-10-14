@@ -134,15 +134,41 @@ export const checkMandatoryRSVP = (hangout: any): { canProceed: boolean; waiting
 /**
  * Get vote count for a specific option
  */
-export const getVoteCount = (votes: Record<string, string>, optionId: string): number => {
-  return Object.values(votes || {}).filter(vote => vote === optionId).length;
+export const getVoteCount = (votes: Record<string, string[]> | Record<string, string>, optionId: string): number => {
+  if (!votes) return 0;
+  
+  let count = 0;
+  Object.values(votes).forEach(userVotes => {
+    if (Array.isArray(userVotes)) {
+      // New format: Record<string, string[]>
+      count += userVotes.filter(vote => vote === optionId).length;
+    } else if (typeof userVotes === 'string') {
+      // Old format: Record<string, string>
+      if (userVotes === optionId) {
+        count += 1;
+      }
+    }
+  });
+  
+  return count;
 };
 
 /**
  * Check if user has voted for a specific option
  */
-export const hasUserVotedFor = (votes: Record<string, string>, userId: string, optionId: string): boolean => {
-  return votes[userId] === optionId;
+export const hasUserVotedFor = (votes: Record<string, string[]> | Record<string, string>, userId: string, optionId: string): boolean => {
+  if (!votes || !votes[userId]) return false;
+  
+  const userVotes = votes[userId];
+  if (Array.isArray(userVotes)) {
+    // New format: Record<string, string[]>
+    return userVotes.includes(optionId);
+  } else if (typeof userVotes === 'string') {
+    // Old format: Record<string, string>
+    return userVotes === optionId;
+  }
+  
+  return false;
 };
 
 /**

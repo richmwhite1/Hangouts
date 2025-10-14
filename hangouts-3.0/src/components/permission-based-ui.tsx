@@ -11,7 +11,7 @@ interface PermissionGateProps {
   permissions: Permission | Permission[]
   fallback?: ReactNode
   requireAll?: boolean
-  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -52,15 +52,15 @@ export function PermissionGate({
         let result: boolean
         if (resourceType && resourceId && action) {
           // Check resource-specific access
-          const access = await rbac.canAccessResource(userId.userIdId, resourceType, resourceId, action)
+          const access = await rbac.canAccessResource(userId, resourceType, resourceId, action)
           result = access.granted
         } else {
           // Check general permissions
           const permissionArray = Array.isArray(permissions) ? permissions : [permissions]
           if (requireAll) {
-            result = await rbac.hasAllPermissions(userId.userIdId, permissionArray)
+            result = await rbac.hasAllPermissions(userId, permissionArray)
           } else {
-            result = await rbac.hasAnyPermission(userId.userIdId, permissionArray)
+            result = await rbac.hasAnyPermission(userId, permissionArray)
           }
         }
         setHasPermission(result)
@@ -101,7 +101,7 @@ export function RoleGate({
     }
     const checkRole = async () => {
       try {
-        const userIdPermissions = await rbac.getUserPermissions(userId.userIdId)
+        const userIdPermissions = await rbac.getUserPermissions(userId)
         const roleArray = Array.isArray(roles) ? roles : [roles]
         let result: boolean
         if (requireAll) {
@@ -147,7 +147,7 @@ interface PermissionButtonProps {
   className?: string
   disabled?: boolean
   requireAll?: boolean
-  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -198,7 +198,7 @@ interface PermissionLinkProps {
   children: ReactNode
   className?: string
   requireAll?: boolean
-  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -243,7 +243,7 @@ interface PermissionFormProps {
   children: ReactNode
   className?: string
   requireAll?: boolean
-  resourceType?: 'hangout' | 'userId' | 'group' | 'comment' | 'poll'
+  resourceType?: 'hangout' | 'user' | 'group' | 'comment' | 'poll'
   resourceId?: string
   action?: 'read' | 'update' | 'delete' | 'invite' | 'moderate'
 }
@@ -293,7 +293,7 @@ export function usePermission(permission: Permission): boolean | null {
     }
     const checkPermission = async () => {
       try {
-        const result = await rbac.hasPermission(userId.userIdId, permission)
+        const result = await rbac.hasPermission(userId, permission)
         setHasPermission(result)
       } catch (error) {
         logger.error('Error checking permission:', error);
@@ -320,9 +320,9 @@ export function usePermissions(permissions: Permission[], requireAll = false): b
       try {
         let result: boolean
         if (requireAll) {
-          result = await rbac.hasAllPermissions(userId.userIdId, permissions)
+          result = await rbac.hasAllPermissions(userId, permissions)
         } else {
-          result = await rbac.hasAnyPermission(userId.userIdId, permissions)
+          result = await rbac.hasAnyPermission(userId, permissions)
         }
         setHasPermissions(result)
       } catch (error) {
@@ -348,7 +348,7 @@ export function useRole(role: string): boolean | null {
     }
     const checkRole = async () => {
       try {
-        const userIdPermissions = await rbac.getUserPermissions(userId.userIdId)
+        const userIdPermissions = await rbac.getUserPermissions(userId)
         setHasRole(userIdPermissions.role === role)
       } catch (error) {
         logger.error('Error checking role:', error);

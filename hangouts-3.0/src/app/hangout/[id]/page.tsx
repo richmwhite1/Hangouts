@@ -117,7 +117,16 @@ export default function HangoutDetailPage() {
   useEffect(() => {
     console.log('Hangout detail page - useEffect triggered, hangoutId:', hangoutId, 'isSignedIn:', isSignedIn, 'isLoaded:', isLoaded)
     if (hangoutId && isLoaded) {
+      console.log('🔍 Calling fetchHangout and fetchDatabaseUserId')
       fetchHangout()
+      if (isSignedIn) {
+        console.log('🔍 Calling fetchDatabaseUserId because isSignedIn:', isSignedIn)
+        fetchDatabaseUserId()
+      } else {
+        console.log('🔍 Skipping fetchDatabaseUserId because isSignedIn:', isSignedIn)
+      }
+    } else {
+      console.log('🔍 Skipping fetchHangout because conditions not met:', { hangoutId: !!hangoutId, isLoaded })
     }
   }, [hangoutId, isSignedIn, isLoaded])
   
@@ -132,6 +141,49 @@ export default function HangoutDetailPage() {
   const [friends, setFriends] = useState<any[]>([])
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
   const [showEditModal, setShowEditModal] = useState(false)
+  const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
+
+  // Fetch database user ID
+  const fetchDatabaseUserId = async () => {
+    console.log('🔍 fetchDatabaseUserId - Called with isSignedIn:', isSignedIn, 'isLoaded:', isLoaded)
+    
+    if (!isSignedIn || !isLoaded) {
+      console.log('🔍 fetchDatabaseUserId - Not signed in or not loaded, skipping')
+      return
+    }
+    
+    try {
+      console.log('🔍 fetchDatabaseUserId - Starting fetch')
+      const token = await getToken()
+      console.log('🔍 fetchDatabaseUserId - Got token:', token ? 'YES' : 'NO')
+      console.log('🔍 fetchDatabaseUserId - Token preview:', token ? token.substring(0, 20) + '...' : 'null')
+      
+      if (!token) {
+        console.error('🔍 fetchDatabaseUserId - No token available')
+        return
+      }
+      
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      console.log('🔍 fetchDatabaseUserId - Response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🔍 fetchDatabaseUserId - Response data:', data)
+        console.log('🔍 Database user ID fetched:', data.data?.id)
+        setDatabaseUserId(data.data?.id)
+      } else {
+        const errorText = await response.text()
+        console.error('🔍 fetchDatabaseUserId - Response not ok:', response.status, response.statusText, errorText)
+      }
+    } catch (error) {
+      console.error('❌ Error fetching database user ID:', error)
+    }
+  }
 
   // Load friends for invitation
   const loadFriends = async () => {
@@ -286,6 +338,11 @@ export default function HangoutDetailPage() {
       const data = await response.json()
       console.log('Hangout detail - API response:', data)
       console.log('Hangout detail - Setting hangout to:', data.data || data)
+      console.log('🔍 Vote data in API response:', {
+        votes: data.data?.votes,
+        userVotes: data.data?.userVotes,
+        currentUserVotes: data.data?.currentUserVotes
+      })
       setHangout(data.data || data)
       console.log('Hangout detail - Hangout set successfully')
       // Check if hangout is saved (only for authenticated users)
@@ -374,8 +431,10 @@ export default function HangoutDetailPage() {
         body: JSON.stringify({ optionId, action })
       })
       if (response.ok) {
+        console.log('🔍 Vote successful, refreshing hangout data...')
         // Refresh hangout data to get updated vote counts
         await fetchHangout()
+        console.log('🔍 Hangout data refreshed after vote')
         const actionText = action === 'add' ? 'Vote added' : action === 'remove' ? 'Vote removed' : action === 'toggle' ? 'Vote updated' : 'Preferred option updated'
         toast.success(`${actionText} successfully!`)
       } else {
@@ -599,19 +658,56 @@ export default function HangoutDetailPage() {
   }
 
   const currentState = hangout.state || HANGOUT_STATES.POLLING
-  const isCreator = userId === hangout.creatorId
-  const isHost = isCreator || hangout.participants?.some(p => p.user.id === userId && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
+  const isCreator = databaseUserId === hangout.creatorId
+  const isHost = isCreator || hangout.participants?.some(p => p.user.id === databaseUserId && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
+  
+  // Basic debug logging for hangout structure
+  console.log('🔍 Basic Hangout Debug:', {
+    hangoutId: hangout.id,
+    hangoutState: hangout.state,
+    currentState,
+    hasOptions: !!hangout.options,
+    optionsCount: hangout.options?.length || 0,
+    hasVotes: !!hangout.votes,
+    votesType: typeof hangout.votes,
+    votesKeys: hangout.votes ? Object.keys(hangout.votes) : [],
+    hasParticipants: !!hangout.participants,
+    participantsCount: hangout.participants?.length || 0
+  })
   
   // Debug logging for host recognition
   console.log('🔍 Host Recognition Debug:', {
-    userId,
+    clerkUserId: userId,
+    databaseUserId,
     hangoutCreatorId: hangout.creatorId,
     isCreator,
     participants: hangout.participants,
+    participantUserIds: hangout.participants?.map(p => p.user.id),
+    participantRoles: hangout.participants?.map(p => ({ userId: p.user.id, role: p.role, canEdit: p.canEdit })),
     isHost,
     currentState
   })
-  const userRSVP = hangout.rsvps?.find(r => r.user.id === userId)?.status || 'PENDING'
+  
+  // Debug logging for authentication state
+  console.log('🔍 Auth State Debug:', {
+    isSignedIn,
+    isLoaded,
+    userId,
+    databaseUserId
+  })
+  
+  // Debug logging for vote data structure
+  console.log('🔍 Vote Data Debug:', {
+    hangoutState: hangout.state,
+    currentState,
+    votes: hangout.votes,
+    userVotes: hangout.userVotes,
+    currentUserVotes: hangout.currentUserVotes,
+    userPreferred: hangout.userPreferred,
+    options: hangout.options,
+    finalizedOption: hangout.finalizedOption
+  })
+  const userRSVP = hangout.rsvps?.find(r => r.user.id === databaseUserId)?.status || 'PENDING'
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
       // Debug logging
@@ -684,8 +780,8 @@ export default function HangoutDetailPage() {
             isVoting={isVoting}
           />
         )}
-        {/* Plan Details Section - Always show for all hangouts */}
-        {hangout && (
+        {/* Plan Details Section - Only show when confirmed or completed */}
+        {hangout && (currentState === HANGOUT_STATES.CONFIRMED || currentState === HANGOUT_STATES.COMPLETED) && (
           <div className="p-4">
             {/* Plan Details Header */}
             <div className="flex items-center justify-between mb-3">
@@ -693,11 +789,11 @@ export default function HangoutDetailPage() {
                 <div className={`w-2 h-2 rounded-full ${currentState === HANGOUT_STATES.CONFIRMED ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                 <span>{currentState === HANGOUT_STATES.CONFIRMED ? 'Plan Confirmed' : 'Plan Details'}</span>
               </div>
-              {/* Edit button for hosts/co-hosts */}
-              {(hangout.creatorId === userId || hangout.participants?.some(p =>
-                p.user.id === userId &&
-                (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
-              )) && (
+                  {/* Edit button for hosts/co-hosts */}
+                  {(hangout.creatorId === databaseUserId || hangout.participants?.some(p =>
+                    p.user.id === databaseUserId &&
+                    (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
+                  )) && (
                 <button
                   onClick={() => setShowEditModal(true)}
                   className="text-gray-400 hover:text-white transition-colors p-1 rounded"
@@ -866,196 +962,6 @@ export default function HangoutDetailPage() {
                 </div>
               </div>
             )}
-            {hangout && (
-              <div className="p-4">
-                {/* Plan Details Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-gray-400 text-sm">
-                    <div className={`w-2 h-2 rounded-full ${currentState === HANGOUT_STATES.CONFIRMED ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                    <span>{currentState === HANGOUT_STATES.CONFIRMED ? 'Plan Confirmed' : 'Plan Details'}</span>
-                  </div>
-                  {/* Edit button for hosts/co-hosts */}
-                  {(hangout.creatorId === userId || hangout.participants?.some(p =>
-                    p.user.id === userId &&
-                    (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
-                  )) && (
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="text-gray-400 hover:text-white transition-colors p-1 rounded"
-                      title="Edit plan details"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 space-y-3">
-                  {/* Show finalized option if confirmed, otherwise show first option details */}
-                  {currentState === HANGOUT_STATES.CONFIRMED && hangout.finalizedOption ? (
-                    <>
-                      {/* Finalized Option Text */}
-                      {(hangout.finalizedOption.optionText || hangout.finalizedOption.title) && (
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">{hangout.finalizedOption.optionText || hangout.finalizedOption.title}</h3>
-                      {(hangout.finalizedOption.optionDescription || hangout.finalizedOption.description) && (
-                        <p className="text-gray-300 text-sm">{hangout.finalizedOption.optionDescription || hangout.finalizedOption.description}</p>
-                      )}
-                    </div>
-                  )}
-                  {/* Option-specific Date & Time */}
-                  {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-300 text-sm">
-                        {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'EEEE, MMMM d, yyyy')}
-                      </span>
-                    </div>
-                  )}
-                  {/* Option-specific Time */}
-                  {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-300 text-sm">
-                        {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'h:mm a')}
-                      </span>
-                    </div>
-                  )}
-                  {/* Option-specific Location with Map Icon */}
-                  {(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location) && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-300 text-sm flex-1">{hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location}</span>
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 p-1 rounded"
-                        title="Open in Google Maps"
-                      >
-                        <MapPin className="w-4 h-4" />
-                      </a>
-                    </div>
-                  )}
-                  {/* Option-specific Price */}
-                  {((hangout.finalizedOption.metadata?.price !== undefined && hangout.finalizedOption.metadata.price > 0) || (hangout.finalizedOption.price !== undefined && hangout.finalizedOption.price > 0)) && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-300 text-sm">
-                        ${(hangout.finalizedOption.metadata?.price || hangout.finalizedOption.price).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  {/* Option-specific Event Image */}
-                  {hangout.finalizedOption.metadata?.eventImage && (
-                    <div className="mt-3">
-                      <img
-                        src={hangout.finalizedOption.metadata.eventImage}
-                        alt={hangout.finalizedOption.optionText || 'Plan option'}
-                        className="w-full h-32 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-                  {/* Option-specific Hangout URL */}
-                  {hangout.finalizedOption.metadata?.hangoutUrl && (
-                    <div className="mt-3">
-                      <a
-                        href={hangout.finalizedOption.metadata.hangoutUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                      >
-                        🔗 Open Hangout Link
-                      </a>
-                    </div>
-                  )}
-                  {/* Consensus Info for voted options */}
-                  {hangout.finalizedOption.consensusLevel && (
-                    <div className="mt-3 p-2 bg-green-900/20 border border-green-700/30 rounded-lg">
-                      <p className="text-green-400 text-xs">
-                        Consensus reached: {hangout.finalizedOption.consensusLevel.toFixed(1)}%
-                        ({hangout.finalizedOption.totalVotes} votes)
-                      </p>
-                    </div>
-                  )}
-                    </>
-                  ) : (
-                    <>
-                      {/* Show first option details during voting */}
-                      {hangout.options && hangout.options.length > 0 && (() => {
-                        const firstOption = hangout.options[0]
-                        return (
-                          <>
-                            {/* Option Title and Description */}
-                            <div>
-                              <h3 className="text-lg font-medium text-white mb-2">{firstOption?.title}</h3>
-                              {firstOption?.description && (
-                                <p className="text-gray-300 text-sm">{firstOption?.description}</p>
-                              )}
-                            </div>
-                            {/* Option Date & Time */}
-                            {firstOption?.dateTime && (
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-300 text-sm">
-                                  {format(new Date(firstOption?.dateTime!), 'EEEE, MMMM d, yyyy')}
-                                </span>
-                              </div>
-                            )}
-                            {/* Option Time */}
-                            {firstOption?.dateTime && (
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-300 text-sm">
-                                  {format(new Date(firstOption?.dateTime!), 'h:mm a')}
-                                </span>
-                              </div>
-                            )}
-                            {/* Option Location with Map Icon */}
-                            {firstOption?.location && (
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-300 text-sm flex-1">{firstOption?.location}</span>
-                                <a
-                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstOption?.location!)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-400 hover:text-blue-300 p-1 rounded"
-                                  title="Open in Google Maps"
-                                >
-                                  <MapPin className="w-4 h-4" />
-                                </a>
-                              </div>
-                            )}
-                            {/* Option Price */}
-                            {firstOption?.price && firstOption?.price > 0 && (
-                              <div className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-300 text-sm">
-                                  ${firstOption?.price?.toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-                            {/* Option Hangout URL */}
-                            {firstOption?.hangoutUrl && (
-                              <div className="flex items-center gap-2">
-                                <a
-                                  href={firstOption?.hangoutUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-2"
-                                >
-                                  <span>🔗</span>
-                                  <span>Open Hangout Link</span>
-                                </a>
-                              </div>
-                            )}
-                          </>
-                        )
-                      })()}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
             <RSVPSection
               onRSVP={handleRSVP}
               isUpdating={isUpdatingRSVP}
@@ -1094,7 +1000,7 @@ export default function HangoutDetailPage() {
           <div className="mx-4 mb-6">
             <SimpleTaskManager
               hangoutId={hangout.id}
-              currentUser={userId ? { id: userId, name: '', username: '' } : { id: '', name: '', username: '' }}
+              currentUser={databaseUserId ? { id: databaseUserId, name: '', username: '' } : { id: '', name: '', username: '' }}
               isHost={isHost}
             />
           </div>
@@ -1102,7 +1008,7 @@ export default function HangoutDetailPage() {
         {/* Participant Status Section - Always show if has participants */}
         <ParticipantStatusSection
           hangout={hangout}
-          currentUser={userId ? { id: userId } : null}
+          currentUser={databaseUserId ? { id: databaseUserId } : null}
           onOpenInviteModal={() => {
             loadFriends()
             setShowInviteModal(true)
@@ -1268,6 +1174,18 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
   onVote: (optionId: string, action?: 'add' | 'remove' | 'preferred' | 'toggle') => void,
   isVoting: boolean
 }) {
+  console.log('🔍 VotingSection Debug:', {
+    hangoutId: hangout.id,
+    hasVotes: !!hangout.votes,
+    votes: hangout.votes,
+    votesType: typeof hangout.votes,
+    hasOptions: !!hangout.options,
+    optionsCount: hangout.options?.length || 0,
+    hasParticipants: !!hangout.participants,
+    participantsCount: hangout.participants?.length || 0,
+    currentUser: currentUser?.id
+  })
+  
   const votedCount = Object.keys(hangout.votes || {}).length
   const totalParticipants = hangout.participants?.length || 0
   const userVotes = hangout.currentUserVotes || []
@@ -1298,10 +1216,23 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
       </div>
       {/* Voting Options */}
       {hangout.options?.map((option) => {
-        const voteCount = getVoteCount(hangout.votes, option.id)
+        // Use userVotes instead of votes for counting multiple votes per user
+        const voteCount = getVoteCount(hangout.userVotes || hangout.votes, option.id)
         const hasUserVoted = userVotes.includes(option.id)
         const isPreferred = userPreferred === option.id
         const votePercentage = totalParticipants > 0 ? (voteCount / totalParticipants * 100) : 0
+        
+        // Debug logging for vote counts
+        console.log(`🔍 Vote Count Debug for ${option.title}:`, {
+          optionId: option.id,
+          voteCount,
+          totalParticipants,
+          votePercentage: Math.round(votePercentage),
+          votes: hangout.votes,
+          userVotes: hangout.userVotes,
+          currentUserVotes: userVotes,
+          userPreferred
+        })
         return (
           <div
             key={option.id}
