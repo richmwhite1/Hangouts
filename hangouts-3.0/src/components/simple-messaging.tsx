@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { AvatarWithStatus } from "@/components/ui/avatar-with-status"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Send, X, Search, Users, Check } from "lucide-react"
@@ -432,10 +433,13 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
                           )}
-                          <Avatar className="w-10 h-10 rounded-md">
-                            <AvatarImage src={friend.avatar || "/placeholder-avatar.png"} alt={friend.name} />
-                            <AvatarFallback className="rounded-md">{friend.name?.charAt(0) || "U"}</AvatarFallback>
-                          </Avatar>
+                          <AvatarWithStatus
+                            src={friend.avatar || "/placeholder-avatar.png"}
+                            alt={friend.name || "User"}
+                            fallback={friend.name || "U"}
+                            size="lg"
+                            status="offline"
+                          />
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-white truncate">{friend.name}</h3>
                             <p className="text-sm text-gray-400">@{friend.username}</p>

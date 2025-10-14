@@ -84,12 +84,12 @@ export function Navigation() {
                 className="p-2 min-h-[44px] min-w-[44px]"
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
-                <Avatar className="w-8 h-8 rounded-md">
+                <Avatar className="w-8 h-8 rounded-lg">
                   <AvatarImage 
                     src={isSignedIn && user?.imageUrl ? user.imageUrl : "/placeholder-avatar.png"} 
                     alt={isSignedIn && user?.fullName ? user.fullName : "Profile"} 
                   />
-                  <AvatarFallback className="rounded-md">
+                  <AvatarFallback className="rounded-lg">
                     {isSignedIn && user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                   </AvatarFallback>
                 </Avatar>
@@ -99,12 +99,12 @@ export function Navigation() {
                 <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
                   <div className="p-4 border-b border-border">
                     <div className="flex items-center space-x-3">
-                      <Avatar className="w-10 h-10">
+                      <Avatar className="w-10 h-10 rounded-lg">
                         <AvatarImage 
                           src={isSignedIn && user?.imageUrl ? user.imageUrl : "/placeholder-avatar.png"} 
                           alt={isSignedIn && user?.fullName ? user.fullName : "Profile"} 
                         />
-                        <AvatarFallback>
+                        <AvatarFallback className="rounded-lg">
                           {isSignedIn && user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                         </AvatarFallback>
                       </Avatar>

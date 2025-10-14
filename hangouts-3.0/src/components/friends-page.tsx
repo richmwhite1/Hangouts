@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarWithStatus } from "@/components/ui/avatar-with-status"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
@@ -310,12 +311,13 @@ export function FriendsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="w-12 h-12 rounded-lg">
-                          <AvatarImage src={friend.avatar || "/placeholder-avatar.png"} />
-                          <AvatarFallback className="bg-gray-700 text-white rounded-lg">
-                            {friend.name?.charAt(0) || "U"}
-                          </AvatarFallback>
-                        </Avatar>
+                        <AvatarWithStatus
+                          src={friend.avatar || "/placeholder-avatar.png"}
+                          alt={friend.name || "User"}
+                          fallback={friend.name || "U"}
+                          size="lg"
+                          status={friend.isActive ? "online" : "offline"}
+                        />
                         <div>
                           <h3 className="font-medium text-white">{friend.name}</h3>
                           <p className="text-sm text-gray-400">@{friend.username}</p>
@@ -376,12 +378,13 @@ export function FriendsPage() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                              <Avatar className="w-12 h-12 rounded-lg">
-                                <AvatarImage src={request.sender.avatar || "/placeholder-avatar.png"} />
-                                <AvatarFallback className="bg-gray-700 text-white rounded-lg">
-                                  {request.sender.name?.charAt(0) || "U"}
-                                </AvatarFallback>
-                              </Avatar>
+                              <AvatarWithStatus
+                                src={request.sender.avatar || "/placeholder-avatar.png"}
+                                alt={request.sender.name || "User"}
+                                fallback={request.sender.name || "U"}
+                                size="lg"
+                                status="offline"
+                              />
                               <div>
                                 <h3 className="font-medium text-white">{request.sender.name}</h3>
                                 <p className="text-sm text-gray-400">@{request.sender.username}</p>
@@ -437,12 +440,13 @@ export function FriendsPage() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                              <Avatar className="w-12 h-12 rounded-lg">
-                                <AvatarImage src={request.receiver.avatar || "/placeholder-avatar.png"} />
-                                <AvatarFallback className="bg-gray-700 text-white rounded-lg">
-                                  {request.receiver.name?.charAt(0) || "U"}
-                                </AvatarFallback>
-                              </Avatar>
+                              <AvatarWithStatus
+                                src={request.receiver.avatar || "/placeholder-avatar.png"}
+                                alt={request.receiver.name || "User"}
+                                fallback={request.receiver.name || "U"}
+                                size="lg"
+                                status="offline"
+                              />
                               <div>
                                 <h3 className="font-medium text-white">{request.receiver.name}</h3>
                                 <p className="text-sm text-gray-400">@{request.receiver.username}</p>
