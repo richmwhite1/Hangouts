@@ -167,3 +167,5 @@ export function getWeatherAdvice(weather: WeatherData, isOutdoor: boolean): stri
 
 
 
+
+

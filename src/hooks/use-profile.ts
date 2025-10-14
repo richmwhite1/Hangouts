@@ -169,11 +169,47 @@ export function useProfile() {
     }
   }
 
+  const updateProfile = async (profileData: Partial<UserProfile>) => {
+    try {
+      const token = await getToken()
+      if (!token) {
+        throw new Error('Authentication required')
+      }
+
+      const response = await fetch('/api/profile/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update profile')
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        // Update local state with the new profile data
+        setProfile(prev => prev ? { ...prev, ...profileData } : null)
+        return data.data.user
+      } else {
+        throw new Error(data.error || 'Failed to update profile')
+      }
+    } catch (error) {
+      console.error('Profile update error:', error)
+      throw error
+    }
+  }
+
   return {
     profile,
     userHangouts,
     isLoading,
     error,
-    refetch
+    refetch,
+    updateProfile
   }
 }

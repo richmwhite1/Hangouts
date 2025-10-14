@@ -304,12 +304,15 @@ export function ProfilePage() {
         // Refresh profile data
         await refetch()
         setShowEditModal(false)
-        // Success - no popup needed
+        // Show success message
+        alert('Profile updated successfully!')
       } else {
         console.error('Failed to update profile')
+        alert('Failed to update profile. Please try again.')
       }
     } catch (error) {
       console.error('Profile update error:', error)
+      alert(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSaving(false)
     }

@@ -30,6 +30,11 @@ export class SharingService {
    * Generate a shareable URL for content
    */
   generateShareUrl(contentId: string, type: 'hangout' | 'event' | 'content'): string {
+    if (type === 'hangout') {
+      return `${this.baseUrl}/hangouts/public/${contentId}`
+    } else if (type === 'event') {
+      return `${this.baseUrl}/events/public/${contentId}`
+    }
     return `${this.baseUrl}/${type}/${contentId}`
   }
   /**
@@ -54,10 +59,10 @@ export class SharingService {
       // Check if native sharing is supported
       if (navigator.share && navigator.canShare) {
         const sharePayload: any = {
-          title: customMessage || `Interested in coming to ${title}?`,
+          title: customMessage || `Come check out ${title} hangout`,
           text: includeDescription && description
-            ? `${title}\n\n${description}\n\nJoin us for this ${type}!`
-            : `Interested in coming to ${title}? Join us for this ${type}!`,
+            ? `Come check out ${title} hangout\n\n${description}\n\nJoin us for this ${type}!`
+            : `Come check out ${title} hangout! Join us for this ${type}!`,
           url: url
         }
         // Note: We don't include image files in native sharing
@@ -141,7 +146,7 @@ export class SharingService {
    * Copy to clipboard with fallback
    */
   private async copyToClipboard(url: string, title: string): Promise<void> {
-    const text = `Interested in coming to ${title}?\n\n${url}`
+    const text = `Come check out ${title} hangout\n\n${url}`
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text)
     } else {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Head from 'next/head'
 import { 
   Calendar, 
   MapPin, 
@@ -121,8 +122,8 @@ export default function PublicHangoutPage() {
   const handleShare = async () => {
     if (!currentHangout) return
 
-    const shareUrl = `${window.location.origin}/hangouts/${hangoutId}`
-    const shareText = `Want to hangout? Join me for "${currentHangout.title}" at ${currentHangout.location || 'a great location'}! ${shareUrl}`
+    const shareUrl = `${window.location.origin}/hangouts/public/${hangoutId}`
+    const shareText = `Come check out ${currentHangout.title} hangout! Join me for "${currentHangout.title}" at ${currentHangout.location || 'a great location'}! ${shareUrl}`
 
     // Check if native sharing is supported
     if (navigator.share) {
@@ -214,8 +215,90 @@ export default function PublicHangoutPage() {
 
   const rsvpCounts = getRSVPCounts()
 
+  // Generate metadata for rich previews
+  const generateMetadata = () => {
+    if (!currentHangout) return null
+
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const hangoutUrl = `${baseUrl}/hangouts/public/${hangoutId}`
+    const imageUrl = currentHangout.image || `${baseUrl}/api/placeholder/1200/630`
+    
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
+
+    const title = `Come check out ${currentHangout.title} hangout${currentHangout.location ? ` at ${currentHangout.location}` : ''}`
+    const description = currentHangout.description || 
+      `Join ${currentHangout.creator?.name || 'us'} for this hangout${currentHangout.startTime ? ` on ${formatDate(currentHangout.startTime)}` : ''}. Open to everyone!`
+
+    return {
+      title,
+      description,
+      imageUrl,
+      hangoutUrl
+    }
+  }
+
+  const metadata = generateMetadata()
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <>
+      {metadata && (
+        <Head>
+          {/* Basic Meta Tags */}
+          <title>{metadata.title}</title>
+          <meta name="description" content={metadata.description} />
+          <meta name="keywords" content="hangout, event, social, meetup, friends, planning, public" />
+          
+          {/* Open Graph Meta Tags */}
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content={metadata.title} />
+          <meta property="og:description" content={metadata.description} />
+          <meta property="og:url" content={metadata.hangoutUrl} />
+          <meta property="og:image" content={metadata.imageUrl} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:image:alt" content={currentHangout?.title} />
+          <meta property="og:site_name" content="Hangouts 3.0" />
+          
+          {/* Twitter Card Meta Tags */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={metadata.title} />
+          <meta name="twitter:description" content={metadata.description} />
+          <meta name="twitter:image" content={metadata.imageUrl} />
+          <meta name="twitter:image:alt" content={currentHangout?.title} />
+          
+          {/* Additional Meta Tags */}
+          <meta name="robots" content="index, follow" />
+          <meta name="author" content={currentHangout?.creator?.name || 'Hangouts 3.0'} />
+          
+          {/* Event Specific Meta Tags */}
+          {currentHangout?.startTime && (
+            <meta property="event:start_time" content={new Date(currentHangout.startTime).toISOString()} />
+          )}
+          {currentHangout?.endTime && (
+            <meta property="event:end_time" content={new Date(currentHangout.endTime).toISOString()} />
+          )}
+          {currentHangout?.location && (
+            <meta property="event:location" content={currentHangout.location} />
+          )}
+          
+          {/* Privacy Level */}
+          <meta property="hangout:privacy" content={currentHangout?.privacyLevel} />
+          
+          {/* Canonical URL */}
+          <link rel="canonical" href={metadata.hangoutUrl} />
+        </Head>
+      )}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="px-4 py-3 flex items-center justify-between">
@@ -431,6 +514,7 @@ export default function PublicHangoutPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
