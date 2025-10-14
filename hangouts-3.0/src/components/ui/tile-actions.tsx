@@ -96,7 +96,7 @@ export function TileActions({
       await sharingService.shareContent(shareData, {
         includeImage: true,
         includeDescription: true,
-        customMessage: `Check out this ${itemType}!`
+        customMessage: `Come check out ${itemTitle} hangout!`
       })
     } catch (error) {
       logger.error('Share failed:', error);

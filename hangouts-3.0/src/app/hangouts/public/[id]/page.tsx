@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Head from 'next/head'
 import { 
   Calendar, 
   MapPin, 
@@ -217,6 +218,26 @@ export default function PublicHangoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Rich Link Preview Meta Tags */}
+      <Head>
+        <title>{currentHangout.title} - Hangouts 3.0</title>
+        <meta name="description" content={currentHangout.description || `Join us for ${currentHangout.title}!`} />
+        
+        {/* Open Graph Meta Tags */}
+        <meta property="og:title" content={`${currentHangout.title} - Hangouts 3.0`} />
+        <meta property="og:description" content={currentHangout.description || `Join us for ${currentHangout.title}!`} />
+        <meta property="og:image" content={currentHangout.image || `${window.location.origin}/api/og/hangout?title=${encodeURIComponent(currentHangout.title)}&creator=${encodeURIComponent(currentHangout.creator.name)}&date=${encodeURIComponent(formatDate(currentHangout.startTime))}`} />
+        <meta property="og:url" content={`${window.location.origin}/hangouts/public/${hangoutId}`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Hangouts 3.0" />
+        
+        {/* Twitter Card Meta Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${currentHangout.title} - Hangouts 3.0`} />
+        <meta name="twitter:description" content={currentHangout.description || `Join us for ${currentHangout.title}!`} />
+        <meta name="twitter:image" content={currentHangout.image || `${window.location.origin}/api/og/hangout?title=${encodeURIComponent(currentHangout.title)}&creator=${encodeURIComponent(currentHangout.creator.name)}&date=${encodeURIComponent(formatDate(currentHangout.startTime))}`} />
+      </Head>
+      
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="px-4 py-3 flex items-center justify-between">

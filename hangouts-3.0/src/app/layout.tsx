@@ -9,7 +9,11 @@ import { Navigation } from '@/components/navigation'
 import { GlobalErrorBoundary } from '@/components/global-error-boundary'
 import { Toaster } from 'sonner'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  display: 'swap'
+})
 
 export const metadata: Metadata = {
   title: 'Hangouts 3.0',
@@ -26,7 +30,10 @@ export default function RootLayout({
       afterSignInUrl="/"
       afterSignUpUrl="/"
     >
-      <html lang="en">
+      <html lang="en" className="dark">
+        <head>
+          <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.13/24/outline.js"></script>
+        </head>
         <body className={inter.className}>
           <GlobalErrorBoundary>
             <RealtimeProvider>
@@ -34,7 +41,9 @@ export default function RootLayout({
                   <div className="min-h-screen bg-background text-foreground dark pb-20">
                     <Navigation />
                     <main className="container mx-auto px-4 py-6 max-w-4xl">
-                      {children}
+                      <div className="space-y-6">
+                        {children}
+                      </div>
                     </main>
                     <BottomNavigation />
                   </div>
