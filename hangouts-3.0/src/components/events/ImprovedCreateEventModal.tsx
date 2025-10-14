@@ -190,10 +190,12 @@ export function ImprovedCreateEventModal() {
     
     setIsScraping(true)
     try {
+      const token = await getToken()
       const response = await fetch('/api/scrape-event', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({ url: formData.eventUrl })
       })
@@ -609,7 +611,7 @@ export function ImprovedCreateEventModal() {
                   <Input
                     id="startDate"
                     type="date"
-                    value={formData.startDate}
+                    value={formData.startDate ? formData.startDate.split('T')[0] : ''}
                     onChange={(e) => handleInputChange('startDate', e.target.value)}
                     className="bg-gray-700 border-gray-600 text-white relative z-50"
                     required
@@ -620,7 +622,7 @@ export function ImprovedCreateEventModal() {
                   <Input
                     id="endDate"
                     type="date"
-                    value={formData.endDate}
+                    value={formData.endDate ? formData.endDate.split('T')[0] : ''}
                     onChange={(e) => handleInputChange('endDate', e.target.value)}
                     className="bg-gray-700 border-gray-600 text-white relative z-50"
                   />

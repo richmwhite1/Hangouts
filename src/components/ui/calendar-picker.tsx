@@ -41,6 +41,11 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
     const date = new Date(displayYear, displayMonth, day, 12, 0, 0) // Use noon to avoid DST issues
     const dateString = date.toISOString().split('T')[0]
     setSelectedDate(dateString)
+    
+    // Auto-select a default time if none is selected
+    if (!selectedTime) {
+      setSelectedTime('7:00 PM')
+    }
   }
 
   const convertTo24Hour = (time12: string) => {
@@ -160,20 +165,29 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="p-2 text-gray-400 font-semibold">{day}</div>
                 ))}
-                {days.map((day, index) => (
-                  <button
-                    key={index}
-                    onClick={() => day && handleDateSelect(day)}
-                    className={`p-2 rounded hover:bg-gray-700 ${
-                      day === new Date().getDate() ? 'bg-purple-600 text-white' : 
-                      selectedDate && day === new Date(selectedDate + 'T12:00:00').getDate() ? 'bg-purple-500 text-white' :
-                      'text-white hover:text-white'
-                    }`}
-                    disabled={!day}
-                  >
-                    {day}
-                  </button>
-                ))}
+                {days.map((day, index) => {
+                  const isToday = day === new Date().getDate() && 
+                                 displayMonth === new Date().getMonth() && 
+                                 displayYear === new Date().getFullYear()
+                  const isSelected = selectedDate && day === new Date(selectedDate + 'T12:00:00').getDate() &&
+                                   displayMonth === new Date(selectedDate + 'T12:00:00').getMonth() &&
+                                   displayYear === new Date(selectedDate + 'T12:00:00').getFullYear()
+                  
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => day && handleDateSelect(day)}
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 ${
+                        isSelected ? 'bg-purple-600 text-white shadow-lg' : 
+                        isToday ? 'bg-gray-600 text-white border-2 border-gray-400' :
+                        'text-white hover:bg-gray-700 hover:text-white'
+                      }`}
+                      disabled={!day}
+                    >
+                      {day}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

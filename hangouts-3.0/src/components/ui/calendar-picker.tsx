@@ -41,6 +41,11 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
     const date = new Date(displayYear, displayMonth, day, 12, 0, 0) // Use noon to avoid DST issues
     const dateString = date.toISOString().split('T')[0]
     setSelectedDate(dateString)
+    
+    // Auto-select a default time if none is selected
+    if (!selectedTime) {
+      setSelectedTime('7:00 PM')
+    }
   }
 
   const convertTo24Hour = (time12: string) => {
@@ -136,44 +141,53 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
               </h3>
               
               {/* Month Navigation */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <button
                   type="button"
                   onClick={goToPreviousMonth}
-                  className="p-2 rounded hover:bg-gray-700 text-white"
+                  className="p-3 rounded-lg hover:bg-gray-700 text-white text-lg font-bold transition-all duration-200 active:scale-95"
                 >
-                  ←
+                  ‹
                 </button>
-                <h4 className="text-white font-semibold">
+                <h4 className="text-white font-semibold text-lg">
                   {monthNames[displayMonth]} {displayYear}
                 </h4>
                 <button
                   type="button"
                   onClick={goToNextMonth}
-                  className="p-2 rounded hover:bg-gray-700 text-white"
+                  className="p-3 rounded-lg hover:bg-gray-700 text-white text-lg font-bold transition-all duration-200 active:scale-95"
                 >
-                  →
+                  ›
                 </button>
               </div>
               
               <div className="grid grid-cols-7 gap-1 text-center text-sm">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="p-2 text-gray-400 font-semibold">{day}</div>
+                  <div key={day} className="p-2 text-gray-400 font-semibold text-xs">{day}</div>
                 ))}
-                {days.map((day, index) => (
-                  <button
-                    key={index}
-                    onClick={() => day && handleDateSelect(day)}
-                    className={`p-2 rounded hover:bg-gray-700 ${
-                      day === new Date().getDate() ? 'bg-purple-600 text-white' : 
-                      selectedDate && day === new Date(selectedDate + 'T12:00:00').getDate() ? 'bg-purple-500 text-white' :
-                      'text-white hover:text-white'
-                    }`}
-                    disabled={!day}
-                  >
-                    {day}
-                  </button>
-                ))}
+                {days.map((day, index) => {
+                  const isToday = day === new Date().getDate() && 
+                                 displayMonth === new Date().getMonth() && 
+                                 displayYear === new Date().getFullYear()
+                  const isSelected = selectedDate && day === new Date(selectedDate + 'T12:00:00').getDate() &&
+                                   displayMonth === new Date(selectedDate + 'T12:00:00').getMonth() &&
+                                   displayYear === new Date(selectedDate + 'T12:00:00').getFullYear()
+                  
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => day && handleDateSelect(day)}
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 ${
+                        isSelected ? 'bg-purple-600 text-white shadow-lg' : 
+                        isToday ? 'bg-gray-600 text-white border-2 border-gray-400' :
+                        'text-white hover:bg-gray-700 hover:text-white'
+                      }`}
+                      disabled={!day}
+                    >
+                      {day}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -183,15 +197,15 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                 <Clock className="mr-2 h-4 w-4" />
                 Select Time
               </h3>
-              <div className="grid grid-cols-4 gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-2 mb-3">
                 {timeSlots.map(time => (
                   <button
                     key={time}
                     onClick={() => handleTimeSelect(time)}
-                    className={`p-2 text-sm rounded border ${
+                    className={`p-3 text-sm rounded-lg border-2 font-medium transition-all duration-200 active:scale-95 ${
                       selectedTime === time 
-                        ? 'bg-purple-600 border-purple-500 text-white' 
-                        : 'border-gray-600 text-white hover:bg-gray-700'
+                        ? 'bg-purple-600 border-purple-500 text-white shadow-lg' 
+                        : 'border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500'
                     }`}
                   >
                     {time}

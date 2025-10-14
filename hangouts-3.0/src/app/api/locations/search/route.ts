@@ -7,24 +7,40 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q')
     const limit = searchParams.get('limit') || '5'
 
-    if (!query) {
-      return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 })
+    if (!query || query.trim().length < 2) {
+      return NextResponse.json({ 
+        success: true, 
+        locations: [] 
+      })
     }
 
-    // Proxy the request to Nominatim API
+    // Proxy the request to Nominatim API with better error handling
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=${limit}&addressdetails=1`
     
     const response = await fetch(nominatimUrl, {
       headers: {
-        'User-Agent': 'Hangouts 3.0 App'
-      }
+        'User-Agent': 'Hangouts 3.0 App/1.0'
+      },
+      timeout: 10000 // 10 second timeout
     })
 
     if (!response.ok) {
-      throw new Error(`Nominatim API error: ${response.status}`)
+      logger.warn(`Nominatim API error: ${response.status} for query: ${query}`);
+      return NextResponse.json({
+        success: true,
+        locations: []
+      })
     }
 
     const data = await response.json()
+
+    // Handle empty results gracefully
+    if (!Array.isArray(data)) {
+      return NextResponse.json({
+        success: true,
+        locations: []
+      })
+    }
 
     // Transform the data to a more usable format
     const locations = data.map((item: any) => ({
@@ -43,9 +59,10 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     logger.error('Location search error:', error);
-    return NextResponse.json(
-      { error: 'Failed to search locations' },
-      { status: 500 }
-    )
+    // Return empty results instead of error to prevent UI issues
+    return NextResponse.json({
+      success: true,
+      locations: []
+    })
   }
 }
