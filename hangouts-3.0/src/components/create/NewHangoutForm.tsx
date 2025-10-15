@@ -26,6 +26,7 @@ interface NewHangoutFormProps {
     dateTime: string
     price: number
   }
+  isEditMode?: boolean
 }
 
 export interface NewHangoutFormData {
@@ -51,7 +52,7 @@ export interface NewHangoutFormData {
   }>
 }
 
-export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent }: NewHangoutFormProps) {
+export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent, isEditMode = false }: NewHangoutFormProps) {
   const { getToken } = useAuth()
   const [formData, setFormData] = useState<NewHangoutFormData>({
     title: '',
@@ -808,7 +809,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         style={{ backgroundColor: '#792ADB' }}
         disabled={isLoading}
       >
-        {isLoading ? 'Creating...' : 'Create Hangout'}
+        {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Hangout' : 'Create Hangout')}
       </Button>
       </form>
 

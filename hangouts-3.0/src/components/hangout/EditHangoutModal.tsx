@@ -69,7 +69,7 @@ export default function EditHangoutModal({
 
       // Update hangout
       const response = await fetch(`/api/hangouts/${hangout.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -124,6 +124,7 @@ export default function EditHangoutModal({
               dateTime: hangout.startTime,
               price: 0
             }}
+            isEditMode={true}
           />
         </div>
       </DialogContent>
