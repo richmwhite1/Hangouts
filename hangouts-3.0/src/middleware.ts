@@ -7,6 +7,12 @@ const isPublicRoute = createRouteMatcher([
   '/signup(.*)',
   '/api/health',
   '/api/webhooks(.*)',
+  '/public-discover(.*)',
+  '/hangouts/public(.*)',
+  '/events/public(.*)',
+  '/api/public(.*)',
+  '/api/hangouts/public(.*)',
+  '/api/events/public(.*)',
 ])
 
 // Define protected routes that require authentication
@@ -16,7 +22,6 @@ const isProtectedRoute = createRouteMatcher([
   '/profile(.*)',
   '/messages(.*)',
   '/friends(.*)',
-  '/discover(.*)',
   '/events(.*)',
 ])
 
@@ -71,12 +76,8 @@ export default clerkMiddleware(async (auth, req) => {
     console.log(`[Middleware] ${req.method} ${req.nextUrl.pathname} - userId: ${userId}`)
   }
   
-  // TEMPORARY: Allow create and friends page access for testing
-  // TODO: Fix authentication properly
-  if (isProtectedRoute(req) && !isPublicRoute(req) && !userId && 
-      !req.nextUrl.pathname.startsWith('/create') && 
-      !req.nextUrl.pathname.startsWith('/friends') &&
-      !req.nextUrl.pathname.startsWith('/api/')) {
+  // Check if route requires authentication
+  if (isProtectedRoute(req) && !isPublicRoute(req) && !userId) {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Middleware] Redirecting ${req.nextUrl.pathname} to /signin - no userId`)
     }

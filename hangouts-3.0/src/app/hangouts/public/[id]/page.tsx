@@ -57,20 +57,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         url: shareUrl,
         siteName: 'Hangouts 3.0',
-        images: hangout.image ? [
-          {
+        images: [
+          ...(hangout.image ? [{
             url: hangout.image,
             width: 1200,
             height: 630,
             alt: hangout.title,
-          }
-        ] : [
-          {
-            url: `${baseUrl}/api/og/hangout?title=${encodeURIComponent(hangout.title)}&creator=${encodeURIComponent(hangout.creator?.name || 'Someone')}&date=${encodeURIComponent(formatDate(hangout.startTime))}`,
+          }] : [{
+            url: `${baseUrl}/placeholder-hangout-og.svg`,
             width: 1200,
             height: 630,
             alt: hangout.title,
-          }
+          }])
         ],
         locale: 'en_US',
         type: 'website',
@@ -79,7 +77,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         card: 'summary_large_image',
         title,
         description,
-        images: hangout.image ? [hangout.image] : [`${baseUrl}/api/og/hangout?title=${encodeURIComponent(hangout.title)}&creator=${encodeURIComponent(hangout.creator?.name || 'Someone')}&date=${encodeURIComponent(formatDate(hangout.startTime))}`],
+        images: [
+          ...(hangout.image ? [hangout.image] : [`${baseUrl}/placeholder-hangout-og.svg`])
+        ],
       },
       other: {
         'og:type': 'website',

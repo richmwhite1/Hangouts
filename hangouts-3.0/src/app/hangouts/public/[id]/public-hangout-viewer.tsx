@@ -15,7 +15,8 @@ import {
   Share2,
   UserPlus,
   CalendarPlus,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -23,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 import { logger } from '@/lib/logger'
+import { ShareModal } from '@/components/sharing/share-modal'
 
 interface Hangout {
   id: string
@@ -88,6 +90,7 @@ export function PublicHangoutViewer({ params }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [hangoutId, setHangoutId] = useState<string | null>(null)
+  const [showShareModal, setShowShareModal] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -251,10 +254,17 @@ END:VCALENDAR`
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading hangout...</p>
+      <div className="min-h-screen bg-black text-white">
+        <div className="container mx-auto px-4 py-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-700 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-700 rounded mb-6"></div>
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -264,29 +274,31 @@ END:VCALENDAR`
     const isPrivacyError = error?.includes('not public') || error?.includes('not found')
     
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center py-8">
-          <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            {error || 'Hangout not found'}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Hangout Not Found</h1>
+          <p className="text-gray-400 mb-6">
             {isPrivacyError 
               ? 'This hangout is private or friends-only. Sign in to view it.'
               : 'This hangout may have been deleted or is not available.'
             }
           </p>
           {isPrivacyError && (
-            <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button 
-                onClick={() => window.location.href = '/signin'}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                onClick={handleSignIn}
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                Sign In to View
+                Sign In
               </Button>
-              <p className="text-xs text-gray-400">
-                Only friends of the host can view this hangout
-              </p>
+              <Button 
+                onClick={() => window.location.href = '/signup'}
+                variant="outline" 
+                className="border-gray-600 text-white hover:bg-gray-700"
+              >
+                Sign Up
+              </Button>
             </div>
           )}
         </div>
@@ -329,252 +341,261 @@ END:VCALENDAR`
   const rsvpCounts = getRSVPCounts()
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Hangout Details
-          </h1>
-          <div className="w-9" /> {/* Spacer */}
+      <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-800">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="text-gray-400 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-400/30">
+              Public Hangout
+            </Badge>
+          </div>
+          
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{currentHangout.title}</h1>
+          
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span>{formatDate(currentHangout.startTime)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span>{formatTime(currentHangout.startTime)} - {formatTime(currentHangout.endTime)}</span>
+            </div>
+            {currentHangout.location && (
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <span>{currentHangout.location}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span>{rsvpCounts.yes} going</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button 
+              size="lg" 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleSignIn}
+            >
+              <UserPlus className="w-5 h-5 mr-2" />
+              Join Hangout
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="border-gray-600 text-white hover:bg-gray-700"
+              onClick={handleAddToCalendar}
+            >
+              <CalendarPlus className="w-5 h-5 mr-2" />
+              Add to Calendar
+            </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-gray-600 text-white hover:bg-gray-700"
+                  onClick={() => setShowShareModal(true)}
+                >
+                  <Share2 className="w-5 h-5 mr-2" />
+                  Share
+                </Button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        {/* Hero Section */}
-        <Card className="overflow-hidden">
-          {currentHangout.image && (
-            <div className="aspect-video bg-gradient-to-r from-blue-500 to-purple-600 relative">
-              <img
-                src={currentHangout.image}
-                alt={currentHangout.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-20" />
-            </div>
-          )}
-          
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  {currentHangout.title}
-                </h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{formatDate(currentHangout.startTime)}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{formatTime(currentHangout.startTime)} - {formatTime(currentHangout.endTime)}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleAddToCalendar}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Add to Calendar"
-                >
-                  <CalendarPlus className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Share"
-                >
-                  <Share2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            {/* Location */}
-            {currentHangout.location && (
-              <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-gray-900 dark:text-white font-medium">
-                    {currentHangout.location}
-                  </p>
-                </div>
+      {/* Content */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Hangout Image */}
+            {currentHangout.image && (
+              <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden">
+                <img 
+                  src={currentHangout.image} 
+                  alt={currentHangout.title}
+                  className="w-full h-full object-cover"
+                />
               </div>
             )}
 
             {/* Description */}
             {currentHangout.description && (
-              <div>
-                <p className="text-gray-700 dark:text-gray-300">
-                  {currentHangout.description}
-                </p>
-              </div>
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">About This Hangout</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 whitespace-pre-wrap">{currentHangout.description}</p>
+                </CardContent>
+              </Card>
             )}
 
-            {/* Creator */}
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={currentHangout.creator.avatar} />
-                <AvatarFallback>
-                  {currentHangout.creator.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  Created by {currentHangout.creator.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  @{currentHangout.creator.username}
-                </p>
-              </div>
-            </div>
-
-            {/* RSVP Counts */}
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {rsvpCounts.yes} going
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <UserPlus className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {rsvpCounts.maybe} maybe
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Participants */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Participants ({currentHangout.participants.length})
-            </h3>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {currentHangout.participants.map((participant) => (
-                <div key={participant.id} className="flex items-center space-x-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={participant.user.avatar} />
-                    <AvatarFallback>
-                      {participant.user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {participant.user.name}
+            {/* Hangout Details */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Hangout Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-blue-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-white">Date & Time</p>
+                    <p className="text-gray-300">
+                      {formatDate(currentHangout.startTime)}
                     </p>
-                    <div className="flex items-center space-x-2">
-                      <Badge 
-                        variant={
-                          participant.rsvpStatus === 'YES' ? 'default' :
-                          participant.rsvpStatus === 'MAYBE' ? 'secondary' :
-                          participant.rsvpStatus === 'NO' ? 'destructive' : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {participant.rsvpStatus}
-                      </Badge>
-                    </div>
+                    <p className="text-sm text-gray-400">
+                      {formatTime(currentHangout.startTime)} - {formatTime(currentHangout.endTime)}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Comments */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Comments ({comments.length})
-            </h3>
-          </CardHeader>
-          <CardContent>
-            {comments.length > 0 ? (
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="flex space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={comment.user.avatar} />
-                      <AvatarFallback>
-                        {comment.user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {comment.user.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(comment.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                        {comment.text}
-                      </p>
+                {currentHangout.location && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-blue-400 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-white">Location</p>
+                      <p className="text-gray-300">{currentHangout.location}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                No comments yet
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                )}
 
-        {/* Actions for Non-Authenticated Users */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Add to Calendar */}
-          <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-            <CardContent className="text-center py-6">
-              <CalendarPlus className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Add to Calendar
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Save this hangout to your calendar and never miss it!
-              </p>
-              <Button 
-                onClick={handleAddToCalendar} 
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                Add to Calendar
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-blue-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-white">Participants</p>
+                    <p className="text-gray-300">{rsvpCounts.yes} going, {rsvpCounts.maybe} maybe</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Sign In CTA */}
-          <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="text-center py-6">
-              <MessageSquare className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Want to join this hangout?
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Sign in to RSVP, comment, and connect with other participants!
-              </p>
-              <Button onClick={handleSignIn} className="w-full">
-                Sign In to Join
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Creator Info */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Created by</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={currentHangout.creator.avatar} />
+                    <AvatarFallback>
+                      {currentHangout.creator.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-white">{currentHangout.creator.name}</p>
+                    <p className="text-sm text-gray-400">@{currentHangout.creator.username}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Participants */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Who's Going</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Users className="w-4 h-4" />
+                    <span>{currentHangout.participants.length} people</span>
+                  </div>
+                  
+                  {currentHangout.participants.length > 0 && (
+                    <div className="space-y-2">
+                      {currentHangout.participants.slice(0, 5).map((participant) => (
+                        <div key={participant.id} className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={participant.user.avatar} />
+                            <AvatarFallback>
+                              {participant.user.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm text-gray-300">{participant.user.name}</span>
+                          <Badge 
+                            variant={
+                              participant.rsvpStatus === 'YES' ? 'default' :
+                              participant.rsvpStatus === 'MAYBE' ? 'secondary' :
+                              participant.rsvpStatus === 'NO' ? 'destructive' : 'outline'
+                            }
+                            className="text-xs"
+                          >
+                            {participant.rsvpStatus}
+                          </Badge>
+                        </div>
+                      ))}
+                      {currentHangout.participants.length > 5 && (
+                        <p className="text-sm text-gray-400">
+                          +{currentHangout.participants.length - 5} more
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sign Up Prompt */}
+            <Card className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-400/30">
+              <CardHeader>
+                <CardTitle className="text-white">Want to join this hangout?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-300 mb-4">
+                  Sign up to RSVP, get updates, and connect with other participants!
+                </p>
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={handleSignIn}
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join Hangout
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-gray-600 text-white hover:bg-gray-700"
+                    onClick={() => window.location.href = '/signup'}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Account
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/hangouts/public/${hangoutId}`}
+        title={currentHangout.title}
+        description={currentHangout.description}
+        type="hangout"
+        startTime={currentHangout.startTime}
+        endTime={currentHangout.endTime}
+        location={currentHangout.location}
+        image={currentHangout.image}
+      />
     </div>
   )
 }

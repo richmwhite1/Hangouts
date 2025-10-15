@@ -91,12 +91,10 @@ export function useImageUpload() {
       setIsUploading(true)
       setError(null)
 
-      const token = await getToken()
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(updates)
       })

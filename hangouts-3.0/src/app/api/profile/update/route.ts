@@ -19,7 +19,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { avatar, backgroundImage, bio, location, name, zodiac, enneagram, bigFive, loveLanguage, favoriteActivities, favoritePlaces } = body
+    const { avatar, backgroundImage, bio, location, name, zodiac, enneagram, bigFive, loveLanguage } = body
+    
+    console.log('🔍 Profile update API received:', {
+      bio,
+      body
+    })
 
     // Validate user exists
     const existingUser = await db.user.findUnique({
@@ -31,21 +36,23 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
+    const updateData = {
+      ...(avatar && { avatar }),
+      ...(backgroundImage && { backgroundImage }),
+      ...(bio !== undefined && { bio }),
+      ...(location !== undefined && { location }),
+      ...(name && { name }),
+      ...(zodiac !== undefined && { zodiac }),
+      ...(enneagram !== undefined && { enneagram }),
+      ...(bigFive !== undefined && { bigFive }),
+      ...(loveLanguage !== undefined && { loveLanguage })
+    }
+    
+    console.log('🔍 Profile update data:', updateData)
+    
     const updatedUser = await db.user.update({
       where: { id: user.id },
-      data: {
-        ...(avatar && { avatar }),
-        ...(backgroundImage && { backgroundImage }),
-        ...(bio !== undefined && { bio }),
-        ...(location !== undefined && { location }),
-        ...(name && { name }),
-        ...(zodiac !== undefined && { zodiac }),
-        ...(enneagram !== undefined && { enneagram }),
-        ...(bigFive !== undefined && { bigFive }),
-        ...(loveLanguage !== undefined && { loveLanguage }),
-        ...(favoriteActivities !== undefined && { favoriteActivities: JSON.stringify(favoriteActivities) }),
-        ...(favoritePlaces !== undefined && { favoritePlaces: JSON.stringify(favoritePlaces) })
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,

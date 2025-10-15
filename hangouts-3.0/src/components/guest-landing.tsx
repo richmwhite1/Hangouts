@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,17 +13,100 @@ import {
   Star,
   ArrowRight,
   CheckCircle,
-  Sparkles
+  Sparkles,
+  Clock,
+  TrendingUp
 } from 'lucide-react'
 import Link from 'next/link'
+import { format } from 'date-fns'
 
 interface GuestLandingProps {
   onSignIn: () => void
   onSignUp: () => void
 }
 
+interface PublicHangout {
+  id: string
+  title: string
+  description?: string
+  location?: string
+  startTime: string
+  endTime: string
+  image?: string
+  privacyLevel: 'PUBLIC' | 'FRIENDS_ONLY' | 'PRIVATE'
+  creator: {
+    name: string
+    username: string
+    avatar?: string
+  }
+  _count: {
+    participants: number
+  }
+}
+
+interface PublicEvent {
+  id: string
+  title: string
+  description?: string
+  venue?: string
+  city?: string
+  startDate: string
+  endDate?: string
+  image?: string
+  price?: number
+  creator: {
+    name: string
+    username: string
+    avatar?: string
+  }
+  _count: {
+    participants: number
+  }
+}
+
 export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
   const [currentFeature, setCurrentFeature] = useState(0)
+  const [publicContent, setPublicContent] = useState<{
+    hangouts: PublicHangout[]
+    events: PublicEvent[]
+  }>({ hangouts: [], events: [] })
+  const [isLoadingContent, setIsLoadingContent] = useState(true)
+
+  useEffect(() => {
+    const fetchPublicContent = async () => {
+      try {
+        setIsLoadingContent(true)
+        const response = await fetch('/api/public/content?limit=6')
+        const data = await response.json()
+        
+        if (data.success) {
+          setPublicContent({
+            hangouts: data.hangouts || [],
+            events: data.events || []
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching public content:', error)
+      } finally {
+        setIsLoadingContent(false)
+      }
+    }
+
+    fetchPublicContent()
+  }, [])
+
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'MMM d, yyyy')
+  }
+
+  const formatTime = (dateString: string) => {
+    return format(new Date(dateString), 'h:mm a')
+  }
+
+  const formatPrice = (price?: number) => {
+    if (!price) return 'Free'
+    return `$${price}`
+  }
 
   const features = [
     {
@@ -140,6 +223,179 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                 </Card>
               )
             })}
+          </div>
+        </div>
+      </div>
+
+      {/* Live Content Preview Section */}
+      <div className="py-20 bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              See What's Happening
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Check out these recent hangouts and events happening right now
+            </p>
+          </div>
+
+          {isLoadingContent ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="w-full h-64 bg-gray-700 animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Show hangouts */}
+              {publicContent.hangouts.slice(0, 3).map((hangout) => (
+                <Card key={hangout.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-white mb-2 line-clamp-1">{hangout.title}</CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>{formatDate(hangout.startTime)}</span>
+                        </div>
+                        {hangout.location && (
+                          <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                            <MapPin className="w-4 h-4" />
+                            <span className="line-clamp-1">{hangout.location}</span>
+                          </div>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-400/30">
+                        Hangout
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {hangout.description && (
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">{hangout.description}</p>
+                    )}
+                    
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          <span>{hangout._count.participants} going</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>by {hangout.creator.name}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        onClick={onSignIn}
+                      >
+                        <Heart className="w-4 h-4 mr-2" />
+                        Join Hangout
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        onClick={() => window.open(`/hangouts/public/${hangout.id}`, '_blank')}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Show events */}
+              {publicContent.events.slice(0, 3).map((event) => (
+                <Card key={event.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-white mb-2 line-clamp-1">{event.title}</CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>{formatDate(event.startDate)}</span>
+                        </div>
+                        {event.venue && (
+                          <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                            <MapPin className="w-4 h-4" />
+                            <span className="line-clamp-1">{event.venue}{event.city && `, ${event.city}`}</span>
+                          </div>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="bg-green-600/20 text-green-300 border-green-400/30">
+                        Event
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {event.description && (
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">{event.description}</p>
+                    )}
+                    
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          <span>{event._count.participants} interested</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-green-400">{formatPrice(event.price)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>by {event.creator.name}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={onSignIn}
+                      >
+                        <Heart className="w-4 h-4 mr-2" />
+                        RSVP
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        onClick={() => window.open(`/events/public/${event.id}`, '_blank')}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {!isLoadingContent && publicContent.hangouts.length === 0 && publicContent.events.length === 0 && (
+            <div className="text-center py-12">
+              <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No content yet</h3>
+              <p className="text-gray-400 mb-4">Be the first to create an event or hangout!</p>
+              <Button onClick={onSignUp} className="bg-blue-600 hover:bg-blue-700">
+                Create Your First Event
+              </Button>
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <Button 
+              variant="outline" 
+              className="border-gray-600 text-white hover:bg-gray-700"
+              onClick={() => window.location.href = '/public-discover'}
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Discover More Events & Hangouts
+            </Button>
           </div>
         </div>
       </div>

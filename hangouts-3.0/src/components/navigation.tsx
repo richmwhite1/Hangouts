@@ -8,6 +8,7 @@ import { Search, Bell, User, Users, LogOut, Settings, MessageSquare } from "luci
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth, useClerk } from "@clerk/nextjs"
+import { useProfile } from "@/hooks/use-profile"
 import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { NotificationSettings } from "@/components/notifications/notification-settings"
@@ -22,6 +23,7 @@ export function Navigation() {
   
   const { isSignedIn, isLoaded, user } = useAuth()
   const clerk = useClerk()
+  const { profile, isLoading: profileLoading } = useProfile()
   const { totalUnreadCount } = useUnreadCounts()
 
   return (
@@ -86,11 +88,11 @@ export function Navigation() {
               >
                 <Avatar className="w-8 h-8 rounded-lg">
                   <AvatarImage 
-                    src={isSignedIn && user?.imageUrl ? user.imageUrl : "/placeholder-avatar.png"} 
-                    alt={isSignedIn && user?.fullName ? user.fullName : "Profile"} 
+                    src={profile?.avatar || "/placeholder-avatar.png"} 
+                    alt={profile?.name || "Profile"} 
                   />
                   <AvatarFallback className="rounded-lg">
-                    {isSignedIn && user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                    {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -101,16 +103,16 @@ export function Navigation() {
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10 rounded-lg">
                         <AvatarImage 
-                          src={isSignedIn && user?.imageUrl ? user.imageUrl : "/placeholder-avatar.png"} 
-                          alt={isSignedIn && user?.fullName ? user.fullName : "Profile"} 
+                          src={profile?.avatar || "/placeholder-avatar.png"} 
+                          alt={profile?.name || "Profile"} 
                         />
                         <AvatarFallback className="rounded-lg">
-                          {isSignedIn && user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                          {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-sm">{isSignedIn && user?.fullName ? user.fullName : "User"}</p>
-                        <p className="text-xs text-muted-foreground">{isSignedIn && user?.primaryEmailAddress?.emailAddress ? user.primaryEmailAddress.emailAddress : ""}</p>
+                        <p className="font-semibold text-sm">{profile?.name || "User"}</p>
+                        <p className="text-xs text-muted-foreground">@{profile?.username || ""}</p>
                       </div>
                     </div>
                   </div>
