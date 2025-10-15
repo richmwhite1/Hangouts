@@ -52,7 +52,7 @@ interface Hangout {
   createdAt?: string
 }
 export default function HomePage() {
-  const { isSignedIn, isLoaded, getToken } = useAuth()
+  const { isSignedIn, isLoaded, getToken, userId } = useAuth()
   const router = useRouter()
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [loading, setLoading] = useState(true)
@@ -193,7 +193,7 @@ export default function HomePage() {
     >
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
-          <HangoutCalendar hangouts={hangouts} events={[]} />
+          <HangoutCalendar hangouts={hangouts} events={[]} currentUserId={userId} />
         </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">

@@ -45,13 +45,13 @@ const mockEvents: CalendarEvent[] = [
 interface HangoutCalendarProps {
   hangouts?: any[]
   events?: any[]
+  currentUserId?: string
 }
 
-export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarProps) {
+export function HangoutCalendar({ hangouts = [], events = [], currentUserId }: HangoutCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvent | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [previewEvent, setPreviewEvent] = useState<CalendarEvent | null>(null)
 
   // Process hangouts and events into calendar events
   const calendarEvents = useMemo(() => {
@@ -66,9 +66,9 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
       if (hangout.myRsvpStatus) {
         rsvpStatus = hangout.myRsvpStatus === 'YES' ? 'going' : 
                     hangout.myRsvpStatus === 'MAYBE' ? 'maybe' : 'not-going'
-      } else if (hangout.participants && Array.isArray(hangout.participants)) {
+      } else if (hangout.participants && Array.isArray(hangout.participants) && currentUserId) {
         // Look for current user's RSVP in participants array
-        const currentUserParticipant = hangout.participants.find(p => p.user?.id === hangout.currentUserId)
+        const currentUserParticipant = hangout.participants.find(p => p.user?.id === currentUserId)
         if (currentUserParticipant) {
           rsvpStatus = currentUserParticipant.rsvpStatus === 'YES' ? 'going' : 
                       currentUserParticipant.rsvpStatus === 'MAYBE' ? 'maybe' : 'not-going'
@@ -275,14 +275,8 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
                           onMouseLeave={() => setHoveredEvent(null)}
                           onMouseMove={handleMouseMove}
                           onClick={() => {
-                            if (previewEvent?.id === event.id) {
-                              // Second click - navigate to the hangout/event
-                              const url = event.type === 'hangout' ? `/hangout/${event.id}` : `/event/${event.id}`
-                              window.location.href = url
-                            } else {
-                              // First click - show preview
-                              setPreviewEvent(event)
-                            }
+                            const url = event.type === 'hangout' ? `/hangout/${event.id}` : `/event/${event.id}`
+                            window.location.href = url
                           }}
                         />
                       ))}
@@ -347,14 +341,14 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
               <div
                 className={`text-xs px-2 py-1 rounded-full inline-block ${
                   hoveredEvent.status === "going"
-                    ? "bg-green-100 text-green-700"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                     : hoveredEvent.status === "maybe"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                 }`}
               >
                 {hoveredEvent.status === "going" ? "✅ Going" : 
-                 hoveredEvent.status === "maybe" ? "❓ Maybe" : "❌ Not Going"}
+                 hoveredEvent.status === "maybe" ? "❓ Maybe" : "⏳ Pending"}
               </div>
               
               <div className="text-xs text-muted-foreground mt-2">
@@ -365,60 +359,6 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
         </div>
       )}
 
-      {/* Preview Modal */}
-      {previewEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {previewEvent.title}
-                </h3>
-                <button
-                  onClick={() => setPreviewEvent(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${getStatusColor(previewEvent)}`} />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {previewEvent.date.toLocaleDateString()} at {previewEvent.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                
-                {previewEvent.participants > 0 && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {previewEvent.participants} participant{previewEvent.participants !== 1 ? 's' : ''}
-                  </div>
-                )}
-                
-                <div className="flex space-x-3">
-                  <Button
-                    onClick={() => {
-                      const url = previewEvent.type === 'hangout' ? `/hangout/${previewEvent.id}` : `/event/${previewEvent.id}`
-                      window.location.href = url
-                    }}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Open {previewEvent.type === 'hangout' ? 'Hangout' : 'Event'}
-                  </Button>
-                  <Button
-                    onClick={() => setPreviewEvent(null)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
