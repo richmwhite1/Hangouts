@@ -85,11 +85,47 @@ export async function GET(request: NextRequest) {
                 avatar: true
               }
             },
+            // RSVP data for current user (if authenticated)
+            rsvps: {
+              where: userId ? { userId: userId } : undefined,
+              select: {
+                id: true,
+                userId: true,
+                status: true,
+                respondedAt: true
+              }
+            },
+            // Participant data
+            content_participants: {
+              select: {
+                id: true,
+                userId: true,
+                role: true,
+                canEdit: true,
+                isMandatory: true,
+                isCoHost: true,
+                invitedAt: true,
+                joinedAt: true,
+                users: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatar: true
+                  }
+                }
+              }
+            },
             _count: {
               select: {
                 content_participants: true,
                 comments: true,
-                photos: true
+                content_likes: true,
+                content_shares: true,
+                messages: true,
+                photos: true,
+                rsvps: true,
+                eventSaves: true
               }
             }
           },
@@ -108,10 +144,80 @@ export async function GET(request: NextRequest) {
 
         logger.info('Public content fetched:', { count: publicContent.length, total })
 
+        // Transform the data for frontend consumption
+        const transformedPublicContent = publicContent.map(item => {
+          try {
+            // Find current user's RSVP status (if authenticated)
+            let myRsvpStatus = 'PENDING'
+            if (userId && item.rsvps && Array.isArray(item.rsvps)) {
+              const userRsvp = item.rsvps.find(rsvp => rsvp.userId === userId)
+              if (userRsvp) {
+                myRsvpStatus = userRsvp.status
+              }
+            }
+
+            // Transform participants data
+            const participants = (item.content_participants || []).map(p => ({
+              id: p.id,
+              contentId: item.id,
+              userId: p.userId,
+              role: p.role,
+              canEdit: p.canEdit,
+              isMandatory: p.isMandatory,
+              isCoHost: p.isCoHost,
+              invitedAt: p.invitedAt?.toISOString() || null,
+              joinedAt: p.joinedAt?.toISOString() || null,
+              rsvpStatus: 'PENDING', // Default for participants
+              user: p.users
+            }))
+
+            return {
+              id: item.id,
+              type: item.type,
+              title: item.title,
+              description: item.description,
+              image: item.image,
+              location: item.location,
+              startTime: item.startTime?.toISOString(),
+              endTime: item.endTime?.toISOString(),
+              privacyLevel: item.privacyLevel,
+              createdAt: item.createdAt.toISOString(),
+              updatedAt: item.updatedAt.toISOString(),
+              creator: item.users,
+              users: item.users,
+              myRsvpStatus: myRsvpStatus,
+              participants: participants,
+              _count: {
+                participants: item._count?.content_participants || 0,
+                comments: item._count?.comments || 0,
+                content_likes: item._count?.content_likes || 0,
+                content_shares: item._count?.content_shares || 0,
+                messages: item._count?.messages || 0,
+                photos: item._count?.photos || 0,
+                rsvps: item._count?.rsvps || 0,
+                eventSaves: item._count?.eventSaves || 0
+              },
+              counts: {
+                participants: item._count?.content_participants || 0,
+                comments: item._count?.comments || 0,
+                likes: item._count?.content_likes || 0,
+                shares: item._count?.content_shares || 0,
+                messages: item._count?.messages || 0,
+                photos: item._count?.photos || 0,
+                rsvps: item._count?.rsvps || 0,
+                saves: item._count?.eventSaves || 0
+              }
+            }
+          } catch (error) {
+            console.error('Error transforming public content item:', error);
+            return item; // Return original item on error
+          }
+        })
+
         return NextResponse.json({ 
           success: true,
           data: { 
-            content: publicContent, 
+            content: transformedPublicContent, 
             total,
             hasMore: offset + publicContent.length < total
           } 
@@ -196,6 +302,37 @@ export async function GET(request: NextRequest) {
               avatar: true
             }
           },
+          // RSVP data for current user
+          rsvps: {
+            where: userId ? { userId: userId } : undefined,
+            select: {
+              id: true,
+              userId: true,
+              status: true,
+              respondedAt: true
+            }
+          },
+          // Participant data
+          content_participants: {
+            select: {
+              id: true,
+              userId: true,
+              role: true,
+              canEdit: true,
+              isMandatory: true,
+              isCoHost: true,
+              invitedAt: true,
+              joinedAt: true,
+              users: {
+                select: {
+                  id: true,
+                  username: true,
+                  name: true,
+                  avatar: true
+                }
+              }
+            }
+          },
           // Counts
           _count: {
             select: {
@@ -220,10 +357,80 @@ export async function GET(request: NextRequest) {
 
       logger.info('Personalized content fetched:', { count: content.length, total })
 
+      // Transform the data for frontend consumption
+      const transformedContent = content.map(item => {
+        try {
+          // Find current user's RSVP status
+          let myRsvpStatus = 'PENDING'
+          if (userId && item.rsvps && Array.isArray(item.rsvps)) {
+            const userRsvp = item.rsvps.find(rsvp => rsvp.userId === userId)
+            if (userRsvp) {
+              myRsvpStatus = userRsvp.status
+            }
+          }
+
+          // Transform participants data
+          const participants = (item.content_participants || []).map(p => ({
+            id: p.id,
+            contentId: item.id,
+            userId: p.userId,
+            role: p.role,
+            canEdit: p.canEdit,
+            isMandatory: p.isMandatory,
+            isCoHost: p.isCoHost,
+            invitedAt: p.invitedAt?.toISOString() || null,
+            joinedAt: p.joinedAt?.toISOString() || null,
+            rsvpStatus: 'PENDING', // Default for participants
+            user: p.users
+          }))
+
+          return {
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            description: item.description,
+            image: item.image,
+            location: item.location,
+            startTime: item.startTime?.toISOString(),
+            endTime: item.endTime?.toISOString(),
+            privacyLevel: item.privacyLevel,
+            createdAt: item.createdAt.toISOString(),
+            updatedAt: item.updatedAt.toISOString(),
+            creator: item.users, // This should match what StackedHangoutTile expects
+            users: item.users, // Also include users field for compatibility
+            myRsvpStatus: myRsvpStatus,
+            participants: participants,
+            _count: {
+              participants: item._count?.content_participants || 0,
+              comments: item._count?.comments || 0,
+              content_likes: item._count?.content_likes || 0,
+              content_shares: item._count?.content_shares || 0,
+              messages: item._count?.messages || 0,
+              photos: item._count?.photos || 0,
+              rsvps: item._count?.rsvps || 0,
+              eventSaves: item._count?.eventSaves || 0
+            },
+            counts: {
+              participants: item._count?.content_participants || 0,
+              comments: item._count?.comments || 0,
+              likes: item._count?.content_likes || 0,
+              shares: item._count?.content_shares || 0,
+              messages: item._count?.messages || 0,
+              photos: item._count?.photos || 0,
+              rsvps: item._count?.rsvps || 0,
+              saves: item._count?.eventSaves || 0
+            }
+          }
+        } catch (error) {
+          console.error('Error transforming feed item:', error);
+          return item; // Return original item on error
+        }
+      })
+
       return NextResponse.json({
         success: true,
         data: {
-          content,
+          content: transformedContent,
           total,
           hasMore: offset + content.length < total,
           pagination: {
