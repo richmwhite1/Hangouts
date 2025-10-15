@@ -39,6 +39,7 @@ interface Hangout {
   }>
   _count?: {
     participants: number
+    messages: number
   }
   privacyLevel?: "PUBLIC" | "FRIENDS_ONLY" | "PRIVATE"
   maxParticipants?: number
@@ -233,7 +234,7 @@ export function StackedHangoutTile({
               </div>
             </div>
 
-            {/* Bottom Row - Participants and Share Actions */}
+            {/* Bottom Row - Participants, Messages and Share Actions */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -242,6 +243,20 @@ export function StackedHangoutTile({
                     {yesCount} going • {totalParticipants} total
                   </span>
                 </div>
+                
+                {/* Message Indicator */}
+                {hangout._count?.messages !== undefined && (
+                  <Link 
+                    href={`/hangout/${hangout.id}?tab=chat`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center space-x-1 hover:bg-white/10 rounded px-2 py-1 transition-colors"
+                  >
+                    <MessageSquare className="h-4 w-4 text-white/80" />
+                    <span className="text-sm text-white/90">
+                      {hangout._count.messages}
+                    </span>
+                  </Link>
+                )}
                 
                 {hangout.maxParticipants && (
                   <div className="text-xs text-white/70">

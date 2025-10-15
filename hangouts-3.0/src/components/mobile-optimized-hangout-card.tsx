@@ -32,6 +32,7 @@ interface Hangout {
   }>
   _count?: {
     participants: number
+    messages: number
   }
   privacyLevel?: "PUBLIC" | "FRIENDS_ONLY" | "PRIVATE"
   maxParticipants?: number
@@ -196,9 +197,19 @@ export function MobileHangoutCard({ hangout }: MobileHangoutCardProps) {
               </div>
 
               {/* Chat Button */}
-              <Button variant="ghost" size="sm" className="relative">
-                <MessageSquare className="w-4 h-4" />
-              </Button>
+              <Link 
+                href={`/hangout/${hangout.id}?tab=chat`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button variant="ghost" size="sm" className="relative">
+                  <MessageSquare className="w-4 h-4" />
+                  {hangout._count?.messages !== undefined && hangout._count.messages > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {hangout._count.messages}
+                    </span>
+                  )}
+                </Button>
+              </Link>
             </div>
           </div>
         </CardContent>

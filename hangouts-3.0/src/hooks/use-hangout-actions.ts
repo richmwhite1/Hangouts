@@ -60,7 +60,7 @@ export function getHangoutActionStatus(hangout: Hangout): HangoutActionStatus {
   const needsVote = hangout.votingStatus === 'open'
   
   // Check if user needs to RSVP
-  const needsRSVP = hangout.myRsvpStatus === 'PENDING' || !hangout.myRsvpStatus
+  const needsRSVP = hangout.myRsvpStatus === 'PENDING' || !hangout.myRsvpStatus || hangout.myRsvpStatus === undefined
   
   // Check if RSVP is mandatory (within 24 hours of start time)
   const hoursUntilStart = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60)
