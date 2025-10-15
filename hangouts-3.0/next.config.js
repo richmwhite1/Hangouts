@@ -5,6 +5,7 @@ const nextConfig = {
   
   // Production optimizations
   swcMinify: true,
+  compress: true,
   
   // Disable problematic features
   eslint: {
@@ -12,6 +13,37 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  
+  // Production optimizations
+  poweredByHeader: false,
+  generateEtags: true,
+  
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ]
   },
   
   // Server external packages for Railway

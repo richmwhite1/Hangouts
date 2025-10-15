@@ -8,6 +8,8 @@ import { MapPin, Clock, Users, Calendar, Lock, UserPlus, Share2, Link as LinkIco
 import { format } from 'date-fns'
 import { sharingService } from '@/lib/services/sharing-service'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
+import { EnhancedShareButton } from '@/components/sharing/enhanced-share-button'
+import { GuestPrompt } from '@/components/guest-experience/guest-prompt'
 // import { toast } from 'sonner'
 
 import { logger } from '@/lib/logger'
@@ -345,37 +347,34 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
           </Card>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button
-            onClick={handleSignInClick}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
-            size="lg"
-          >
-            <UserPlus className="w-5 h-5 mr-2" />
-            Sign In to Join
-          </Button>
-          
-          <div className="flex gap-2">
-            <Button
-              onClick={handleShare}
-              variant="outline"
-              className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-              title="Share this hangout"
-            >
-              <Share2 className="w-5 h-5 mr-2" />
-              Share
-            </Button>
-            <Button
-              onClick={handleCopyLink}
-              variant="outline"
-              className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-              title="Copy link to hangout"
-            >
-              <LinkIcon className="w-5 h-5 mr-2" />
-              Copy Link
-            </Button>
-          </div>
+        {/* Guest Experience */}
+        <GuestPrompt
+          type="hangout"
+          title={hangout.title}
+          creator={hangout.creator.name}
+          participants={hangout.counts?.content_participants || 0}
+          startTime={hangout.startTime}
+          location={hangout.location}
+          onSignInClick={handleSignInClick}
+          className="mb-6"
+        />
+
+        {/* Enhanced Share Button */}
+        <div className="flex justify-center">
+          <EnhancedShareButton
+            url={typeof window !== 'undefined' ? window.location.href : ''}
+            title={hangout.title}
+            description={hangout.description}
+            image={hangout.image}
+            type="hangout"
+            startTime={hangout.startTime}
+            endTime={hangout.endTime}
+            location={hangout.location}
+            creator={hangout.creator.name}
+            participants={hangout.counts?.content_participants || 0}
+            privacyLevel={hangout.privacyLevel}
+            className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+          />
         </div>
 
         {/* Privacy Notice */}

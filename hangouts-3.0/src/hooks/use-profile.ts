@@ -196,7 +196,15 @@ export function useProfile() {
         throw new Error('Failed to get current user')
       }
       const { data: userData } = await userResponse.json()
-      const user = userData.user
+      const user = userData
+      
+      // Check if user and username exist
+      if (!user || !user.username) {
+        console.error('🔍 refetch - Invalid user data:', user)
+        throw new Error('User data is incomplete - missing username')
+      }
+      
+      console.log('🔍 refetch - Fetching profile for username:', user.username)
       
       // Fetch full profile data using the profile API
       const profileResponse = await fetch(`/api/profile?username=${user.username}`)
