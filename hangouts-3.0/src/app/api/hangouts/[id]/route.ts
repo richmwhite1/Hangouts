@@ -312,7 +312,9 @@ export async function GET(
       userVotes: votes, // Complete userVotes object for consensus checking
       currentUserVotes, // Current user's votes array for UI
       userRSVP: userRSVP?.status || null,
+      myRsvpStatus: userRSVP?.status || 'PENDING', // Add myRsvpStatus for frontend compatibility
       requiresVoting,
+      votingStatus: requiresVoting ? 'open' : 'closed', // Add votingStatus for action indicators
       state: hangoutState,
       votingDeadline,
       counts: hangout._count

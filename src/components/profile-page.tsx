@@ -96,9 +96,22 @@ export function ProfilePage() {
   // Initialize edit form when profile loads
   useEffect(() => {
     if (profile) {
+      // Parse bio field for activities and places
+      let bioData = {}
+      let bioText = ''
+      
+      try {
+        bioData = profile.bio ? JSON.parse(profile.bio) : {}
+        bioText = bioData.text || ''
+      } catch (e) {
+        // If bio is not JSON, treat it as plain text
+        bioText = profile.bio || ''
+        bioData = { text: bioText }
+      }
+
       setEditForm({
         name: profile.name || '',
-        bio: profile.bio || '',
+        bio: bioText,
         location: profile.location || '',
         zodiac: profile.zodiac || '',
         enneagram: profile.enneagram || '',
@@ -106,9 +119,9 @@ export function ProfilePage() {
         loveLanguage: profile.loveLanguage || ''
       })
       
-      // Initialize favorite activities and places from profile data
-      if (profile.favoriteActivities && Array.isArray(profile.favoriteActivities)) {
-        const activities = profile.favoriteActivities.map((activity: string, index: number) => ({
+      // Initialize favorite activities and places from bio data
+      if (bioData.favoriteActivities && Array.isArray(bioData.favoriteActivities)) {
+        const activities = bioData.favoriteActivities.map((activity: string, index: number) => ({
           id: `activity_${index}`,
           name: activity,
           isCustom: true
@@ -116,8 +129,8 @@ export function ProfilePage() {
         setUserPreferences(activities)
       }
       
-      if (profile.favoritePlaces && Array.isArray(profile.favoritePlaces)) {
-        const places = profile.favoritePlaces.map((place: string, index: number) => ({
+      if (bioData.favoritePlaces && Array.isArray(bioData.favoritePlaces)) {
+        const places = bioData.favoritePlaces.map((place: string, index: number) => ({
           id: `place_${index}`,
           title: place,
           mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
@@ -288,9 +301,16 @@ export function ProfilePage() {
 
     setIsSaving(true)
     try {
+      // Create bio data with activities and places
+      const bioData = {
+        text: editForm.bio,
+        favoriteActivities: userPreferences.map(p => p.name),
+        favoritePlaces: favoritePlaces.map(p => p.title)
+      }
+
       const updatedUser = await updateProfile({
         name: editForm.name,
-        bio: editForm.bio,
+        bio: JSON.stringify(bioData),
         location: editForm.location,
         zodiac: editForm.zodiac,
         enneagram: editForm.enneagram,

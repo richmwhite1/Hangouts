@@ -13,7 +13,9 @@ import {
   ArrowLeft,
   MessageSquare,
   Share2,
-  UserPlus
+  UserPlus,
+  CalendarPlus,
+  ExternalLink
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -171,6 +173,82 @@ export function PublicHangoutViewer({ params }: Props) {
     router.push('/signin')
   }
 
+  const handleAddToCalendar = () => {
+    if (!currentHangout) return
+
+    const startDate = new Date(currentHangout.startTime)
+    const endDate = new Date(currentHangout.endTime)
+    
+    // Format dates for calendar
+    const formatDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+    }
+
+    const start = formatDate(startDate)
+    const end = formatDate(endDate)
+    
+    const title = currentHangout.title
+    const description = currentHangout.description || 'Join us for this hangout!'
+    const location = currentHangout.location || ''
+    
+    // Create calendar URLs
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`
+    
+    const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(title)}&startdt=${startDate.toISOString()}&enddt=${endDate.toISOString()}&body=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`
+    
+    const appleUrl = `data:text/calendar;charset=utf8,BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART:${start}
+DTEND:${end}
+SUMMARY:${title}
+DESCRIPTION:${description}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`
+
+    // Show calendar options
+    const calendarOptions = [
+      { name: 'Google Calendar', url: googleCalendarUrl, icon: '📅' },
+      { name: 'Outlook', url: outlookUrl, icon: '📧' },
+      { name: 'Apple Calendar', url: appleUrl, icon: '🍎', isData: true }
+    ]
+
+    // Create a simple modal for calendar options
+    const modal = document.createElement('div')
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+    modal.innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add to Calendar</h3>
+        <div class="space-y-3">
+          ${calendarOptions.map(option => `
+            <a href="${option.url}" ${option.isData ? 'download="hangout.ics"' : 'target="_blank"'} 
+               class="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <span class="text-2xl">${option.icon}</span>
+              <span class="text-gray-900 dark:text-white">${option.name}</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+            </a>
+          `).join('')}
+        </div>
+        <div class="flex justify-end mt-6">
+          <button onclick="this.closest('.fixed').remove()" 
+                  class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `
+    
+    document.body.appendChild(modal)
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove()
+      }
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -302,8 +380,16 @@ export function PublicHangoutViewer({ params }: Props) {
               
               <div className="flex items-center space-x-2">
                 <button
+                  onClick={handleAddToCalendar}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Add to Calendar"
+                >
+                  <CalendarPlus className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </button>
+                <button
                   onClick={handleShare}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Share"
                 >
                   <Share2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 </button>
@@ -451,21 +537,43 @@ export function PublicHangoutViewer({ params }: Props) {
           </CardContent>
         </Card>
 
-        {/* Sign In CTA */}
-        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="text-center py-6">
-            <MessageSquare className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Want to join this hangout?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Sign in to RSVP, comment, and connect with other participants!
-            </p>
-            <Button onClick={handleSignIn} className="w-full">
-              Sign In to Join
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Actions for Non-Authenticated Users */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Add to Calendar */}
+          <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+            <CardContent className="text-center py-6">
+              <CalendarPlus className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Add to Calendar
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Save this hangout to your calendar and never miss it!
+              </p>
+              <Button 
+                onClick={handleAddToCalendar} 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                Add to Calendar
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Sign In CTA */}
+          <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <CardContent className="text-center py-6">
+              <MessageSquare className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Want to join this hangout?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Sign in to RSVP, comment, and connect with other participants!
+              </p>
+              <Button onClick={handleSignIn} className="w-full">
+                Sign In to Join
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -312,16 +312,13 @@ export async function PATCH(
       )
     }
 
-    // Check if user is host or co-host
+    // Check if hangout exists
     const hangout = await db.content.findUnique({
       where: { id: hangoutId },
-      include: {
-        content_participants: {
-          where: {
-            userId: payload.userId,
-            role: { in: ['HOST', 'CO_HOST'] as any }
-          }
-        }
+      select: {
+        id: true,
+        creatorId: true,
+        type: true
       }
     })
 
@@ -332,36 +329,66 @@ export async function PATCH(
       )
     }
 
-    if (hangout.content_participants?.length === 0) {
-      return NextResponse.json(
-        { error: 'Only hosts and co-hosts can edit plan details' },
-        { status: 403 }
-      )
+    // Check if user is the creator or has edit permissions
+    const canEdit = hangout.creatorId === payload.userId
+
+    if (!canEdit) {
+      // Check if user is a participant with edit permissions
+      const participant = await db.content_participants.findFirst({
+        where: {
+          contentId: hangoutId,
+          userId: payload.userId,
+          canEdit: true
+        }
+      })
+
+      if (!participant) {
+        return NextResponse.json(
+          { error: 'Only the creator or participants with edit permissions can modify this hangout' },
+          { status: 403 }
+        )
+      }
     }
+
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: new Date()
+    }
+
+    if (data.title !== undefined) updateData.title = data.title
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.location !== undefined) updateData.location = data.location
+    if (data.startTime !== undefined) updateData.startTime = new Date(data.startTime)
+    if (data.endTime !== undefined) updateData.endTime = new Date(data.endTime)
+    if (data.privacyLevel !== undefined) updateData.privacyLevel = data.privacyLevel
+    if (data.maxParticipants !== undefined) updateData.maxParticipants = data.maxParticipants
+    if (data.weatherEnabled !== undefined) updateData.weatherEnabled = data.weatherEnabled
 
     // Update hangout with new plan data
     const updatedHangout = await db.content.update({
       where: { id: hangoutId },
-      data: {
-        title: data.title,
-        description: data.description,
-        location: data.location,
-        startTime: data.dateTime ? new Date(data.dateTime) : null,
-        priceMin: data.price,
-        priceMax: data.price,
-        ticketUrl: data.hangoutUrl
+      data: updateData,
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true
+          }
+        }
       }
     })
 
     return NextResponse.json({
       success: true,
-      hangout: updatedHangout
+      data: updatedHangout
     })
 
   } catch (error) {
     console.error('❌ Hangout PATCH error:', error)
     return NextResponse.json(
-      { error: 'Failed to update hangout' },
+      { error: 'Failed to update hangout', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

@@ -306,9 +306,9 @@ export function FriendsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="w-12 h-12 rounded-lg">
+                        <Avatar className="w-48 h-48 rounded-lg">
                           <AvatarImage src={friend.avatar || "/placeholder-avatar.png"} />
-                          <AvatarFallback className="bg-gray-700 text-white rounded-lg">
+                          <AvatarFallback className="bg-gray-700 text-white rounded-lg text-6xl">
                             {friend.name?.charAt(0) || "U"}
                           </AvatarFallback>
                         </Avatar>

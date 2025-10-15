@@ -107,7 +107,9 @@ export async function POST(
     let participant = await db.content_participants.findFirst({
       where: {
         contentId: hangoutId,
-        userId: user.id}});
+        userId: user.id
+      }
+    });
 
     if (!participant) {
       // Add user as a participant automatically
@@ -120,7 +122,9 @@ export async function POST(
           canEdit: false,
           isMandatory: false,
           isCoHost: false,
-          joinedAt: new Date()}});
+          joinedAt: new Date()
+        }
+      });
     }
 
     // Check if RSVP already exists

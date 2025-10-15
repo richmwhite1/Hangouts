@@ -315,8 +315,9 @@ export function FriendsPage() {
                           src={friend.avatar || "/placeholder-avatar.png"}
                           alt={friend.name || "User"}
                           fallback={friend.name || "U"}
-                          size="lg"
+                          size="xl"
                           status={friend.isActive ? "online" : "offline"}
+                          className="w-48 h-48"
                         />
                         <div>
                           <h3 className="font-medium text-white">{friend.name}</h3>

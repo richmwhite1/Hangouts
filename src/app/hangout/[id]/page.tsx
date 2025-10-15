@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 import { useParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { HANGOUT_STATES, getVoteCount, checkMandatoryRSVP } from '@/lib/hangout-flow'
 import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, Share2, Link as LinkIcon, X, Heart, Lock } from 'lucide-react'
 import { format } from 'date-fns'
@@ -1465,11 +1466,17 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
               {messages.map(message => (
                 <div key={message.id} className="flex items-start gap-3 group">
                   {/* Professional Avatar */}
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-semibold">
-                      {message.senderName?.charAt(0) || '?'}
-                    </span>
-                  </div>
+                  <Avatar className="w-8 h-8 rounded-lg flex-shrink-0">
+                    <AvatarImage 
+                      src={message.senderAvatar || "/placeholder-avatar.png"} 
+                      alt={message.senderName || "User"} 
+                    />
+                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
+                      <span className="text-white text-xs font-semibold">
+                        {message.senderName?.charAt(0) || '?'}
+                      </span>
+                    </AvatarFallback>
+                  </Avatar>
                   
                   {/* Message Content */}
                   <div className="flex-1 min-w-0">

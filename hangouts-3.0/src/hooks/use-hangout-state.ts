@@ -142,11 +142,14 @@ export function useHangoutState(hangoutId: string) {
     }
   }
   const updateRSVP = async (status: 'YES' | 'NO' | 'MAYBE') => {
-    if (! !user) return false
+    if (!token || !user) return false
     try {
       const response = await fetch(`/api/hangouts/${hangoutId}/rsvp`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status })
       })
       if (response.ok) {

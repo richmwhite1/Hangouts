@@ -1,75 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
-import { verifyToken } from '@/lib/auth'
 import { z } from 'zod'
-import { createNotification } from '@/lib/notifications'
+import { logger } from '@/lib/logger'
 
-const inviteSchema = z.object({
-  userIds: z.array(z.string()).min(1, 'At least one user must be invited'),
+const InviteSchema = z.object({
+  friendIds: z.array(z.string()).min(1, 'At least one friend must be selected')
 })
 
+// POST /api/hangouts/[id]/invite - Invite friends to hangout or event
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: hangoutId } = await params
-    
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
+    // Verify authentication using Clerk
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
+    const { id: contentId } = await params
     const body = await request.json()
-    const { userIds } = inviteSchema.parse(body)
+    const { friendIds } = InviteSchema.parse(body)
 
-    // Check if hangout exists and user has permission to invite
-    const hangout = await db.hangout.findUnique({
-      where: { id: hangoutId },
-      include: {
-        participants: {
-          where: { userId: payload.userId }
-        }
+    // Check if content exists (hangout or event)
+    const content = await db.content.findUnique({
+      where: { id: contentId },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        creatorId: true,
+        maxParticipants: true
       }
     })
 
-    if (!hangout) {
-      return NextResponse.json(
-        { error: 'Hangout not found' },
-        { status: 404 }
-      )
+    if (!content) {
+      return NextResponse.json({ error: 'Hangout or event not found' }, { status: 404 })
     }
 
-    const canInvite = hangout.creatorId === payload.userId || 
-      hangout.participants.some(p => p.canEdit)
+    // Check if user is a participant (host or member)
+    const participant = await db.content_participants.findFirst({
+      where: {
+        contentId: contentId,
+        userId: user.id
+      }
+    })
 
-    if (!canInvite) {
-      return NextResponse.json(
-        { error: 'No permission to invite users to this hangout' },
-        { status: 403 }
-      )
+    if (!participant) {
+      return NextResponse.json({ error: 'You must be a participant to invite others' }, { status: 403 })
     }
 
-    // Check if hangout has reached max participants
-    if (hangout.maxParticipants) {
-      const currentParticipantCount = await db.hangoutParticipant.count({
-        where: { hangoutId: hangoutId }
+    // Get existing participants to avoid duplicates
+    const existingParticipants = await db.content_participants.findMany({
+      where: {
+        contentId: contentId,
+        userId: { in: friendIds }
+      },
+      select: { userId: true }
+    })
+
+    const existingUserIds = existingParticipants.map(p => p.userId)
+    const newFriendIds = friendIds.filter(id => !existingUserIds.includes(id))
+
+    if (newFriendIds.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'All selected friends are already participants',
+        invited: 0
+      })
+    }
+
+    // Check max participants limit
+    if (content.maxParticipants) {
+      const currentParticipantCount = await db.content_participants.count({
+        where: { contentId: contentId }
       })
 
-      if (currentParticipantCount + userIds.length > hangout.maxParticipants) {
+      if (currentParticipantCount + newFriendIds.length > content.maxParticipants) {
         return NextResponse.json(
           { error: 'Inviting these users would exceed the maximum participant limit' },
           { status: 400 }
@@ -77,91 +92,47 @@ export async function POST(
       }
     }
 
-    // Get inviter info for notifications
-    const inviter = await db.user.findUnique({
-      where: { id: payload.userId },
-      select: { name: true }
+    // Add new participants
+    const newParticipants = newFriendIds.map(friendId => ({
+      id: `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      contentId: contentId,
+      userId: friendId,
+      role: 'MEMBER',
+      canEdit: false,
+      isMandatory: false,
+      isCoHost: false,
+      joinedAt: new Date()
+    }))
+
+    await db.content_participants.createMany({
+      data: newParticipants,
+      skipDuplicates: true
     })
 
-    // Process invitations
-    const results = []
-    for (const userId of userIds) {
-      try {
-        // Check if user exists
-        const user = await db.user.findUnique({
-          where: { id: userId }
-        })
+    // TODO: Send notifications to invited friends
+    // This would typically involve creating notification records
+    // or sending push notifications, emails, etc.
 
-        if (!user) {
-          results.push({ userId, success: false, error: 'User not found' })
-          continue
-        }
+    logger.info(`Successfully invited ${newParticipants.length} friends to ${content.type} ${contentId}`)
 
-        // Check if user is already a participant
-        const existingParticipant = await db.hangoutParticipant.findUnique({
-          where: {
-            hangoutId_userId: {
-              hangoutId: hangoutId,
-              userId
-            }
-          }
-        })
+    return NextResponse.json({
+      success: true,
+      message: `Successfully invited ${newParticipants.length} friend(s)`,
+      invited: newParticipants.length,
+      alreadyParticipants: existingUserIds.length
+    })
 
-        if (existingParticipant) {
-          results.push({ userId, success: false, error: 'User is already a participant' })
-          continue
-        }
-
-        // Add user as participant
-        const participant = await db.hangoutParticipant.create({
-          data: {
-            hangoutId: hangoutId,
-            userId,
-            role: 'MEMBER',
-            rsvpStatus: 'PENDING',
-            canEdit: false,
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-              }
-            }
-          }
-        })
-
-        // Create notification
-        if (inviter) {
-          await createNotification({
-            userId,
-            type: 'HANGOUT_INVITATION',
-            title: 'Hangout Invitation',
-            message: `${inviter.name} invited you to "${hangout.title}"`,
-            data: { hangoutId: hangoutId, inviterId: payload.userId }
-          })
-        }
-
-        results.push({ userId, success: true, participant })
-      } catch (_error) {
-        results.push({ userId, success: false, error: 'Failed to invite user' })
-      }
-    }
-
-    return NextResponse.json({ results })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Invalid input data', details: error.message },
-        { status: 400 }
-      )
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: 'Validation error', 
+        details: error.errors 
+      }, { status: 400 })
     }
-
-    console.error('Invite users error:', error)
+    
+    logger.error('Error inviting friends to hangout/event:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to invite friends', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

@@ -413,9 +413,9 @@ export default function FriendsPage() {
                   <Card key={friendship.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center space-x-3">
-                        <Avatar>
+                        <Avatar className="w-48 h-48 rounded-lg">
                           <AvatarImage src={friendship.friend.avatar} />
-                          <AvatarFallback>
+                          <AvatarFallback className="text-6xl">
                             {friendship.friend.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

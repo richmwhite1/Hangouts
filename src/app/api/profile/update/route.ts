@@ -23,10 +23,27 @@ export async function PUT(request: NextRequest) {
     // Validate user exists
     const user = await db.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true }
+      select: { id: true, bio: true }
     })
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Parse existing bio to preserve other data
+    let bioData = {}
+    try {
+      bioData = user.bio ? JSON.parse(user.bio) : {}
+    } catch (e) {
+      // If bio is not JSON, treat it as plain text
+      bioData = { text: user.bio || '' }
+    }
+
+    // Update bio with activities and places
+    if (favoriteActivities !== undefined) {
+      bioData.favoriteActivities = favoriteActivities
+    }
+    if (favoritePlaces !== undefined) {
+      bioData.favoritePlaces = favoritePlaces
     }
 
     // Update user profile
@@ -35,15 +52,15 @@ export async function PUT(request: NextRequest) {
       data: {
         ...(avatar && { avatar }),
         ...(backgroundImage && { backgroundImage }),
-        ...(bio !== undefined && { bio }),
+        ...(bio !== undefined && { bio: typeof bio === 'string' ? bio : JSON.stringify(bioData) }),
         ...(location !== undefined && { location }),
         ...(name && { name }),
         ...(zodiac !== undefined && { zodiac }),
         ...(enneagram !== undefined && { enneagram }),
         ...(bigFive !== undefined && { bigFive }),
         ...(loveLanguage !== undefined && { loveLanguage }),
-        ...(favoriteActivities !== undefined && { favoriteActivities: JSON.stringify(favoriteActivities) }),
-        ...(favoritePlaces !== undefined && { favoritePlaces: JSON.stringify(favoritePlaces) }),
+        // Store in bio field instead of separate fields
+        bio: JSON.stringify(bioData),
       },
       select: {
         id: true,

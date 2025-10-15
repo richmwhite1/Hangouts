@@ -186,6 +186,7 @@ export async function GET(request: NextRequest) {
               creator: item.users,
               users: item.users,
               myRsvpStatus: myRsvpStatus,
+              votingStatus: 'closed', // Default to closed, can be updated based on poll status
               participants: participants,
               _count: {
                 participants: item._count?.content_participants || 0,
@@ -398,28 +399,29 @@ export async function GET(request: NextRequest) {
             updatedAt: item.updatedAt.toISOString(),
             creator: item.users, // This should match what StackedHangoutTile expects
             users: item.users, // Also include users field for compatibility
-            myRsvpStatus: myRsvpStatus,
-            participants: participants,
-            _count: {
-              participants: item._count?.content_participants || 0,
-              comments: item._count?.comments || 0,
-              content_likes: item._count?.content_likes || 0,
-              content_shares: item._count?.content_shares || 0,
-              messages: item._count?.messages || 0,
-              photos: item._count?.photos || 0,
-              rsvps: item._count?.rsvps || 0,
-              eventSaves: item._count?.eventSaves || 0
-            },
-            counts: {
-              participants: item._count?.content_participants || 0,
-              comments: item._count?.comments || 0,
-              likes: item._count?.content_likes || 0,
-              shares: item._count?.content_shares || 0,
-              messages: item._count?.messages || 0,
-              photos: item._count?.photos || 0,
-              rsvps: item._count?.rsvps || 0,
-              saves: item._count?.eventSaves || 0
-            }
+              myRsvpStatus: myRsvpStatus,
+              votingStatus: 'closed', // Default to closed, can be updated based on poll status
+              participants: participants,
+              _count: {
+                participants: item._count?.content_participants || 0,
+                comments: item._count?.comments || 0,
+                content_likes: item._count?.content_likes || 0,
+                content_shares: item._count?.content_shares || 0,
+                messages: item._count?.messages || 0,
+                photos: item._count?.photos || 0,
+                rsvps: item._count?.rsvps || 0,
+                eventSaves: item._count?.eventSaves || 0
+              },
+              counts: {
+                participants: item._count?.content_participants || 0,
+                comments: item._count?.comments || 0,
+                likes: item._count?.content_likes || 0,
+                shares: item._count?.content_shares || 0,
+                messages: item._count?.messages || 0,
+                photos: item._count?.photos || 0,
+                rsvps: item._count?.rsvps || 0,
+                saves: item._count?.eventSaves || 0
+              }
           }
         } catch (error) {
           console.error('Error transforming feed item:', error);
