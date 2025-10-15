@@ -56,7 +56,7 @@ export function HangoutCard({ hangout }: HangoutCardProps) {
     }
   }
 
-  const yesCount = (hangout.participants || []).filter((p) => p.status === "yes").length
+  const yesCount = (hangout.participants || []).filter((p) => p.rsvpStatus === "YES").length
 
   const allPhotos = [hangout.image, ...(hangout.photos || [])].filter(Boolean)
 

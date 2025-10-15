@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { getHangoutActionStatus } from '@/hooks/use-hangout-actions'
 
 interface CalendarEvent {
   id: string
@@ -50,6 +51,7 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
   const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvent | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [previewEvent, setPreviewEvent] = useState<CalendarEvent | null>(null)
 
   // Process hangouts and events into calendar events
   const calendarEvents = useMemo(() => {
@@ -150,26 +152,40 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
   }
 
   const getStatusColor = (event: CalendarEvent) => {
-    // If voting is open, show voting indicator
-    if (event.votingStatus === 'open') {
-      return "bg-purple-500"
+    // Create a hangout object for the action status function
+    const hangoutForStatus = {
+      id: event.id,
+      title: event.title,
+      startTime: event.date.toISOString(),
+      endTime: event.date.toISOString(),
+      creator: { name: '', username: '' },
+      myRsvpStatus: event.myRsvpStatus,
+      votingStatus: event.votingStatus,
+      hasRecentActivity: false
     }
     
-    // If voting is pending, show pending indicator
-    if (event.votingStatus === 'pending') {
-      return "bg-orange-500"
-    }
+    const actionStatus = getHangoutActionStatus(hangoutForStatus)
     
-    // Otherwise show RSVP status - ensure correct mapping
-    switch (event.status) {
-      case "going":
-        return "bg-green-500"
-      case "maybe":
-        return "bg-yellow-500"
-      case "not-going":
-        return "bg-red-500"
+    // Use action priority for color coding
+    switch (actionStatus.actionPriority) {
+      case 'high':
+        return "bg-red-500" // High priority: RSVP required or vote needed
+      case 'medium':
+        return "bg-orange-500" // Medium priority: RSVP needed
+      case 'low':
+        return "bg-blue-500" // Low priority: New activity
       default:
-        return "bg-gray-400"
+        // Fallback to RSVP status if no action needed
+        switch (event.status) {
+          case "going":
+            return "bg-green-500"
+          case "maybe":
+            return "bg-yellow-500"
+          case "not-going":
+            return "bg-gray-500"
+          default:
+            return "bg-gray-400"
+        }
     }
   }
 
@@ -259,8 +275,14 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
                           onMouseLeave={() => setHoveredEvent(null)}
                           onMouseMove={handleMouseMove}
                           onClick={() => {
-                            const url = event.type === 'hangout' ? `/hangout/${event.id}` : `/event/${event.id}`
-                            window.location.href = url
+                            if (previewEvent?.id === event.id) {
+                              // Second click - navigate to the hangout/event
+                              const url = event.type === 'hangout' ? `/hangout/${event.id}` : `/event/${event.id}`
+                              window.location.href = url
+                            } else {
+                              // First click - show preview
+                              setPreviewEvent(event)
+                            }
                           }}
                         />
                       ))}
@@ -337,6 +359,61 @@ export function HangoutCalendar({ hangouts = [], events = [] }: HangoutCalendarP
               
               <div className="text-xs text-muted-foreground mt-2">
                 Click to view details
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {previewEvent.title}
+                </h3>
+                <button
+                  onClick={() => setPreviewEvent(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${getStatusColor(previewEvent)}`} />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {previewEvent.date.toLocaleDateString()} at {previewEvent.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                
+                {previewEvent.participants > 0 && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {previewEvent.participants} participant{previewEvent.participants !== 1 ? 's' : ''}
+                  </div>
+                )}
+                
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={() => {
+                      const url = previewEvent.type === 'hangout' ? `/hangout/${previewEvent.id}` : `/event/${previewEvent.id}`
+                      window.location.href = url
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Open {previewEvent.type === 'hangout' ? 'Hangout' : 'Event'}
+                  </Button>
+                  <Button
+                    onClick={() => setPreviewEvent(null)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
