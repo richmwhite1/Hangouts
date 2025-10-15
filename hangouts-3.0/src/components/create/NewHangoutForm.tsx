@@ -13,7 +13,7 @@ import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { EventSelectionModal } from '@/components/ui/event-selection-modal'
 import { toast } from 'sonner'
-
+import { HANGOUT_STATES } from '@/lib/hangout-flow'
 import { logger } from '@/lib/logger'
 interface NewHangoutFormProps {
   onSubmit: (data: NewHangoutFormData) => void
@@ -27,6 +27,7 @@ interface NewHangoutFormProps {
     price: number
   }
   isEditMode?: boolean
+  hangoutState?: string
 }
 
 export interface NewHangoutFormData {
@@ -52,7 +53,7 @@ export interface NewHangoutFormData {
   }>
 }
 
-export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent, isEditMode = false }: NewHangoutFormProps) {
+export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent, isEditMode = false, hangoutState }: NewHangoutFormProps) {
   const { getToken } = useAuth()
   const [formData, setFormData] = useState<NewHangoutFormData>({
     title: '',
@@ -79,12 +80,19 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
   // Prefill form with event data if provided
   useEffect(() => {
     if (prefillEvent) {
+      // Determine if this is RSVP mode (confirmed state) or voting mode (polling state)
+      const isRSVPMode = hangoutState === HANGOUT_STATES.CONFIRMED || hangoutState === 'confirmed'
+      const isVotingMode = hangoutState === HANGOUT_STATES.POLLING || hangoutState === 'polling'
+      
       setFormData(prev => ({
         ...prev,
-        title: `Hangout: ${prefillEvent.title}`,
+        title: isEditMode ? prefillEvent.title : `Hangout: ${prefillEvent.title}`,
         description: prefillEvent.description,
         location: prefillEvent.location,
-        options: [
+        // Set the appropriate type based on hangout state
+        type: isRSVPMode ? 'quick_plan' : (isVotingMode ? 'multi_option' : 'quick_plan'),
+        options: isRSVPMode ? [
+          // RSVP mode: Only one option (the main plan)
           {
             id: `option_${Date.now()}_1`,
             title: prefillEvent.title,
@@ -93,20 +101,24 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
             dateTime: prefillEvent.dateTime,
             price: prefillEvent.price,
             hangoutUrl: ''
-          },
+          }
+        ] : [
+          // Voting mode: One option with the current plan, optionally allow more
           {
-            id: `option_${Date.now()}_2`,
-            title: '',
-            description: '',
-            location: '',
-            dateTime: '',
-            price: 0,
+            id: `option_${Date.now()}_1`,
+            title: prefillEvent.title,
+            description: prefillEvent.description,
+            location: prefillEvent.location,
+            dateTime: prefillEvent.dateTime,
+            price: prefillEvent.price,
             hangoutUrl: ''
           }
+          // Note: We don't add a second empty option for voting mode in edit mode
+          // Users can add more options if they want, but it's not required
         ]
       }))
     }
-  }, [prefillEvent])
+  }, [prefillEvent, hangoutState, isEditMode])
 
   // Fetch friends on component mount
   useEffect(() => {

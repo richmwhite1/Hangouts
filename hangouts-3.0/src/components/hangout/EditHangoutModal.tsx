@@ -23,6 +23,7 @@ interface EditHangoutModalProps {
     image?: string
     maxParticipants?: number
     weatherEnabled?: boolean
+    state?: string
   }
   isOpen: boolean
   onClose: () => void
@@ -125,6 +126,7 @@ export default function EditHangoutModal({
               price: 0
             }}
             isEditMode={true}
+            hangoutState={hangout.state}
           />
         </div>
       </DialogContent>
