@@ -25,6 +25,14 @@ interface NewHangoutFormProps {
     location: string
     dateTime: string
     price: number
+    options?: Array<{
+      id: string
+      title: string
+      description?: string
+      location?: string
+      dateTime?: string
+      price?: number
+    }>
   }
   isEditMode?: boolean
   hangoutState?: string
@@ -103,8 +111,16 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
             hangoutUrl: ''
           }
         ] : [
-          // Voting mode: One option with the current plan, optionally allow more
-          {
+          // Voting mode: Use existing options if available, otherwise create one from current plan
+          ...(prefillEvent.options && prefillEvent.options.length > 0 ? prefillEvent.options.map(option => ({
+            id: option.id || `option_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            title: option.title,
+            description: option.description || '',
+            location: option.location || '',
+            dateTime: option.dateTime || '',
+            price: option.price || 0,
+            hangoutUrl: ''
+          })) : [{
             id: `option_${Date.now()}_1`,
             title: prefillEvent.title,
             description: prefillEvent.description,
@@ -112,9 +128,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
             dateTime: prefillEvent.dateTime,
             price: prefillEvent.price,
             hangoutUrl: ''
-          }
-          // Note: We don't add a second empty option for voting mode in edit mode
-          // Users can add more options if they want, but it's not required
+          }])
+          // Note: In edit mode, users can add more options if they want, but it's not required
         ]
       }))
     }
@@ -172,12 +187,22 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
     if (formData.type === 'multi_option') {
       const validOptions = formData.options.filter(option => option.title.trim() !== '')
-      if (validOptions.length < 2) {
-        toast.error('Please add at least two options for the poll')
-        return
+      
+      // In edit mode, allow editing existing options without requiring more
+      if (isEditMode) {
+        if (validOptions.length < 1) {
+          toast.error('Please keep at least one option')
+          return
+        }
+      } else {
+        // In create mode, require at least 2 options for polls
+        if (validOptions.length < 2) {
+          toast.error('Please add at least two options for the poll')
+          return
+        }
       }
       
-      // Validate that all options have date/time
+      // Validate that all valid options have date/time
       const optionsWithoutDateTime = validOptions.filter(option => !option.dateTime || option.dateTime.trim() === '')
       if (optionsWithoutDateTime.length > 0) {
         toast.error('Please select date and time for all options')

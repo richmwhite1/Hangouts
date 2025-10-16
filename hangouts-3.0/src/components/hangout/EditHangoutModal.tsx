@@ -24,6 +24,14 @@ interface EditHangoutModalProps {
     maxParticipants?: number
     weatherEnabled?: boolean
     state?: string
+    options?: Array<{
+      id: string
+      title: string
+      description?: string
+      location?: string
+      dateTime?: string
+      price?: number
+    }>
   }
   isOpen: boolean
   onClose: () => void
@@ -70,7 +78,7 @@ export default function EditHangoutModal({
 
       // Update hangout
       const response = await fetch(`/api/hangouts/${hangout.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -123,7 +131,8 @@ export default function EditHangoutModal({
               description: hangout.description || '',
               location: hangout.location || '',
               dateTime: hangout.startTime,
-              price: 0
+              price: 0,
+              options: hangout.options || []
             }}
             isEditMode={true}
             hangoutState={hangout.state}
