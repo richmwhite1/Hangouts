@@ -761,6 +761,16 @@ export default function HangoutDetailPage() {
               />
             </div>
           </div>
+          
+          {/* Privacy Level Indicator */}
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Lock className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-300 text-sm">
+              {hangout.privacyLevel === 'PUBLIC' ? 'Public' : 
+               hangout.privacyLevel === 'FRIENDS_ONLY' ? 'Friends Only' : 
+               'Private'}
+            </span>
+          </div>
         </div>
         {/* Primary Photo - Always show when it exists */}
         {hangout.image && (

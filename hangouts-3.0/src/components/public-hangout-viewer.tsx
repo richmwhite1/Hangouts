@@ -10,6 +10,8 @@ import { sharingService } from '@/lib/services/sharing-service'
 import { CalendarButtons } from '@/components/ui/calendar-buttons'
 import { EnhancedShareButton } from '@/components/sharing/enhanced-share-button'
 import { GuestPrompt } from '@/components/guest-experience/guest-prompt'
+import { useAutoJoin } from '@/hooks/use-auto-join'
+import { useAuth } from '@clerk/nextjs'
 // import { toast } from 'sonner'
 
 import { logger } from '@/lib/logger'
@@ -67,7 +69,18 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
   const [hangout, setHangout] = useState<HangoutData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // const { isAuthenticated } = useAuth()
+  const { userId } = useAuth()
+
+  // Auto-join functionality for users coming from sign-in
+  useAutoJoin({
+    hangoutId,
+    hangout,
+    currentUserId: userId,
+    onJoinSuccess: () => {
+      // Refresh hangout data to show updated participants
+      fetchHangout()
+    }
+  })
 
   useEffect(() => {
     fetchHangout()
@@ -103,7 +116,9 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
     if (onSignInRequired) {
       onSignInRequired()
     } else {
-      window.location.href = '/signin'
+      // Redirect to sign-in with current hangout URL as redirect parameter
+      const currentUrl = encodeURIComponent(window.location.href)
+      window.location.href = `/signin?redirect_url=${currentUrl}`
     }
   }
 

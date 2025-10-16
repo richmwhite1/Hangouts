@@ -265,7 +265,23 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Show hangouts */}
               {publicContent.hangouts.slice(0, 3).map((hangout) => (
-                <Card key={hangout.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300">
+                <Card key={hangout.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300 overflow-hidden">
+                  {/* Primary Photo */}
+                  {hangout.image && (
+                    <div className="relative h-48 w-full">
+                      <img
+                        src={hangout.image}
+                        alt={hangout.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-400/30">
+                          Hangout
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -281,9 +297,11 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                           </div>
                         )}
                       </div>
-                      <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-400/30">
-                        Hangout
-                      </Badge>
+                      {!hangout.image && (
+                        <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-400/30">
+                          Hangout
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -327,7 +345,23 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
 
               {/* Show events */}
               {publicContent.events.slice(0, 3).map((event) => (
-                <Card key={event.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300">
+                <Card key={event.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300 overflow-hidden">
+                  {/* Primary Photo */}
+                  {event.image && (
+                    <div className="relative h-48 w-full">
+                      <img
+                        src={event.image}
+                        alt={event.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="bg-green-600/20 text-green-300 border-green-400/30">
+                          Event
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -343,9 +377,11 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                           </div>
                         )}
                       </div>
-                      <Badge variant="secondary" className="bg-green-600/20 text-green-300 border-green-400/30">
-                        Event
-                      </Badge>
+                      {!event.image && (
+                        <Badge variant="secondary" className="bg-green-600/20 text-green-300 border-green-400/30">
+                          Event
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">

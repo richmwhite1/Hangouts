@@ -62,6 +62,11 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
 
           if (response.ok) {
             toast.success('Welcome! You\'ve been automatically added to this hangout.')
+            
+            // Redirect to the authenticated hangout detail page
+            const hangoutDetailUrl = `/hangout/${hangoutId}`
+            window.location.href = hangoutDetailUrl
+            
             if (onJoinSuccess) {
               onJoinSuccess()
             }
