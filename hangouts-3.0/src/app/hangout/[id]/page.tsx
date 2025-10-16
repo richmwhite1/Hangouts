@@ -13,6 +13,7 @@ import EditHangoutModal from '@/components/hangout/EditHangoutModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
 import { logger } from '@/lib/logger'
+import { useAutoJoin } from '@/hooks/use-auto-join'
 interface Hangout {
   id: string
   title: string
@@ -142,6 +143,17 @@ export default function HangoutDetailPage() {
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
   const [showEditModal, setShowEditModal] = useState(false)
   const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
+
+  // Auto-join functionality for users coming from sign-in
+  useAutoJoin({
+    hangoutId,
+    hangout,
+    currentUserId: databaseUserId,
+    onJoinSuccess: () => {
+      // Refresh hangout data to show updated participants
+      fetchHangout()
+    }
+  })
 
   // Fetch database user ID
   const fetchDatabaseUserId = async () => {

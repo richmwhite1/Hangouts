@@ -1,10 +1,17 @@
 import { SignIn } from '@clerk/nextjs'
 
-export default function SignInPage() {
+interface SignInPageProps {
+  searchParams: { redirect_url?: string }
+}
+
+export default function SignInPage({ searchParams }: SignInPageProps) {
+  const redirectUrl = searchParams.redirect_url || '/'
+  
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="w-full max-w-md">
         <SignIn 
+          redirectUrl={redirectUrl}
           appearance={{
             elements: {
               formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',

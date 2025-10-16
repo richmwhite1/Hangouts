@@ -45,7 +45,9 @@ export function GuestPrompt({
     if (onSignInClick) {
       onSignInClick()
     } else {
-      window.location.href = '/signin'
+      // Redirect to sign-in with current URL as redirect parameter
+      const currentUrl = encodeURIComponent(window.location.href)
+      window.location.href = `/signin?redirect_url=${currentUrl}`
     }
   }
 
@@ -184,7 +186,10 @@ export function GuestPrompt({
           <div className="text-center">
             <Button
               variant="link"
-              onClick={() => window.location.href = '/signin'}
+              onClick={() => {
+                const currentUrl = encodeURIComponent(window.location.href)
+                window.location.href = `/signin?redirect_url=${currentUrl}`
+              }}
               className="text-sm text-gray-600 hover:text-gray-800"
             >
               Already have an account? Sign in
