@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location') || 'TBD'
     const participants = searchParams.get('participants') || '0'
 
+    console.log('OG Image API: Generating image for:', { title, creator, date, location, participants })
+
     return new ImageResponse(
       (
         <div
@@ -154,6 +156,7 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error generating OG image:', error)
+    console.error('Error details:', error.message, error.stack)
     // Return a redirect to a static placeholder image
     return new Response(null, {
       status: 302,

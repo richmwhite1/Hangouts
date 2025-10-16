@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${hangout.description}\n\nWhen: ${formatDate(hangout.startTime)}\nWhere: ${hangout.location || 'TBD'}\nCreated by: ${hangout.creator?.name || 'Someone'}`
       : `Join us for ${hangout.title}!\n\nWhen: ${formatDate(hangout.startTime)}\nWhere: ${hangout.location || 'TBD'}\nCreated by: ${hangout.creator?.name || 'Someone'}`
     
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hangouts-production-adc4.up.railway.app'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' ? 'https://hangouts-production-adc4.up.railway.app' : 'http://localhost:3000')
     const shareUrl = `${baseUrl}/hangouts/public/${id}`
     
     return {
@@ -64,13 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             height: 630,
             alt: hangout.title,
           }] : [{
-            url: `${baseUrl}/api/og/hangout?${new URLSearchParams({
-              title: hangout.title,
-              creator: hangout.creator?.name || 'Someone',
-              date: formatDate(hangout.startTime),
-              location: hangout.location || 'TBD',
-              participants: hangout._count?.participants?.toString() || '0'
-            })}`,
+            url: `${baseUrl}/placeholder-hangout-og.svg`,
             width: 1200,
             height: 630,
             alt: hangout.title,
@@ -84,13 +78,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         images: [
-          ...(hangout.image ? [hangout.image] : [`${baseUrl}/api/og/hangout?${new URLSearchParams({
-            title: hangout.title,
-            creator: hangout.creator?.name || 'Someone',
-            date: formatDate(hangout.startTime),
-            location: hangout.location || 'TBD',
-            participants: hangout._count?.participants?.toString() || '0'
-          })}`])
+          ...(hangout.image ? [hangout.image] : [`${baseUrl}/placeholder-hangout-og.svg`])
         ],
       },
       other: {

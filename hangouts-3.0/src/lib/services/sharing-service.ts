@@ -59,10 +59,10 @@ export class SharingService {
       // Check if native sharing is supported
       if (navigator.share && navigator.canShare) {
         const sharePayload: any = {
-          title: customMessage || `Come check out ${title} hangout`,
+          title: customMessage || `Do you want to join ${title}?`,
           text: customMessage || (includeDescription && description
-            ? `Come check out ${title} hangout\n\n${description}\n\nJoin us for this ${type}!`
-            : `Come check out ${title} hangout! Join us for this ${type}!`),
+            ? `Do you want to join ${title}?\n\n${description}\n\nJoin us for this ${type}!`
+            : `Do you want to join ${title}? Join us for this ${type}!`),
           url: url
         }
         // Note: We don't include image files in native sharing
@@ -146,7 +146,7 @@ export class SharingService {
    * Copy to clipboard with fallback
    */
   private async copyToClipboard(url: string, title: string): Promise<void> {
-    const text = `Come check out ${title} hangout!\n\n${url}`
+    const text = `Do you want to join ${title}?\n\n${url}`
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text)
     } else {
