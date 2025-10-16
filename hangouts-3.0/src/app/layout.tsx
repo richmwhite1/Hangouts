@@ -32,7 +32,7 @@ export default function RootLayout({
     >
       <html lang="en" className="dark">
         <head>
-          <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.13/24/outline.js"></script>
+          {/* Heroicons are imported as React components, not as scripts */}
         </head>
         <body className={inter.className}>
           <GlobalErrorBoundary>

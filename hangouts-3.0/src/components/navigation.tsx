@@ -35,120 +35,133 @@ export function Navigation() {
             <span className="font-bold text-xl">Hangout</span>
           </Link>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search hangouts, friends, or places..."
-                className="pl-10 bg-input border-border"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                suppressHydrationWarning
-              />
+          {/* Search Bar - Only show for authenticated users */}
+          {isSignedIn && (
+            <div className="flex-1 max-w-md mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search hangouts, friends, or places..."
+                  className="pl-10 bg-input border-border"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  suppressHydrationWarning
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* User Actions */}
           <div className="flex items-center space-x-2">
-            <Link href="/friends">
-              <Button variant="ghost" size="lg" className="min-h-[44px] min-w-[44px] p-2">
-                <Users className="w-5 h-5" />
-              </Button>
-            </Link>
-            <Link href="/messages">
-              <Button variant="ghost" size="lg" className="relative min-h-[44px] min-w-[44px] p-2">
-                <MessageSquare className="w-5 h-5" />
-                {totalUnreadCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            {isSignedIn ? (
+              <>
+                <Link href="/friends">
+                  <Button variant="ghost" size="lg" className="min-h-[44px] min-w-[44px] p-2">
+                    <Users className="w-5 h-5" />
+                  </Button>
+                </Link>
+                <Link href="/messages">
+                  <Button variant="ghost" size="lg" className="relative min-h-[44px] min-w-[44px] p-2">
+                    <MessageSquare className="w-5 h-5" />
+                    {totalUnreadCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      >
+                        {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="relative min-h-[44px] min-w-[44px] p-2"
+                    onClick={() => setShowNotifications(!showNotifications)}
                   >
-                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="lg"
-                className="relative min-h-[44px] min-w-[44px] p-2"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <Bell className="w-5 h-5" />
-              </Button>
-            </div>
-            <div className="relative">
-              <Button 
-                variant="ghost" 
-                size="lg" 
-                className="p-2 min-h-[44px] min-w-[44px]"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-              >
-                <Avatar className="w-8 h-8 rounded-lg">
-                  <AvatarImage 
-                    src={profile?.avatar || "/placeholder-avatar.png"} 
-                    alt={profile?.name || "Profile"} 
-                  />
-                  <AvatarFallback className="rounded-lg">
-                    {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
+                    <Bell className="w-5 h-5" />
+                  </Button>
+                </div>
+                <div className="relative">
+                  <Button 
+                    variant="ghost" 
+                    size="lg" 
+                    className="p-2 min-h-[44px] min-w-[44px]"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                  >
+                    <Avatar className="w-8 h-8 rounded-lg">
+                      <AvatarImage 
+                        src={profile?.avatar || "/placeholder-avatar.png"} 
+                        alt={profile?.name || "Profile"} 
+                      />
+                      <AvatarFallback className="rounded-lg">
+                        {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
               
-              {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-10 h-10 rounded-lg">
-                        <AvatarImage 
-                          src={profile?.avatar || "/placeholder-avatar.png"} 
-                          alt={profile?.name || "Profile"} 
-                        />
-                        <AvatarFallback className="rounded-lg">
-                          {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold text-sm">{profile?.name || "User"}</p>
-                        <p className="text-xs text-muted-foreground">@{profile?.username || ""}</p>
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+                      <div className="p-4 border-b border-border">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="w-10 h-10 rounded-lg">
+                            <AvatarImage 
+                              src={profile?.avatar || "/placeholder-avatar.png"} 
+                              alt={profile?.name || "Profile"} 
+                            />
+                            <AvatarFallback className="rounded-lg">
+                              {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-sm">{profile?.name || "User"}</p>
+                            <p className="text-xs text-muted-foreground">@{profile?.username || ""}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="py-2">
+                        <Link href="/profile">
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            <User className="w-4 h-4 mr-2" />
+                            Profile
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start"
+                          onClick={() => setShowNotificationSettings(true)}
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Notification Settings
+                        </Button>
+                        <div className="border-t border-border my-2"></div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            clerk.signOut()
+                            setShowUserMenu(false)
+                          }}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Sign Out
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                  <div className="py-2">
-                    <Link href="/profile">
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <User className="w-4 h-4 mr-2" />
-                        Profile
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start"
-                      onClick={() => setShowNotificationSettings(true)}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Notification Settings
-                    </Button>
-                    <div className="border-t border-border my-2"></div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        clerk.signOut()
-                        setShowUserMenu(false)
-                      }}
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </Button>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              // Sign In button for non-authenticated users
+              <Link href="/signin">
+                <Button variant="default" size="lg" className="bg-[#6c47ff] hover:bg-[#5a3ae6] text-white">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -93,11 +93,19 @@ export default function HomePage() {
         // Sort by start time (upcoming first)
         const aTime = new Date(a.hangout.startTime).getTime()
         const bTime = new Date(b.hangout.startTime).getTime()
+        // Handle invalid dates
+        if (isNaN(aTime) && isNaN(bTime)) return 0
+        if (isNaN(aTime)) return 1
+        if (isNaN(bTime)) return -1
         return aTime - bTime
       } else {
         // Sort by recent activity - prioritize by creation time and activity
         const aCreatedTime = new Date(a.hangout.createdAt || a.hangout.startTime).getTime()
         const bCreatedTime = new Date(b.hangout.createdAt || b.hangout.startTime).getTime()
+        // Handle invalid dates
+        if (isNaN(aCreatedTime) && isNaN(bCreatedTime)) return 0
+        if (isNaN(aCreatedTime)) return 1
+        if (isNaN(bCreatedTime)) return -1
         // First, check if either has recent activity (within last 24 hours)
         const aHasRecentActivity = a.hangout.hasRecentActivity || false
         const bHasRecentActivity = b.hangout.hasRecentActivity || false
@@ -105,6 +113,10 @@ export default function HomePage() {
         if (aHasRecentActivity && bHasRecentActivity) {
           const aActivityTime = a.hangout.lastActivity ? new Date(a.hangout.lastActivity).getTime() : aCreatedTime
           const bActivityTime = b.hangout.lastActivity ? new Date(b.hangout.lastActivity).getTime() : bCreatedTime
+          // Handle invalid activity dates
+          if (isNaN(aActivityTime) && isNaN(bActivityTime)) return 0
+          if (isNaN(aActivityTime)) return 1
+          if (isNaN(bActivityTime)) return -1
           return bActivityTime - aActivityTime
         }
         // If only one has recent activity, prioritize it
