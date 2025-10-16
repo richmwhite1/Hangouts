@@ -58,6 +58,21 @@ export async function GET(
             }
           }
         },
+        rsvps: {
+          select: {
+            userId: true,
+            status: true,
+            respondedAt: true,
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true
+              }
+            }
+          }
+        },
         _count: {
           select: {
             content_participants: true
@@ -92,22 +107,29 @@ export async function GET(
         username: hangout.users?.username || 'unknown',
         avatar: hangout.users?.avatar
       },
-      participants: hangout.content_participants.map(participant => ({
-        id: participant.id,
-        userId: participant.userId,
-        role: participant.role,
-        canEdit: participant.canEdit,
-        isMandatory: participant.isMandatory,
-        isCoHost: participant.isCoHost,
-        invitedAt: participant.invitedAt,
-        joinedAt: participant.joinedAt,
-        user: {
-          id: participant.users?.id,
-          name: participant.users?.name || 'Unknown',
-          username: participant.users?.username || 'unknown',
-          avatar: participant.users?.avatar
+      participants: hangout.content_participants.map(participant => {
+        // Find the corresponding RSVP for this participant
+        const rsvp = hangout.rsvps.find(r => r.userId === participant.userId)
+        
+        return {
+          id: participant.id,
+          userId: participant.userId,
+          role: participant.role,
+          canEdit: participant.canEdit,
+          isMandatory: participant.isMandatory,
+          isCoHost: participant.isCoHost,
+          invitedAt: participant.invitedAt,
+          joinedAt: participant.joinedAt,
+          rsvpStatus: rsvp?.status || 'PENDING',
+          respondedAt: rsvp?.respondedAt,
+          user: {
+            id: participant.users?.id,
+            name: participant.users?.name || 'Unknown',
+            username: participant.users?.username || 'unknown',
+            avatar: participant.users?.avatar
+          }
         }
-      })),
+      }),
       _count: {
         participants: hangout._count.content_participants
       }

@@ -827,7 +827,10 @@ export function MergedDiscoveryPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Show public events and hangouts */}
-              {filteredEvents.length === 0 && filteredHangouts.length === 0 ? (
+              {(() => {
+                const filteredEvents = filterContent(events)
+                const filteredHangouts = filterContent(hangouts)
+                return filteredEvents.length === 0 && filteredHangouts.length === 0 ? (
                 <div className="col-span-full text-center py-12">
                   <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-white mb-2">No public events found</h3>
@@ -925,7 +928,8 @@ export function MergedDiscoveryPage() {
                     </Link>
                   ))}
                 </>
-              )}
+              )
+              })()}
             </div>
           )}
         </div>

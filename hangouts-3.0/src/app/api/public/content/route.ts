@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Add type filter
-    if (type === 'hangouts') {
+    if (type === 'hangouts' || type === 'HANGOUT') {
       whereClause.type = 'HANGOUT'
-    } else if (type === 'events') {
+    } else if (type === 'events' || type === 'EVENT') {
       whereClause.type = 'EVENT'
     }
     // For 'all' and 'trending', don't filter by type
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const hangouts = await db.content.findMany({
       where: {
         ...whereClause,
-        type: type === 'events' ? undefined : 'HANGOUT'
+        type: (type === 'events' || type === 'EVENT') ? undefined : 'HANGOUT'
       },
       select: {
         id: true,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         privacyLevel: true,
         createdAt: true,
         creatorId: true,
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const events = await db.content.findMany({
       where: {
         ...whereClause,
-        type: type === 'hangouts' ? undefined : 'EVENT'
+        type: (type === 'hangouts' || type === 'HANGOUT') ? undefined : 'EVENT'
       },
       select: {
         id: true,
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         priceMax: true,
         createdAt: true,
         creatorId: true,
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
       privacyLevel: hangout.privacyLevel,
       category: null,
       tags: [],
-      creator: hangout.creator || {
+      creator: hangout.users || {
         name: 'Unknown',
         username: 'unknown',
         avatar: null
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
       priceMax: event.priceMax,
       category: null,
       tags: [],
-      creator: event.creator || {
+      creator: event.users || {
         name: 'Unknown',
         username: 'unknown',
         avatar: null
@@ -176,9 +176,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     logger.error('Public content API: Error fetching content', error)
+    console.error('Public content API error:', error)
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch public content',
+      details: error instanceof Error ? error.message : 'Unknown error',
       hangouts: [],
       events: [],
       total: 0

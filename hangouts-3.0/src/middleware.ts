@@ -13,16 +13,17 @@ const isPublicRoute = createRouteMatcher([
   '/api/public(.*)',
   '/api/hangouts/public(.*)',
   '/api/events/public(.*)',
+  '/discover(.*)', // Allow discover page for non-authenticated users
+  '/create(.*)', // Allow create page to show sign-in prompt
+  '/events(.*)', // Allow events page to show sign-in prompt
 ])
 
 // Define protected routes that require authentication
 const isProtectedRoute = createRouteMatcher([
-  '/create(.*)',
-  '/hangouts(.*)',
+  '/hangouts(?!.*public)(.*)', // Only protect non-public hangout routes
   '/profile(.*)',
   '/messages(.*)',
   '/friends(.*)',
-  '/events(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
