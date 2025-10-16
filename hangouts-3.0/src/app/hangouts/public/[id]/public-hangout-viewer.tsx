@@ -19,7 +19,7 @@ import {
   Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
@@ -68,17 +68,7 @@ interface Hangout {
   consensusThreshold?: number
 }
 
-interface Comment {
-  id: string
-  text: string
-  createdAt: string
-  user: {
-    id: string
-    name: string
-    username: string
-    avatar?: string
-  }
-}
+// Comment interface removed - not needed for public viewing
 
 interface Props {
   params: Promise<{ id: string }>
@@ -88,7 +78,7 @@ export function PublicHangoutViewer({ params }: Props) {
   const [currentHangout, setCurrentHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
+  // Comments not available for public viewing
   const [hangoutId, setHangoutId] = useState<string | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const router = useRouter()
@@ -119,17 +109,7 @@ export function PublicHangoutViewer({ params }: Props) {
         const data = await response.json()
         setCurrentHangout(data.hangout)
         
-        // Fetch comments (if available)
-        try {
-          const commentsResponse = await fetch(`/api/hangouts/${hangoutId}/comments`)
-          if (commentsResponse.ok) {
-            const commentsData = await commentsResponse.json()
-            setComments(commentsData.comments || [])
-          }
-        } catch (commentError) {
-          // Comments are optional for public view
-          logger.warn('Could not fetch comments:', commentError)
-        }
+        // Comments not available for public viewing
       } catch (err) {
         logger.error('Error fetching hangout:', err);
         setError(err instanceof Error ? err.message : 'Failed to load hangout')
