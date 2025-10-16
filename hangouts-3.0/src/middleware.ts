@@ -20,7 +20,7 @@ const isPublicRoute = createRouteMatcher([
 
 // Define protected routes that require authentication
 const isProtectedRoute = createRouteMatcher([
-  '/hangouts(?!.*public)(.*)', // Only protect non-public hangout routes
+  '/hangouts(.*)', // Protect all hangout routes except public ones (handled in logic)
   '/profile(.*)',
   '/messages(.*)',
   '/friends(.*)',
@@ -79,6 +79,12 @@ export default clerkMiddleware(async (auth, req) => {
   
   // Check if route requires authentication
   if (isProtectedRoute(req) && !isPublicRoute(req) && !userId) {
+    // Special handling for public hangout routes
+    if (req.nextUrl.pathname.startsWith('/hangouts/public/')) {
+      // Allow public hangout routes without authentication
+      return response
+    }
+    
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Middleware] Redirecting ${req.nextUrl.pathname} to /signin - no userId`)
     }

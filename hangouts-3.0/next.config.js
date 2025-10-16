@@ -4,8 +4,8 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Production optimizations
-  swcMinify: true,
   compress: true,
+  outputFileTracingRoot: '/Users/richardwhite/Hangout 3.0/hangouts-3.0',
   
   // Disable problematic features
   eslint: {
