@@ -22,8 +22,11 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
     // 2. We have a hangout
     // 3. We haven't already attempted to join
     // 4. The hangout is public
-    // 5. There's a redirect_url parameter (indicating they came from sign-in)
+    // 5. We're on a public hangout page (indicating they came from sign-in)
     const redirectUrl = searchParams.get('redirect_url')
+    const currentPath = window.location.pathname
+    const isOnPublicHangoutPage = currentPath.includes('/hangouts/public/')
+    
     console.log('Auto-join check:', {
       isSignedIn,
       isLoaded,
@@ -31,6 +34,8 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       hasAttemptedJoin,
       privacyLevel: hangout?.privacyLevel,
       redirectUrl,
+      currentPath,
+      isOnPublicHangoutPage,
       currentUserId
     })
     
@@ -40,7 +45,7 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       hangout && 
       !hasAttemptedJoin &&
       hangout.privacyLevel === 'PUBLIC' &&
-      redirectUrl
+      isOnPublicHangoutPage
     ) {
       const attemptAutoJoin = async () => {
         try {
@@ -103,7 +108,7 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       const timeoutId = setTimeout(attemptAutoJoin, 1000)
       return () => clearTimeout(timeoutId)
     }
-  }, [isSignedIn, isLoaded, hangout, hasAttemptedJoin, hangoutId, searchParams, getToken, onJoinSuccess])
+  }, [isSignedIn, isLoaded, hangout, hasAttemptedJoin, hangoutId, searchParams, getToken, onJoinSuccess, currentUserId])
 
   return { hasAttemptedJoin }
 }
