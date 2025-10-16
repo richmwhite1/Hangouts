@@ -45,14 +45,28 @@ const envSchema = z.object({
 })
 
 // Validate environment variables
-const env = envSchema.parse(process.env)
+// Parse environment variables with safe fallbacks for health checks
+const env = envSchema.safeParse(process.env)
+const envData = env.success ? env.data : {
+  DATABASE_URL: process.env.DATABASE_URL || '',
+  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY || '',
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || '',
+  UPLOADTHING_SECRET: process.env.UPLOADTHING_SECRET || '',
+  UPLOADTHING_APP_ID: process.env.UPLOADTHING_APP_ID || '',
+  SENTRY_DSN: process.env.SENTRY_DSN || '',
+  LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+  NODE_ENV: process.env.NODE_ENV || 'development'
+}
 
 export const config = {
   // App configuration
   app: {
     name: 'Hangouts 3.0',
     version: '1.0.0',
-    url: env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    url: envData.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     environment: process.env.NODE_ENV || 'development',
     isDevelopment: process.env.NODE_ENV === 'development',
     isProduction: process.env.NODE_ENV === 'production'
@@ -60,7 +74,7 @@ export const config = {
 
   // Database configuration
   database: {
-    url: env.DATABASE_URL,
+    url: envData.DATABASE_URL,
     maxConnections: 20,
     connectionTimeout: 30000,
     queryTimeout: 10000
@@ -68,8 +82,8 @@ export const config = {
 
   // Authentication configuration
   auth: {
-    clerkSecretKey: env.CLERK_SECRET_KEY,
-    clerkPublishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    clerkSecretKey: envData.CLERK_SECRET_KEY,
+    clerkPublishableKey: envData.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     sessionTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days
     maxLoginAttempts: 5,
     lockoutDuration: 15 * 60 * 1000 // 15 minutes
@@ -77,7 +91,7 @@ export const config = {
 
   // API configuration
   api: {
-    baseUrl: env.NEXT_PUBLIC_API_URL || env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    baseUrl: envData.NEXT_PUBLIC_API_URL || envData.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     timeout: 10000,
     retryAttempts: 3,
     retryDelay: 1000
@@ -85,8 +99,8 @@ export const config = {
 
   // Real-time configuration
   realtime: {
-    enabled: env.ENABLE_REAL_TIME ?? false,
-    socketUrl: env.NEXT_PUBLIC_WS_URL,
+    enabled: process.env.ENABLE_REAL_TIME === 'true',
+    socketUrl: envData.NEXT_PUBLIC_WS_URL,
     reconnectAttempts: 5,
     reconnectDelay: 1000,
     heartbeatInterval: 30000
@@ -100,15 +114,15 @@ export const config = {
     imageQuality: 0.8,
     imageMaxWidth: 1920,
     imageMaxHeight: 1080,
-    uploadThingSecret: env.UPLOADTHING_SECRET,
-    uploadThingAppId: env.UPLOADTHING_APP_ID
+    uploadThingSecret: envData.UPLOADTHING_SECRET,
+    uploadThingAppId: envData.UPLOADTHING_APP_ID
   },
 
   // Cache configuration
   cache: {
     enabled: true,
     ttl: {
-      hangouts: (env.CACHE_TTL_SECONDS || 300) * 1000, // 5 minutes default
+      hangouts: (parseInt(process.env.CACHE_TTL_SECONDS || '300')) * 1000, // 5 minutes default
       users: 10 * 60 * 1000, // 10 minutes
       friends: 15 * 60 * 1000, // 15 minutes
       notifications: 2 * 60 * 1000, // 2 minutes
@@ -119,7 +133,7 @@ export const config = {
 
   // Rate limiting configuration
   rateLimit: {
-    enabled: env.RATE_LIMIT_ENABLED ?? true,
+    enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxRequests: {
       general: 100,
@@ -133,16 +147,16 @@ export const config = {
 
   // Monitoring configuration
   monitoring: {
-    sentryDsn: env.SENTRY_DSN,
-    enableAnalytics: env.ENABLE_ANALYTICS ?? false,
-    logLevel: env.LOG_LEVEL || 'info',
+    sentryDsn: envData.SENTRY_DSN,
+    enableAnalytics: process.env.ENABLE_ANALYTICS === 'true',
+    logLevel: envData.LOG_LEVEL || 'info',
     enablePerformanceMonitoring: true
   },
 
   // Feature flags
   features: {
-    realTimeUpdates: env.ENABLE_REAL_TIME ?? false,
-    analytics: env.ENABLE_ANALYTICS ?? false,
+    realTimeUpdates: process.env.ENABLE_REAL_TIME === 'true',
+    analytics: process.env.ENABLE_ANALYTICS === 'true',
     advancedVoting: true,
     photoSharing: true,
     notifications: true,
