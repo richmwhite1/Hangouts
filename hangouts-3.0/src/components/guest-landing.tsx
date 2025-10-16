@@ -96,11 +96,27 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
   }, [])
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'MMM d, yyyy')
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Date TBD'
+      }
+      return format(date, 'MMM d, yyyy')
+    } catch (error) {
+      return 'Date TBD'
+    }
   }
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), 'h:mm a')
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Time TBD'
+      }
+      return format(date, 'h:mm a')
+    } catch (error) {
+      return 'Time TBD'
+    }
   }
 
   const formatPrice = (price?: number) => {

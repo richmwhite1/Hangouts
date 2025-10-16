@@ -294,8 +294,10 @@ export default function HangoutDetailPage() {
     }
   }
 
-  const handleHangoutUpdate = (updatedHangout: any) => {
-    setHangout(updatedHangout)
+  const handleHangoutUpdate = async (updatedHangout: any) => {
+    // Instead of just setting the state, refetch the full hangout data
+    // to ensure we have all the latest information including options
+    await fetchHangout()
     setShowEditModal(false)
   }
 
@@ -935,6 +937,15 @@ export default function HangoutDetailPage() {
                       </a>
                     </div>
                   )}
+                  {/* Privacy Level */}
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-300 text-sm">
+                      {hangout.privacyLevel === 'PUBLIC' ? 'Public' : 
+                       hangout.privacyLevel === 'FRIENDS_ONLY' ? 'Friends Only' : 
+                       'Private'}
+                    </span>
+                  </div>
                 </>
               )}
             </div>
