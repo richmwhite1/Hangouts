@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause for public content only
     const whereClause: any = {
-      status: 'PUBLISHED',
+      status: { in: ['PUBLISHED', 'DRAFT'] },
       privacyLevel: 'PUBLIC'
     }
 

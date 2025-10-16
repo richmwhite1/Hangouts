@@ -63,12 +63,17 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
           if (response.ok) {
             toast.success('Welcome! You\'ve been automatically added to this hangout.')
             
-            // Redirect to the authenticated hangout detail page
-            const hangoutDetailUrl = `/hangout/${hangoutId}`
-            window.location.href = hangoutDetailUrl
-            
-            if (onJoinSuccess) {
-              onJoinSuccess()
+            // Check if we're on a public hangout page and redirect to authenticated version
+            const currentPath = window.location.pathname
+            if (currentPath.includes('/hangouts/public/')) {
+              // Redirect from public page to authenticated hangout detail page
+              const hangoutDetailUrl = `/hangout/${hangoutId}`
+              window.location.href = hangoutDetailUrl
+            } else {
+              // If already on authenticated page, just refresh the data
+              if (onJoinSuccess) {
+                onJoinSuccess()
+              }
             }
           } else {
             const errorData = await response.json()

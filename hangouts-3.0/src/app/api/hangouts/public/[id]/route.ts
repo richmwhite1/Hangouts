@@ -15,7 +15,7 @@ export async function GET(
       where: {
         id: id,
         type: 'HANGOUT',
-        status: 'PUBLISHED',
+        status: { in: ['PUBLISHED', 'DRAFT'] },
         privacyLevel: 'PUBLIC'
       },
       select: {
