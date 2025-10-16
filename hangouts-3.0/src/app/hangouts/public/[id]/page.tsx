@@ -64,7 +64,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             height: 630,
             alt: hangout.title,
           }] : [{
-            url: `${baseUrl}/placeholder-hangout-og.svg`,
+            url: `${baseUrl}/api/og/hangout?${new URLSearchParams({
+              title: hangout.title,
+              creator: hangout.creator?.name || 'Someone',
+              date: formatDate(hangout.startTime),
+              location: hangout.location || 'TBD',
+              participants: hangout._count?.participants?.toString() || '0'
+            })}`,
             width: 1200,
             height: 630,
             alt: hangout.title,
@@ -78,7 +84,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         images: [
-          ...(hangout.image ? [hangout.image] : [`${baseUrl}/placeholder-hangout-og.svg`])
+          ...(hangout.image ? [hangout.image] : [`${baseUrl}/api/og/hangout?${new URLSearchParams({
+            title: hangout.title,
+            creator: hangout.creator?.name || 'Someone',
+            date: formatDate(hangout.startTime),
+            location: hangout.location || 'TBD',
+            participants: hangout._count?.participants?.toString() || '0'
+          })}`])
         ],
       },
       other: {

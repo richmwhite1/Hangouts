@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Fetch hangouts
+    // Fetch hangouts with creator info
     const hangouts = await db.content.findMany({
       where: {
         ...whereClause,
@@ -52,6 +52,14 @@ export async function GET(request: NextRequest) {
         privacyLevel: true,
         createdAt: true,
         creatorId: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true
+          }
+        },
         _count: {
           select: {
             content_participants: true
@@ -65,7 +73,7 @@ export async function GET(request: NextRequest) {
       skip: offset
     })
 
-    // Fetch events
+    // Fetch events with creator info
     const events = await db.content.findMany({
       where: {
         ...whereClause,
@@ -80,8 +88,18 @@ export async function GET(request: NextRequest) {
         startTime: true,
         endTime: true,
         image: true,
+        priceMin: true,
+        priceMax: true,
         createdAt: true,
         creatorId: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true
+          }
+        },
         _count: {
           select: {
             content_participants: true
@@ -107,7 +125,7 @@ export async function GET(request: NextRequest) {
       privacyLevel: hangout.privacyLevel,
       category: null,
       tags: [],
-      creator: {
+      creator: hangout.creator || {
         name: 'Unknown',
         username: 'unknown',
         avatar: null
@@ -123,13 +141,14 @@ export async function GET(request: NextRequest) {
       description: event.description,
       venue: event.venue,
       city: event.city,
-      startDate: event.startTime,
-      endDate: event.endTime,
+      startTime: event.startTime,
+      endTime: event.endTime,
       image: event.image,
-      price: null,
+      priceMin: event.priceMin,
+      priceMax: event.priceMax,
       category: null,
       tags: [],
-      creator: {
+      creator: event.creator || {
         name: 'Unknown',
         username: 'unknown',
         avatar: null
@@ -144,11 +163,15 @@ export async function GET(request: NextRequest) {
       eventsCount: transformedEvents.length 
     })
 
+    // Return content in the format expected by the discover page
+    const allContent = [...transformedHangouts, ...transformedEvents]
+    
     return NextResponse.json({
       success: true,
+      content: allContent,
       hangouts: transformedHangouts,
       events: transformedEvents,
-      total: transformedHangouts.length + transformedEvents.length
+      total: allContent.length
     })
 
   } catch (error) {

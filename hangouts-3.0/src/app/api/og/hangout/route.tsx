@@ -1,7 +1,7 @@
 import { ImageResponse } from '@vercel/og'
 import { NextRequest } from 'next/server'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -154,6 +154,12 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error generating OG image:', error)
-    return new Response('Failed to generate image', { status: 500 })
+    // Return a redirect to a static placeholder image
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': '/placeholder-hangout-og.svg'
+      }
+    })
   }
 }

@@ -311,10 +311,55 @@ export function MergedDiscoveryPage() {
       // Handle custom date range
       if (dateRange.start) params.append('dateFrom', new Date(dateRange.start).toISOString())
       if (dateRange.end) params.append('dateTo', new Date(dateRange.end).toISOString())
-      const response = await fetch(`/api/events?${params}`)
+      
+      // Use public API for non-authenticated users
+      const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content'
+      if (!isSignedIn) {
+        params.append('type', 'EVENT')
+        params.append('privacyLevel', 'PUBLIC')
+      }
+      
+      const response = await fetch(`${apiEndpoint}?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setEvents(data.events || [])
+        if (isSignedIn) {
+          setEvents(data.events || [])
+        } else {
+          // Map public content to event format
+          const publicEvents = (data.content || []).map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description || '',
+            category: 'OTHER', // Default category
+            venue: item.venue || '',
+            address: '',
+            city: item.city || '',
+            startDate: item.startTime ? new Date(item.startTime).toISOString().split('T')[0] : '',
+            startTime: item.startTime ? new Date(item.startTime).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }) : '',
+            price: {
+              min: item.priceMin || 0,
+              max: item.priceMax,
+              currency: 'USD'
+            },
+            coverImage: item.image || '',
+            tags: [],
+            creator: {
+              id: item.creatorId || '',
+              username: item.creator?.username || '',
+              name: item.creator?.name || '',
+              avatar: item.creator?.avatar || ''
+            },
+            saveCount: 0,
+            createdAt: item.createdAt,
+            latitude: item.latitude,
+            longitude: item.longitude
+          }))
+          setEvents(publicEvents)
+        }
       }
     } catch (error) {
       logger.error('Error fetching events:', error);
@@ -347,10 +392,25 @@ export function MergedDiscoveryPage() {
   // Fetch hangouts
   const fetchHangouts = async () => {
     try {
-      const response = await fetch('/api/discover')
+      // Use public API for non-authenticated users
+      const apiEndpoint = isSignedIn ? '/api/discover' : '/api/public/content'
+      const params = new URLSearchParams()
+      if (!isSignedIn) {
+        params.append('type', 'HANGOUT')
+        params.append('privacyLevel', 'PUBLIC')
+      }
+      
+      const response = await fetch(`${apiEndpoint}?${params}`)
       if (response.ok) {
         const data = await response.json()
-        const hangoutsData = data.data?.hangouts || data.hangouts || []
+        let hangoutsData = []
+        
+        if (isSignedIn) {
+          hangoutsData = data.data?.hangouts || data.hangouts || []
+        } else {
+          hangoutsData = data.content || []
+        }
+        
         // Map the API data to our interface
         const mappedHangouts = hangoutsData.map((hangout: any) => ({
           id: hangout.id,
@@ -365,10 +425,10 @@ export function MergedDiscoveryPage() {
             hour12: true
           }) : '',
           image: hangout.image,
-          participants: hangout.content_participants || [],
+          participants: hangout.content_participants || hangout._count?.participants || [],
           photos: [], // Will be fetched separately if needed
           polls: [], // Will be fetched separately if needed
-          creator: hangout.users || {
+          creator: hangout.users || hangout.creator || {
             id: '',
             username: '',
             name: '',
@@ -488,17 +548,15 @@ export function MergedDiscoveryPage() {
     setMergedContent(mergeAndSortContent)
   }, [mergeAndSortContent])
   useEffect(() => {
-    if (isSignedIn) {
-      setIsLoading(true)
-      Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
-        setIsLoading(false)
-      })
-    }
+    // Always fetch data, but for non-authenticated users, only fetch public content
+    setIsLoading(true)
+    Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
+      setIsLoading(false)
+    })
   }, [isSignedIn])
   useEffect(() => {
-    if (isSignedIn) {
-      fetchEvents()
-    }
+    // Refetch events when filters change
+    fetchEvents()
   }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange])
   // Handle zip code geocoding
   useEffect(() => {
@@ -754,13 +812,122 @@ export function MergedDiscoveryPage() {
             <h2 className="text-2xl font-bold text-white mb-4">Public Events & Hangouts</h2>
             <p className="text-gray-400">Discover what's happening in your community</p>
           </div>
-          {/* Content will be loaded here - same as authenticated users but only public content */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* This will be populated by the same content loading logic but filtered for public only */}
-            <div className="text-center text-gray-400 py-12">
-              <p>Loading public events and hangouts...</p>
+          
+          {/* Show loading state */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="bg-gray-800 rounded-lg p-4 animate-pulse">
+                  <div className="h-48 bg-gray-700 rounded-lg mb-4" />
+                  <div className="h-4 bg-gray-700 rounded mb-2" />
+                  <div className="h-3 bg-gray-700 rounded w-2/3" />
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Show public events and hangouts */}
+              {filteredEvents.length === 0 && filteredHangouts.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">No public events found</h3>
+                  <p className="text-gray-400 mb-4">Check back later for new events and hangouts!</p>
+                </div>
+              ) : (
+                <>
+                  {/* Public Events */}
+                  {filteredEvents.map(event => (
+                    <Link key={event.id} href={`/events/public/${event.id}`}>
+                      <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                        <div className="relative h-48 bg-gray-700">
+                          <img
+                            src={event.coverImage}
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                              if (nextElement) {
+                                nextElement.style.display = 'flex'
+                              }
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
+                            <Calendar className="w-12 h-12" />
+                          </div>
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-green-600/80 text-white text-xs px-2 py-1">
+                              Event
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-white text-lg mb-2 line-clamp-2">
+                            {event.title}
+                          </h3>
+                          <div className="flex items-center text-gray-300 text-sm mb-1">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {formatDate(event.startDate)} at {event.startTime}
+                          </div>
+                          <div className="flex items-center text-gray-300 text-sm mb-1">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {event.venue}, {event.city}
+                          </div>
+                          <div className="flex items-center text-gray-300 text-sm">
+                            <DollarSign className="w-4 h-4 mr-2" />
+                            {event.price.min === 0 ? 'Free' : `$${event.price.min}`}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  
+                  {/* Public Hangouts */}
+                  {filteredHangouts.map(hangout => (
+                    <Link key={hangout.id} href={`/hangouts/public/${hangout.id}`}>
+                      <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                        <div className="relative h-48 bg-gray-700">
+                          {hangout.image ? (
+                            <img
+                              src={hangout.image}
+                              alt={hangout.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <Users className="w-12 h-12" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-blue-600/80 text-white text-xs px-2 py-1">
+                              Hangout
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-white text-lg mb-2 line-clamp-2">
+                            {hangout.title}
+                          </h3>
+                          <div className="flex items-center text-gray-300 text-sm mb-1">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {formatDate(hangout.date)} at {hangout.time}
+                          </div>
+                          <div className="flex items-center text-gray-300 text-sm mb-1">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {hangout.location}
+                          </div>
+                          <div className="flex items-center text-gray-300 text-sm">
+                            <Users className="w-4 h-4 mr-2" />
+                            {hangout.participants.length} going
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     )
