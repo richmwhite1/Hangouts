@@ -23,25 +23,38 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
     // 3. We haven't already attempted to join
     // 4. The hangout is public
     // 5. There's a redirect_url parameter (indicating they came from sign-in)
+    const redirectUrl = searchParams.get('redirect_url')
+    console.log('Auto-join check:', {
+      isSignedIn,
+      isLoaded,
+      hasHangout: !!hangout,
+      hasAttemptedJoin,
+      privacyLevel: hangout?.privacyLevel,
+      redirectUrl,
+      currentUserId
+    })
+    
     if (
       isSignedIn && 
       isLoaded && 
       hangout && 
       !hasAttemptedJoin &&
       hangout.privacyLevel === 'PUBLIC' &&
-      searchParams.get('redirect_url')
+      redirectUrl
     ) {
       const attemptAutoJoin = async () => {
         try {
           setHasAttemptedJoin(true)
           
-          // Check if user is already a participant
-          const isAlreadyParticipant = hangout.participants?.some(
-            (p: any) => p.userId === currentUserId
-          )
-          
-          if (isAlreadyParticipant) {
-            return // User is already a participant, no need to join
+          // Check if user is already a participant (only if we have currentUserId)
+          if (currentUserId) {
+            const isAlreadyParticipant = hangout.participants?.some(
+              (p: any) => p.userId === currentUserId
+            )
+            
+            if (isAlreadyParticipant) {
+              return // User is already a participant, no need to join
+            }
           }
 
           // Get auth token
