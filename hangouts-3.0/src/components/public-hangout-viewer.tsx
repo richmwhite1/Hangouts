@@ -76,11 +76,12 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
   const fetchHangout = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/hangouts/${hangoutId}`)
+      const response = await fetch(`/api/hangouts/public/${hangoutId}`)
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setHangout(data.data)
+        // Public API returns { hangout }, fall back to { data } for compatibility
+        setHangout(data.hangout || data.data)
       } else {
         if (response.status === 403) {
           setError('This hangout is not public')
@@ -166,6 +167,9 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
     )
   }
 
+  // Support both shapes: _count.participants (public API) and counts.content_participants (legacy)
+  const goingCount = (hangout as any)?._count?.participants ?? (hangout as any)?.counts?.content_participants ?? 0
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return format(date, 'EEEE, MMMM do, yyyy')
@@ -232,7 +236,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-purple-400" />
               <div className="flex items-center gap-2">
-                <p>{hangout.counts?.content_participants || 0} people going</p>
+                <p>{goingCount} people going</p>
                 {/* Show participant avatars */}
                 {hangout.participants && hangout.participants.length > 0 && (
                   <div className="flex -space-x-2">
