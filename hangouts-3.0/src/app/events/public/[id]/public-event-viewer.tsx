@@ -109,7 +109,7 @@ export function PublicEventViewer({ params }: Props) {
     if (!event) return
 
     const shareUrl = `${window.location.origin}/events/public/${event.id}`
-    const shareText = `Check out this event: ${event.title}!\n\n${event.description || 'Join us for this amazing event!'}\n\nWhen: ${formatDate(event.startDate)}\nWhere: ${event.venue || 'TBD'}${event.city ? `, ${event.city}` : ''}\nPrice: ${formatPrice(event.price)}\n\n${shareUrl}`
+    const shareText = `Check out this event: ${event.title}!\n\n${event.description || 'Join us for this amazing event!'}\n\nWhen: ${formatDate(event.startTime)}\nWhere: ${event.venue || 'TBD'}${event.city ? `, ${event.city}` : ''}\nPrice: ${formatPrice(event.price)}\n\n${shareUrl}`
 
     // Check if native sharing is supported
     if (navigator.share) {
@@ -139,8 +139,8 @@ export function PublicEventViewer({ params }: Props) {
   const handleAddToCalendar = () => {
     if (!event) return
 
-    const startDate = new Date(event.startDate)
-    const endDate = event.endDate ? new Date(event.endDate) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // Default 2 hours
+    const startDate = new Date(event.startTime)
+    const endDate = event.endTime ? new Date(event.endTime) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // Default 2 hours
 
     const formatDate = (date: Date) => {
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
@@ -256,7 +256,7 @@ export function PublicEventViewer({ params }: Props) {
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span>{formatDate(event.startDate)}</span>
+              <span>{formatDate(event.startTime)}</span>
             </div>
             {event.venue && (
               <div className="flex items-center gap-2">
@@ -344,8 +344,8 @@ export function PublicEventViewer({ params }: Props) {
                   <div>
                     <p className="font-medium text-white">Date & Time</p>
                     <p className="text-gray-300">
-                      {formatDate(event.startDate)}
-                      {event.startDate && ` at ${formatTime(event.startDate)}`}
+                      {formatDate(event.startTime)}
+                      {event.startTime && ` at ${formatTime(event.startTime)}`}
                     </p>
                     {event.endDate && (
                       <p className="text-sm text-gray-400">
@@ -522,7 +522,7 @@ export function PublicEventViewer({ params }: Props) {
           title={event.title}
           description={event.description}
           type="event"
-          startTime={event.startDate}
+          startTime={event.startTime}
           endTime={event.endDate}
           venue={event.venue}
           city={event.city}

@@ -52,6 +52,17 @@ export async function GET(request: NextRequest) {
         privacyLevel: true,
         createdAt: true,
         creatorId: true,
+        photos: {
+          select: {
+            id: true,
+            originalUrl: true,
+            thumbnailUrl: true,
+            smallUrl: true,
+            mediumUrl: true,
+            largeUrl: true,
+            caption: true
+          }
+        },
         users: {
           select: {
             id: true,
@@ -92,6 +103,17 @@ export async function GET(request: NextRequest) {
         priceMax: true,
         createdAt: true,
         creatorId: true,
+        photos: {
+          select: {
+            id: true,
+            originalUrl: true,
+            thumbnailUrl: true,
+            smallUrl: true,
+            mediumUrl: true,
+            largeUrl: true,
+            caption: true
+          }
+        },
         users: {
           select: {
             id: true,
@@ -122,10 +144,17 @@ export async function GET(request: NextRequest) {
       startTime: hangout.startTime,
       endTime: hangout.endTime,
       image: hangout.image,
+      photos: hangout.photos || [],
       privacyLevel: hangout.privacyLevel,
       category: null,
       tags: [],
-      creator: hangout.users || {
+      creator: hangout.users ? {
+        id: hangout.users.id,
+        name: hangout.users.name || 'Unknown',
+        username: hangout.users.username || 'unknown',
+        avatar: hangout.users.avatar
+      } : {
+        id: null,
         name: 'Unknown',
         username: 'unknown',
         avatar: null
@@ -144,11 +173,18 @@ export async function GET(request: NextRequest) {
       startTime: event.startTime,
       endTime: event.endTime,
       image: event.image,
+      photos: event.photos || [],
       priceMin: event.priceMin,
       priceMax: event.priceMax,
       category: null,
       tags: [],
-      creator: event.users || {
+      creator: event.users ? {
+        id: event.users.id,
+        name: event.users.name || 'Unknown',
+        username: event.users.username || 'unknown',
+        avatar: event.users.avatar
+      } : {
+        id: null,
         name: 'Unknown',
         username: 'unknown',
         avatar: null
