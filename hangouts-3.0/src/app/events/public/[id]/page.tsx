@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   try {
     // Fetch event data for metadata
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hangouts-production-adc4.up.railway.app'
     const response = await fetch(`${baseUrl}/api/events/public/${id}`, {
       cache: 'no-store'
     })
