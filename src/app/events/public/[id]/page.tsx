@@ -414,3 +414,10 @@ export default function PublicEventPage() {
     </>
   )
 }
+
+
+
+
+
+
+

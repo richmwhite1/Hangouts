@@ -8,7 +8,7 @@ cmds = ["npm install"]
 cmds = [
   "cd hangouts-3.0 && npm install",
   "cd hangouts-3.0 && npx prisma generate",
-  "cd hangouts-3.0 && npm run build"
+  "cd hangouts-3.0 && npm run build:production"
 ]
 
 [start]

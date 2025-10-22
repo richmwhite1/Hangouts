@@ -5,6 +5,7 @@
   "scripts": {
     "prebuild": "echo 'Installing dependencies...'",
     "build": "cd hangouts-3.0 && npm install && npx prisma generate && npm run build",
+    "build:production": "cd hangouts-3.0 && npm install && npx prisma generate && npm run build:production",
     "start": "cd hangouts-3.0 && npm start",
     "dev": "cd hangouts-3.0 && npm run dev",
     "deploy": "npm run build && npm start"

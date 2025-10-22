@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { PreferencesAndPlaces } from "@/components/profile/preferences-and-places"
 import { useState, useEffect, useRef } from "react"
 import { useProfile } from "@/hooks/use-profile"
 import { useAuth, useClerk } from "@clerk/nextjs"
 import { useImageUpload } from "@/hooks/use-image-upload"
-import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2 } from "lucide-react"
+import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2, Plus } from "lucide-react"
 import Image from "next/image"
 
 export function ProfilePage() {
@@ -74,17 +73,10 @@ export function ProfilePage() {
     loveLanguage: ''
   })
   const [isSaving, setIsSaving] = useState(false)
-  const [userPreferences, setUserPreferences] = useState<Array<{id: string, name: string, icon?: React.ReactNode, color?: string, isCustom?: boolean}>>([
-    { id: 'coffee-lover', name: 'Coffee Lover', icon: <Coffee className="w-3 h-3" />, isCustom: true },
-    { id: 'night-owl', name: 'Night Owl', icon: <Moon className="w-3 h-3" />, isCustom: true },
-    { id: 'outdoor-adventurer', name: 'Outdoor Adventurer', icon: <TreePine className="w-3 h-3" />, isCustom: true },
-    { id: 'gaming-enthusiast', name: 'Gaming Enthusiast', icon: <Gamepad2 className="w-3 h-3" />, isCustom: true }
-  ])
-  const [favoritePlaces, setFavoritePlaces] = useState<Array<{id: string, title: string, mapLink?: string}>>([
-    { id: 'place_1', title: 'Central Park', mapLink: 'https://www.google.com/maps/search/?api=1&query=Central+Park' },
-    { id: 'place_2', title: 'Blue Bottle Coffee', mapLink: 'https://www.google.com/maps/search/?api=1&query=Blue+Bottle+Coffee' },
-    { id: 'place_3', title: 'Brooklyn Bridge', mapLink: 'https://www.google.com/maps/search/?api=1&query=Brooklyn+Bridge' }
-  ])
+  const [userPreferences, setUserPreferences] = useState<Array<{id: string, name: string, icon?: React.ReactNode, color?: string, isCustom?: boolean}>>([])
+  const [favoritePlaces, setFavoritePlaces] = useState<Array<{id: string, title: string, mapLink?: string}>>([])
+  const [newPreference, setNewPreference] = useState("")
+  const [newPlace, setNewPlace] = useState("")
   const { profile, userHangouts, isLoading, error, refetch } = useProfile()
   const { uploadImage, updateProfile, isUploading, error: uploadError, clearError } = useImageUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -353,6 +345,31 @@ export function ProfilePage() {
     setShowEditModal(false)
   }
 
+  const handleAddPreference = () => {
+    if (newPreference.trim()) {
+      const newPref = {
+        id: `custom_${Date.now()}`,
+        name: newPreference.trim(),
+        isCustom: true,
+        color: 'bg-gray-600'
+      }
+      setUserPreferences([...userPreferences, newPref])
+      setNewPreference("")
+    }
+  }
+
+  const handleAddPlace = () => {
+    if (newPlace.trim()) {
+      const newPlaceObj = {
+        id: `place_${Date.now()}`,
+        title: newPlace.trim(),
+        mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(newPlace.trim())}`
+      }
+      setFavoritePlaces([...favoritePlaces, newPlaceObj])
+      setNewPlace("")
+    }
+  }
+
 
   return (
     <div className="space-y-6">
@@ -429,6 +446,39 @@ export function ProfilePage() {
                     )}
                   </div>
                 )}
+
+                {/* Favorite Activities */}
+                {userPreferences.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-xs font-medium text-muted-foreground mb-2 text-center">Favorite Activities</h4>
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {userPreferences.map((pref) => (
+                        <span key={pref.id} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+                          {pref.icon} {pref.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Favorite Places */}
+                {favoritePlaces.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-xs font-medium text-muted-foreground mb-2 text-center">Favorite Places</h4>
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {favoritePlaces.map((place) => (
+                        <span 
+                          key={place.id} 
+                          className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full border border-emerald-500/30 cursor-pointer hover:bg-emerald-500/30 transition-colors"
+                          onClick={() => place.mapLink && window.open(place.mapLink, '_blank', 'noopener,noreferrer')}
+                          title="Click to view on map"
+                        >
+                          📍 {place.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <button
                 onClick={handleEditProfile}
@@ -456,15 +506,6 @@ export function ProfilePage() {
         </Card>
       </div>
 
-      {/* Hangout Preferences & Favorite Places */}
-      <div className="max-w-2xl mx-auto px-4">
-        <PreferencesAndPlaces 
-          userPreferences={userPreferences}
-          favoritePlaces={favoritePlaces}
-          onPreferencesChange={setUserPreferences}
-          onPlacesChange={setFavoritePlaces}
-        />
-      </div>
 
       <div className="max-w-2xl mx-auto px-4">
         <Card>
@@ -739,6 +780,86 @@ export function ProfilePage() {
                       placeholder="e.g., Words of Affirmation, Quality Time..."
                       className="w-full"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Favorite Activities */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-muted-foreground">Favorite Activities</h4>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {userPreferences.map((pref) => (
+                      <span key={pref.id} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30 flex items-center gap-1">
+                        {pref.icon} {pref.name}
+                        <button
+                          onClick={() => setUserPreferences(prev => prev.filter(p => p.id !== pref.id))}
+                          className="ml-1 hover:text-red-300"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add activity (e.g., Coffee, Hiking, Music)"
+                      value={newPreference}
+                      onChange={(e) => setNewPreference(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddPreference()
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleAddPreference}
+                      disabled={!newPreference.trim()}
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Favorite Places */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-muted-foreground">Favorite Places</h4>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {favoritePlaces.map((place) => (
+                      <span key={place.id} className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full border border-emerald-500/30 flex items-center gap-1">
+                        📍 {place.title}
+                        <button
+                          onClick={() => setFavoritePlaces(prev => prev.filter(p => p.id !== place.id))}
+                          className="ml-1 hover:text-red-300"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add place (e.g., Central Park, Blue Bottle Coffee)"
+                      value={newPlace}
+                      onChange={(e) => setNewPlace(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddPlace()
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleAddPlace}
+                      disabled={!newPlace.trim()}
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
