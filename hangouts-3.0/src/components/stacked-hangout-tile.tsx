@@ -246,16 +246,18 @@ export function StackedHangoutTile({
                 
                 {/* Message Indicator */}
                 {hangout._count?.messages !== undefined && (
-                  <Link 
-                    href={`/hangout/${hangout.id}?tab=chat`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center space-x-1 hover:bg-white/10 rounded px-2 py-1 transition-colors"
+                  <div 
+                    className="flex items-center space-x-1 hover:bg-white/10 rounded px-2 py-1 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.location.href = `/hangout/${hangout.id}?tab=chat`
+                    }}
                   >
                     <MessageSquare className="h-4 w-4 text-white/80" />
                     <span className="text-sm text-white/90">
                       {hangout._count.messages}
                     </span>
-                  </Link>
+                  </div>
                 )}
                 
                 {hangout.maxParticipants && (

@@ -138,28 +138,40 @@ export default function EventsPage() {
     return `$${price.min}`
   }
 
-  // Show loading state while checking authentication
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-white">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show sign-in prompt if not authenticated
+  // Show sign-in prompt immediately if not authenticated (don't wait for isLoaded)
   if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <h1 className="text-2xl font-bold mb-4 text-white">Events</h1>
           <p className="text-gray-400 mb-8">Please sign in to view and create events</p>
-          <Button onClick={() => window.location.href = '/signin'}>
-            Sign In
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button 
+              onClick={() => window.location.href = '/signup'}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Sign Up
+            </Button>
+            <Button 
+              onClick={() => window.location.href = '/signin'}
+              variant="outline"
+              className="border-gray-600 text-white hover:bg-gray-700"
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state while Clerk is loading (only for authenticated users)
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-white">Loading...</p>
         </div>
       </div>
     )

@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Bell, User, Users, LogOut, Settings, MessageSquare } from "lucide-react"
+import { Bell, User, Users, LogOut, Settings, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth, useClerk } from "@clerk/nextjs"
@@ -13,9 +12,9 @@ import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { NotificationSettings } from "@/components/notifications/notification-settings"
 import { NotificationHistory } from "@/components/notifications/notification-history"
+import { UniversalSearch } from "@/components/universal-search"
 
 export function Navigation() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [showNotifications, setShowNotifications] = useState(false)
   const [showNotificationSettings, setShowNotificationSettings] = useState(false)
   const [showNotificationHistory, setShowNotificationHistory] = useState(false)
@@ -35,19 +34,13 @@ export function Navigation() {
             <span className="font-bold text-xl">Hangout</span>
           </Link>
 
-          {/* Search Bar - Only show for authenticated users */}
+          {/* Universal Search - Only show for authenticated users */}
           {isSignedIn && (
             <div className="flex-1 max-w-md mx-8">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search hangouts, friends, or places..."
-                  className="pl-10 bg-input border-border"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  suppressHydrationWarning
-                />
-              </div>
+              <UniversalSearch
+                placeholder="Search hangouts, events, or people..."
+                className="w-full"
+              />
             </div>
           )}
 

@@ -1,7 +1,7 @@
 import { ImageResponse } from '@vercel/og'
 import { NextRequest } from 'next/server'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -199,6 +199,9 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error generating OG image:', error)
-    return new Response('Failed to generate image', { status: 500 })
+    return new Response(JSON.stringify({ error: 'Failed to generate image', details: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }

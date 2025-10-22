@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { TouchButton } from '@/components/ui/touch-button'
 import { Input } from '@/components/ui/input'
@@ -129,6 +130,7 @@ const distanceOptions = [
 ]
 export function MergedDiscoveryPage() {
   const { getToken, isSignedIn } = useAuth()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -395,6 +397,7 @@ export function MergedDiscoveryPage() {
       // Use public API for non-authenticated users
       const apiEndpoint = isSignedIn ? '/api/discover' : '/api/public/content'
       const params = new URLSearchParams()
+      if (searchQuery) params.append('search', searchQuery)
       if (!isSignedIn) {
         params.append('type', 'HANGOUT')
         params.append('privacyLevel', 'PUBLIC')
@@ -447,11 +450,11 @@ export function MergedDiscoveryPage() {
     return content.filter(item => {
       // Search filter
       const matchesSearch = !searchQuery ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.title && item.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (item.venue && item.venue.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.tags && item.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+        (item.tags && item.tags.some((tag: string) => tag && tag.toLowerCase().includes(searchQuery.toLowerCase())))
       // Category filter
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory
       // Tags filter
@@ -547,6 +550,14 @@ export function MergedDiscoveryPage() {
   useEffect(() => {
     setMergedContent(mergeAndSortContent)
   }, [mergeAndSortContent])
+  // Handle URL search parameters
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('search')
+    if (urlSearchQuery) {
+      setSearchQuery(urlSearchQuery)
+    }
+  }, [searchParams])
+
   useEffect(() => {
     // Always fetch data, but for non-authenticated users, only fetch public content
     setIsLoading(true)
@@ -555,8 +566,8 @@ export function MergedDiscoveryPage() {
     })
   }, [isSignedIn])
   useEffect(() => {
-    // Refetch events when filters change
-    fetchEvents()
+    // Refetch both events and hangouts when filters change
+    Promise.all([fetchEvents(), fetchHangouts()])
   }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange])
   // Handle zip code geocoding
   useEffect(() => {

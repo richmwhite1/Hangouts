@@ -138,12 +138,16 @@ export function PublicEventViewer({ eventId, onSignInRequired }: PublicEventView
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Date not available'
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Invalid date'
     return format(date, 'EEEE, MMMM do, yyyy')
   }
 
   const formatTime = (dateString: string) => {
+    if (!dateString) return 'Time not available'
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Invalid time'
     return format(date, 'h:mm a')
   }
 
@@ -201,7 +205,7 @@ export function PublicEventViewer({ eventId, onSignInRequired }: PublicEventView
             <div className="flex items-center gap-3">
               <Clock className="h-5 w-5 text-green-400" />
               <div>
-                <p className="font-medium">{formatDate(event.startDate)}</p>
+                <p className="font-medium">{formatDate(event.startTime)}</p>
                 {event.startTime && (
                   <p className="text-gray-400">
                     {formatTime(event.startTime)}
@@ -328,3 +332,7 @@ export function PublicEventViewer({ eventId, onSignInRequired }: PublicEventView
     </div>
   )
 }
+
+
+
+

@@ -17,8 +17,38 @@ export default function CreateHangoutPage() {
     setIsClient(true)
   }, [])
 
-  // Wait for both client-side hydration and Clerk authentication to load
-  if (!isClient || !isLoaded) {
+  // Show sign-in prompt immediately if not authenticated (don't wait for isLoaded or isClient)
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="max-w-md mx-auto p-6">
+          <div className="bg-gray-900 rounded-lg p-8 text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Sign In Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please sign in to create hangouts and events
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.href = '/signup'}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                Sign Up
+              </button>
+              <button
+                onClick={() => window.location.href = '/signin'}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Wait for client-side hydration only for authenticated users
+  if (!isClient) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
