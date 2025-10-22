@@ -154,4 +154,4 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default function PublicEventPage({ params }: Props) {
   return <PublicEventViewer params={params} />
-}
+}// Force rebuild Tue Oct 21 19:19:58 MDT 2025
