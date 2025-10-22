@@ -13,7 +13,3 @@ cmds = [
 
 [start]
 cmd = "cd hangouts-3.0 && npm start"
-
-[deploy]
-healthcheckPath = "/api/health"
-healthcheckTimeout = 300
