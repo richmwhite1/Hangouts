@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           type: 'website',
           siteName: 'Hangouts 3.0',
           images: [{
-            url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=630&fit=crop',
+            url: '${baseUrl}/placeholder-event.jpg',
             width: 1200,
             height: 630,
             alt: 'Event Not Found',
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           type: 'website',
           siteName: 'Hangouts 3.0',
           images: [{
-            url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=630&fit=crop',
+            url: '${baseUrl}/placeholder-event.jpg',
             width: 1200,
             height: 630,
             alt: 'Event Not Found',
@@ -92,7 +92,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const shareUrl = `${baseUrl}/events/public/${id}`
     
     // Use the actual event image if available, otherwise fallback to generic
-    const eventImage = event.image || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=630&fit=crop'
+    const eventImage = event.image || '${baseUrl}/placeholder-event.jpg'
     
     return {
       title,
@@ -142,7 +142,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         type: 'website',
         siteName: 'Hangouts 3.0',
         images: [{
-          url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=630&fit=crop',
+          url: '${baseUrl}/placeholder-event.jpg',
           width: 1200,
           height: 630,
           alt: 'Event',

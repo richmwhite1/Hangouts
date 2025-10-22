@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           type: 'website',
           siteName: 'Hangouts 3.0',
           images: [{
-            url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=630&fit=crop',
+            url: '${baseUrl}/placeholder-hangout.jpg',
             width: 1200,
             height: 630,
             alt: 'Hangout Not Found',
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           type: 'website',
           siteName: 'Hangouts 3.0',
           images: [{
-            url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=630&fit=crop',
+            url: '${baseUrl}/placeholder-hangout.jpg',
             width: 1200,
             height: 630,
             alt: 'Hangout Not Found',
@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const shareUrl = `${baseUrl}/hangouts/public/${id}`
     
     // Use the actual hangout image if available, otherwise fallback to generic
-    const hangoutImage = hangout.image || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=630&fit=crop'
+    const hangoutImage = hangout.image || `${baseUrl}/placeholder-hangout.jpg`
     
     return {
       title,
@@ -137,7 +137,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         type: 'website',
         siteName: 'Hangouts 3.0',
         images: [{
-          url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=630&fit=crop',
+          url: '${baseUrl}/placeholder-hangout.jpg',
           width: 1200,
           height: 630,
           alt: 'Hangout',

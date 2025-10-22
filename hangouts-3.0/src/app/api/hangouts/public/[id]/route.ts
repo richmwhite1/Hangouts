@@ -30,6 +30,20 @@ export async function GET(
         createdAt: true,
         updatedAt: true,
         creatorId: true,
+        photos: {
+          select: {
+            id: true,
+            originalUrl: true,
+            thumbnailUrl: true,
+            smallUrl: true,
+            mediumUrl: true,
+            largeUrl: true,
+            caption: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        },
         users: {
           select: {
             id: true,
@@ -97,7 +111,10 @@ export async function GET(
       location: hangout.location,
       startTime: hangout.startTime,
       endTime: hangout.endTime,
-      image: hangout.image,
+      image: hangout.photos && hangout.photos.length > 0 
+        ? hangout.photos[0].originalUrl || hangout.photos[0].largeUrl || hangout.photos[0].mediumUrl
+        : hangout.image,
+      photos: hangout.photos || [],
       privacyLevel: hangout.privacyLevel,
       createdAt: hangout.createdAt,
       updatedAt: hangout.updatedAt,

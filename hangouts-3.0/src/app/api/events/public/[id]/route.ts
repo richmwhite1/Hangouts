@@ -32,6 +32,20 @@ export async function GET(
         createdAt: true,
         updatedAt: true,
         creatorId: true,
+        photos: {
+          select: {
+            id: true,
+            originalUrl: true,
+            thumbnailUrl: true,
+            smallUrl: true,
+            mediumUrl: true,
+            largeUrl: true,
+            caption: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        },
         users: {
           select: {
             id: true,
@@ -85,7 +99,10 @@ export async function GET(
       city: event.city,
       startTime: event.startTime,
       endTime: event.endTime,
-      image: event.image,
+      image: event.photos && event.photos.length > 0 
+        ? event.photos[0].originalUrl || event.photos[0].largeUrl || event.photos[0].mediumUrl
+        : event.image,
+      photos: event.photos || [],
       price: event.priceMin,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
