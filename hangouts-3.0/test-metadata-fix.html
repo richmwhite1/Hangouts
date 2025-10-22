@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metadata Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Metadata Fix Test Results</h1>
+    
+    <div class="test info">
+        <h3>📋 Test Summary</h3>
+        <p><strong>Issue:</strong> iPhone showing generic scuba diver image instead of actual hangout/event images</p>
+        <p><strong>Fix Applied:</strong> Updated metadata generation to fetch real event/hangout data and use actual images</p>
+        <p><strong>Status:</strong> ✅ Fixed locally, ⚠️ Production deployment pending</p>
+    </div>
+
+    <div class="test success">
+        <h3>✅ Local Test Results</h3>
+        <p><strong>Event Metadata:</strong></p>
+        <ul>
+            <li>Title: "Amazing Concert in the Park - Hangouts 3.0" (Real title)</li>
+            <li>Image: Concert image from Unsplash (Real image)</li>
+            <li>Description: Actual event description with details</li>
+        </ul>
+        <p><strong>Hangout Metadata:</strong></p>
+        <ul>
+            <li>Title: "Beach Volleyball Tournament - Hangouts 3.0" (Real title)</li>
+            <li>Image: Beach volleyball image from Unsplash (Real image)</li>
+            <li>Description: Actual hangout description with details</li>
+        </ul>
+    </div>
+
+    <div class="test error">
+        <h3>⚠️ Production Issue</h3>
+        <p><strong>Problem:</strong> Railway production deployment is not picking up the updated metadata code</p>
+        <p><strong>Current Status:</strong> Production still shows generic "Event - Hangouts 3.0" titles and scuba diver images</p>
+        <p><strong>Solution:</strong> Railway deployment needs to be manually triggered or there may be caching issues</p>
+    </div>
+
+    <div class="test info">
+        <h3>🔧 Technical Details</h3>
+        <p><strong>Files Updated:</strong></p>
+        <ul>
+            <li><code>src/app/events/public/[id]/page.tsx</code> - Dynamic metadata generation</li>
+            <li><code>src/app/hangouts/public/[id]/page.tsx</code> - Dynamic metadata generation</li>
+            <li><code>src/app/api/public/content/route.ts</code> - Enhanced API with photos</li>
+        </ul>
+        <p><strong>Key Changes:</strong></p>
+        <ul>
+            <li>Metadata now fetches real event/hangout data from APIs</li>
+            <li>Uses actual images instead of hardcoded generic images</li>
+            <li>Displays real titles and descriptions</li>
+            <li>Added proper error handling and fallbacks</li>
+        </ul>
+    </div>
+
+    <div class="test success">
+        <h3>✅ Verification Commands</h3>
+        <p>To test locally (working):</p>
+        <pre>curl -s "http://localhost:3000/events/public/test_event_with_photos" | grep -E '<meta property="og:(title|image)"'</pre>
+        <pre>curl -s "http://localhost:3000/hangouts/public/test_hangout_with_photos" | grep -E '<meta property="og:(title|image)"'</pre>
+        
+        <p>To test production (needs deployment):</p>
+        <pre>curl -s "https://hangouts-production-adc4.up.railway.app/events/public/test_event_with_photos" | grep -E '<meta property="og:(title|image)"'</pre>
+    </div>
+
+    <div class="test info">
+        <h3>📱 iPhone Testing</h3>
+        <p><strong>To test on iPhone:</strong></p>
+        <ol>
+            <li>Share a hangout/event link from the app</li>
+            <li>Check if the preview shows the actual hangout/event image</li>
+            <li>Verify the title matches the actual hangout/event title</li>
+            <li>Confirm the description shows real details</li>
+        </ol>
+        <p><strong>Expected Result:</strong> No more generic scuba diver images - should show actual hangout/event photos</p>
+    </div>
+
+    <script>
+        // Test the metadata generation
+        async function testMetadata() {
+            const testUrls = [
+                'http://localhost:3000/events/public/test_event_with_photos',
+                'http://localhost:3000/hangouts/public/test_hangout_with_photos'
+            ];
+            
+            for (const url of testUrls) {
+                try {
+                    const response = await fetch(url);
+                    const html = await response.text();
+                    const titleMatch = html.match(/<meta property="og:title"[^>]*content="([^"]*)"/);
+                    const imageMatch = html.match(/<meta property="og:image"[^>]*content="([^"]*)"/);
+                    
+                    console.log(`✅ ${url}:`);
+                    console.log(`   Title: ${titleMatch ? titleMatch[1] : 'Not found'}`);
+                    console.log(`   Image: ${imageMatch ? imageMatch[1] : 'Not found'}`);
+                } catch (error) {
+                    console.error(`❌ Error testing ${url}:`, error);
+                }
+            }
+        }
+        
+        // Run test when page loads
+        testMetadata();
+    </script>
+</body>
+</html>
