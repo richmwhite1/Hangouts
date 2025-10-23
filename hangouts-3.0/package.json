@@ -88,6 +88,7 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^2.1.7",
+    "react-speech-recognition": "^4.0.1",
     "recharts": "2.15.4",
     "redis": "^5.8.3",
     "sharp": "^0.34.4",

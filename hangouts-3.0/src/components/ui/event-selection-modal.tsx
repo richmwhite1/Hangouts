@@ -66,12 +66,21 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
   const fetchEvents = async () => {
     try {
       setIsLoading(true)
-      // Fetch events from the API
-      const response = await fetch('/api/events')
+      // Fetch user's saved/interested events from the API
+      const response = await fetch('/api/events/saved')
       if (response.ok) {
         const data = await response.json()
-        setEvents(data.events || [])
-        setFilteredEvents(data.events || [])
+        const savedEvents = data.data || data.events || []
+        setEvents(savedEvents)
+        setFilteredEvents(savedEvents)
+      } else {
+        // Fallback to all public events if saved events endpoint fails
+        const fallbackResponse = await fetch('/api/events')
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json()
+          setEvents(fallbackData.events || [])
+          setFilteredEvents(fallbackData.events || [])
+        }
       }
     } catch (error) {
       logger.error('Error fetching events:', error);
