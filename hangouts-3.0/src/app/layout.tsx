@@ -8,6 +8,9 @@ import { BottomNavigation } from '@/components/bottom-navigation'
 import { Navigation } from '@/components/navigation'
 import { GlobalErrorBoundary } from '@/components/global-error-boundary'
 import { Toaster } from 'sonner'
+import { PWASetup } from '@/components/pwa-setup'
+import { NetworkStatus } from '@/components/network-status'
+import { InstallPrompt } from '@/components/install-prompt'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -17,7 +20,25 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'Hangouts 3.0',
-  description: 'Plan amazing hangouts with friends'}
+  description: 'Plan amazing hangouts with friends',
+  manifest: '/manifest.json',
+  themeColor: '#8B5CF6',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Hangouts 3.0'
+  },
+  icons: {
+    icon: [
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }
+    ]
+  }
+}
 
 export default function RootLayout({
   children
@@ -30,6 +51,23 @@ export default function RootLayout({
     >
       <html lang="en" className="dark">
         <head>
+          {/* PWA Meta Tags */}
+          <meta name="theme-color" content="#8B5CF6" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="apple-mobile-web-app-title" content="Hangouts" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="msapplication-TileColor" content="#8B5CF6" />
+          <meta name="msapplication-tap-highlight" content="no" />
+          
+          {/* Apple Touch Icons */}
+          <link rel="apple-touch-icon" href="/icon-192x192.png" />
+          <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
+          <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png" />
+          
+          {/* Windows Tiles */}
+          <meta name="msapplication-TileImage" content="/icon-192x192.png" />
+          
           {/* Heroicons are imported as React components, not as scripts */}
         </head>
         <body className={inter.className}>
@@ -46,6 +84,9 @@ export default function RootLayout({
                     <BottomNavigation />
                   </div>
                   <Toaster position="top-right" richColors />
+                  <PWASetup />
+                  <NetworkStatus />
+                  <InstallPrompt />
                 </WebSocketProvider>
             </RealtimeProvider>
           </GlobalErrorBoundary>

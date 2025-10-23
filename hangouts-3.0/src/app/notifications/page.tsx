@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react'
+import { PushNotificationSettings } from '@/components/notifications/push-notification-settings'
 
 import { logger } from '@/lib/logger'
 export default function NotificationsPage() {
@@ -82,87 +83,92 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="mobile-container">
-        <div className="flex items-center justify-between py-6">
-          <div>
-            <h1 className="text-2xl font-bold text-dark-900 dark:text-white">
-              Notifications
-            </h1>
-            {unreadCount > 0 && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
+    <div className="mobile-container space-y-6">
+      {/* Push Notification Settings */}
+      <PushNotificationSettings />
+      
+      {/* Notifications List */}
+      <div className="flex items-center justify-between py-6">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-900 dark:text-white">
+            Notifications
+          </h1>
           {unreadCount > 0 && (
-            <button 
-              onClick={handleMarkAllAsRead}
-              disabled={isMarkingAll}
-              className="btn btn-ghost btn-sm"
-            >
-              {isMarkingAll ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCheck className="h-4 w-4" />
-              )}
-            </button>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+            </p>
           )}
         </div>
-
-        {isLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading notifications...</p>
-          </div>
-        ) : notifications.length > 0 ? (
-          <div className="space-y-3">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`card ${!notification.isRead ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800' : ''}`}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="text-2xl">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-dark-900 dark:text-white">
-                      {notification.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                      {formatNotificationTime(notification.createdAt)}
-                    </p>
-                  </div>
-
-                  {!notification.isRead && (
-                    <button
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      className="p-1 hover:bg-dark-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
-                    >
-                      <Check className="h-4 w-4 text-gray-400" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="card">
-            <div className="text-center py-8">
-              <Bell className="h-12 w-12 text-dark-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 mb-2">
-                No notifications yet
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-500">
-                You&apos;ll see notifications about hangouts and friends here
-              </p>
-            </div>
-          </div>
+        {unreadCount > 0 && (
+          <button 
+            onClick={handleMarkAllAsRead}
+            disabled={isMarkingAll}
+            className="btn btn-ghost btn-sm"
+          >
+            {isMarkingAll ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCheck className="h-4 w-4" />
+            )}
+            Mark All Read
+          </button>
         )}
       </div>
+
+      {isLoading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading notifications...</p>
+        </div>
+      ) : notifications.length > 0 ? (
+        <div className="space-y-3">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`card ${!notification.isRead ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800' : ''}`}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="text-2xl">
+                  {getNotificationIcon(notification.type)}
+                </div>
+                
+                <div className="flex-1">
+                  <h3 className="font-semibold text-dark-900 dark:text-white">
+                    {notification.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                    {formatNotificationTime(notification.createdAt)}
+                  </p>
+                </div>
+
+                {!notification.isRead && (
+                  <button
+                    onClick={() => handleMarkAsRead(notification.id)}
+                    className="p-1 hover:bg-dark-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
+                  >
+                    <Check className="h-4 w-4 text-gray-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="card">
+          <div className="text-center py-8">
+            <Bell className="h-12 w-12 text-dark-300 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              No notifications yet
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">
+              You&apos;ll see notifications about hangouts and friends here
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

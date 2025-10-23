@@ -53,6 +53,7 @@ model User {
   typingIndicators         TypingIndicator[]
   notificationPreferences  NotificationPreference[]
   notifications            Notification[]
+  pushSubscriptions       PushSubscription[]
   reminders                Reminder[]
   passwordResetTokens      PasswordResetToken?
   photo_comments           photo_comments[]
@@ -149,6 +150,21 @@ model NotificationPreference {
   @@index([userId])
   @@index([type])
   @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  endpoint     String   @unique
+  p256dh       String
+  auth         String
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model PollVote {
