@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Search, Calendar, MapPin, DollarSign, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
+import { EventCardWithActions } from '@/components/event-action-modal'
 
 interface EventResult {
   title: string
@@ -209,10 +210,10 @@ export function EventDiscovery({ onEventInterest, userLocation }: EventDiscovery
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {events.map((event, index) => (
-              <EventCard 
+              <EventCardWithActions 
                 key={index} 
                 event={event} 
-                onInterest={() => handleEventInterest(event)}
+                onEventInterest={onEventInterest}
               />
             ))}
           </div>
@@ -222,71 +223,3 @@ export function EventDiscovery({ onEventInterest, userLocation }: EventDiscovery
   )
 }
 
-interface EventCardProps {
-  event: EventResult
-  onInterest: () => void
-}
-
-function EventCard({ event, onInterest }: EventCardProps) {
-  return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg line-clamp-2">{event.title}</CardTitle>
-        <CardDescription className="flex items-center gap-1">
-          <MapPin className="h-3 w-3" />
-          {event.venue}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-3">
-        {/* Date and Time */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <Calendar className="h-4 w-4" />
-          <span>{event.date}</span>
-          {event.time && event.time !== 'TBD' && (
-            <>
-              <span>•</span>
-              <span>{event.time}</span>
-            </>
-          )}
-        </div>
-
-        {/* Price */}
-        <div className="flex items-center gap-2 text-sm">
-          <DollarSign className="h-4 w-4 text-green-600" />
-          <Badge variant="secondary" className="text-xs">
-            {event.price}
-          </Badge>
-        </div>
-
-        {/* Description */}
-        {event.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-            {event.description}
-          </p>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          <Button 
-            onClick={onInterest}
-            size="sm" 
-            className="flex-1"
-          >
-            I'm Interested
-          </Button>
-          
-          {event.url && event.url !== '#' && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open(event.url, '_blank')}
-            >
-              <ExternalLink className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
