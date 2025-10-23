@@ -84,12 +84,20 @@ export function InstallPrompt({ className, variant = 'banner', showForAllUsers =
   const handleInstall = async () => {
     setIsInstalling(true)
     try {
-      const success = await showInstallPrompt()
-      if (success) {
-        setShowPrompt(false)
+      // Check if we have a deferred prompt available
+      if (canInstall()) {
+        const success = await showInstallPrompt()
+        if (success) {
+          setShowPrompt(false)
+        }
+      } else {
+        // If no deferred prompt, show instructions
+        alert(`To install this app:\n\n${platform === 'ios' ? 'Tap the Share button at the bottom of your screen, then select "Add to Home Screen"' : platform === 'android' ? 'Tap the menu button in your browser and select "Add to Home screen" or "Install app"' : 'Look for the install icon in your browser\'s address bar and click it'}`)
       }
     } catch (error) {
       console.error('Install failed:', error)
+      // Show fallback instructions
+      alert(`To install this app:\n\n${platform === 'ios' ? 'Tap the Share button at the bottom of your screen, then select "Add to Home Screen"' : platform === 'android' ? 'Tap the menu button in your browser and select "Add to Home screen" or "Install app"' : 'Look for the install icon in your browser\'s address bar and click it'}`)
     } finally {
       setIsInstalling(false)
     }
@@ -129,42 +137,30 @@ export function InstallPrompt({ className, variant = 'banner', showForAllUsers =
     switch (platform) {
       case 'ios':
         return (
-          <div className="space-y-2 text-sm">
-            <p><strong>To install on iOS:</strong></p>
-            <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Tap the Share button <Badge variant="outline">↗</Badge> at the bottom</li>
-              <li>Scroll down and tap "Add to Home Screen"</li>
-              <li>Tap "Add" to confirm</li>
-            </ol>
+          <div className="space-y-2 text-sm text-gray-700">
+            <p><strong>iOS Installation:</strong></p>
+            <p>Tap the Share button at the bottom of your screen, then select "Add to Home Screen"</p>
           </div>
         )
       case 'android':
         return (
-          <div className="space-y-2 text-sm">
-            <p><strong>To install on Android:</strong></p>
-            <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Tap the menu button <Badge variant="outline">⋮</Badge> in your browser</li>
-              <li>Select "Add to Home screen" or "Install app"</li>
-              <li>Tap "Add" or "Install" to confirm</li>
-            </ol>
+          <div className="space-y-2 text-sm text-gray-700">
+            <p><strong>Android Installation:</strong></p>
+            <p>Tap the menu button in your browser and select "Add to Home screen" or "Install app"</p>
           </div>
         )
       case 'desktop':
         return (
-          <div className="space-y-2 text-sm">
-            <p><strong>To install on Desktop:</strong></p>
-            <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Look for the install icon <Badge variant="outline">⬇</Badge> in your browser's address bar</li>
-              <li>Click it and select "Install"</li>
-              <li>Or use the browser menu → "Install Hangouts"</li>
-            </ol>
+          <div className="space-y-2 text-sm text-gray-700">
+            <p><strong>Desktop Installation:</strong></p>
+            <p>Look for the install icon in your browser's address bar and click it</p>
           </div>
         )
       default:
         return (
-          <div className="space-y-2 text-sm">
-            <p><strong>To install this app:</strong></p>
-            <p>Look for an install option in your browser's menu or address bar.</p>
+          <div className="space-y-2 text-sm text-gray-700">
+            <p><strong>Installation:</strong></p>
+            <p>Look for an install option in your browser's menu or address bar</p>
           </div>
         )
     }
@@ -195,26 +191,26 @@ export function InstallPrompt({ className, variant = 'banner', showForAllUsers =
         <CardContent className="space-y-4">
           {/* Enhanced Benefits */}
           <div className="space-y-3">
-            <div className="text-sm font-medium text-gray-700 mb-2">Why install the app?</div>
+            <div className="text-sm font-semibold text-gray-900 mb-2">Why install the app?</div>
             <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center gap-3 p-2 rounded-lg bg-blue-50">
-                <Bell className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-200">
+                <Bell className="w-5 h-5 text-gray-700" />
                 <div>
-                  <div className="font-medium text-sm">Instant Notifications</div>
+                  <div className="font-medium text-sm text-gray-900">Instant Notifications</div>
                   <div className="text-xs text-gray-600">Never miss hangout invites or updates</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-lg bg-green-50">
-                <Zap className="w-5 h-5 text-green-600" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-200">
+                <Zap className="w-5 h-5 text-gray-700" />
                 <div>
-                  <div className="font-medium text-sm">Lightning Fast</div>
+                  <div className="font-medium text-sm text-gray-900">Lightning Fast</div>
                   <div className="text-xs text-gray-600">3x faster loading with offline access</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-lg bg-purple-50">
-                <Wifi className="w-5 h-5 text-purple-600" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-200">
+                <Wifi className="w-5 h-5 text-gray-700" />
                 <div>
-                  <div className="font-medium text-sm">Works Offline</div>
+                  <div className="font-medium text-sm text-gray-900">Works Offline</div>
                   <div className="text-xs text-gray-600">View your hangouts even without internet</div>
                 </div>
               </div>

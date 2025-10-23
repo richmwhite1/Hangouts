@@ -46,12 +46,20 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
   const handleInstall = async () => {
     setIsInstalling(true)
     try {
-      const success = await showInstallPrompt()
-      if (success) {
-        setShowPrompt(false)
+      // Check if we have a deferred prompt available
+      if (canInstall()) {
+        const success = await showInstallPrompt()
+        if (success) {
+          setShowPrompt(false)
+        }
+      } else {
+        // If no deferred prompt, show instructions
+        alert(`To install this app:\n\n${platform === 'ios' ? 'Tap the Share button at the bottom of your screen, then select "Add to Home Screen"' : platform === 'android' ? 'Tap the menu button in your browser and select "Add to Home screen" or "Install app"' : 'Look for the install icon in your browser\'s address bar and click it'}`)
       }
     } catch (error) {
       console.error('Install failed:', error)
+      // Show fallback instructions
+      alert(`To install this app:\n\n${platform === 'ios' ? 'Tap the Share button at the bottom of your screen, then select "Add to Home Screen"' : platform === 'android' ? 'Tap the menu button in your browser and select "Add to Home screen" or "Install app"' : 'Look for the install icon in your browser\'s address bar and click it'}`)
     } finally {
       setIsInstalling(false)
     }
@@ -80,36 +88,36 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
 
   if (variant === 'hero') {
     return (
-      <div className={`bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl p-8 border border-purple-500/30 ${className}`}>
+      <div className={`bg-gray-800 rounded-lg p-8 border border-gray-700 ${className}`}>
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
             {getPlatformIcon()}
             <h3 className="text-3xl font-bold text-white ml-3">Install Hangouts 3.0</h3>
           </div>
-          <p className="text-gray-300 mb-8 max-w-2xl mx-auto text-lg">
+          <p className="text-gray-400 mb-8 max-w-2xl mx-auto text-lg">
             Get the full experience with instant notifications, offline access, and lightning-fast performance
           </p>
           
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-blue-600/20">
-              <Bell className="w-8 h-8 text-blue-400" />
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-700 border border-gray-600">
+              <Bell className="w-8 h-8 text-gray-300" />
               <div className="text-left">
                 <div className="font-semibold text-white text-lg">Push Notifications</div>
-                <div className="text-sm text-gray-300">Never miss hangout invites or updates</div>
+                <div className="text-sm text-gray-400">Never miss hangout invites or updates</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-green-600/20">
-              <Zap className="w-8 h-8 text-green-400" />
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-700 border border-gray-600">
+              <Zap className="w-8 h-8 text-gray-300" />
               <div className="text-left">
                 <div className="font-semibold text-white text-lg">3x Faster</div>
-                <div className="text-sm text-gray-300">Lightning speed with offline caching</div>
+                <div className="text-sm text-gray-400">Lightning speed with offline caching</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-purple-600/20">
-              <Wifi className="w-8 h-8 text-purple-400" />
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-700 border border-gray-600">
+              <Wifi className="w-8 h-8 text-gray-300" />
               <div className="text-left">
                 <div className="font-semibold text-white text-lg">Works Offline</div>
-                <div className="text-sm text-gray-300">View your hangouts without internet</div>
+                <div className="text-sm text-gray-400">View your hangouts without internet</div>
               </div>
             </div>
           </div>
@@ -117,7 +125,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 text-lg"
+              className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 text-lg border border-gray-600"
               onClick={handleInstall}
               disabled={isInstalling}
             >
@@ -127,7 +135,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-gray-500 text-gray-300 hover:bg-gray-700 px-8 py-4 text-lg"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700 px-8 py-4 text-lg"
               onClick={handleDismiss}
             >
               Maybe Later

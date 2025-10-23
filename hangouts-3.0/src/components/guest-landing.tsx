@@ -167,31 +167,26 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
-              <Sparkles className="h-8 w-8 text-yellow-400 mr-2" />
-              <Badge variant="secondary" className="bg-yellow-400/20 text-yellow-300 border-yellow-400/30">
+              <Badge variant="outline" className="border-gray-600 text-gray-300">
                 Beta
               </Badge>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Plan Perfect
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                {" "}Hangouts
-              </span>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+              Plan Perfect Hangouts
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              The easiest way to coordinate with friends, discover events, and make plans that actually happen.
+            <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-3xl mx-auto">
+              Coordinate with friends, discover events, and make plans that actually happen.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button 
                 size="lg" 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+                className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 text-lg border border-gray-600"
                 onClick={onSignUp}
               >
                 Get Started Free
@@ -200,7 +195,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-gray-600 text-white hover:bg-gray-700 px-8 py-3 text-lg"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800 px-8 py-3 text-lg"
                 onClick={onSignIn}
               >
                 Sign In
@@ -214,13 +209,13 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       </div>
 
       {/* Features Section */}
-      <div className="py-20 bg-gray-800/50">
+      <div className="py-20 bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
               Everything you need to plan great hangouts
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               From casual meetups to big events, we make coordination effortless
             </p>
           </div>
@@ -231,19 +226,19 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
               return (
                 <Card 
                   key={index}
-                  className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300 cursor-pointer"
+                  className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-all duration-300 cursor-pointer"
                   onClick={() => setCurrentFeature(index)}
                 >
                   <CardHeader className="text-center">
-                    <div className={`mx-auto w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center mb-4 ${
-                      currentFeature === index ? 'bg-blue-600' : ''
+                    <div className={`mx-auto w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 border border-gray-700 ${
+                      currentFeature === index ? 'bg-gray-700 border-gray-600' : ''
                     }`}>
-                      <Icon className={`h-8 w-8 ${feature.color}`} />
+                      <Icon className="h-8 w-8 text-gray-300" />
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-300 text-center">{feature.description}</p>
+                    <p className="text-gray-400 text-center">{feature.description}</p>
                   </CardContent>
                 </Card>
               )
@@ -253,13 +248,13 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       </div>
 
       {/* Live Content Preview Section */}
-      <div className="py-20 bg-gray-900/50">
+      <div className="py-20 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
               See What's Happening
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               Check out these recent hangouts and events happening right now
             </p>
           </div>
@@ -274,7 +269,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Show hangouts */}
               {publicContent.hangouts.slice(0, 3).map((hangout) => (
-                <Card key={hangout.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300 overflow-hidden">
+                <Card key={hangout.id} className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-all duration-300 overflow-hidden">
                   {/* Primary Photo */}
                   {hangout.image && (
                     <div className="relative h-48 w-full">
@@ -284,7 +279,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-400/30">
+                        <Badge variant="outline" className="bg-gray-900/80 text-gray-300 border-gray-600">
                           Hangout
                         </Badge>
                       </div>
@@ -333,7 +328,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     <div className="flex items-center gap-2">
                       <Button 
                         size="sm" 
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        className="flex-1 bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
                         onClick={onSignIn}
                       >
                         <Heart className="w-4 h-4 mr-2" />
