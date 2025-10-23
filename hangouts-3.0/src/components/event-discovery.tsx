@@ -80,16 +80,68 @@ export function EventDiscovery({ onEventInterest, userLocation }: EventDiscovery
     }
   }
 
-  const handleEventInterest = (event: EventResult) => {
+  const handleEventInterest = async (event: EventResult) => {
     if (onEventInterest) {
       onEventInterest(event)
     } else {
-      // Default behavior: open event URL
-      if (event.url && event.url !== '#') {
-        window.open(event.url, '_blank')
-      } else {
-        toast.info('Event details not available')
+      // Default behavior: scrape event details and save
+      await scrapeAndSaveEvent(event)
+    }
+  }
+
+  const scrapeAndSaveEvent = async (event: EventResult) => {
+    try {
+      toast.loading('Getting event details...', { id: 'scraping' })
+
+      // Step 1: Scrape the event
+      const scrapeResponse = await fetch('/api/events/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventUrl: event.url,
+          basicEventData: {
+            title: event.title,
+            venue: event.venue,
+            date: event.date,
+            time: event.time,
+            price: event.price
+          }
+        }),
+      })
+
+      const scrapeData = await scrapeResponse.json()
+
+      if (!scrapeResponse.ok) {
+        throw new Error(scrapeData.error || 'Failed to scrape event details')
       }
+
+      toast.loading('Saving event...', { id: 'scraping' })
+
+      // Step 2: Save the scraped event
+      const saveResponse = await fetch('/api/events/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scrapedEventData: scrapeData.data,
+          originalUrl: event.url
+        }),
+      })
+
+      const saveData = await saveResponse.json()
+
+      if (!saveResponse.ok) {
+        throw new Error(saveData.error || 'Failed to save event')
+      }
+
+      toast.success('Event saved to your interests!', { id: 'scraping' })
+
+    } catch (error) {
+      console.error('Error scraping/saving event:', error)
+      toast.error('Failed to save event. Please try again.', { id: 'scraping' })
     }
   }
 

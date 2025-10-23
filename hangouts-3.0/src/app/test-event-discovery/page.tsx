@@ -21,8 +21,49 @@ export default function TestEventDiscovery() {
   const [interestedEvents, setInterestedEvents] = useState<EventResult[]>([])
   const [testResults, setTestResults] = useState<any[]>([])
 
-  const handleEventInterest = (event: EventResult) => {
-    setInterestedEvents(prev => [...prev, event])
+  const handleEventInterest = async (event: EventResult) => {
+    try {
+      // Test scraping functionality
+      const scrapeResponse = await fetch('/api/events/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventUrl: event.url,
+          basicEventData: {
+            title: event.title,
+            venue: event.venue,
+            date: event.date,
+            time: event.time,
+            price: event.price
+          }
+        }),
+      })
+
+      const scrapeData = await scrapeResponse.json()
+      
+      setTestResults(prev => [...prev, {
+        query: `Scrape: ${event.title}`,
+        timestamp: new Date().toLocaleTimeString(),
+        success: scrapeResponse.ok,
+        data: scrapeData,
+        error: scrapeResponse.ok ? null : scrapeData.error
+      }])
+
+      if (scrapeResponse.ok) {
+        setInterestedEvents(prev => [...prev, { ...event, scrapedData: scrapeData.data }])
+      }
+
+    } catch (error) {
+      setTestResults(prev => [...prev, {
+        query: `Scrape: ${event.title}`,
+        timestamp: new Date().toLocaleTimeString(),
+        success: false,
+        data: null,
+        error: error.message
+      }])
+    }
   }
 
   const runQuickTest = async (query: string) => {
