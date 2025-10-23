@@ -114,6 +114,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
     isSaving,
     error,
     togglePreference,
+    updatePreferences,
     resetToDefaults
   } = useNotificationPreferences()
 
@@ -185,7 +186,14 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center space-x-2">
@@ -248,13 +256,19 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
                 </div>
                 <Switch
                   checked={Object.values(preferences).every(p => p.pushEnabled)}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={async (checked) => {
                     // Toggle all push notifications
                     const updates: any = {}
                     Object.keys(preferences).forEach(type => {
                       updates[type] = { ...preferences[type], pushEnabled: checked }
                     })
-                    // This would need to be implemented in the hook
+                    const success = await updatePreferences(updates)
+                    if (success) {
+                      setHasChanges(true)
+                      toast.success('Push notifications updated')
+                    } else {
+                      toast.error('Failed to update push notifications')
+                    }
                   }}
                   disabled={isSaving}
                 />
@@ -267,13 +281,19 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
                 </div>
                 <Switch
                   checked={Object.values(preferences).every(p => p.emailEnabled)}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={async (checked) => {
                     // Toggle all email notifications
                     const updates: any = {}
                     Object.keys(preferences).forEach(type => {
                       updates[type] = { ...preferences[type], emailEnabled: checked }
                     })
-                    // This would need to be implemented in the hook
+                    const success = await updatePreferences(updates)
+                    if (success) {
+                      setHasChanges(true)
+                      toast.success('Email notifications updated')
+                    } else {
+                      toast.error('Failed to update email notifications')
+                    }
                   }}
                   disabled={isSaving}
                 />
