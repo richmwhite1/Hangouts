@@ -4,7 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse, RSVPResponse } from '@/lib/api-response'
-
+import { triggerNotification, getUserDisplayName, getContentTitle } from '@/lib/notification-triggers'
 import { logger } from '@/lib/logger'
 const RSVPSchema = z.object({
   status: z.enum(['PENDING', 'YES', 'NO', 'MAYBE'])
@@ -175,6 +175,41 @@ export async function POST(
           }
         }
       })
+    }
+
+    // Send notification to hangout creator about RSVP response
+    if (validatedData.status !== 'PENDING') {
+      try {
+        // Get hangout creator
+        const hangoutCreator = await db.content_participants.findFirst({
+          where: {
+            contentId: hangoutId,
+            role: 'CREATOR'
+          },
+          select: { userId: true }
+        })
+
+        if (hangoutCreator && hangoutCreator.userId !== user.id) {
+          const responderName = await getUserDisplayName(user.id)
+          const hangoutTitle = await getContentTitle(hangoutId)
+          
+          await triggerNotification({
+            type: 'CONTENT_RSVP',
+            recipientId: hangoutCreator.userId,
+            title: 'RSVP Response',
+            message: `${responderName} responded ${validatedData.status.toLowerCase()} to "${hangoutTitle}"`,
+            senderId: user.id,
+            relatedId: hangoutId,
+            data: {
+              rsvpStatus: validatedData.status,
+              rsvpId: rsvp.id
+            }
+          })
+        }
+      } catch (notificationError) {
+        logger.error('Error sending RSVP notification:', notificationError)
+        // Don't fail the request if notification fails
+      }
     }
 
     return NextResponse.json(createSuccessResponse({

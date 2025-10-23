@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { db } from '@/lib/db'
-
+import { triggerNotification, getUserDisplayName } from '@/lib/notification-triggers'
 import { logger } from '@/lib/logger'
 export async function PATCH(
   request: NextRequest,
@@ -76,6 +76,24 @@ export async function PATCH(
         ],
         skipDuplicates: true
       })
+
+      // Send notification to the sender that their friend request was accepted
+      try {
+        const receiverName = await getUserDisplayName(friendRequest.receiverId)
+        await triggerNotification({
+          type: 'FRIEND_ACCEPTED',
+          recipientId: friendRequest.senderId,
+          title: 'Friend Request Accepted',
+          message: `${receiverName} accepted your friend request`,
+          senderId: friendRequest.receiverId,
+          data: {
+            friendRequestId: friendRequest.id
+          }
+        })
+      } catch (notificationError) {
+        logger.error('Error sending friend accepted notification:', notificationError)
+        // Don't fail the request if notification fails
+      }
     }
 
     return NextResponse.json({

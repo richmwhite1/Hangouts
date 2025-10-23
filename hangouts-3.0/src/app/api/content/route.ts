@@ -4,7 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
-
+import { triggerBatchNotifications, getUserDisplayName, getContentTitle } from '@/lib/notification-triggers'
 import { logger } from '@/lib/logger'
 const createContentSchema = z.object({
   type: z.enum(['HANGOUT', 'EVENT']),
@@ -140,6 +140,29 @@ export async function POST(request: NextRequest) {
       await db.content_participants.createMany({
         data: participantData
       })
+
+      // Send invitation notifications to all participants
+      try {
+        const creatorName = await getUserDisplayName(user.id)
+        const contentTitle = validatedData.title
+        
+        await triggerBatchNotifications({
+          type: 'CONTENT_INVITATION',
+          recipientIds: validatedData.participants,
+          title: validatedData.type === 'HANGOUT' ? 'Hangout Invitation' : 'Event Invitation',
+          message: `${creatorName} invited you to "${contentTitle}"`,
+          senderId: user.id,
+          relatedId: content.id,
+          data: {
+            contentType: validatedData.type,
+            startTime: validatedData.startTime,
+            location: validatedData.location || validatedData.venue
+          }
+        })
+      } catch (notificationError) {
+        logger.error('Error sending content invitation notifications:', notificationError)
+        // Don't fail the request if notification fails
+      }
     }
 
     // Create poll for hangouts with multiple options

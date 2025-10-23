@@ -241,3 +241,4 @@ export function SearchResults({ query, onClose }: SearchResultsProps) {
 
 
 
+

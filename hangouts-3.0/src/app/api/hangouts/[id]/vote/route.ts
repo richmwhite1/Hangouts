@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { checkAndFinalizeIfReady, calculateWinner } from '@/lib/hangout-flow'
 import { checkRateLimit, rateLimitConfigs } from '@/lib/enhanced-rate-limit'
+import { triggerNotification, triggerBatchNotifications, getUserDisplayName, getContentTitle } from '@/lib/notification-triggers'
 import { logger } from '@/lib/logger'
 const VoteSchema = z.object({
   optionId: z.string().min(1, 'Option ID is required'),
@@ -157,6 +158,40 @@ export async function POST(
         data: { isPreferred: false }
       })
     }
+
+    // Send notification to poll creator about new vote
+    try {
+      const voterName = await getUserDisplayName(user.id)
+      const hangoutTitle = await getContentTitle(hangoutId)
+      
+      // Get poll creator
+      const pollCreator = await db.content_participants.findFirst({
+        where: {
+          contentId: hangoutId,
+          role: 'CREATOR'
+        },
+        select: { userId: true }
+      })
+
+      if (pollCreator && pollCreator.userId !== user.id) {
+        await triggerNotification({
+          type: 'POLL_VOTE_CAST',
+          recipientId: pollCreator.userId,
+          title: 'New Vote',
+          message: `${voterName} voted on your poll "${hangoutTitle}"`,
+          senderId: user.id,
+          relatedId: hangoutId,
+          data: {
+            pollId: poll.id,
+            optionId: optionId
+          }
+        })
+      }
+    } catch (notificationError) {
+      logger.error('Error sending poll vote notification:', notificationError)
+      // Don't fail the request if notification fails
+    }
+
     // Get updated hangout with polls
     const updatedHangout = await db.content.findUnique({
       where: { id: hangoutId },
@@ -247,6 +282,29 @@ export async function POST(
           data: newRsvpData
         })
       }
+
+      // Send consensus reached notifications to all participants
+      try {
+        const hangoutTitle = await getContentTitle(hangoutId)
+        const participantIds = allParticipants.map(p => p.userId)
+        
+        await triggerBatchNotifications({
+          type: 'POLL_CONSENSUS_REACHED',
+          recipientIds: participantIds,
+          title: 'Poll Consensus Reached',
+          message: `Your poll "${hangoutTitle}" has reached consensus! The winner is: ${winner.title}`,
+          relatedId: hangoutId,
+          data: {
+            pollId: poll.id,
+            winner: winner,
+            winnerTitle: winner.title
+          }
+        })
+      } catch (notificationError) {
+        logger.error('Error sending consensus reached notifications:', notificationError)
+        // Don't fail the request if notification fails
+      }
+
       return NextResponse.json(createSuccessResponse({
         voteCast: true,
         finalized: true,

@@ -1,22 +1,27 @@
 // Enhanced Service Worker for Hangouts 3.0 PWA
-const CACHE_NAME = 'hangouts-3.0-v2'
+const CACHE_NAME = 'hangouts-3.0-v3'
 const OFFLINE_CACHE = 'hangouts-offline-v1'
 
 // Critical assets to cache on install
 const urlsToCache = [
   '/',
-  '/dashboard',
-  '/create',
+  '/manifest.json',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/offline'
+]
+
+// Routes that exist and should be cached (but only after successful navigation)
+const ROUTES_TO_CACHE = [
   '/discover',
+  '/create', 
   '/friends',
   '/messages',
   '/profile',
   '/signin',
   '/signup',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
-  '/offline'
+  '/events',
+  '/notifications'
 ]
 
 // API routes that should be cached
@@ -44,6 +49,7 @@ self.addEventListener('install', (event) => {
       })
       .catch((error) => {
         console.error('Service Worker install failed:', error)
+        // Don't fail the installation if some assets can't be cached
       })
   )
 })
@@ -91,9 +97,28 @@ self.addEventListener('fetch', (event) => {
   } else if (url.pathname.startsWith('/_next/static/')) {
     // Next.js static files: Cache-first
     event.respondWith(cacheFirstStrategy(request))
-  } else {
+  } else if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
     // Navigation requests: Network-first with offline fallback
     event.respondWith(navigationStrategy(request))
+  } else {
+    // For other requests, try network first, then cache
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Cache successful responses
+          if (response.ok) {
+            const responseClone = response.clone()
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseClone)
+            })
+          }
+          return response
+        })
+        .catch(() => {
+          // Fall back to cache
+          return caches.match(request)
+        })
+    )
   }
 })
 
@@ -156,21 +181,106 @@ async function cacheFirstStrategy(request) {
 
 // Navigation strategy for page requests
 async function navigationStrategy(request) {
+  const url = new URL(request.url)
+  
+  // Handle known problematic routes by redirecting to root
+  if (url.pathname === '/dashboard' || url.pathname === '/home') {
+    console.log('Redirecting problematic route to root:', url.pathname)
+    return Response.redirect('/', 302)
+  }
+  
+  // Always try to serve the root page for any navigation request that might fail
+  // This prevents 404s when the PWA opens
+  if (url.pathname !== '/' && !url.pathname.startsWith('/api/')) {
+    // For non-root paths, first try the actual request
+    try {
+      const networkResponse = await fetch(request)
+      
+      // If successful and not a 404, cache and return it
+      if (networkResponse.ok && networkResponse.status !== 404) {
+        const cache = await caches.open(CACHE_NAME)
+        cache.put(request, networkResponse.clone())
+        return networkResponse
+      }
+      
+      // If it's a 404, fall back to root page
+      if (networkResponse.status === 404) {
+        console.log('404 detected, serving root page instead:', request.url)
+        return await fetch('/')
+      }
+    } catch (error) {
+      console.log('Navigation failed, trying root page:', request.url)
+      // Try to serve root page as fallback
+      try {
+        const rootResponse = await fetch('/')
+        if (rootResponse.ok) {
+          return rootResponse
+        }
+      } catch (e) {
+        console.log('Failed to fetch root path')
+      }
+    }
+  }
+  
+  // For root path or if above failed, try normal flow
   try {
     const networkResponse = await fetch(request)
+    
+    // If the response is successful, cache it for future use
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME)
+      cache.put(request, networkResponse.clone())
+    }
+    
     return networkResponse
   } catch (error) {
-    console.log('Navigation failed, serving offline page')
+    console.log('Navigation failed, trying cache:', request.url)
     
     // Check if we have a cached version
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
+      console.log('Serving cached version:', request.url)
       return cachedResponse
     }
     
-    // Serve offline page
+    // Try to serve root page as fallback
+    try {
+      const rootResponse = await fetch('/')
+      if (rootResponse.ok) {
+        return rootResponse
+      }
+    } catch (e) {
+      console.log('Failed to fetch root path')
+    }
+    
+    // Serve offline page as last resort
     const offlineResponse = await caches.match('/offline')
-    return offlineResponse || new Response('Offline', { status: 503 })
+    if (offlineResponse) {
+      return offlineResponse
+    }
+    
+    // Final fallback
+    return new Response(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Hangouts 3.0</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: system-ui; text-align: center; padding: 50px; }
+            .error { color: #666; }
+          </style>
+        </head>
+        <body>
+          <h1>Hangouts 3.0</h1>
+          <p class="error">Unable to load this page. Please check your connection.</p>
+          <button onclick="window.location.reload()">Retry</button>
+        </body>
+      </html>
+    `, { 
+      status: 503,
+      headers: { 'Content-Type': 'text/html' }
+    })
   }
 }
 

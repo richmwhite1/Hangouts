@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
-
+import { triggerNotification, getUserDisplayName } from '@/lib/notification-triggers'
 import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
@@ -92,6 +92,25 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Send notification to the receiver
+    try {
+      const senderName = await getUserDisplayName(user.id)
+      await triggerNotification({
+        type: 'FRIEND_REQUEST',
+        recipientId: userId,
+        title: 'New Friend Request',
+        message: `${senderName} sent you a friend request`,
+        senderId: user.id,
+        data: {
+          friendRequestId: friendRequest.id,
+          message: message
+        }
+      })
+    } catch (notificationError) {
+      logger.error('Error sending friend request notification:', notificationError)
+      // Don't fail the request if notification fails
+    }
 
     return NextResponse.json({
       success: true,

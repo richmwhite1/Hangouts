@@ -16,7 +16,16 @@ import {
   Settings,
   RotateCcw,
   Save,
-  X
+  X,
+  Users,
+  Heart,
+  Share2,
+  MessageCircle,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Vote,
+  Zap
 } from "lucide-react"
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences"
 import { toast } from "sonner"
@@ -24,6 +33,78 @@ import { toast } from "sonner"
 interface NotificationSettingsProps {
   isOpen: boolean
   onClose: () => void
+}
+
+// Group notification types by category for better UX
+const NOTIFICATION_GROUPS = {
+  Social: {
+    icon: Users,
+    types: ['FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'MENTION'],
+    description: 'Notifications about friends and social interactions'
+  },
+  Hangouts: {
+    icon: Calendar,
+    types: ['CONTENT_INVITATION', 'CONTENT_RSVP', 'CONTENT_UPDATE', 'CONTENT_REMINDER', 'HANGOUT_CONFIRMED', 'HANGOUT_CANCELLED'],
+    description: 'Notifications about hangouts and events'
+  },
+  Messages: {
+    icon: MessageSquare,
+    types: ['MESSAGE_RECEIVED'],
+    description: 'Notifications about new messages'
+  },
+  Engagement: {
+    icon: Heart,
+    types: ['COMMENT', 'LIKE', 'SHARE'],
+    description: 'Notifications about likes, comments, and shares'
+  },
+  Polls: {
+    icon: Vote,
+    types: ['POLL_VOTE_CAST', 'POLL_CONSENSUS_REACHED'],
+    description: 'Notifications about poll voting and consensus'
+  },
+  System: {
+    icon: Settings,
+    types: ['COMMUNITY_INVITATION'],
+    description: 'System and administrative notifications'
+  }
+}
+
+const NOTIFICATION_LABELS = {
+  FRIEND_REQUEST: 'Friend Requests',
+  FRIEND_ACCEPTED: 'Friend Accepted',
+  MESSAGE_RECEIVED: 'New Messages',
+  CONTENT_INVITATION: 'Hangout Invitations',
+  CONTENT_RSVP: 'RSVP Responses',
+  CONTENT_REMINDER: 'Hangout Reminders',
+  CONTENT_UPDATE: 'Hangout Updates',
+  COMMUNITY_INVITATION: 'Community Invitations',
+  MENTION: 'Mentions',
+  LIKE: 'Likes',
+  COMMENT: 'Comments',
+  SHARE: 'Shares',
+  POLL_VOTE_CAST: 'Poll Votes',
+  POLL_CONSENSUS_REACHED: 'Poll Consensus',
+  HANGOUT_CONFIRMED: 'Hangout Confirmed',
+  HANGOUT_CANCELLED: 'Hangout Cancelled'
+}
+
+const NOTIFICATION_DESCRIPTIONS = {
+  FRIEND_REQUEST: 'When someone sends you a friend request',
+  FRIEND_ACCEPTED: 'When someone accepts your friend request',
+  MESSAGE_RECEIVED: 'When you receive a new message in a hangout',
+  CONTENT_INVITATION: 'When you\'re invited to a hangout or event',
+  CONTENT_RSVP: 'When someone responds to your hangout invitation',
+  CONTENT_REMINDER: 'Reminders about upcoming hangouts',
+  CONTENT_UPDATE: 'When hangout details are changed',
+  COMMUNITY_INVITATION: 'When you\'re invited to a community',
+  MENTION: 'When someone mentions you in a comment or message',
+  LIKE: 'When someone likes your hangout or comment',
+  COMMENT: 'When someone comments on your hangout',
+  SHARE: 'When someone shares your hangout',
+  POLL_VOTE_CAST: 'When someone votes on your poll',
+  POLL_CONSENSUS_REACHED: 'When your poll reaches consensus',
+  HANGOUT_CONFIRMED: 'When your hangout is confirmed',
+  HANGOUT_CANCELLED: 'When a hangout you\'re part of is cancelled'
 }
 
 export function NotificationSettings({ isOpen, onClose }: NotificationSettingsProps) {
@@ -40,10 +121,10 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
 
   if (!isOpen) return null
 
-  const handleToggle = async (key: keyof typeof preferences) => {
+  const handleToggle = async (type: string, setting: 'emailEnabled' | 'pushEnabled' | 'inAppEnabled') => {
     if (!preferences) return
 
-    const success = await togglePreference(key)
+    const success = await togglePreference(type, setting)
     if (success) {
       setHasChanges(true)
       toast.success('Setting updated')
@@ -70,7 +151,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
   if (isLoading) {
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
+        <Card className="w-full max-w-4xl">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading notification settings...</p>
@@ -83,7 +164,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
   if (error) {
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
+        <Card className="w-full max-w-4xl">
           <CardContent className="p-8 text-center">
             <div className="text-red-500 mb-4">
               <Settings className="w-12 h-12 mx-auto mb-2" />
@@ -105,7 +186,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center space-x-2">
             <Bell className="w-5 h-5" />
@@ -129,65 +210,71 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
           </div>
         </CardHeader>
         
-        <CardContent className="space-y-6">
-          {/* General Settings */}
+        <CardContent className="space-y-8">
+          {/* Quick Settings */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center">
-              <Settings className="w-5 h-5 mr-2" />
-              General Settings
+              <Zap className="w-5 h-5 mr-2" />
+              Quick Settings
             </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Master controls for all notification types
+            </p>
             
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="inAppNotifications" className="flex items-center">
-                    <Bell className="w-4 h-4 mr-2" />
-                    In-App Notifications
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Show notifications within the app
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Bell className="w-4 h-4" />
+                  <span className="font-medium">In-App</span>
                 </div>
                 <Switch
-                  id="inAppNotifications"
-                  checked={preferences.inAppNotifications}
-                  onCheckedChange={() => handleToggle('inAppNotifications')}
+                  checked={Object.values(preferences).every(p => p.inAppEnabled)}
+                  onCheckedChange={(checked) => {
+                    // Toggle all in-app notifications
+                    const updates: any = {}
+                    Object.keys(preferences).forEach(type => {
+                      updates[type] = { ...preferences[type], inAppEnabled: checked }
+                    })
+                    // This would need to be implemented in the hook
+                  }}
                   disabled={isSaving}
                 />
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="emailNotifications" className="flex items-center">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email Notifications
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Send notifications via email
-                  </p>
+              
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Smartphone className="w-4 h-4" />
+                  <span className="font-medium">Push</span>
                 </div>
                 <Switch
-                  id="emailNotifications"
-                  checked={preferences.emailNotifications}
-                  onCheckedChange={() => handleToggle('emailNotifications')}
+                  checked={Object.values(preferences).every(p => p.pushEnabled)}
+                  onCheckedChange={(checked) => {
+                    // Toggle all push notifications
+                    const updates: any = {}
+                    Object.keys(preferences).forEach(type => {
+                      updates[type] = { ...preferences[type], pushEnabled: checked }
+                    })
+                    // This would need to be implemented in the hook
+                  }}
                   disabled={isSaving}
                 />
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="pushNotifications" className="flex items-center">
-                    <Smartphone className="w-4 h-4 mr-2" />
-                    Push Notifications
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Send push notifications to your device
-                  </p>
+              
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4" />
+                  <span className="font-medium">Email</span>
                 </div>
                 <Switch
-                  id="pushNotifications"
-                  checked={preferences.pushNotifications}
-                  onCheckedChange={() => handleToggle('pushNotifications')}
+                  checked={Object.values(preferences).every(p => p.emailEnabled)}
+                  onCheckedChange={(checked) => {
+                    // Toggle all email notifications
+                    const updates: any = {}
+                    Object.keys(preferences).forEach(type => {
+                      updates[type] = { ...preferences[type], emailEnabled: checked }
+                    })
+                    // This would need to be implemented in the hook
+                  }}
                   disabled={isSaving}
                 />
               </div>
@@ -196,146 +283,84 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
 
           <Separator />
 
-          {/* Message Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2" />
-              Messages
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="messageNotifications" className="flex items-center">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Direct Messages
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Notify me about new messages
-                  </p>
+          {/* Detailed Settings by Category */}
+          {Object.entries(NOTIFICATION_GROUPS).map(([groupName, group]) => {
+            const GroupIcon = group.icon
+            return (
+              <div key={groupName} className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <GroupIcon className="w-5 h-5 mr-2" />
+                  {groupName}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {group.description}
+                </p>
+                
+                <div className="space-y-4">
+                  {group.types.map(type => {
+                    const pref = preferences[type]
+                    if (!pref) return null
+                    
+                    return (
+                      <div key={type} className="border rounded-lg p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">{NOTIFICATION_LABELS[type as keyof typeof NOTIFICATION_LABELS]}</h4>
+                            <p className="text-sm text-gray-600">
+                              {NOTIFICATION_DESCRIPTIONS[type as keyof typeof NOTIFICATION_DESCRIPTIONS]}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Bell className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm">In-App</span>
+                            </div>
+                            <Switch
+                              checked={pref.inAppEnabled}
+                              onCheckedChange={() => handleToggle(type, 'inAppEnabled')}
+                              disabled={isSaving}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Smartphone className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm">Push</span>
+                            </div>
+                            <Switch
+                              checked={pref.pushEnabled}
+                              onCheckedChange={() => handleToggle(type, 'pushEnabled')}
+                              disabled={isSaving}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Mail className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm">Email</span>
+                            </div>
+                            <Switch
+                              checked={pref.emailEnabled}
+                              onCheckedChange={() => handleToggle(type, 'emailEnabled')}
+                              disabled={isSaving}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-                <Switch
-                  id="messageNotifications"
-                  checked={preferences.messageNotifications}
-                  onCheckedChange={() => handleToggle('messageNotifications')}
-                  disabled={isSaving}
-                />
               </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Hangout Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
-              Hangouts
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="hangoutNotifications" className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Hangout Updates
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Notify me about hangout changes, votes, and RSVPs
-                  </p>
-                </div>
-                <Switch
-                  id="hangoutNotifications"
-                  checked={preferences.hangoutNotifications}
-                  onCheckedChange={() => handleToggle('hangoutNotifications')}
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="reminderNotifications" className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
-                    Reminders
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Send reminders before hangouts and events
-                  </p>
-                </div>
-                <Switch
-                  id="reminderNotifications"
-                  checked={preferences.reminderNotifications}
-                  onCheckedChange={() => handleToggle('reminderNotifications')}
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Event Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
-              Events
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="eventNotifications" className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Event Updates
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Notify me about events I'm interested in
-                  </p>
-                </div>
-                <Switch
-                  id="eventNotifications"
-                  checked={preferences.eventNotifications}
-                  onCheckedChange={() => handleToggle('eventNotifications')}
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* System Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Settings className="w-5 h-5 mr-2" />
-              System
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="systemNotifications" className="flex items-center">
-                    <Settings className="w-4 h-4 mr-2" />
-                    System Updates
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Notify me about app updates and maintenance
-                  </p>
-                </div>
-                <Switch
-                  id="systemNotifications"
-                  checked={preferences.systemNotifications}
-                  onCheckedChange={() => handleToggle('systemNotifications')}
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-          </div>
+            )
+          })}
 
           <Separator />
 
           {/* Actions */}
-          <div className="flex justify-between items-center pt-4">
+          <div className="flex justify-between items-center">
             <Button
               variant="outline"
               onClick={handleReset}
@@ -346,8 +371,14 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
               Reset to Defaults
             </Button>
             
-            <div className="text-sm text-gray-500">
-              Changes are saved automatically
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </Button>
             </div>
           </div>
         </CardContent>

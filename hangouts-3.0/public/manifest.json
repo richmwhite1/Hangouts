@@ -2,7 +2,7 @@
   "name": "Hangouts 3.0",
   "short_name": "Hangouts",
   "description": "Plan amazing hangouts with friends",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#8B5CF6",

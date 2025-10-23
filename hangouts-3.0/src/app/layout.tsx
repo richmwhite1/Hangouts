@@ -11,6 +11,7 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
+import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -22,8 +23,6 @@ export const metadata: Metadata = {
   title: 'Hangouts 3.0',
   description: 'Plan amazing hangouts with friends',
   manifest: '/manifest.json',
-  themeColor: '#8B5CF6',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -38,6 +37,14 @@ export const metadata: Metadata = {
       { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }
     ]
   }
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#8B5CF6'
 }
 
 export default function RootLayout({
@@ -87,6 +94,7 @@ export default function RootLayout({
                   <PWASetup />
                   <NetworkStatus />
                   <InstallPrompt showForAllUsers={true} />
+                  <PWANavigationFix />
                 </WebSocketProvider>
             </RealtimeProvider>
           </GlobalErrorBoundary>

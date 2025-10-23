@@ -3,8 +3,48 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
-
 import { logger } from '@/lib/logger'
+
+// All notification types that need preferences
+const NOTIFICATION_TYPES = [
+  'FRIEND_REQUEST',
+  'FRIEND_ACCEPTED', 
+  'MESSAGE_RECEIVED',
+  'CONTENT_INVITATION',
+  'CONTENT_RSVP',
+  'CONTENT_REMINDER',
+  'CONTENT_UPDATE',
+  'COMMUNITY_INVITATION',
+  'MENTION',
+  'LIKE',
+  'COMMENT',
+  'SHARE',
+  'POLL_VOTE_CAST',
+  'POLL_CONSENSUS_REACHED',
+  'HANGOUT_CONFIRMED',
+  'HANGOUT_CANCELLED'
+] as const
+
+// Default preferences for each notification type
+const DEFAULT_PREFERENCES = {
+  FRIEND_REQUEST: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  FRIEND_ACCEPTED: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  MESSAGE_RECEIVED: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  CONTENT_INVITATION: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  CONTENT_RSVP: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  CONTENT_REMINDER: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  CONTENT_UPDATE: { emailEnabled: false, pushEnabled: false, inAppEnabled: true },
+  COMMUNITY_INVITATION: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  MENTION: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  LIKE: { emailEnabled: false, pushEnabled: false, inAppEnabled: true },
+  COMMENT: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  SHARE: { emailEnabled: false, pushEnabled: false, inAppEnabled: true },
+  POLL_VOTE_CAST: { emailEnabled: false, pushEnabled: false, inAppEnabled: true },
+  POLL_CONSENSUS_REACHED: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  HANGOUT_CONFIRMED: { emailEnabled: false, pushEnabled: true, inAppEnabled: true },
+  HANGOUT_CANCELLED: { emailEnabled: false, pushEnabled: true, inAppEnabled: true }
+} as const
+
 // GET /api/notifications/preferences - Get user notification preferences
 export async function GET(request: NextRequest) {
   try {
@@ -20,24 +60,36 @@ export async function GET(request: NextRequest) {
 
     const userId = clerkUser.id
 
-    let preferences = await db.notificationPreference.findFirst({
+    // Get all existing preferences for this user
+    const existingPreferences = await db.notificationPreference.findMany({
       where: { userId: userId }
     })
 
-    // Create default preferences if none exist
-    if (!preferences) {
-      preferences = await db.notificationPreference.create({
-        data: {
-          userId: userId,
-          type: 'MESSAGE_RECEIVED',
-          emailEnabled: true,
-          pushEnabled: false,
-          inAppEnabled: true
-        }
-      })
-    }
+    // Create a map of existing preferences by type
+    const preferencesMap = new Map(
+      existingPreferences.map(pref => [pref.type, pref])
+    )
 
-    return NextResponse.json(createSuccessResponse(preferences, 'Notification preferences retrieved successfully'))
+    // Build response with all notification types, using existing preferences or defaults
+    const allPreferences = NOTIFICATION_TYPES.map(type => {
+      const existing = preferencesMap.get(type)
+      if (existing) {
+        return {
+          type,
+          emailEnabled: existing.emailEnabled,
+          pushEnabled: existing.pushEnabled,
+          inAppEnabled: existing.inAppEnabled
+        }
+      } else {
+        // Return default preferences (don't create in DB yet)
+        return {
+          type,
+          ...DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES]
+        }
+      }
+    })
+
+    return NextResponse.json(createSuccessResponse(allPreferences, 'Notification preferences retrieved successfully'))
 
   } catch (error) {
     logger.error('Error fetching notification preferences:', error);
@@ -59,30 +111,71 @@ export async function PUT(request: NextRequest) {
     }
 
     const userId = clerkUser.id
-
     const body = await request.json()
-    const {
-      type,
-      emailEnabled,
-      pushEnabled,
-      inAppEnabled
-    } = body
 
-    // Upsert preferences
+    // Handle bulk update of all preferences
+    if (body.preferences && Array.isArray(body.preferences)) {
+      const results = []
+      
+      for (const pref of body.preferences) {
+        const { type, emailEnabled, pushEnabled, inAppEnabled } = pref
+        
+        if (!NOTIFICATION_TYPES.includes(type)) {
+          continue // Skip invalid types
+        }
+
+        const result = await db.notificationPreference.upsert({
+          where: { 
+            userId_type: { 
+              userId: userId, 
+              type: type as any 
+            } 
+          },
+          update: {
+            emailEnabled: emailEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].emailEnabled,
+            pushEnabled: pushEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].pushEnabled,
+            inAppEnabled: inAppEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].inAppEnabled
+          },
+          create: {
+            userId: userId,
+            type: type as any,
+            emailEnabled: emailEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].emailEnabled,
+            pushEnabled: pushEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].pushEnabled,
+            inAppEnabled: inAppEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].inAppEnabled
+          }
+        })
+        
+        results.push(result)
+      }
+
+      return NextResponse.json(createSuccessResponse(results, 'All notification preferences updated successfully'))
+    }
+
+    // Handle single preference update (backward compatibility)
+    const { type, emailEnabled, pushEnabled, inAppEnabled } = body
+
+    if (!type || !NOTIFICATION_TYPES.includes(type)) {
+      return NextResponse.json(createErrorResponse('Invalid notification type', 'Type must be one of the valid notification types'), { status: 400 })
+    }
+
     const preferences = await db.notificationPreference.upsert({
-      where: { userId: userId },
+      where: { 
+        userId_type: { 
+          userId: userId, 
+          type: type as any 
+        } 
+      },
       update: {
-        type: type ?? 'MESSAGE_RECEIVED',
-        emailEnabled: emailEnabled ?? true,
-        pushEnabled: pushEnabled ?? false,
-        inAppEnabled: inAppEnabled ?? true
+        emailEnabled: emailEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].emailEnabled,
+        pushEnabled: pushEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].pushEnabled,
+        inAppEnabled: inAppEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].inAppEnabled
       },
       create: {
         userId: userId,
-        type: type ?? 'MESSAGE_RECEIVED',
-        emailEnabled: emailEnabled ?? true,
-        pushEnabled: pushEnabled ?? false,
-        inAppEnabled: inAppEnabled ?? true
+        type: type as any,
+        emailEnabled: emailEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].emailEnabled,
+        pushEnabled: pushEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].pushEnabled,
+        inAppEnabled: inAppEnabled ?? DEFAULT_PREFERENCES[type as keyof typeof DEFAULT_PREFERENCES].inAppEnabled
       }
     })
 
