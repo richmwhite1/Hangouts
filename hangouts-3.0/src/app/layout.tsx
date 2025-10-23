@@ -86,7 +86,7 @@ export default function RootLayout({
                   <Toaster position="top-right" richColors />
                   <PWASetup />
                   <NetworkStatus />
-                  <InstallPrompt />
+                  <InstallPrompt showForAllUsers={true} />
                 </WebSocketProvider>
             </RealtimeProvider>
           </GlobalErrorBoundary>

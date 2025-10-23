@@ -15,10 +15,16 @@ import {
   CheckCircle,
   Sparkles,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Bell,
+  Zap,
+  Wifi,
+  Download,
+  Smartphone
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { PWAInstallBanner } from '@/components/pwa-install-banner'
 
 interface GuestLandingProps {
   onSignIn: () => void
@@ -182,7 +188,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
             <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
               The easiest way to coordinate with friends, discover events, and make plans that actually happen.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button 
                 size="lg" 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
@@ -200,6 +206,9 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                 Sign In
               </Button>
             </div>
+
+            {/* PWA Install Prompt */}
+            <PWAInstallBanner variant="hero" showForAllUsers={true} />
           </div>
         </div>
       </div>
