@@ -129,7 +129,7 @@ const distanceOptions = [
   { id: 'unlimited', label: 'No limit' },
 ]
 export function MergedDiscoveryPage() {
-  const { getToken, isSignedIn } = useAuth()
+  const { getToken, isSignedIn, isLoaded } = useAuth()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -327,8 +327,8 @@ export function MergedDiscoveryPage() {
         if (isSignedIn) {
           setEvents(data.events || [])
         } else {
-          // Map public content to event format
-          const publicEvents = (data.content || []).map((item: any) => ({
+          // Map public events to event format
+          const publicEvents = (data.events || []).map((item: any) => ({
             id: item.id,
             title: item.title,
             description: item.description || '',
@@ -411,7 +411,8 @@ export function MergedDiscoveryPage() {
         if (isSignedIn) {
           hangoutsData = data.data?.hangouts || data.hangouts || []
         } else {
-          hangoutsData = data.content || []
+          // For non-authenticated users, use the hangouts array from public API
+          hangoutsData = data.hangouts || []
         }
         
         // Map the API data to our interface
@@ -559,16 +560,22 @@ export function MergedDiscoveryPage() {
   }, [searchParams])
 
   useEffect(() => {
+    // Wait for authentication to load before fetching data
+    if (!isLoaded) return
+    
     // Always fetch data, but for non-authenticated users, only fetch public content
     setIsLoading(true)
     Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
       setIsLoading(false)
     })
-  }, [isSignedIn])
+  }, [isSignedIn, isLoaded])
   useEffect(() => {
+    // Wait for authentication to load before refetching data
+    if (!isLoaded) return
+    
     // Refetch both events and hangouts when filters change
     Promise.all([fetchEvents(), fetchHangouts()])
-  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange])
+  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, isLoaded])
   // Handle zip code geocoding
   useEffect(() => {
     const handleZipCodeGeocoding = async () => {
