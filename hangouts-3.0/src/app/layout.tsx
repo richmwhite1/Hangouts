@@ -11,7 +11,7 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
-import { PWANavigationFix } from '@/components/pwa-navigation-fix'
+// import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -94,7 +94,7 @@ export default function RootLayout({
                   <PWASetup />
                   <NetworkStatus />
                   <InstallPrompt showForAllUsers={true} />
-                  <PWANavigationFix />
+                  {/* <PWANavigationFix /> */}
                 </WebSocketProvider>
             </RealtimeProvider>
           </GlobalErrorBoundary>
