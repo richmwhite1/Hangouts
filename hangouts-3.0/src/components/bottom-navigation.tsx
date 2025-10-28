@@ -17,7 +17,7 @@ export function BottomNavigation() {
   const tabs = [
     { id: "home", label: "Home", icon: Home, href: "/" },
     { id: "discover", label: "Discover", icon: Compass, href: "/discover" },
-    { id: "create", label: "Create", icon: Plus, href: "/create" },
+    { id: "create", label: "Hangout", icon: Plus, href: "/create" },
     { id: "events", label: "Events", icon: Calendar, href: "/events" },
     { id: "profile", label: "Profile", icon: User, href: "/profile" },
   ]

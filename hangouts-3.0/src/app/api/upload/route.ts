@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import sharp from 'sharp'
-import { filterPhotoContent } from '@/lib/content-filter'
-import { uploadImage } from '@/lib/cloudinary'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
 import { PrismaClient } from '@prisma/client'
 
 import { logger } from '@/lib/logger'
@@ -13,43 +13,22 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth()
-    console.log('Upload API - Clerk userId:', clerkUserId)
+    logger.debug('Upload API - Clerk userId:', clerkUserId)
     
     if (!clerkUserId) {
-      console.log('Upload API - No clerkUserId, returning 401')
+      logger.warn('Upload API - No clerkUserId, returning 401')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     let user = await getClerkApiUser()
-    console.log('Upload API - Database user:', user?.id)
+    logger.debug('Upload API - Database user:', user?.id)
     
     if (!user) {
-      console.log('Upload API - No database user, creating user in database...')
-      try {
-        user = await db.user.create({
-          data: {
-            id: clerkUserId,
-            clerkId: clerkUserId,
-            email: `${clerkUserId}@clerk.temp`,
-            username: `user_${clerkUserId.substring(0, 8)}`,
-            name: 'New User',
-            role: 'USER',
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        })
-        console.log('Upload API - User created successfully:', user.id)
-      } catch (dbError: any) {
-        console.error('Upload API - Error creating user:', dbError.message)
-        return NextResponse.json(
-          { 
-            error: 'Failed to create user',
-            message: dbError.message
-          },
-          { status: 500 }
-        )
-      }
+      logger.warn('Upload API - No database user found after auto-sync')
+      return NextResponse.json(
+        { error: 'User not found in database' },
+        { status: 404 }
+      )
     }
 
     const formData = await request.formData()
@@ -123,26 +102,26 @@ export async function POST(request: NextRequest) {
     let filename: string
     let dimensions: { width: number; height: number }
 
-            try {
-              // Initialize Sharp with the buffer and handle various formats
-              let image = sharp(buffer)
-              
-              // Handle HEIC/HEIF formats (common on mobile)
-              if (file.type === 'image/heic' || file.type === 'image/heif') {
-                image = image.heif()
-              }
-              
-              // Handle SVG (convert to PNG first)
-              if (file.type === 'image/svg+xml') {
-                image = image.png()
-              }
-              
-              // Handle unknown formats by trying to auto-detect
-              if (!allowedTypes.includes(file.type)) {
-                // // console.log(`Attempting to process unknown format: ${file.type}`); // Removed for production; // Removed for production
-                // Sharp will try to auto-detect the format
-              }
+    try {
+      // Initialize Sharp with the buffer and handle various formats
+      let image = sharp(buffer)
       
+      // Handle HEIC/HEIF formats (common on mobile)
+      if (file.type === 'image/heic' || file.type === 'image/heif') {
+        image = image.heif()
+      }
+      
+      // Handle SVG (convert to PNG first)
+      if (file.type === 'image/svg+xml') {
+        image = image.png()
+      }
+      
+      // Handle unknown formats by trying to auto-detect
+      if (!allowedTypes.includes(file.type)) {
+        // // console.log(`Attempting to process unknown format: ${file.type}`); // Removed for production; // Removed for production
+        // Sharp will try to auto-detect the format
+      }
+
       const metadata = await image.metadata()
 
       if (type === 'profile') {
@@ -226,23 +205,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upload to Cloudinary
-    const uploadResult = await uploadImage(
-      processedBuffer,
-      filename,
-      'image/webp',
-      `hangouts/${type}`
-    )
-
-    if (!uploadResult.success) {
-      return NextResponse.json(
-        { error: 'Cloud upload failed', details: uploadResult.error },
-        { status: 500 }
-      )
-    }
-
+    // Save to local filesystem
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', type)
+    await mkdir(uploadsDir, { recursive: true })
+    
+    // Write file to disk
+    const filePath = join(uploadsDir, filename)
+    await writeFile(filePath, processedBuffer)
+    
     // Return file info
-    const fileUrl = uploadResult.url
+    const fileUrl = `/uploads/${type}/${filename}`
     
     return NextResponse.json({
       success: true,

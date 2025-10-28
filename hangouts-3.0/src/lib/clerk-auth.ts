@@ -7,7 +7,8 @@ export async function getClerkApiUser() {
     console.log('getClerkApiUser - Clerk userId:', userId)
     if (!userId) return null
     
-    const user = await db.user.findUnique({
+    // First, try to find user by clerkId
+    let user = await db.user.findUnique({
       where: { clerkId: userId },
       select: { 
         id: true, 
@@ -19,6 +20,78 @@ export async function getClerkApiUser() {
         isActive: true
       }
     })
+    
+    // If user not found, sync from Clerk
+    if (!user) {
+      console.log('getClerkApiUser - User not found, syncing from Clerk...')
+      const clerkUser = await currentUser()
+      
+      if (clerkUser) {
+        const email = clerkUser.emailAddresses[0]?.emailAddress || ''
+        const username = clerkUser.username || email.split('@')[0] || 'user'
+        const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || email.split('@')[0]
+        
+        // Check if user exists by email
+        const existingUser = await db.user.findUnique({
+          where: { email: email.toLowerCase() }
+        })
+        
+        if (existingUser) {
+          // Update existing user with Clerk ID
+          user = await db.user.update({
+            where: { id: existingUser.id },
+            data: { 
+              clerkId: userId,
+              name: name || existingUser.name,
+              avatar: clerkUser.imageUrl || existingUser.avatar,
+              isVerified: true
+            },
+            select: { 
+              id: true, 
+              email: true, 
+              username: true, 
+              name: true, 
+              role: true,
+              avatar: true,
+              isActive: true
+            }
+          })
+          console.log('getClerkApiUser - Updated existing user with Clerk ID')
+        } else {
+          // Create new user
+          // Ensure username is unique
+          let uniqueUsername = username
+          let counter = 1
+          while (await db.user.findUnique({ where: { username: uniqueUsername } })) {
+            uniqueUsername = `${username}${counter}`
+            counter++
+          }
+          
+          user = await db.user.create({
+            data: {
+              clerkId: userId,
+              email: email.toLowerCase(),
+              username: uniqueUsername,
+              name: name,
+              avatar: clerkUser.imageUrl,
+              isVerified: true,
+              isActive: true,
+              password: null
+            },
+            select: { 
+              id: true, 
+              email: true, 
+              username: true, 
+              name: true, 
+              role: true,
+              avatar: true,
+              isActive: true
+            }
+          })
+          console.log('getClerkApiUser - Created new user:', user.username)
+        }
+      }
+    }
     
     console.log('getClerkApiUser - Database user found:', user ? 'YES' : 'NO')
     return user

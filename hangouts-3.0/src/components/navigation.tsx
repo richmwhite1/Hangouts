@@ -30,8 +30,11 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-4">
-            <span className="font-bold text-xl">Hangout</span>
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="flex flex-col items-center justify-center">
+              <img src="/icon.svg" alt="Calendar icon" className="h-10 w-10" />
+              <span className="font-bold text-lg uppercase tracking-tight text-foreground">PLANS</span>
+            </div>
           </Link>
 
           {/* Universal Search - Only show for authenticated users */}
