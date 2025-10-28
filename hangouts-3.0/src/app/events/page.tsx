@@ -150,21 +150,6 @@ export default function EventsPage() {
     )
   }
 
-  // Show sign-in prompt if not authenticated
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <h1 className="text-2xl font-bold mb-4 text-white">Events</h1>
-          <p className="text-gray-400 mb-8">Please sign in to view and create events</p>
-          <Button onClick={() => window.location.href = '/signin'}>
-            Sign In
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
