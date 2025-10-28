@@ -25,7 +25,15 @@ import {
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+// Lazy initialization of OpenAI client to prevent build-time errors
+let openai: OpenAI | null = null;
+function getOpenAIClient() {
+  if (!openai && OPENAI_API_KEY) {
+    openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+  }
+  return openai;
+}
+
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
 export async function POST(request: NextRequest) {
@@ -102,7 +110,14 @@ export async function POST(request: NextRequest) {
     );
 
     // Step 1: Detect intent
-    const intentResponse = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    if (!client) {
+      return NextResponse.json(
+        createErrorResponse('Service unavailable', 'AI service not configured'),
+        { status: 503 }
+      );
+    }
+    const intentResponse = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: INTENT_DETECTION_PROMPT },
@@ -264,7 +279,7 @@ export async function POST(request: NextRequest) {
       case 'casual_chat':
       default:
         // Generate a conversational response
-        const chatResponse = await openai.chat.completions.create({
+        const chatResponse = await client.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
