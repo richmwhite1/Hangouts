@@ -13,18 +13,18 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth()
-    console.log('Upload API - Clerk userId:', clerkUserId)
+    logger.debug('Upload API - Clerk userId:', clerkUserId)
     
     if (!clerkUserId) {
-      console.log('Upload API - No clerkUserId, returning 401')
+      logger.warn('Upload API - No clerkUserId, returning 401')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     let user = await getClerkApiUser()
-    console.log('Upload API - Database user:', user?.id)
+    logger.debug('Upload API - Database user:', user?.id)
     
     if (!user) {
-      console.log('Upload API - No database user found after auto-sync')
+      logger.warn('Upload API - No database user found after auto-sync')
       return NextResponse.json(
         { error: 'User not found in database' },
         { status: 404 }
