@@ -55,11 +55,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Build where clause with privacy logic: PUBLIC events + user's own events + FRIENDS_ONLY events from user's friends
+    // Build where clause with privacy logic: PUBLIC events (isPublic OR privacyLevel) + user's own events + FRIENDS_ONLY events from user's friends
     const whereClause: any = {
       type: 'EVENT',
       OR: [
-        // Public events (everyone can see)
+        // Public events (everyone can see) - check both isPublic flag and privacyLevel
+        { isPublic: true },
         { privacyLevel: 'PUBLIC' },
         // User's own events (if authenticated)
         ...(userId ? [{ creatorId: userId }] : []),
@@ -124,23 +125,23 @@ export async function GET(request: NextRequest) {
     const transformedEvents = events.map(event => ({
       id: event.id,
       title: event.title,
-      description: event.description,
+      description: event.description || '',
       category: 'OTHER', // Default category since we don't have categories in unified table
-      venue: event.location || '',
-      address: event.location || '',
-      city: event.location || '',
-      startDate: event.startTime?.toISOString() || new Date().toISOString(),
-      startTime: '14:00', // Default time since we don't store separate time
+      venue: event.venue || event.location || '',
+      address: event.address || event.location || '',
+      city: event.city || event.location || '',
+      startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      startTime: event.startTime ? new Date(event.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '12:00 PM',
       coverImage: event.image || '/placeholder-event.jpg',
       price: {
-        min: 0,
-        max: 0,
+        min: event.priceMin || 0,
+        max: event.priceMax || 0,
         currency: 'USD'
       },
       tags: [], // No tags in unified table for now
-      attendeeCount: 0, // Default count
-      isPublic: event.privacyLevel === 'PUBLIC',
-      creator: event.users,
+      attendeeCount: 0, // Default count - could fetch from content_participants if needed
+      isPublic: event.isPublic || event.privacyLevel === 'PUBLIC',
+      creator: event.users || { name: 'Unknown', username: 'unknown', avatar: null },
       createdAt: event.createdAt.toISOString()
     }))
 

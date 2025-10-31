@@ -76,28 +76,44 @@ export default function EventsPage() {
     
     const fetchEvents = async () => {
       try {
+        setIsLoading(true)
         // Use public API for non-authenticated users, authenticated API for signed-in users
-        const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content?type=EVENT&privacyLevel=PUBLIC'
+        const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content?type=EVENT'
         
         const response = await fetch(apiEndpoint)
         
-        if (response.ok) {
-          const data = await response.json()
-          
-          if (isSignedIn) {
-            // Authenticated API returns { events: [...] }
-          setEvents(data.events || [])
+        if (!response.ok) {
+          console.error('EventsPage: Failed to fetch events:', response.status, await response.text())
+          setEvents([])
+          return
+        }
+        
+        const data = await response.json()
+        
+        if (isSignedIn) {
+          // Authenticated API returns { success: true, events: [...] }
+          if (data.success && data.events) {
+            setEvents(data.events || [])
           } else {
-            // Public API returns { events: [...] } - normalize the data
+            console.error('EventsPage: Invalid response format from /api/events', data)
+            setEvents([])
+          }
+        } else {
+          // Public API returns { success: true, events: [...] }
+          if (data.success && data.events) {
+            // Normalize the data from public API
             const normalizedEvents = (data.events || []).map((event: any) => ({
               ...event,
               startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : undefined,
-              coverImage: event.image,
+              coverImage: event.image || event.coverImage,
+              venue: event.venue || event.location || '',
+              address: event.address || '',
+              city: event.city || '',
               price: event.priceMin !== undefined ? {
                 min: event.priceMin || 0,
                 max: event.priceMax,
                 currency: 'USD'
-              } : undefined,
+              } : { min: 0, max: 0, currency: 'USD' },
               attendeeCount: event._count?.participants || 0,
               isPublic: true,
               createdBy: event.creator?.name || 'Unknown',
@@ -105,12 +121,14 @@ export default function EventsPage() {
               tags: event.tags || []
             }))
             setEvents(normalizedEvents)
+          } else {
+            console.error('EventsPage: Invalid response format from /api/public/content', data)
+            setEvents([])
           }
-        } else {
-          console.error('EventsPage: Failed to fetch events:', response.status);
         }
       } catch (error) {
-        console.error('EventsPage: Error fetching events:', error);
+        console.error('EventsPage: Error fetching events:', error)
+        setEvents([])
       } finally {
         setIsLoading(false)
       }
@@ -133,8 +151,8 @@ export default function EventsPage() {
                         (!priceRange.max || (eventPrice.max || eventPrice.min) <= parseFloat(priceRange.max))
     
     const eventDate = event.startDate || (event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : '')
-    const matchesDate = (!dateRange.start || new Date(eventDate) >= new Date(dateRange.start)) &&
-                       (!dateRange.end || new Date(eventDate) <= new Date(dateRange.end))
+    const matchesDate = (!dateRange.start || (eventDate && new Date(eventDate) >= new Date(dateRange.start))) &&
+                       (!dateRange.end || (eventDate && new Date(eventDate) <= new Date(dateRange.end)))
     
     return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate
   })
@@ -459,14 +477,16 @@ export default function EventsPage() {
                           {formatDate(event.startDate || event.startTime)} at {event.startTime}
                         </div>
                         
-                        <div className="flex items-center text-gray-300 text-sm">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {event.venue}, {event.city}
-                        </div>
+                        {event.venue || event.city ? (
+                          <div className="flex items-center text-gray-300 text-sm">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {[event.venue, event.city].filter(Boolean).join(', ') || 'Location TBD'}
+                          </div>
+                        ) : null}
                         
                         <div className="flex items-center text-gray-300 text-sm">
                           <DollarSign className="w-4 h-4 mr-2" />
-                          {formatPrice(event.price)}
+                          {formatPrice(event.price || { min: 0, max: 0, currency: 'USD' })}
                         </div>
                         
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -770,7 +790,7 @@ export default function EventsPage() {
                       
                       <div className="flex items-center text-gray-300 text-sm">
                         <Calendar className="w-4 h-4 mr-2" />
-                        {formatDate(event.startDate)} at {event.startTime}
+                        {event.startDate ? formatDate(event.startDate) : 'Date TBD'} {event.startTime ? `at ${event.startTime}` : ''}
                       </div>
                       
                       <div className="flex items-center text-gray-300 text-sm">
@@ -780,7 +800,7 @@ export default function EventsPage() {
                       
                       <div className="flex items-center text-gray-300 text-sm">
                         <DollarSign className="w-4 h-4 mr-2" />
-                        {formatPrice(event.price)}
+                          {formatPrice(event.price || { min: 0, max: 0, currency: 'USD' })}
                       </div>
                       
                       <div className="flex flex-wrap gap-1 mt-2">
