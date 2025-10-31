@@ -173,7 +173,7 @@ export function InstallPrompt({ className, variant = 'banner', showForAllUsers =
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {getPlatformIcon()}
-              <CardTitle className="text-lg">Install Hangouts 3.0</CardTitle>
+              <CardTitle className="text-lg">Install Plans</CardTitle>
             </div>
             <Button
               variant="ghost"

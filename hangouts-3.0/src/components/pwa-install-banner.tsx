@@ -92,7 +92,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
             {getPlatformIcon()}
-            <h3 className="text-3xl font-bold text-white ml-3">Install Hangouts 3.0</h3>
+            <h3 className="text-3xl font-bold text-white ml-3">Install Plans</h3>
           </div>
           <p className="text-gray-400 mb-8 max-w-2xl mx-auto text-lg">
             Get the full experience with instant notifications, offline access, and lightning-fast performance
@@ -214,7 +214,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {getPlatformIcon()}
-              <CardTitle className="text-lg">Install Hangouts 3.0</CardTitle>
+              <CardTitle className="text-lg">Install Plans</CardTitle>
             </div>
             <Button
               variant="ghost"

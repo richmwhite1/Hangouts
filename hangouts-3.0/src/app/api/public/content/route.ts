@@ -7,6 +7,8 @@ export async function GET(req: NextRequest) {
     const typeParam = (searchParams.get('type') || '').toUpperCase()
     const search = searchParams.get('search') || ''
     const city = searchParams.get('city') || ''
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = parseInt(searchParams.get('offset') || '0')
 
     const whereBase: any = {
       isPublic: true,
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest) {
         { description: { contains: search, mode: 'insensitive' } },
         { venue: { contains: search, mode: 'insensitive' } },
         { city: { contains: search, mode: 'insensitive' } },
+        { location: { contains: search, mode: 'insensitive' } },
       ]
     }
 
@@ -43,6 +46,7 @@ export async function GET(req: NextRequest) {
       venue: true,
       address: true,
       city: true,
+      location: true,
       priceMin: true,
       priceMax: true,
       createdAt: true,
@@ -50,19 +54,23 @@ export async function GET(req: NextRequest) {
       _count: { select: { content_participants: true } },
     }
 
-    const [hangouts, events] = await Promise.all([
+    const [hangouts, events, totalHangouts, totalEvents] = await Promise.all([
       db.content.findMany({
         where: { ...whereBase, type: 'HANGOUT' },
         select,
         orderBy: { createdAt: 'desc' },
-        take: 50,
+        take: limit,
+        skip: offset,
       }),
       db.content.findMany({
         where: { ...whereBase, type: 'EVENT' },
         select,
         orderBy: { createdAt: 'desc' },
-        take: 50,
+        take: limit,
+        skip: offset,
       }),
+      db.content.count({ where: { ...whereBase, type: 'HANGOUT' } }),
+      db.content.count({ where: { ...whereBase, type: 'EVENT' } }),
     ])
 
     const normalize = (item: any) => ({
@@ -77,6 +85,7 @@ export async function GET(req: NextRequest) {
       endTime: item.endTime ?? undefined,
       venue: item.venue ?? undefined,
       city: item.city ?? undefined,
+      location: item.location ?? undefined,
       priceMin: item.priceMin ?? undefined,
       priceMax: item.priceMax ?? undefined,
       createdAt: item.createdAt,
@@ -92,102 +101,11 @@ export async function GET(req: NextRequest) {
       success: true,
       hangouts: hangouts.map(normalize),
       events: events.map(normalize),
+      total: totalHangouts + totalEvents,
+      hasMore: hangouts.length + events.length < totalHangouts + totalEvents,
     })
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Failed to load public content' }, { status: 500 })
-  }
-}
-
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type')?.toUpperCase()
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const offset = parseInt(searchParams.get('offset') || '0')
-    const search = searchParams.get('search')
-
-    logger.info('Public content API called:', { type, limit, offset, hasSearch: !!search })
-
-    // Build where clause
-    const whereClause: any = {
-      status: 'PUBLISHED',
-      privacyLevel: 'PUBLIC'
-    }
-
-    // Filter by type if provided
-    if (type && (type === 'HANGOUT' || type === 'EVENT')) {
-      whereClause.type = type
-    }
-
-    // Search functionality
-    if (search) {
-      whereClause.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } }
-      ]
-    }
-
-    // Fetch content
-    const content = await db.content.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        description: true,
-        image: true,
-        location: true,
-        startTime: true,
-        endTime: true,
-        privacyLevel: true,
-        createdAt: true,
-        updatedAt: true,
-        creatorId: true,
-        users: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true
-          }
-        },
-        _count: {
-          select: {
-            content_participants: true
-          }
-        }
-      },
-      orderBy: [
-        { createdAt: 'desc' }
-      ],
-      take: limit,
-      skip: offset
-    })
-
-    // Get total count
-    const total = await db.content.count({ where: whereClause })
-
-    logger.info('Public content fetched:', { count: content.length, total })
-
-    return NextResponse.json({
-      success: true,
-      content,
-      total,
-      hasMore: offset + content.length < total
-    })
-
-  } catch (error) {
-    logger.error('Error fetching public content:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch public content',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
   }
 }
 
