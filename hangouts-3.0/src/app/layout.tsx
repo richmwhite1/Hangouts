@@ -20,13 +20,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Hangouts 3.0',
+  title: 'Plans',
   description: 'Plan amazing hangouts with friends',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Hangouts 3.0'
+    title: 'Plans'
   },
   icons: {
     icon: [
@@ -63,7 +63,7 @@ export default function RootLayout({
           <meta name="theme-color" content="#8B5CF6" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-          <meta name="apple-mobile-web-app-title" content="Hangouts" />
+          <meta name="apple-mobile-web-app-title" content="Plans" />
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="msapplication-TileColor" content="#8B5CF6" />
           <meta name="msapplication-tap-highlight" content="no" />

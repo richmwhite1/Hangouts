@@ -1,6 +1,6 @@
 {
-  "name": "Hangouts 3.0",
-  "short_name": "Hangouts",
+  "name": "Plans",
+  "short_name": "Plans",
   "description": "Plan amazing hangouts with friends",
   "start_url": "/",
   "display": "standalone",

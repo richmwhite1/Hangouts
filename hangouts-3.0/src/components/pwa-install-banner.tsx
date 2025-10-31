@@ -54,7 +54,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
         }
       } else {
         // If no deferred prompt, show instructions
-        alert(`To install this app:\n\n${platform === 'ios' ? 'Tap the Share button at the bottom of your screen, then select "Add to Home Screen"' : platform === 'android' ? 'Tap the menu button in your browser and select "Add to Home screen" or "Install app"' : 'Look for the install icon in your browser\'s address bar and click it'}`)
+        alert(`To install this app:\n\n${platform === 'ios' ? 'Tap the Share button (square with arrow) in the top right of Safari, then select "Add to Home Screen"' : platform === 'android' ? 'Tap the menu button in your browser and select "Add to Home screen" or "Install app"' : 'Look for the install icon in your browser\'s address bar and click it'}`)
       }
     } catch (error) {
       console.error('Install failed:', error)
