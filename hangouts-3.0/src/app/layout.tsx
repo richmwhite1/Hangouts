@@ -11,7 +11,6 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
-import { AgentChat } from '@/components/agent-chat'
 // import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
 const inter = Inter({ 
@@ -56,6 +55,7 @@ export default function RootLayout({
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      dynamic
     >
       <html lang="en" className="dark">
         <head>
@@ -95,7 +95,6 @@ export default function RootLayout({
                   <PWASetup />
                   <NetworkStatus />
                   <InstallPrompt showForAllUsers={true} />
-                  <AgentChat />
                   {/* <PWANavigationFix /> */}
                 </WebSocketProvider>
             </RealtimeProvider>

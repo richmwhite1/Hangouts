@@ -4,76 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Instagram-like Dark Theme Color Palette */
-  --background: #111827; /* Dark gray background */
-  --foreground: #F9FAFB; /* Off-white text */
-  --card: #1F2937; /* Dark card background */
-  --card-foreground: #F9FAFB; /* Off-white text on cards */
-  --popover: #1F2937; /* Dark popover background */
-  --popover-foreground: #F9FAFB; /* Off-white text on popovers */
-  --primary: #60A5FA; /* Soft blue for buttons */
-  --primary-foreground: #F9FAFB; /* White text on primary */
-  --secondary: #374151; /* Secondary dark gray */
-  --secondary-foreground: #F9FAFB; /* Off-white text on secondary */
-  --muted: #374151; /* Muted dark gray */
-  --muted-foreground: #9CA3AF; /* Muted text color */
+  /* Instagram-like Dark Theme Color Palette - Refined */
+  --background: #000000; /* True black background */
+  --foreground: #FAFAFA; /* Brighter white text */
+  --card: #121212; /* Very dark gray card */
+  --card-foreground: #FAFAFA; /* White text on cards */
+  --popover: #121212; /* Dark popover background */
+  --popover-foreground: #FAFAFA; /* White text on popovers */
+  --primary: #0095F6; /* Instagram blue */
+  --primary-foreground: #FFFFFF; /* White text on primary */
+  --secondary: #262626; /* Instagram border gray */
+  --secondary-foreground: #FAFAFA; /* White text on secondary */
+  --muted: #262626; /* Muted dark gray */
+  --muted-foreground: #A8A8A8; /* Refined gray text */
   --accent: #34D399; /* Green for success states */
-  --accent-foreground: #F9FAFB; /* White text on accent */
-  --destructive: #EF4444; /* Red for destructive actions */
-  --destructive-foreground: #F9FAFB; /* White text on destructive */
-  --border: #374151; /* Dark border color */
-  --input: #1F2937; /* Dark input background */
-  --ring: #60A5FA; /* Blue ring color */
-  --chart-1: #60A5FA; /* Blue chart color */
-  --chart-2: #34D399; /* Green chart color */
-  --chart-3: #F59E0B; /* Yellow chart color */
-  --chart-4: #EF4444; /* Red chart color */
-  --chart-5: #8B5CF6; /* Purple chart color */
+  --accent-foreground: #FFFFFF; /* White text on accent */
+  --destructive: #ED4956; /* Instagram red for destructive */
+  --destructive-foreground: #FFFFFF; /* White text on destructive */
+  --border: #262626; /* Instagram border color */
+  --input: #121212; /* Dark input background */
+  --ring: #0095F6; /* Instagram blue ring */
+  --chart-1: #0095F6; /* Instagram blue chart */
+  --chart-2: #34D399; /* Green chart */
+  --chart-3: #F59E0B; /* Yellow chart */
+  --chart-4: #ED4956; /* Instagram red chart */
+  --chart-5: #8B5CF6; /* Purple chart */
   --radius: 0.5rem;
-  --sidebar: #0F172A; /* Darker sidebar background */
-  --sidebar-foreground: #F9FAFB; /* Off-white sidebar text */
-  --sidebar-primary: #60A5FA; /* Blue sidebar primary */
-  --sidebar-primary-foreground: #F9FAFB; /* White text on sidebar primary */
-  --sidebar-accent: #1F2937; /* Dark sidebar accent */
-  --sidebar-accent-foreground: #F9FAFB; /* Off-white text on sidebar accent */
-  --sidebar-border: #374151; /* Dark sidebar border */
-  --sidebar-ring: #60A5FA; /* Blue sidebar ring */
+  --sidebar: #000000; /* Black sidebar background */
+  --sidebar-foreground: #FAFAFA; /* White sidebar text */
+  --sidebar-primary: #0095F6; /* Instagram blue sidebar primary */
+  --sidebar-primary-foreground: #FFFFFF; /* White text on sidebar primary */
+  --sidebar-accent: #121212; /* Dark sidebar accent */
+  --sidebar-accent-foreground: #FAFAFA; /* White text on sidebar accent */
+  --sidebar-border: #262626; /* Instagram border gray */
+  --sidebar-ring: #0095F6; /* Instagram blue sidebar ring */
 }
 
 .dark {
   /* Instagram-like Dark Theme - Same as root for consistency */
-  --background: #111827; /* Dark gray background */
-  --foreground: #F9FAFB; /* Off-white text */
-  --card: #1F2937; /* Dark card background */
-  --card-foreground: #F9FAFB; /* Off-white text on cards */
-  --popover: #1F2937; /* Dark popover background */
-  --popover-foreground: #F9FAFB; /* Off-white text on popovers */
-  --primary: #60A5FA; /* Soft blue for buttons */
-  --primary-foreground: #F9FAFB; /* White text on primary */
-  --secondary: #374151; /* Secondary dark gray */
-  --secondary-foreground: #F9FAFB; /* Off-white text on secondary */
-  --muted: #374151; /* Muted dark gray */
-  --muted-foreground: #9CA3AF; /* Muted text color */
+  --background: #000000; /* True black background */
+  --foreground: #FAFAFA; /* Brighter white text */
+  --card: #121212; /* Very dark gray card */
+  --card-foreground: #FAFAFA; /* White text on cards */
+  --popover: #121212; /* Dark popover background */
+  --popover-foreground: #FAFAFA; /* White text on popovers */
+  --primary: #0095F6; /* Instagram blue */
+  --primary-foreground: #FFFFFF; /* White text on primary */
+  --secondary: #262626; /* Instagram border gray */
+  --secondary-foreground: #FAFAFA; /* White text on secondary */
+  --muted: #262626; /* Muted dark gray */
+  --muted-foreground: #A8A8A8; /* Refined gray text */
   --accent: #34D399; /* Green for success states */
-  --accent-foreground: #F9FAFB; /* White text on accent */
-  --destructive: #EF4444; /* Red for destructive actions */
-  --destructive-foreground: #F9FAFB; /* White text on destructive */
-  --border: #374151; /* Dark border color */
-  --input: #1F2937; /* Dark input background */
-  --ring: #60A5FA; /* Blue ring color */
-  --chart-1: #60A5FA; /* Blue chart color */
-  --chart-2: #34D399; /* Green chart color */
-  --chart-3: #F59E0B; /* Yellow chart color */
-  --chart-4: #EF4444; /* Red chart color */
-  --chart-5: #8B5CF6; /* Purple chart color */
-  --sidebar: #0F172A; /* Darker sidebar background */
-  --sidebar-foreground: #F9FAFB; /* Off-white sidebar text */
-  --sidebar-primary: #60A5FA; /* Blue sidebar primary */
-  --sidebar-primary-foreground: #F9FAFB; /* White text on sidebar primary */
-  --sidebar-accent: #1F2937; /* Dark sidebar accent */
-  --sidebar-accent-foreground: #F9FAFB; /* Off-white text on sidebar accent */
-  --sidebar-border: #374151; /* Dark sidebar border */
-  --sidebar-ring: #60A5FA; /* Blue sidebar ring */
+  --accent-foreground: #FFFFFF; /* White text on accent */
+  --destructive: #ED4956; /* Instagram red for destructive */
+  --destructive-foreground: #FFFFFF; /* White text on destructive */
+  --border: #262626; /* Instagram border color */
+  --input: #121212; /* Dark input background */
+  --ring: #0095F6; /* Instagram blue ring */
+  --chart-1: #0095F6; /* Instagram blue chart */
+  --chart-2: #34D399; /* Green chart */
+  --chart-3: #F59E0B; /* Yellow chart */
+  --chart-4: #ED4956; /* Instagram red chart */
+  --chart-5: #8B5CF6; /* Purple chart */
+  --sidebar: #000000; /* Black sidebar background */
+  --sidebar-foreground: #FAFAFA; /* White sidebar text */
+  --sidebar-primary: #0095F6; /* Instagram blue sidebar primary */
+  --sidebar-primary-foreground: #FFFFFF; /* White text on sidebar primary */
+  --sidebar-accent: #121212; /* Dark sidebar accent */
+  --sidebar-accent-foreground: #FAFAFA; /* White text on sidebar accent */
+  --sidebar-border: #262626; /* Instagram border gray */
+  --sidebar-ring: #0095F6; /* Instagram blue sidebar ring */
 }
 
 @theme inline {
@@ -127,47 +127,89 @@
     font-family: 'Inter', sans-serif;
   }
   
-  /* Typography Hierarchy - Instagram-like */
+  /* Typography Hierarchy - Instagram-like Refined */
   h1 {
     @apply text-2xl font-semibold text-foreground;
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 600;
+    letter-spacing: -0.02em;
     line-height: 1.2;
   }
   
   h2 {
     @apply text-xl font-semibold text-foreground;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.3;
   }
   
   h3 {
     @apply text-lg font-medium text-foreground;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 500;
+    letter-spacing: -0.01em;
     line-height: 1.4;
+  }
+  
+  h4 {
+    @apply text-base font-medium text-foreground;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    line-height: 1.5;
   }
   
   p, .message-text {
     @apply text-base text-foreground;
     font-size: 16px;
     font-weight: 400;
+    letter-spacing: -0.01em;
     line-height: 1.5;
   }
   
   .label, label {
     @apply text-sm text-muted-foreground;
     font-size: 14px;
-    font-weight: 300;
+    font-weight: 400;
+    letter-spacing: -0.005em;
     line-height: 1.4;
   }
   
-  .small-text {
+  .small-text, .caption {
     @apply text-xs text-muted-foreground;
     font-size: 12px;
     font-weight: 400;
+    letter-spacing: 0;
     line-height: 1.4;
+  }
+  
+  /* Text rendering optimizations */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Text truncation */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   
   /* Layout and Spacing - Instagram-like */
@@ -201,67 +243,110 @@
     flex-direction: column;
   }
   
-  /* UI Components - Instagram-like */
+  /* UI Components - Instagram-like Refined */
   .btn-primary {
-    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium;
-    background: #60A5FA;
-    color: #F9FAFB;
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold;
+    background: #0095F6;
+    color: #FFFFFF;
     border-radius: 8px;
     padding: 8px 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
+    user-select: none;
   }
   
   .btn-primary:hover {
-    transform: scale(1.02);
-    background: #3B82F6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 149, 246, 0.3);
+    background: #0087E6;
   }
   
   .btn-primary:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
   }
   
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium;
-    background: #374151;
-    color: #F9FAFB;
+    @apply bg-transparent border border-border text-foreground px-4 py-2 rounded-lg font-medium;
+    background: transparent;
+    color: #FAFAFA;
+    border: 1px solid #262626;
     border-radius: 8px;
     padding: 8px 16px;
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
+    user-select: none;
   }
   
   .btn-secondary:hover {
-    transform: scale(1.02);
-    background: #4B5563;
+    background: #121212;
+    border-color: #3d3d3d;
+  }
+  
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+  
+  .btn-ghost {
+    @apply text-foreground px-4 py-2 rounded-lg font-medium;
+    color: #FAFAFA;
+    background: transparent;
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  
+  .btn-ghost:hover {
+    background: #121212;
+  }
+  
+  .btn-ghost:active {
+    transform: scale(0.95);
   }
   
   .input-field {
     @apply bg-input text-foreground border border-border rounded-lg px-3 py-2;
-    background: #1F2937;
-    color: #F9FAFB;
-    border: 1px solid #374151;
+    background: #121212;
+    color: #FAFAFA;
+    border: 1px solid #262626;
     border-radius: 8px;
-    padding: 8px;
+    padding: 12px 16px;
     transition: all 0.2s ease;
+    font-size: 16px;
   }
   
   .input-field:focus {
-    outline: 2px solid #60A5FA;
-    outline-offset: 2px;
-    border-color: #60A5FA;
+    outline: none;
+    border-color: #0095F6;
+    background: #1a1a1a;
   }
   
   .input-field::placeholder {
-    color: #9CA3AF;
+    color: #8E8E8E;
   }
   
   .card {
-    @apply bg-card text-card-foreground rounded-lg p-4 shadow-sm;
-    background: #1F2937;
-    color: #F9FAFB;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    @apply bg-card text-card-foreground rounded-lg border border-border;
+    background: #121212;
+    color: #FAFAFA;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+  
+  .card-hover {
+    transition: all 0.2s ease;
+  }
+  
+  .card-hover:hover {
+    background: #1a1a1a;
+  }
+  
+  /* Instagram-style feed card */
+  .feed-card {
+    background: #121212;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    overflow: hidden;
   }
   
   .success-indicator {
@@ -274,7 +359,7 @@
     color: #EF4444;
   }
   
-  /* Animations - Instagram-like */
+  /* Animations - Instagram-like Refined */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -297,6 +382,17 @@
     }
   }
   
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
   @keyframes pulse {
     0%, 100% {
       opacity: 1;
@@ -306,16 +402,51 @@
     }
   }
   
+  @keyframes skeleton {
+    0% {
+      background-position: -468px 0;
+    }
+    100% {
+      background-position: 468px 0;
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
   .fade-in {
     animation: fadeIn 0.3s ease-out;
   }
   
   .slide-in {
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn 0.25s ease-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
   }
   
   .pulse {
     animation: pulse 2s infinite;
+  }
+  
+  .scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+  
+  /* Skeleton loader for images */
+  .skeleton {
+    background: linear-gradient(90deg, #121212 0%, #1a1a1a 50%, #121212 100%);
+    background-size: 200% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
   }
   
   .online-dot {
@@ -484,21 +615,13 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   
-  /* Professional Button Styling */
-  .btn-professional {
-    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium;
-    background: #60A5FA;
-    color: #F9FAFB;
-    border-radius: 8px;
-    padding: 8px 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
-  }
-  
-  .btn-professional:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    background: #3B82F6;
+  /* Touch-friendly buttons for mobile */
+  .btn-touch {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   
   /* Enhanced Typography */

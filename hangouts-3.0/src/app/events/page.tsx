@@ -10,6 +10,7 @@ import { Search, Filter, MapPin, Calendar, DollarSign, TrendingUp } from 'lucide
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { useAuth } from '@clerk/nextjs'
+import { AgentButton } from '@/components/agent-button'
 
 interface Event {
   id: string
@@ -85,7 +86,7 @@ export default function EventsPage() {
           
           if (isSignedIn) {
             // Authenticated API returns { events: [...] }
-            setEvents(data.events || [])
+          setEvents(data.events || [])
           } else {
             // Public API returns { events: [...] } - normalize the data
             const normalizedEvents = (data.events || []).map((event: any) => ({
@@ -179,7 +180,8 @@ export default function EventsPage() {
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">Public Events</h1>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2" suppressHydrationWarning>
+              <AgentButton />
               <Button 
                 onClick={() => window.location.href = '/signup'}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -504,7 +506,10 @@ export default function EventsPage() {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-white">Events</h1>
-          <ImprovedCreateEventModal />
+          <div className="flex items-center gap-2" suppressHydrationWarning>
+            <AgentButton />
+            <ImprovedCreateEventModal />
+          </div>
         </div>
 
         {/* Search and Filters */}

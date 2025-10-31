@@ -31,31 +31,42 @@ export async function GET(request: NextRequest) {
     let userId: string | null = null
     try {
       const { userId: clerkUserId } = await auth()
+      console.log('🔑 Feed API - Clerk auth result:', { clerkUserId })
       logger.info('Clerk auth result:', { clerkUserId })
       
       if (clerkUserId) {
         try {
           const clerkUser = await getClerkApiUser()
-          logger.info('Clerk user result:', { userId: clerkUser?.id })
+          console.log('👤 Feed API - Database user:', { 
+            userId: clerkUser?.id, 
+            username: clerkUser?.username,
+            email: clerkUser?.email 
+          })
+          logger.info('Clerk user result:', { userId: clerkUser?.id, username: clerkUser?.username })
           if (clerkUser) {
             userId = clerkUser.id
           } else {
             // User exists in Clerk but not in database - use Clerk ID as fallback
+            console.warn('⚠️ Feed API - User exists in Clerk but not in database')
             logger.warn('User exists in Clerk but not in database, using Clerk ID as fallback')
             userId = clerkUserId
           }
         } catch (userError) {
+          console.error('❌ Feed API - Error getting Clerk user:', userError)
           logger.error('Error getting Clerk user:', userError)
           // Fallback to Clerk ID if database lookup fails
           userId = clerkUserId
         }
       }
     } catch (error) {
+      console.error('❌ Feed API - Auth error:', error)
       logger.error('Auth error in feed:', error)
     }
     
-    // For unauthenticated users, return public content only
-    if (!userId) {
+        // console.log('🎯 Feed API - Final userId for query:', userId)
+        
+        // For unauthenticated users, return public content only
+        if (!userId) {
       try {
         logger.info('No user ID, returning public content')
         const publicContent = await db.content.findMany({
@@ -265,93 +276,111 @@ export async function GET(request: NextRequest) {
           }] : [])
         ]
       } else if (feedType === 'home') {
-        // HOME PAGE: Show user's own content + content they're invited to
+        // HOME PAGE: Show user's own content + content they're invited to + content they've RSVPed to
         whereClause.OR = [
           // User's own content (all privacy levels)
           { creatorId: userId },
-          // Content where user is a participant
+          // Content where user is a participant (invited)
           {
             content_participants: {
               some: { userId: userId }
+            }
+          },
+          // Content where user has RSVPed (interested/attending)
+          {
+            rsvps: {
+              some: { 
+                userId: userId,
+                status: { in: ['YES', 'MAYBE', 'NO'] }
+              }
             }
           }
         ]
       }
 
       // Simple query with minimal fields
-      const content = await db.content.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          type: true,
-          title: true,
-          description: true,
-          image: true,
-          location: true,
-          startTime: true,
-          endTime: true,
-          privacyLevel: true,
-          createdAt: true,
-          updatedAt: true,
-          creatorId: true,
-          // Creator info
-          users: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true
-            }
-          },
-          // RSVP data for current user
-          rsvps: {
-            where: userId ? { userId: userId } : undefined,
-            select: {
-              id: true,
-              userId: true,
-              status: true,
-              respondedAt: true
-            }
-          },
-          // Participant data
-          content_participants: {
-            select: {
-              id: true,
-              userId: true,
-              role: true,
-              canEdit: true,
-              isMandatory: true,
-              isCoHost: true,
-              invitedAt: true,
-              joinedAt: true,
-              users: {
-                select: {
-                  id: true,
-                  username: true,
-                  name: true,
-                  avatar: true
+      // console.log('🔍 Feed API - Querying with whereClause:', JSON.stringify(whereClause, null, 2))
+      
+      let content;
+      try {
+        content = await db.content.findMany({
+          where: whereClause,
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            description: true,
+            image: true,
+            location: true,
+            startTime: true,
+            endTime: true,
+            privacyLevel: true,
+            createdAt: true,
+            updatedAt: true,
+            creatorId: true,
+            // Creator info
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true
+              }
+            },
+            // RSVP data for current user
+            rsvps: {
+              where: { userId: userId },
+              select: {
+                id: true,
+                userId: true,
+                status: true,
+                respondedAt: true
+              }
+            },
+            // Participant data
+            content_participants: {
+              select: {
+                id: true,
+                userId: true,
+                role: true,
+                canEdit: true,
+                isMandatory: true,
+                isCoHost: true,
+                invitedAt: true,
+                joinedAt: true,
+                users: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatar: true
+                  }
                 }
+              }
+            },
+            // Counts
+            _count: {
+              select: {
+                content_participants: true,
+                comments: true,
+                content_likes: true,
+                content_shares: true,
+                messages: true,
+                photos: true,
+                rsvps: true,
+                eventSaves: true
               }
             }
           },
-          // Counts
-          _count: {
-            select: {
-              content_participants: true,
-              comments: true,
-              content_likes: true,
-              content_shares: true,
-              messages: true,
-              photos: true,
-              rsvps: true,
-              eventSaves: true
-            }
-          }
-        },
         orderBy: feedType === 'home' ? { createdAt: 'desc' } : { startTime: 'asc' },
         take: limit,
         skip: offset
-      })
+        })
+      } catch (queryError) {
+        console.error('❌ Database query error:', queryError)
+        logger.error('Database query error:', queryError)
+        throw queryError
+      }
 
       // Get total count for pagination
       const total = await db.content.count({ where: whereClause })

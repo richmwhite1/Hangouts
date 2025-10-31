@@ -35,8 +35,8 @@ export function BottomNavigation() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-40">
-        <div className="flex items-center justify-around px-2 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#000000] backdrop-blur-lg border-t border-[#262626] z-40">
+        <div className="flex items-center justify-around px-2 py-3">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id

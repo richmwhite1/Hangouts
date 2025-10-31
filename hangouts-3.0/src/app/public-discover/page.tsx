@@ -1,3 +1,13 @@
+export const metadata = {
+  title: 'Discover Public Events & Hangouts — Plans',
+  description: 'Browse public events and hangouts. Sign up to create your own and get personalized recommendations.',
+  robots: { index: true, follow: true },
+  openGraph: {
+    title: 'Discover Public Events & Hangouts — Plans',
+    description: 'Browse public events and hangouts. Sign up to create your own and get personalized recommendations.',
+  },
+}
+
 'use client'
 
 import { useState, useEffect } from 'react'

@@ -21,8 +21,15 @@ interface Message {
   timestamp: Date
 }
 
-export function AgentChat() {
-  const [isOpen, setIsOpen] = useState(false)
+interface AgentChatProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function AgentChat({ isOpen: externalIsOpen, onClose }: AgentChatProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
+  const setIsOpen = onClose ? (value: boolean) => { if (!value) onClose() } : setInternalIsOpen
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -244,6 +251,63 @@ export function AgentChat() {
             </div>
           )}
 
+          {message.actionHint === 'show_trending_suggestions' && message.actionData && (
+            <div className="mt-4 space-y-2">
+              {message.actionData.map((query: string, index: number) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left"
+                  onClick={() => {
+                    setInputValue(query);
+                    handleSend();
+                  }}
+                >
+                  {query}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {message.actionHint === 'show_event_actions' && message.actionData && (
+            <div className="mt-4 space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setInputValue("I'm interested");
+                  handleSend();
+                }}
+              >
+                Mark as Interested
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setInputValue("I'm going");
+                  handleSend();
+                }}
+              >
+                Mark as Going
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setInputValue("Create a hangout");
+                  handleSend();
+                }}
+              >
+                Create Hangout with Friends
+              </Button>
+            </div>
+          )}
+
           <p className="text-xs opacity-70 mt-1">
             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
@@ -256,14 +320,16 @@ export function AgentChat() {
 
   return (
     <>
-      {/* Floating Chat Button */}
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40"
-        size="icon"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+      {/* Floating Chat Button - only show if not externally controlled */}
+      {externalIsOpen === undefined && (
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40"
+          size="icon"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      )}
 
       {/* Chat Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

@@ -1,7 +1,7 @@
 // Agent utility functions
 
 export interface AgentIntent {
-  intent: 'discover_event' | 'create_hangout' | 'select_event' | 'select_friend' | 'add_activity' | 'confirm_action' | 'general_help' | 'casual_chat';
+  intent: 'discover_event' | 'create_hangout' | 'select_event' | 'select_friend' | 'add_activity' | 'confirm_action' | 'mark_interest' | 'mark_going' | 'show_trending' | 'general_help' | 'casual_chat';
   entities: {
     eventType?: string;
     location?: string;
@@ -39,19 +39,29 @@ export function extractJSONFromResponse(response: string): any | null {
     // Try to find JSON data after a marker
     const jsonMarker = 'JSON_DATA:';
     if (response.includes(jsonMarker)) {
-      const jsonPart = response.split(jsonMarker)[1].trim();
-      return JSON.parse(jsonPart);
+      const afterMarker = response.split(jsonMarker)[1];
+      // Extract the JSON array
+      const jsonMatch = afterMarker.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const events = JSON.parse(jsonMatch[0]);
+        logger.info(`✅ Extracted ${events.length} events from Perplexity response`);
+        return events;
+      }
     }
 
     // Try to extract JSON array or object from the response
-    const jsonMatch = response.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const events = JSON.parse(jsonMatch[0]);
+      logger.info(`✅ Extracted ${events.length} events from response (no marker)`);
+      return events;
     }
 
+    logger.warn('⚠️  No JSON array found in response');
     return null;
   } catch (error) {
-    console.error('Failed to extract JSON from response:', error);
+    logger.error('❌ Failed to extract JSON from response:', error);
+    logger.error('Response preview:', response.substring(0, 500));
     return null;
   }
 }
@@ -146,5 +156,130 @@ export function calculateTokenUsage(messages: Array<{ role: string; content: str
   const estimatedCost = (estimatedTokens / 1_000_000) * ((inputCostPer1M + outputCostPer1M) / 2);
 
   return { estimatedTokens, estimatedCost };
+}
+
+// Query normalization and hashing
+export function normalizeQuery(query: string, location?: string): string {
+  // Lowercase, remove extra spaces, standardize time references
+  const normalized = query.toLowerCase().trim().replace(/\s+/g, ' ');
+  return location ? `${normalized}|${location.toLowerCase()}` : normalized;
+}
+
+export function hashQuery(normalizedQuery: string): string {
+  // Simple hash for cache key using base64 encoding
+  return Buffer.from(normalizedQuery).toString('base64');
+}
+
+export function extractTimeWindow(query: string): string | null {
+  const timeKeywords: Record<string, string> = {
+    'tonight': 'tonight',
+    'today': 'today',
+    'tomorrow': 'tomorrow',
+    'this weekend': 'this_weekend',
+    'this week': 'this_week',
+    'weekend': 'this_weekend',
+    'next week': 'next_week',
+    'next weekend': 'next_weekend'
+  };
+  
+  const lowerQuery = query.toLowerCase();
+  for (const [keyword, window] of Object.entries(timeKeywords)) {
+    if (lowerQuery.includes(keyword)) return window;
+  }
+  return null;
+}
+
+export function getTimeWindowDates(window: string): { start: Date; end: Date } {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  switch (window) {
+    case 'tonight':
+    case 'today':
+      return {
+        start: today,
+        end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+      };
+    
+    case 'tomorrow':
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return {
+        start: tomorrow,
+        end: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59)
+      };
+    
+    case 'this_weekend':
+    case 'weekend':
+      // Find next Saturday
+      const daysUntilSaturday = (6 - today.getDay() + 7) % 7 || 7;
+      const saturday = new Date(today);
+      saturday.setDate(saturday.getDate() + daysUntilSaturday);
+      const sunday = new Date(saturday);
+      sunday.setDate(sunday.getDate() + 1);
+      return {
+        start: saturday,
+        end: new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59, 59)
+      };
+    
+    case 'this_week':
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(endOfWeek.getDate() + (7 - today.getDay()));
+      return {
+        start: today,
+        end: new Date(endOfWeek.getFullYear(), endOfWeek.getMonth(), endOfWeek.getDate(), 23, 59, 59)
+      };
+    
+    case 'next_week':
+      const nextWeekStart = new Date(today);
+      nextWeekStart.setDate(nextWeekStart.getDate() + (7 - today.getDay() + 1));
+      const nextWeekEnd = new Date(nextWeekStart);
+      nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
+      return {
+        start: nextWeekStart,
+        end: new Date(nextWeekEnd.getFullYear(), nextWeekEnd.getMonth(), nextWeekEnd.getDate(), 23, 59, 59)
+      };
+    
+    case 'next_weekend':
+      const nextSaturday = new Date(today);
+      const daysUntilNextSaturday = (6 - today.getDay() + 7) % 7 || 7;
+      nextSaturday.setDate(nextSaturday.getDate() + daysUntilNextSaturday + 7);
+      const nextSunday = new Date(nextSaturday);
+      nextSunday.setDate(nextSunday.getDate() + 1);
+      return {
+        start: nextSaturday,
+        end: new Date(nextSunday.getFullYear(), nextSunday.getMonth(), nextSunday.getDate(), 23, 59, 59)
+      };
+    
+    default:
+      // Default to next 7 days
+      const weekFromNow = new Date(today);
+      weekFromNow.setDate(weekFromNow.getDate() + 7);
+      return {
+        start: today,
+        end: weekFromNow
+      };
+  }
+}
+
+export function getUserLocationFromIP(request: any): string | null {
+  // Use request headers (Cloudflare, Vercel, etc. provide geo headers)
+  const city = request.headers.get('x-vercel-ip-city') || 
+               request.headers.get('cf-ipcity');
+  const region = request.headers.get('x-vercel-ip-country-region') ||
+                 request.headers.get('cf-region');
+  
+  if (city && region) {
+    // Decode URI components in case they're encoded
+    try {
+      const decodedCity = decodeURIComponent(city);
+      const decodedRegion = decodeURIComponent(region);
+      return `${decodedCity}, ${decodedRegion}`;
+    } catch {
+      return city && region ? `${city}, ${region}` : null;
+    }
+  }
+  
+  return null;
 }
 

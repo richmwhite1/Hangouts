@@ -316,6 +316,7 @@ model content {
   endTime              DateTime?
   status               ContentStatus          @default(DRAFT)
   privacyLevel         PrivacyLevel           @default(PRIVATE)
+  isPublic             Boolean                @default(false)
   creatorId            String
   createdAt            DateTime               @default(now())
   updatedAt            DateTime
@@ -353,6 +354,7 @@ model content {
   @@index([createdAt])
   @@index([creatorId])
   @@index([privacyLevel])
+  @@index([isPublic])
   @@index([startTime])
   @@index([status])
   @@index([type])
@@ -661,6 +663,38 @@ model EventSave {
 
   @@unique([contentId, userId])
   @@map("event_saves")
+}
+
+model AgentSearchCache {
+  id             String   @id @default(cuid())
+  queryHash      String   @unique
+  originalQuery  String
+  location       String?
+  timeWindow     String?
+  results        Json
+  expiresAt      DateTime
+  searchCount    Int      @default(1)
+  lastAccessedAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@index([queryHash])
+  @@index([expiresAt])
+  @@index([location, timeWindow])
+  @@map("agent_search_cache")
+}
+
+model TrendingSearch {
+  id             String   @id @default(cuid())
+  query          String
+  location       String?
+  searchCount    Int      @default(1)
+  lastSearchedAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@unique([query, location])
+  @@index([searchCount])
+  @@index([lastSearchedAt])
+  @@map("trending_searches")
 }
 
 model Conversation {

@@ -1,30 +1,31 @@
 // Agent prompt templates
 
-export const SYSTEM_PROMPT = `You are a helpful assistant for the Hangout app, designed to help users discover events and create hangouts with friends.
+export const SYSTEM_PROMPT = `You are an event discovery assistant for the Hangout app, designed to help users find exciting things to do.
 
 Your capabilities:
-1. Discover events (concerts, shows, activities, restaurants, etc.) using real-time search
-2. Help users create hangouts with friends
-3. Answer questions about the app and its features
+1. Find concerts, shows, festivals, activities, and events using real-time search
+2. Search Meetup.com, Eventbrite.com, and local event calendars
+3. Help users discover what's happening tonight, this weekend, or anytime
+4. Provide event details like venue, time, price, and how to get tickets
 
 Guidelines:
-- Be conversational and friendly
+- Be conversational and enthusiastic about events
 - Keep responses concise and actionable
 - When showing events, format them clearly with numbering
-- Ask clarifying questions if the user's request is ambiguous
-- Guide users through multi-step processes (like creating hangouts)
-- If you can't help with something, direct them to the appropriate page
+- Ask clarifying questions if the search is too broad (e.g., "What kind of events? concerts, comedy, food?")
+- Suggest popular searches in the user's area
+- If you can't find events, suggest alternative search terms or time frames
 
-Context about the app:
-- Events can be discovered and saved to a user's interested list
-- Saved events can be added as options when creating hangouts
-- Hangouts are plans with friends where everyone votes on activity options
-- Users can create custom activities or use saved events as hangout options`;
+Examples of what you help with:
+- "Find concerts this weekend"
+- "What's happening tonight in [city]?"
+- "Show me jazz events this week"
+- "Are there any comedy shows tomorrow?"`;
 
 export const INTENT_DETECTION_PROMPT = `Analyze the user's message and determine their intent. Return a JSON object with the following structure:
 
 {
-  "intent": "discover_event" | "create_hangout" | "select_event" | "select_friend" | "add_activity" | "confirm_action" | "general_help" | "casual_chat",
+  "intent": "discover_event" | "create_hangout" | "select_event" | "select_friend" | "add_activity" | "confirm_action" | "mark_interest" | "mark_going" | "show_trending" | "general_help" | "casual_chat",
   "entities": {
     "eventType"?: string,  // e.g., "concert", "restaurant", "comedy show"
     "location"?: string,   // e.g., "Brooklyn", "Manhattan", "near me"
@@ -44,43 +45,44 @@ Intent descriptions:
 - select_friend: User is choosing friends to invite
 - add_activity: User wants to add a custom activity option
 - confirm_action: User is confirming to proceed with an action
+- mark_interest: User wants to save/mark event as interested
+- mark_going: User confirms they're attending an event
+- show_trending: User asks what's popular or what others are searching
 - general_help: User has questions about the app
 - casual_chat: General conversation not related to main functions
 
 Previous conversation context will help determine intent. Be smart about context.`;
 
 export const EVENT_DISCOVERY_PROMPT = (query: string, location?: string) => `
-Find real-time information about events matching this query: "${query}"${location ? ` in ${location}` : ''}.
+Search for real-time events matching: "${query}"${location ? ` in ${location}` : ''}.
 
-Return 3-5 relevant events with the following information for each:
-- Event name/title
-- Venue name
-- Date and time
-- Price or price range (or "Free" if applicable)
-- Brief description (1-2 sentences)
-- URL for more info or tickets
+Search these sources:
+- Meetup.com (search: "${query} ${location || ''}")
+- Eventbrite.com (search: "${query} ${location || ''}")
+${location?.toLowerCase().includes('salt lake') ? '- VisitSaltLake.com (official tourism site)\n' : ''}
+- Local event calendars and venue websites
+- Concert halls, theaters, and entertainment venues
 
-Format your response as a conversational message listing the events, followed by "JSON_DATA:" and then a JSON array of event objects.
+CRITICAL INSTRUCTIONS:
+1. Find 3-6 REAL events from actual sources (Meetup, Eventbrite, local venues)
+2. Include actual URLs from the source websites
+3. Return ONLY valid JSON - no conversational text, no markdown, no explanations
+4. Use this EXACT format:
 
-Example:
-"I found 3 great concerts this weekend:
-
-1. Artist Name at Venue - Friday 8pm - $35
-   Brief description of the event
-
-2. Another Band at Different Venue - Saturday 9pm - $40-50
-   Brief description
-
-3. Third Show at Cool Place - Sunday 7pm - Free
-   Brief description
-
-Would you like to save any of these or create a hangout with friends?
-
-JSON_DATA:
 [
-  {"title": "Artist Name", "venue": "Venue", "date": "Friday", "time": "8pm", "price": "$35", "url": "https://...", "description": "Brief description"},
-  ...
-]"`;
+  {
+    "title": "Exact event name from source",
+    "venue": "Venue name",
+    "date": "Day, Month DD, YYYY",
+    "time": "H:MM PM",
+    "price": "$X-$Y" or "Free",
+    "url": "https://actual-eventbrite-or-meetup-url.com",
+    "description": "Brief description from event page",
+    "image": "https://image-url.jpg" or null
+  }
+]
+
+RESPOND WITH ONLY THE JSON ARRAY. No text before or after. Real events only.`;
 
 export const HANGOUT_CREATION_PROMPT = `You are guiding a user through creating a hangout with friends. 
 
