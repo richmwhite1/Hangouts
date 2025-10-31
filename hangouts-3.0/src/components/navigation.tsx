@@ -13,6 +13,7 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { NotificationSettings } from "@/components/notifications/notification-settings"
 import { NotificationHistory } from "@/components/notifications/notification-history"
 import { UniversalSearch } from "@/components/universal-search"
+import { Logo } from "@/components/logo"
 
 export function Navigation() {
   const [showNotifications, setShowNotifications] = useState(false)
@@ -30,12 +31,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex flex-col items-center justify-center">
-              <img src="/icon.svg" alt="Calendar icon" className="h-10 w-10" />
-              <span className="font-bold text-lg uppercase tracking-tight text-foreground">PLANS</span>
-            </div>
-          </Link>
+          <Logo />
 
           {/* Universal Search - Only show for authenticated users */}
           {isSignedIn && (

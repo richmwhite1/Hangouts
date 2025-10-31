@@ -157,8 +157,7 @@ export async function POST(request: NextRequest) {
         try {
           const searchQuery = message;
           let location = intent.entities.location || 
-                         context.userLocation || 
-                         clerkUser.location;
+                         context.userLocation;
           
           // Fallback to IP geolocation with specific city
           if (!location) {
@@ -172,26 +171,34 @@ export async function POST(request: NextRequest) {
           }
           
           const timeWindow = extractTimeWindow(searchQuery);
+          logger.info(`⏰ Time window extracted:`, timeWindow || 'none');
           
-          // Step 1: Check system events first
+          // Step 1: Check system events first (location required, timeWindow optional)
           let systemEvents: any[] = [];
-          if (location && timeWindow) {
-            systemEvents = await querySystemEvents(
-              location, 
-              timeWindow,
-              intent.entities.eventType
-            );
+          if (location) {
+            try {
+              systemEvents = await querySystemEvents(
+                location, 
+                timeWindow || undefined,
+                intent.entities.eventType
+              );
+              logger.info(`📅 Found ${systemEvents.length} system events`);
+            } catch (error) {
+              logger.error('Error querying system events:', error);
+            }
+          } else {
+            logger.info('⚠️  No location found, skipping system events query');
           }
           
           // Step 2: Check cache for external events
           let cachedEvents = await getCachedSearch(searchQuery, location);
-          logger.info(`🔍 Cache check for "${searchQuery}" in ${location}:`, cachedEvents ? `Found ${cachedEvents.length} cached events` : 'No cache');
+          logger.info(`🔍 Cache check for "${searchQuery}" in ${location || 'no location'}:`, cachedEvents ? `Found ${cachedEvents.length} cached events` : 'No cache');
           
           let externalEvents: any[] = [];
           if (!cachedEvents) {
             // Step 3: Call Perplexity only if no cache and key present
             if (PERPLEXITY_API_KEY) {
-              logger.info(`🌐 Calling Perplexity API for "${searchQuery}" in ${location}`);
+              logger.info(`🌐 Calling Perplexity API for "${searchQuery}" in ${location || 'no location'}`);
               try {
                 const perplexityResponse = await axios.post(
                   PERPLEXITY_API_URL,
@@ -233,14 +240,23 @@ export async function POST(request: NextRequest) {
           
           // Combine system + external events and dedupe by title+date
           const allEvents = [...systemEvents, ...externalEvents];
+          logger.info(`📊 Before deduplication: ${allEvents.length} events (${systemEvents.length} system + ${externalEvents.length} external)`);
           const seen = new Set<string>();
           const deduped = allEvents.filter(e => {
             const key = `${(e.title || '').toLowerCase()}|${e.date || ''}`;
-            if (seen.has(key)) return false;
+            if (seen.has(key)) {
+              logger.debug(`Duplicate event skipped: ${e.title}`);
+              return false;
+            }
             seen.add(key);
             return true;
           });
           logger.info(`📋 Total events found: ${allEvents.length} (${systemEvents.length} system + ${externalEvents.length} external), deduped to ${deduped.length}`);
+          
+          // Log event titles for debugging
+          if (deduped.length > 0) {
+            logger.info(`✅ Events to display:`, deduped.map(e => e.title).join(', '));
+          }
           
           if (deduped.length > 0) {
             const systemCount = systemEvents.length;
