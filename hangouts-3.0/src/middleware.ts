@@ -4,30 +4,24 @@ import { NextResponse } from 'next/server'
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
   '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/login(.*)',
+  '/signin(.*)',
   '/signup(.*)',
   '/api/health',
   '/api/webhooks(.*)',
-  '/public-discover(.*)',
   '/hangouts/public(.*)',
   '/events/public(.*)',
   '/api/public(.*)',
-  '/api/hangouts/public(.*)',
-  '/api/events/public(.*)',
   '/discover(.*)', // Allow discover page for non-authenticated users
-  '/create(.*)', // Allow create page to show sign-in prompt
-  '/events(.*)', // Allow events page to show sign-in prompt
+  '/events(.*)', // Allow events page for non-authenticated users
 ])
 
 // Define protected routes that require authentication
 const isProtectedRoute = createRouteMatcher([
-  '/hangouts(.*)', // Protect all hangout routes except public ones (handled in logic)
   '/profile(.*)',
   '/messages(.*)',
   '/friends(.*)',
-  '/discover(.*)',
+  '/create(.*)',
+  '/hangout/(.*)', // Protect individual hangout detail pages
 ])
 
 export default clerkMiddleware((auth, req) => {
@@ -38,10 +32,16 @@ export default clerkMiddleware((auth, req) => {
 
   // Handle protected routes
   if (isProtectedRoute(req)) {
-    auth.protect()
+    auth.protect({
+      unauthenticatedUrl: '/signin',
+      unauthorizedUrl: '/signin'
+    })
   }
 
   return NextResponse.next()
+}, {
+  signInUrl: '/signin',
+  signUpUrl: '/signup',
 })
 
 export const config = {
