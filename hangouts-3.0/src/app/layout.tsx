@@ -11,6 +11,7 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
+import { ConsoleErrorHandler } from '@/components/console-error-handler'
 // import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
 const inter = Inter({ 
@@ -52,10 +53,19 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Suppress Clerk warnings in production, log in development
+  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  
+  if (!clerkKey && process.env.NODE_ENV === 'development') {
+    console.warn('⚠️ Clerk publishable key not found. Authentication features may not work.')
+  }
+
   return (
     <ClerkProvider
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      publishableKey={clerkKey}
       dynamic
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
     >
       <html lang="en" className="dark">
         <head>
@@ -92,6 +102,7 @@ export default function RootLayout({
                     <BottomNavigation />
                   </div>
                   <Toaster position="top-right" richColors />
+                  <ConsoleErrorHandler />
                   <PWASetup />
                   <NetworkStatus />
                   <InstallPrompt showForAllUsers={true} />
