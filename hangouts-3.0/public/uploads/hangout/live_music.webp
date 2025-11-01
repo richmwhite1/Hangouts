@@ -1,0 +1,8 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="600" fill="#FF6B35"/>
+<rect x="300" y="200" width="200" height="200" fill="#FFFFFF"/>
+<circle cx="350" cy="300" r="20" fill="#FF6B35"/>
+<circle cx="450" cy="300" r="20" fill="#FFB844"/>
+<circle cx="400" cy="350" r="15" fill="#0099FF"/>
+<text x="400" y="550" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Music</text>
+</svg>

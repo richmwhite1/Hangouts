@@ -32,6 +32,9 @@ export function ProfilePage() {
   const [favoritePlaces, setFavoritePlaces] = useState<Array<{id: string, title: string, mapLink?: string}>>([])
   const [newPreference, setNewPreference] = useState("")
   const [newPlace, setNewPlace] = useState("")
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { isSignedIn, isLoaded, signOut } = useAuth()
   const { profile, userHangouts, isLoading, error, refetch, updateProfile } = useProfile()
   const { uploadImage, updateProfile: updateProfileImage, isUploading, error: uploadError, clearError } = useImageUpload()
@@ -289,6 +292,41 @@ export function ProfilePage() {
       logger.error('Profile update error:', error);
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmed) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch('/api/profile/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ confirmed: true })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Show success message briefly before sign out
+        alert(`Account deletion scheduled. You have 30 days to change your mind.`)
+        // Clerk will handle sign out via their deletion
+        window.location.href = '/'
+      } else {
+        alert(data.message || 'Failed to delete account. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('An error occurred while deleting your account. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirmation(false)
+      setDeleteConfirmed(false)
     }
   }
 
@@ -635,6 +673,87 @@ export function ProfilePage() {
         </div>
       )}
 
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full border-2 border-red-500/50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-red-500">Delete Account</h3>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false)
+                  setDeleteConfirmed(false)
+                }}
+                className="text-muted-foreground hover:text-foreground"
+                disabled={isDeleting}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This action cannot be undone. Your account will be scheduled for permanent deletion in 30 days.
+              </p>
+
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-400 mb-2">You will lose:</p>
+                <ul className="text-sm text-red-300 space-y-1 list-disc list-inside">
+                  <li>All your profile data and settings</li>
+                  <li>All events and hangouts you created</li>
+                  <li>All messages and conversations</li>
+                  <li>All friendships and connections</li>
+                  <li>All saved events and RSVPs</li>
+                </ul>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="delete-confirm"
+                  checked={deleteConfirmed}
+                  onChange={(e) => setDeleteConfirmed(e.target.checked)}
+                  className="w-4 h-4 mt-0.5"
+                  disabled={isDeleting}
+                />
+                <label htmlFor="delete-confirm" className="text-sm text-foreground flex-1 cursor-pointer">
+                  I understand this action cannot be undone and I want to permanently delete my account
+                </label>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirmation(false)
+                    setDeleteConfirmed(false)
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1"
+                >
+                  Keep my account
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={!deleteConfirmed || isDeleting}
+                  className="flex-1"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete permanently'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Profile Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -842,6 +961,29 @@ export function ProfilePage() {
                     <input type="checkbox" id="friends-of-friends" defaultChecked className="w-4 h-4" />
                     <label htmlFor="friends-of-friends" className="text-sm">Only allow friends of friends to invite you</label>
                   </div>
+                </div>
+              </div>
+
+              {/* Account Management */}
+              <div className="space-y-4 border-t border-border pt-6 mt-6">
+                <h4 className="text-md font-medium text-red-500">Danger Zone</h4>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Once you delete your account, there is no going back. This action will:
+                  </p>
+                  <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <li>Permanently remove your profile and personal information</li>
+                    <li>Delete all your created events and hangouts</li>
+                    <li>Remove you from all conversations and groups</li>
+                    <li>Cancel all your RSVPs and saved events</li>
+                  </ul>
+                  <Button
+                    variant="destructive"
+                    className="w-full mt-4"
+                    onClick={() => setShowDeleteConfirmation(true)}
+                  >
+                    Delete My Account
+                  </Button>
                 </div>
               </div>
 

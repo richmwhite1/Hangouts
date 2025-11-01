@@ -1,0 +1,6 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="600" fill="#00FF00"/>
+<polygon points="400,100 500,200 600,100 700,200 800,100 800,600 0,600 0,100" fill="#8B5CFF"/>
+<circle cx="400" cy="300" r="40" fill="#FFFFFF"/>
+<text x="400" y="550" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Hiking</text>
+</svg>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Sign Out</title>
+</head>
+<body>
+    <h1>Force Sign Out</h1>
+    <button onclick="clearAuth()">Clear All Auth Data</button>
+    <div id="output"></div>
+    
+    <script>
+        function clearAuth() {
+            const output = document.getElementById('output');
+            
+            // Clear all cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Clear local storage
+            localStorage.clear();
+            
+            // Clear session storage
+            sessionStorage.clear();
+            
+            output.innerHTML = '<p>Cleared cookies, localStorage, and sessionStorage</p><p>Redirecting...</p>';
+            
+            // Redirect to sign out page
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

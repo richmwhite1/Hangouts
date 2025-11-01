@@ -30,6 +30,10 @@ model User {
   isActive                 Boolean                   @default(true)
   isVerified               Boolean                   @default(false)
   lastSeen                 DateTime                  @default(now())
+  deletedAt                DateTime?
+  scheduledDeletionDate    DateTime?
+  hasCompletedOnboarding   Boolean                   @default(false)
+  onboardingStep           Int?                      @default(1)
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
   comments                 comments[]
@@ -330,10 +334,16 @@ model content {
   currency             String?                @default("USD")
   ticketUrl            String?
   attendeeCount        Int?                   @default(0)
+  viewCount            Int                    @default(0)
+  shareCount           Int                    @default(0)
   externalEventId      String?
   source               EventSource?           @default(MANUAL)
   maxParticipants      Int?
   weatherEnabled       Boolean?               @default(false)
+  recurrenceRule       String?
+  recurrenceEndDate    DateTime?
+  parentEventId        String?
+  isRecurring          Boolean                @default(false)
   comments             comments[]
   users                User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   content_likes        content_likes[]

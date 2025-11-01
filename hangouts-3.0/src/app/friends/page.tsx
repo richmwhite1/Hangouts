@@ -197,17 +197,17 @@ export default function FriendsPage() {
     const isFriend = friends.some(friendship => friendship.friend.id === userId)
     if (isFriend) return 'friends'
     
-    // Check if there's a pending request
-    const hasPendingRequest = friendRequests.some(req => 
-      (req.sender.id === userId || req.receiver.id === userId) && req.status === 'PENDING'
-    )
-    if (hasPendingRequest) return 'pending'
-    
-    // Check if request is pending (sent by current user)
+    // Check if there's a pending request SENT by current user
     const sentRequest = friendRequests.some(req => 
-      req.sender.id === userId && req.status === 'PENDING'
+      req.receiver.id === userId && req.status === 'PENDING'
     )
     if (sentRequest) return 'sent'
+    
+    // Check if there's a pending request RECEIVED from this user
+    const receivedRequest = friendRequests.some(req => 
+      req.sender.id === userId && req.status === 'PENDING'
+    )
+    if (receivedRequest) return 'received'
     
     return 'none'
   }
@@ -223,19 +223,29 @@ export default function FriendsPage() {
             Friends
           </Badge>
         )
-      case 'pending':
+      case 'sent':
         return (
           <Badge variant="outline" className="flex items-center">
             <Clock className="w-3 h-3 mr-1" />
             Pending
           </Badge>
         )
-      case 'sent':
+      case 'received':
         return (
-          <Badge variant="outline" className="flex items-center">
-            <Clock className="w-3 h-3 mr-1" />
-            Request Sent
-          </Badge>
+          <Button 
+            size="sm"
+            onClick={() => {
+              const request = friendRequests.find(req => 
+                req.sender.id === user.id && req.status === 'PENDING'
+              )
+              if (request) {
+                respondToFriendRequest(request.id, 'ACCEPTED')
+              }
+            }}
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Accept Request
+          </Button>
         )
       default:
         return (
@@ -243,12 +253,12 @@ export default function FriendsPage() {
             size="sm"
             onClick={() => sendFriendRequest(user.id)}
             disabled={pendingRequests.has(user.id)}
-            variant={pendingRequests.has(user.id) ? "secondary" : "default"}
+            variant={pendingRequests.has(user.id) ? "outline" : "default"}
           >
             {pendingRequests.has(user.id) ? (
               <>
                 <Clock className="w-4 h-4 mr-2" />
-                Sending...
+                Pending
               </>
             ) : (
               <>
@@ -413,9 +423,9 @@ export default function FriendsPage() {
                   <Card key={friendship.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="w-48 h-48 rounded-lg">
+                        <Avatar className="w-12 h-12">
                           <AvatarImage src={friendship.friend.avatar} />
-                          <AvatarFallback className="text-6xl">
+                          <AvatarFallback>
                             {friendship.friend.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -427,6 +437,11 @@ export default function FriendsPage() {
                           {friendship.friend.bio && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {friendship.friend.bio}
+                            </p>
+                          )}
+                          {friendship.friend.location && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              📍 {friendship.friend.location}
                             </p>
                           )}
                         </div>
@@ -457,8 +472,116 @@ export default function FriendsPage() {
           </TabsContent>
 
           <TabsContent value="requests" className="mt-6">
-            <div className="space-y-4">
-              {pendingFriendRequests.length === 0 ? (
+            <div className="space-y-6">
+              {/* Received Requests (Action Required) */}
+              {(() => {
+                const receivedRequests = friendRequests.filter(req => req.receiver.id !== req.sender.id && req.status === 'PENDING')
+                  .filter(req => {
+                    // Only show requests where current user is the receiver
+                    const isSender = friends.some(f => f.friend.id === req.sender.id)
+                    return !isSender
+                  })
+                
+                return receivedRequests.length > 0 && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Received Requests</h3>
+                      <p className="text-sm text-muted-foreground">People who want to connect with you</p>
+                    </div>
+                    {receivedRequests.map((request) => (
+                      <Card key={request.id}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={request.sender.avatar} />
+                                <AvatarFallback>
+                                  {request.sender.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h4 className="font-semibold">{request.sender.name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  @{request.sender.username}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(request.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button 
+                                size="sm"
+                                onClick={() => respondToFriendRequest(request.id, 'ACCEPTED')}
+                              >
+                                Accept
+                              </Button>
+                              <Button 
+                                size="sm"
+                                variant="outline"
+                                onClick={() => respondToFriendRequest(request.id, 'DECLINED')}
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* Sent Requests (Pending) */}
+              {(() => {
+                const sentRequests = friendRequests.filter(req => req.sender.id !== req.receiver.id && req.status === 'PENDING')
+                  .filter(req => {
+                    // Only show requests where current user is the sender
+                    const isReceiver = friends.some(f => f.friend.id === req.receiver.id)
+                    return !isReceiver
+                  })
+                
+                return sentRequests.length > 0 && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Sent Requests</h3>
+                      <p className="text-sm text-muted-foreground">Waiting for response</p>
+                    </div>
+                    {sentRequests.map((request) => (
+                      <Card key={request.id}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={request.receiver.avatar} />
+                                <AvatarFallback>
+                                  {request.receiver.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h4 className="font-semibold">{request.receiver.name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  @{request.receiver.username}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Sent {new Date(request.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Pending
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* No Requests */}
+              {pendingFriendRequests.length === 0 && (
                 <Card>
                   <CardContent className="text-center py-8">
                     <UserPlus className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -468,55 +591,6 @@ export default function FriendsPage() {
                     </p>
                   </CardContent>
                 </Card>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Pending Friend Requests</h3>
-                  {pendingFriendRequests.map((request) => (
-                    <Card key={request.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Avatar>
-                              <AvatarImage src={request.sender.avatar} />
-                              <AvatarFallback>
-                                {request.sender.name.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-semibold">{request.sender.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                @{request.sender.username}
-                              </p>
-                              {request.message && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  "{request.message}"
-                                </p>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(request.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm"
-                              onClick={() => respondToFriendRequest(request.id, 'ACCEPTED')}
-                            >
-                              Accept
-                            </Button>
-                            <Button 
-                              size="sm"
-                              variant="outline"
-                              onClick={() => respondToFriendRequest(request.id, 'DECLINED')}
-                            >
-                              Decline
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
               )}
             </div>
           </TabsContent>
@@ -538,11 +612,13 @@ export default function FriendsPage() {
               </div>
 
               <div className="grid gap-4">
-                {searchResults.map((user) => (
+                {searchResults
+                  .filter(user => getFriendStatus(user.id) !== 'friends') // Don't show existing friends
+                  .map((user) => (
                   <Card key={user.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center space-x-3">
-                        <Avatar>
+                        <Avatar className="w-12 h-12">
                           <AvatarImage src={user.avatar} />
                           <AvatarFallback>
                             {user.name.charAt(0).toUpperCase()}
@@ -556,6 +632,11 @@ export default function FriendsPage() {
                           {user.bio && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {user.bio}
+                            </p>
+                          )}
+                          {user.location && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              📍 {user.location}
                             </p>
                           )}
                         </div>

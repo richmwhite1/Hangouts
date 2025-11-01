@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Sign Out</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .success {
+            background: #059669;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Force Sign Out</h1>
+    <p>This will clear all authentication data from your browser.</p>
+    
+    <button onclick="clearAuth()">Clear All Auth Data</button>
+    
+    <div id="output"></div>
+
+    <script>
+        function clearAuth() {
+            const output = document.getElementById('output');
+            
+            // Clear all cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Clear local storage
+            localStorage.clear();
+            
+            // Clear session storage
+            sessionStorage.clear();
+            
+            // Clear all indexedDB data
+            if ('indexedDB' in window) {
+                indexedDB.databases().then(databases => {
+                    databases.forEach(db => {
+                        indexedDB.deleteDatabase(db.name);
+                    });
+                });
+            }
+            
+            output.innerHTML = '<div class="success"><p>✅ Cleared all auth data!</p><p>You can now close this page and sign in with your real Clerk account.</p></div>';
+            
+            // Redirect to home page after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
+

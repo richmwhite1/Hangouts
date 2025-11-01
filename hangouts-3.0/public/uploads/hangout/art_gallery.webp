@@ -1,0 +1,8 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="600" fill="#9B5CF6"/>
+<rect x="100" y="100" width="600" height="400" fill="#FFFFFF"/>
+<circle cx="200" cy="200" r="50" fill="#FF6B35"/>
+<circle cx="400" cy="300" r="40" fill="#FFB844"/>
+<circle cx="600" cy="250" r="30" fill="#0099FF"/>
+<text x="400" y="550" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Art</text>
+</svg>

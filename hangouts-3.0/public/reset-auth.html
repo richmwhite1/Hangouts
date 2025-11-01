@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Auth</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .success {
+            background: #059669;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Reset Authentication</h1>
+    <p>Use this page to clear all authentication data if you're stuck.</p>
+    
+    <button onclick="clearAll()">Clear All Auth Data & Reload</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function clearAll() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>Clearing auth data...</p>';
+            
+            try {
+                // Clear all cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                // Clear local storage
+                localStorage.clear();
+                
+                // Clear session storage
+                sessionStorage.clear();
+                
+                output.innerHTML = '<div class="success"><p>✅ Cleared all auth data!</p><p>Redirecting to home page...</p></div>';
+                
+                // Redirect to home after 1 second
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } catch (error) {
+                output.innerHTML = '<div class="error"><p>❌ Error: ' + error.message + '</p></div>';
+            }
+        }
+    </script>
+</body>
+</html>
+

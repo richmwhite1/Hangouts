@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Auth</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .success {
+            background: #059669;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #1f2937;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Clear Authentication</h1>
+    <div class="info">
+        <p>Use this page to completely clear your authentication state and sign out.</p>
+    </div>
+    
+    <button onclick="clearAllAuth()">Clear All Auth Data</button>
+    
+    <div id="status"></div>
+
+    <script>
+        function clearAllAuth() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>Clearing...</p>';
+            
+            // Clear all cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            status.innerHTML = '<div class="success">✅ Cleared all authentication data! Redirecting...</div>';
+            
+            // Wait a moment then redirect
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        }
+        
+        // Show current auth state
+        window.addEventListener('load', function() {
+            const cookies = document.cookie;
+            const hasClerkCookies = cookies.includes('__clerk');
+            
+            const info = document.querySelector('.info');
+            info.innerHTML += `
+                <p><strong>Current State:</strong></p>
+                <p>Cookies: ${cookies.length > 0 ? 'Yes (' + cookies.split(';').length + ' cookies)' : 'No'}</p>
+                <p>localStorage: ${Object.keys(localStorage).length} items</p>
+                <p>sessionStorage: ${Object.keys(sessionStorage).length} items</p>
+            `;
+        });
+    </script>
+</body>
+</html>
+

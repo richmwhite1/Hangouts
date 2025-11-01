@@ -132,6 +132,7 @@ export function MergedDiscoveryPage() {
   const { getToken, isSignedIn, isLoaded } = useAuth()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
+  const [contentView, setContentView] = useState<'all' | 'trending' | 'foryou'>('all') // New: content view tabs
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all')
@@ -141,6 +142,9 @@ export function MergedDiscoveryPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [mergedContent, setMergedContent] = useState<any[]>([])
+  const [trendingContent, setTrendingContent] = useState<any[]>([])
+  const [recommendedContent, setRecommendedContent] = useState<any[]>([])
+  const [recommendationMessage, setRecommendationMessage] = useState<string>('')
   // Comprehensive filtering state
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
@@ -559,13 +563,49 @@ export function MergedDiscoveryPage() {
     }
   }, [searchParams])
 
+  // Fetch trending content
+  const fetchTrending = async () => {
+    try {
+      const response = await fetch('/api/discover/trending?limit=20')
+      const data = await response.json()
+      
+      if (data.success) {
+        setTrendingContent(data.trending || [])
+      }
+    } catch (error) {
+      console.error('Error fetching trending:', error)
+    }
+  }
+
+  // Fetch recommended content
+  const fetchRecommended = async () => {
+    try {
+      const response = await fetch('/api/discover/recommended?limit=20')
+      const data = await response.json()
+      
+      if (data.success) {
+        setRecommendedContent(data.recommended || [])
+        if (data.message) {
+          setRecommendationMessage(data.message)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error)
+    }
+  }
+
   useEffect(() => {
     // Wait for authentication to load before fetching data
     if (!isLoaded) return
     
     // Always fetch data, but for non-authenticated users, only fetch public content
     setIsLoading(true)
-    Promise.all([fetchEvents(), fetchHangouts()]).finally(() => {
+    Promise.all([
+      fetchEvents(), 
+      fetchHangouts(),
+      fetchTrending(),
+      isSignedIn ? fetchRecommended() : Promise.resolve()
+    ]).finally(() => {
       setIsLoading(false)
     })
   }, [isSignedIn, isLoaded])
@@ -962,6 +1002,44 @@ export function MergedDiscoveryPage() {
           <h1 className="text-2xl font-bold text-white">Discover</h1>
           <CreateEventModal />
         </div>
+        
+        {/* Content View Tabs */}
+        <div className="flex gap-2 mb-4 overflow-x-auto">
+          <Button
+            variant={contentView === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setContentView('all')}
+            className={contentView === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}
+          >
+            All
+          </Button>
+          <Button
+            variant={contentView === 'trending' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setContentView('trending')}
+            className={contentView === 'trending' ? 'bg-purple-600 text-white' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}
+          >
+            🔥 Trending
+          </Button>
+          {isSignedIn && (
+            <Button
+              variant={contentView === 'foryou' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setContentView('foryou')}
+              className={contentView === 'foryou' ? 'bg-purple-600 text-white' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}
+            >
+              ✨ For You
+            </Button>
+          )}
+        </div>
+
+        {/* Recommendation Message */}
+        {contentView === 'foryou' && recommendationMessage && (
+          <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <p className="text-sm text-purple-300">{recommendationMessage}</p>
+          </div>
+        )}
+        
         {/* Search and Filters */}
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
@@ -1271,31 +1349,41 @@ export function MergedDiscoveryPage() {
                 <div key={i} className="w-full h-64 bg-gray-700 animate-pulse rounded-lg" />
               ))}
             </div>
-          ) : mergedContent.length === 0 ? (
-            <div className="text-center py-12">
-              <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">No content found</h3>
-              <p className="text-gray-400 mb-4">
-                {searchQuery ? 'Try adjusting your search terms' : 'Be the first to create an event or hangout!'}
-              </p>
-              <CreateEventModal />
-            </div>
-          ) : (
-            <div className="space-y-3 px-4">
-              {mergedContent
-                .filter(item => {
-                  if (activeTab === 'events') return item.type === 'event'
-                  if (activeTab === 'hangouts') return item.type === 'hangout'
-                  if (activeTab === 'saved') return false // TODO: Implement saved items
-                  return true // 'all' tab
-                })
-                .map(item =>
-                  item.type === 'event'
-                    ? renderEventCard(item as Event)
-                    : renderHangoutCard(item as Hangout)
-                )}
-            </div>
-          )}
+          ) : (() => {
+            // Determine which content to show based on contentView
+            let displayContent = mergedContent
+            if (contentView === 'trending') {
+              displayContent = trendingContent
+            } else if (contentView === 'foryou') {
+              displayContent = recommendedContent
+            }
+
+            return displayContent.length === 0 ? (
+              <div className="text-center py-12">
+                <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">No content found</h3>
+                <p className="text-gray-400 mb-4">
+                  {searchQuery ? 'Try adjusting your search terms' : 'Be the first to create an event or hangout!'}
+                </p>
+                <CreateEventModal />
+              </div>
+            ) : (
+              <div className="space-y-3 px-4">
+                {displayContent
+                  .filter(item => {
+                    if (activeTab === 'events') return item.type === 'event' || item.type === 'EVENT'
+                    if (activeTab === 'hangouts') return item.type === 'hangout' || item.type === 'HANGOUT'
+                    if (activeTab === 'saved') return false // TODO: Implement saved items
+                    return true // 'all' tab
+                  })
+                  .map(item =>
+                    (item.type === 'event' || item.type === 'EVENT')
+                      ? renderEventCard(item as Event)
+                      : renderHangoutCard(item as Hangout)
+                  )}
+              </div>
+            )
+          })()}
         </div>
       </PullToRefresh>
       {/* Full Screen Filter Modal */}

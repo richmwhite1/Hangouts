@@ -1,0 +1,6 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="600" fill="#0099FF"/>
+<rect x="300" y="200" width="200" height="200" fill="#FFFFFF"/>
+<circle cx="400" cy="300" r="80" fill="#FF6B35"/>
+<text x="400" y="550" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Sports</text>
+</svg>

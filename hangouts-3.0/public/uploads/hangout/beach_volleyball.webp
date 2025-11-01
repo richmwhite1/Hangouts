@@ -1,0 +1,6 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="600" fill="#0099FF"/>
+<rect x="0" y="400" width="800" height="200" fill="#FFF4C3"/>
+<circle cx="200" cy="300" r="50" fill="#FFFFFF"/>
+<text x="400" y="350" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Beach</text>
+</svg>
