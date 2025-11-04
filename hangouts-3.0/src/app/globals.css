@@ -637,4 +637,39 @@
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
+  
+  /* Safe Area Insets for iPhone */
+  @supports (padding: max(0px)) {
+    .safe-area-bottom {
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+    
+    .safe-area-top {
+      padding-top: max(8px, env(safe-area-inset-top));
+    }
+    
+    .safe-area-left {
+      padding-left: max(8px, env(safe-area-inset-left));
+    }
+    
+    .safe-area-right {
+      padding-right: max(8px, env(safe-area-inset-right));
+    }
+    
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pt-safe {
+      padding-top: env(safe-area-inset-top);
+    }
+    
+    .pl-safe {
+      padding-left: env(safe-area-inset-left);
+    }
+    
+    .pr-safe {
+      padding-right: env(safe-area-inset-right);
+    }
+  }
 }

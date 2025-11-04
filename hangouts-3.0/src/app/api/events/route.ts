@@ -56,13 +56,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause with privacy logic: PUBLIC events (isPublic OR privacyLevel) + user's own events + FRIENDS_ONLY events from user's friends
+    // Note: Don't filter by status as some events might be in DRAFT but still visible
     const whereClause: any = {
       type: 'EVENT',
       OR: [
         // Public events (everyone can see) - check both isPublic flag and privacyLevel
         { isPublic: true },
         { privacyLevel: 'PUBLIC' },
-        // User's own events (if authenticated)
+        // User's own events (if authenticated) - regardless of status
         ...(userId ? [{ creatorId: userId }] : []),
         // Friends-only events from user's friends (if authenticated)
         ...(userId && friendIds.length > 0 ? [{
@@ -71,8 +72,9 @@ export async function GET(request: NextRequest) {
             { creatorId: { in: friendIds } }
           ]
         }] : [])
-      ],
-      status: 'PUBLISHED'
+      ]
+      // Removed status filter to allow DRAFT events from creators and friends
+      // status: 'PUBLISHED'
     }
     
     if (search) {
@@ -117,10 +119,10 @@ export async function GET(request: NextRequest) {
       orderBy: {
         startTime: 'asc'
       },
-      take: 20
+      take: 50 // Increased limit for better results
     })
 
-    // console.log('📊 Events found:', events.length); // Removed for production
+    logger.info(`Events API: Found ${events.length} events for user ${userId || 'anonymous'}`)
 
     const transformedEvents = events.map(event => ({
       id: event.id,
@@ -151,12 +153,21 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('❌ Events API Error:', error);
-    logger.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-    logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    logger.error('Events API Error:', error);
+    if (error instanceof Error) {
+      logger.error('Error details:', error.message);
+      logger.error('Error stack:', error.stack);
+    }
+    
+    // Return empty array instead of error to prevent UI from breaking
+    // Log the error for debugging but allow the page to render
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch events', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        success: true, 
+        events: [],
+        error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined
+      },
+      { status: 200 } // Return 200 with empty array instead of 500
     )
   }
 }
@@ -219,9 +230,15 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('❌ Events API Error:', error);
+    logger.error('Events API Error (POST):', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create event', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        success: false, 
+        error: 'Failed to create event',
+        details: process.env.NODE_ENV === 'development' 
+          ? (error instanceof Error ? error.message : 'Unknown error')
+          : undefined
+      },
       { status: 500 }
     )
   }

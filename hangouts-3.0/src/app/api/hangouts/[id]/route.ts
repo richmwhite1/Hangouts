@@ -42,7 +42,39 @@ export async function GET(
       }
     }
 
-    // Get hangout with all related data
+    // Get hangout with all related data - ensure it's a HANGOUT type
+    // First check if content exists and is a hangout
+    const hangoutCheck = await db.content.findUnique({
+      where: { id: hangoutId },
+      select: { id: true, type: true }
+    })
+    
+    if (!hangoutCheck) {
+      logger.warn(`Content not found: ${hangoutId}`)
+      return NextResponse.json(
+        { 
+          error: 'Hangout not found',
+          message: 'The requested hangout does not exist or has been removed',
+          hangoutId: hangoutId
+        },
+        { status: 404 }
+      )
+    }
+    
+    if (hangoutCheck.type !== 'HANGOUT') {
+      logger.warn(`Content ${hangoutId} exists but is type ${hangoutCheck.type}, not HANGOUT`)
+      return NextResponse.json(
+        { 
+          error: 'Invalid content type',
+          message: 'The requested ID is not a hangout',
+          hangoutId: hangoutId,
+          actualType: hangoutCheck.type
+        },
+        { status: 400 }
+      )
+    }
+    
+    // Now fetch the full hangout data
     const hangout = await db.content.findUnique({
       where: { id: hangoutId },
       include: {
@@ -112,6 +144,8 @@ export async function GET(
     console.log('Hangout API - Database query completed, hangout found:', hangout ? 'YES' : 'NO')
     
     if (!hangout) {
+      // This should not happen since we checked above, but handle it anyway
+      logger.error(`Hangout fetch failed after type check: ${hangoutId}`)
       return NextResponse.json(
         { 
           error: 'Hangout not found',
@@ -328,13 +362,27 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Hangout API - Error fetching hangout:', error)
     logger.error('Error fetching hangout:', error)
+    logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    
+    // Check if it's a database connection error
+    if (error instanceof Error && error.message.includes('connect')) {
+      logger.error('Database connection error detected')
+      return NextResponse.json(
+        { 
+          error: 'Database connection error',
+          message: 'Unable to connect to database. Please try again later.',
+          hangoutId: hangoutId
+        },
+        { status: 503 } // Service unavailable
+      )
+    }
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
         message: 'Failed to fetch hangout data',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined,
         hangoutId: hangoutId
       },
       { status: 500 }

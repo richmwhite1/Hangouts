@@ -348,10 +348,35 @@ export default function HangoutDetailPage() {
       console.log('Hangout detail - Headers:', headers)
       const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
       console.log('Hangout detail - Response status:', response.status)
-      if (!response.ok) throw new Error('Failed to fetch hangout')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.message || errorData.error || 'Failed to fetch hangout'
+        console.error('Hangout detail - API error:', errorData)
+        
+        // Handle specific error types
+        if (response.status === 404) {
+          setError('Hangout not found. It may have been deleted or you may not have permission to view it.')
+        } else if (response.status === 400) {
+          setError(errorMessage || 'Invalid hangout ID')
+        } else if (response.status === 503) {
+          setError('Service temporarily unavailable. Please try again in a moment.')
+        } else {
+          setError(errorMessage)
+        }
+        throw new Error(errorMessage)
+      }
+      
       const data = await response.json()
       console.log('Hangout detail - API response:', data)
-      console.log('Hangout detail - Setting hangout to:', data.data || data)
+      
+      if (!data.success || !data.data) {
+        console.error('Hangout detail - Invalid response format:', data)
+        setError('Invalid response from server')
+        throw new Error('Invalid response format')
+      }
+      
+      console.log('Hangout detail - Setting hangout to:', data.data)
       console.log('🔍 Vote data in API response:', {
         votes: data.data?.votes,
         userVotes: data.data?.userVotes,

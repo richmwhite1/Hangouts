@@ -10,15 +10,18 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
     }
+
     const { id: conversationId } = await params
+
     // Verify user is a participant in this conversation
     const participant = await db.conversationParticipant.findUnique({
       where: {
@@ -28,9 +31,11 @@ export async function POST(
         }
       }
     })
+
     if (!participant) {
       return NextResponse.json(createErrorResponse('Forbidden', 'User is not a participant in this conversation'), { status: 403 })
     }
+
     // Update lastReadAt to current time
     await db.conversationParticipant.update({
       where: {
@@ -40,8 +45,47 @@ export async function POST(
         lastReadAt: new Date()
       }
     })
+
     // Also mark all messages in this conversation as read for this user
     const messages = await db.messages.findMany({
+      where: {
+        conversationId,
+        isDeleted: false,
+        senderId: {
+          not: user.id // Don't mark own messages as read
+        }
+      },
+      select: {
+        id: true
+      }
+    })
+
+    // Create message_reads entries for all unread messages
+    const messageReads = messages.map(message => ({
+      messageId: message.id,
+      userId: user.id,
+      readAt: new Date()
+    }))
+
+    if (messageReads.length > 0) {
+      await db.message_reads.createMany({
+        data: messageReads,
+        skipDuplicates: true
+      })
+    }
+
+    // Mark all MESSAGE_RECEIVED notifications related to this conversation as read
+    // Get all unread message notifications for this user
+    const unreadMessageNotifications = await db.notification.findMany({
+      where: {
+        userId: user.id,
+        type: 'MESSAGE_RECEIVED',
+        isRead: false
+      }
+    })
+
+    // Get all message IDs in this conversation to match against
+    const conversationMessageIds = await db.messages.findMany({
       where: {
         conversationId,
         isDeleted: false
@@ -50,18 +94,40 @@ export async function POST(
         id: true
       }
     })
-    // Create message_reads entries for all unread messages
-    const messageReads = messages.map(message => ({
-      messageId: message.id,
-      userId: user.id,
-      readAt: new Date()
-    }))
-    if (messageReads.length > 0) {
-      await db.message_reads.createMany({
-        data: messageReads,
-        skipDuplicates: true
+
+    const messageIdSet = new Set(conversationMessageIds.map(m => m.id))
+    const notificationIdsToMark: string[] = []
+
+    // Check each notification's data field for conversationId or messageId match
+    for (const notification of unreadMessageNotifications) {
+      const notificationData = notification.data as any
+      if (notificationData) {
+        // Check if notification is for this conversation
+        if (notificationData.conversationId === conversationId) {
+          notificationIdsToMark.push(notification.id)
+        }
+        // Or if notification references a message in this conversation
+        else if (notificationData.messageId && messageIdSet.has(notificationData.messageId)) {
+          notificationIdsToMark.push(notification.id)
+        }
+      }
+    }
+
+    // Mark all matching notifications as read
+    if (notificationIdsToMark.length > 0) {
+      await db.notification.updateMany({
+        where: {
+          id: {
+            in: notificationIdsToMark
+          }
+        },
+        data: {
+          isRead: true,
+          readAt: new Date()
+        }
       })
     }
+
     return NextResponse.json(createSuccessResponse({
       conversationId,
       readAt: new Date().toISOString()

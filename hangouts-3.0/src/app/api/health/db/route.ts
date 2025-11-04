@@ -60,7 +60,7 @@ export async function GET() {
       await db.$disconnect()
       // console.log('✅ Database disconnected successfully'); // Removed for production
     } catch (disconnectError) {
-      logger.error('❌ Error disconnecting from database:', disconnectError);
+      logger.error('Error disconnecting from database:', disconnectError);
     }
   }
 }

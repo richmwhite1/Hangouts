@@ -82,6 +82,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
+  // Skip service worker in development mode (localhost)
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return // Let requests go through normally in dev
+  }
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return

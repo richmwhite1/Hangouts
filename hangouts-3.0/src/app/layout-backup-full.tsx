@@ -57,21 +57,18 @@ export default function RootLayout({
   const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
   
   if (!clerkKey && process.env.NODE_ENV === 'development') {
-    // Clerk publishable key not found - this is expected in some environments
+    console.warn('⚠️ Clerk publishable key not found. Authentication features may not work.')
   }
 
   return (
     <ClerkProvider
       publishableKey={clerkKey}
       dynamic
-      signInFallbackRedirectUrl="/"
-      signUpFallbackRedirectUrl="/"
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
     >
       <html lang="en" className="dark">
         <head>
-          {/* Viewport for iPhone safe areas */}
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-          
           {/* PWA Meta Tags */}
           <meta name="theme-color" content="#8B5CF6" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -94,21 +91,23 @@ export default function RootLayout({
         <body className={inter.className}>
           <GlobalErrorBoundary>
             <RealtimeProvider>
-              <WebSocketProvider>
-                <div className="min-h-screen bg-background text-foreground dark pb-20">
-                  <Navigation />
-                  <main className="container mx-auto px-4 py-6 max-w-4xl">
-                    {children}
-                  </main>
-                  <div suppressHydrationWarning>
+                <WebSocketProvider>
+                  <div className="min-h-screen bg-background text-foreground dark pb-20">
+                    <Navigation />
+                    <main className="container mx-auto px-4 py-6 max-w-4xl">
+                      <div className="space-y-6">
+                        {children}
+                      </div>
+                    </main>
                     <BottomNavigation />
                   </div>
-                </div>
-                <Toaster position="top-right" richColors />
-                <PWASetup />
-                <NetworkStatus />
-                <InstallPrompt showForAllUsers={true} />
-              </WebSocketProvider>
+                  <Toaster position="top-right" richColors />
+                  <ConsoleErrorHandler />
+                  <PWASetup />
+                  <NetworkStatus />
+                  <InstallPrompt showForAllUsers={true} />
+                  {/* <PWANavigationFix /> */}
+                </WebSocketProvider>
             </RealtimeProvider>
           </GlobalErrorBoundary>
         </body>

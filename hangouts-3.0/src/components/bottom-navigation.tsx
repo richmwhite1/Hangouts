@@ -1,15 +1,11 @@
 "use client"
 
-// Removed useState import as it's no longer needed
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { TouchButton } from "@/components/ui/touch-button"
 import { Home, Compass, Plus, Calendar, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-// Removed old MessagesModal import
 import { useHapticFeedback } from "@/hooks/use-haptic-feedback"
-
 export function BottomNavigation() {
   const pathname = usePathname()
   const { hapticLight, hapticSuccess } = useHapticFeedback()
@@ -34,44 +30,44 @@ export function BottomNavigation() {
   const activeTab = getActiveTab()
 
   return (
-    <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#000000] backdrop-blur-lg border-t border-[#262626] z-40">
-        <div className="flex items-center justify-around px-2 py-3">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#000000] backdrop-blur-lg border-t border-[#262626] z-40 pb-safe">
+      <div className="flex items-center justify-around px-2 py-2">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
 
-            return (
-              <Link key={tab.id} href={tab.href}>
-                <Button
-                  variant={isActive ? "default" : "ghost"}
-                  size="lg"
-                  className="flex flex-col items-center space-y-1 h-auto py-3 px-4 min-w-0 min-h-[60px]"
-                  onClick={() => {
-                    if (isActive) {
-                      hapticLight()
-                    } else {
-                      hapticSuccess()
-                    }
-                  }}
-                >
-                  <div className="relative">
-                    <Icon className="w-5 h-5" />
-                    {tab.id === "friends" && (
-                      <Badge variant="destructive" className="absolute -top-1 -right-1 px-1 min-w-0 h-4 text-xs">
-                        2
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">{tab.label}</span>
-                </Button>
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
-
-      {/* Messages functionality now integrated into bottom navigation */}
-    </>
+          return (
+            <Link 
+              key={tab.id} 
+              href={tab.href}
+              className="flex-1 flex justify-center min-w-0"
+            >
+              <Button
+                variant={isActive ? "default" : "ghost"}
+                size="sm"
+                className="flex flex-col items-center justify-center gap-1 h-auto py-1.5 px-2 min-w-0 w-full max-w-[70px]"
+                onClick={() => {
+                  if (isActive) {
+                    hapticLight()
+                  } else {
+                    hapticSuccess()
+                  }
+                }}
+              >
+                <div className="relative flex items-center justify-center">
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {tab.id === "friends" && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 px-1 min-w-0 h-4 text-xs">
+                      2
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs font-medium text-center leading-tight">{tab.label}</span>
+              </Button>
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
   )
 }

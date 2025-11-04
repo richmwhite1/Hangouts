@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, use } from 'react'
+import { useState, useEffect, useRef, use, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -153,6 +153,24 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       }
     }
   }, [isSignedIn, resolvedParams.id, isConnected])
+
+  const markConversationAsRead = useCallback(async () => {
+    if (!resolvedParams.id) return
+    try {
+      await fetch(`/api/conversations/${resolvedParams.id}/mark-read`, {
+        method: 'POST'
+      })
+    } catch (error) {
+      logger.error('Error marking conversation as read:', error);
+    }
+  }, [resolvedParams.id])
+
+  // Mark conversation as read when it's loaded and user is viewing it
+  useEffect(() => {
+    if (conversation && databaseUserId && !isLoading) {
+      markConversationAsRead()
+    }
+  }, [conversation, databaseUserId, isLoading, markConversationAsRead])
 
   const fetchDatabaseUserId = async () => {
     try {

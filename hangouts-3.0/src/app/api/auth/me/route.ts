@@ -5,12 +5,10 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { logger } from '@/lib/logger'
 export async function GET(_request: NextRequest) {
   try {
-    console.log('🔍 /api/auth/me - Starting request')
     const { userId } = await auth()
-    console.log('🔍 /api/auth/me - Clerk userId:', userId)
     
     if (!userId) {
-      console.log('🔍 /api/auth/me - No userId, returning 401')
+      logger.warn('Authentication required for /api/auth/me')
       return NextResponse.json({
         success: false,
         error: 'Authentication required'
@@ -18,18 +16,15 @@ export async function GET(_request: NextRequest) {
     }
 
     const user = await getClerkApiUser()
-    console.log('🔍 /api/auth/me - Database user found:', user ? 'YES' : 'NO')
-    console.log('🔍 /api/auth/me - Database user ID:', user?.id)
     
     if (!user) {
-      console.log('🔍 /api/auth/me - User not found, returning 404')
+      logger.warn(`User not found for Clerk ID: ${userId}`)
       return NextResponse.json({
         success: false,
         error: 'User not found'
       }, { status: 404 })
     }
 
-    console.log('🔍 /api/auth/me - Returning success with user ID:', user.id, 'username:', user.username)
     return NextResponse.json({
       success: true,
       data: { 
@@ -41,7 +36,7 @@ export async function GET(_request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Get me error:', error);
+    logger.error('Error in /api/auth/me:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error'

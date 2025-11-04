@@ -72,7 +72,6 @@ model User {
   securityLogs             SecurityLog[]
   hangoutTasks             hangout_tasks[]
   hangoutTaskAssignments   hangout_task_assignments[]
-  agentConversations       AgentConversation[]
 
   @@index([email])
   @@index([username])
@@ -675,38 +674,6 @@ model EventSave {
   @@map("event_saves")
 }
 
-model AgentSearchCache {
-  id             String   @id @default(cuid())
-  queryHash      String   @unique
-  originalQuery  String
-  location       String?
-  timeWindow     String?
-  results        Json
-  expiresAt      DateTime
-  searchCount    Int      @default(1)
-  lastAccessedAt DateTime @default(now())
-  createdAt      DateTime @default(now())
-
-  @@index([queryHash])
-  @@index([expiresAt])
-  @@index([location, timeWindow])
-  @@map("agent_search_cache")
-}
-
-model TrendingSearch {
-  id             String   @id @default(cuid())
-  query          String
-  location       String?
-  searchCount    Int      @default(1)
-  lastSearchedAt DateTime @default(now())
-  createdAt      DateTime @default(now())
-
-  @@unique([query, location])
-  @@index([searchCount])
-  @@index([lastSearchedAt])
-  @@map("trending_searches")
-}
-
 model Conversation {
   id            String                    @id @default(cuid())
   type          ConversationType          @default(DIRECT)
@@ -973,30 +940,4 @@ enum AttachmentType {
   CONTACT
   STICKER
   GIF
-}
-
-model AgentConversation {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  AgentMessage[]
-  context   Json?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  @@index([userId, createdAt])
-  @@map("agent_conversations")
-}
-
-model AgentMessage {
-  id             String            @id @default(cuid())
-  conversationId String
-  conversation   AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  role           String
-  content        String            @db.Text
-  metadata       Json?
-  createdAt      DateTime          @default(now())
-
-  @@index([conversationId, createdAt])
-  @@map("agent_messages")
 }

@@ -10,7 +10,6 @@ import { Search, Filter, MapPin, Calendar, DollarSign, TrendingUp } from 'lucide
 import { ImprovedCreateEventModal } from '@/components/events/ImprovedCreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { useAuth } from '@clerk/nextjs'
-import { AgentButton } from '@/components/agent-button'
 
 interface Event {
   id: string
@@ -83,24 +82,36 @@ export default function EventsPage() {
         const response = await fetch(apiEndpoint)
         
         if (!response.ok) {
-          console.error('EventsPage: Failed to fetch events:', response.status, await response.text())
+          const errorText = await response.text().catch(() => 'Unknown error')
+            // Failed to fetch events - will show empty state
+          
+          // Don't show error to user, just log it and show empty state
+          // The API now returns 200 with empty array on error
           setEvents([])
           return
         }
         
         const data = await response.json()
         
+        // Handle both success and error responses
+        if (!data.success) {
+            // Events API returned error - will show empty state
+          setEvents([])
+          return
+        }
+        
         if (isSignedIn) {
           // Authenticated API returns { success: true, events: [...] }
-          if (data.success && data.events) {
+          if (data.success && Array.isArray(data.events)) {
             setEvents(data.events || [])
+              // Events loaded successfully
           } else {
-            console.error('EventsPage: Invalid response format from /api/events', data)
+              // Invalid response format from /api/events
             setEvents([])
           }
         } else {
           // Public API returns { success: true, events: [...] }
-          if (data.success && data.events) {
+          if (data.success && Array.isArray(data.events)) {
             // Normalize the data from public API
             const normalizedEvents = (data.events || []).map((event: any) => ({
               ...event,
@@ -121,13 +132,16 @@ export default function EventsPage() {
               tags: event.tags || []
             }))
             setEvents(normalizedEvents)
+              // Public events loaded successfully
           } else {
-            console.error('EventsPage: Invalid response format from /api/public/content', data)
+              // Invalid response format from /api/public/content
             setEvents([])
           }
         }
       } catch (error) {
-        console.error('EventsPage: Error fetching events:', error)
+        // Error fetching events - will show empty state
+        // Don't show error to user, just log it
+        // The page will show empty state which is better UX
         setEvents([])
       } finally {
         setIsLoading(false)
@@ -199,7 +213,6 @@ export default function EventsPage() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">Public Events</h1>
             <div className="flex items-center gap-2" suppressHydrationWarning>
-              <AgentButton />
               <Button 
                 onClick={() => window.location.href = '/signup'}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -527,7 +540,6 @@ export default function EventsPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-white">Events</h1>
           <div className="flex items-center gap-2" suppressHydrationWarning>
-            <AgentButton />
             <ImprovedCreateEventModal />
           </div>
         </div>

@@ -1,11 +1,13 @@
-import { ProfilePage } from "@/components/profile-page"
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { ProfileClient } from "@/components/profile-client"
 
-export default function Profile() {
-  const { userId } = auth()
+export default async function Profile() {
+  const { userId } = await auth()
+  
   if (!userId) {
     redirect('/sign-in?redirect_url=/profile')
   }
-  return <ProfilePage />
+
+  return <ProfileClient />
 }
