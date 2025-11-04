@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
   '/hangouts/public(.*)',
   '/events/public(.*)',
+  '/event/public(.*)', // Public event detail pages
   '/api/public(.*)',
   '/discover(.*)', // Allow discover page for non-authenticated users
   '/events(.*)', // Allow events page for non-authenticated users
@@ -21,7 +22,8 @@ const isProtectedRoute = createRouteMatcher([
   '/messages(.*)',
   '/friends(.*)',
   '/create(.*)',
-  '/hangout/(.*)', // Protect individual hangout detail pages
+  '/hangout/(.*)', // Protect individual hangout detail pages - requires auth
+  '/event/[^p](.*)', // Protect event detail pages (except those starting with /event/public)
 ])
 
 export default clerkMiddleware((auth, req) => {

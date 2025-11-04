@@ -7,10 +7,22 @@ const globalForPrisma = globalThis as unknown as {
 
 // Create Prisma client with optimized configuration
 const createPrismaClient = () => {
-  const databaseUrl = process.env.DATABASE_URL
+  let databaseUrl = process.env.DATABASE_URL
   
   if (!databaseUrl) {
     throw new Error('DATABASE_URL environment variable is required')
+  }
+  
+  // Normalize SQLite file URLs - ensure they start with file: protocol
+  if (databaseUrl.startsWith('file:')) {
+    // SQLite URL is already correct
+  } else if (databaseUrl.includes('dev.db') || databaseUrl.includes('.db')) {
+    // If it's a relative path, convert to absolute
+    const path = require('path')
+    const dbPath = path.isAbsolute(databaseUrl) 
+      ? databaseUrl 
+      : path.join(process.cwd(), databaseUrl.replace(/^file:/, ''))
+    databaseUrl = `file:${dbPath}`
   }
   
   // console.log('🔗 Database URL configured:', databaseUrl.replace(/\/\/.*@/, '//***:***@'); // Removed for production)

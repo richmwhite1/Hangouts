@@ -3,13 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id                       String                    @id @default(cuid())
-  clerkId                  String?                   @unique
   email                    String                    @unique
   username                 String                    @unique
   name                     String
@@ -30,10 +29,6 @@ model User {
   isActive                 Boolean                   @default(true)
   isVerified               Boolean                   @default(false)
   lastSeen                 DateTime                  @default(now())
-  deletedAt                DateTime?
-  scheduledDeletionDate    DateTime?
-  hasCompletedOnboarding   Boolean                   @default(false)
-  onboardingStep           Int?                      @default(1)
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
   comments                 comments[]
@@ -57,7 +52,6 @@ model User {
   typingIndicators         TypingIndicator[]
   notificationPreferences  NotificationPreference[]
   notifications            Notification[]
-  pushSubscriptions       PushSubscription[]
   reminders                Reminder[]
   passwordResetTokens      PasswordResetToken?
   photo_comments           photo_comments[]
@@ -154,21 +148,6 @@ model NotificationPreference {
   @@index([userId])
   @@index([type])
   @@map("notification_preferences")
-}
-
-model PushSubscription {
-  id           String   @id @default(cuid())
-  userId       String
-  endpoint     String   @unique
-  p256dh       String
-  auth         String
-  userAgent    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("push_subscriptions")
 }
 
 model PollVote {
@@ -319,7 +298,6 @@ model content {
   endTime              DateTime?
   status               ContentStatus          @default(DRAFT)
   privacyLevel         PrivacyLevel           @default(PRIVATE)
-  isPublic             Boolean                @default(false)
   creatorId            String
   createdAt            DateTime               @default(now())
   updatedAt            DateTime
@@ -333,16 +311,10 @@ model content {
   currency             String?                @default("USD")
   ticketUrl            String?
   attendeeCount        Int?                   @default(0)
-  viewCount            Int                    @default(0)
-  shareCount           Int                    @default(0)
   externalEventId      String?
   source               EventSource?           @default(MANUAL)
   maxParticipants      Int?
   weatherEnabled       Boolean?               @default(false)
-  recurrenceRule       String?
-  recurrenceEndDate    DateTime?
-  parentEventId        String?
-  isRecurring          Boolean                @default(false)
   comments             comments[]
   users                User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   content_likes        content_likes[]
@@ -363,7 +335,6 @@ model content {
   @@index([createdAt])
   @@index([creatorId])
   @@index([privacyLevel])
-  @@index([isPublic])
   @@index([startTime])
   @@index([status])
   @@index([type])
@@ -575,7 +546,7 @@ model photos {
   photo_likes    photo_likes[]
   photo_tags     photo_tags[]
   users          User             @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  content        content?          @relation(fields: [contentId], references: [id])
+  content        content?         @relation(fields: [contentId], references: [id])
 
   @@index([contentId])
   @@index([createdAt])
@@ -598,7 +569,7 @@ model polls {
   consensusType       String            @default("percentage")
   status              String            @default("ACTIVE")
   allowDelegation     Boolean           @default(false)
-  allowAbstention      Boolean           @default(true)
+  allowAbstention     Boolean           @default(true)
   allowAddOptions     Boolean           @default(true)
   isPublic            Boolean           @default(false)
   visibility          PollVisibility    @default(PRIVATE)
@@ -772,29 +743,6 @@ model TypingIndicator {
   @@map("typing_indicators")
 }
 
-model Reminder {
-  id            String        @id @default(cuid())
-  userId        String
-  contentId     String?       // Reference to hangout or event
-  type          ReminderType
-  title         String
-  message       String
-  scheduledFor  DateTime      // When to send the reminder
-  isSent        Boolean       @default(false)
-  isDismissed   Boolean       @default(false)
-  sentAt        DateTime?
-  dismissedAt   DateTime?
-  createdAt     DateTime      @default(now())
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content       content?      @relation(fields: [contentId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@index([scheduledFor])
-  @@index([isSent])
-  @@index([isDismissed])
-  @@map("reminders")
-}
 
 enum FriendRequestStatus {
   PENDING
@@ -848,16 +796,6 @@ enum NotificationType {
   LIKE
   COMMENT
   SHARE
-  POLL_VOTE_CAST
-  POLL_CONSENSUS_REACHED
-  HANGOUT_CONFIRMED
-  HANGOUT_CANCELLED
-}
-
-enum ReminderType {
-  HANGOUT_REMINDER
-  EVENT_REMINDER
-  CUSTOM
 }
 
 enum MessageType {
@@ -940,4 +878,37 @@ enum AttachmentType {
   CONTACT
   STICKER
   GIF
+}
+
+model Reminder {
+  id            String        @id @default(cuid())
+  userId        String
+  contentId     String?       // Reference to hangout or event
+  type          ReminderType
+  title         String
+  message       String
+  scheduledFor  DateTime      // When to send the reminder
+  isSent        Boolean       @default(false)
+  isDismissed   Boolean       @default(false)
+  sentAt        DateTime?
+  dismissedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       content?      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([scheduledFor])
+  @@index([isSent])
+  @@index([isDismissed])
+  @@map("reminders")
+}
+
+enum ReminderType {
+  HANGOUT_1_HOUR
+  HANGOUT_STARTING
+  EVENT_1_HOUR
+  EVENT_STARTING
+  HANGOUT_DAY_BEFORE
+  EVENT_DAY_BEFORE
 }

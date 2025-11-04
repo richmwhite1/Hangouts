@@ -198,7 +198,11 @@ export default function HomePage() {
     >
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
-          <HangoutCalendar hangouts={hangouts} events={[]} currentUserId={userId} />
+          <HangoutCalendar 
+            hangouts={hangouts} 
+            events={[]} 
+            currentUserId={userId || undefined} 
+          />
         </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
