@@ -56,25 +56,33 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause with privacy logic: PUBLIC events (isPublic OR privacyLevel) + user's own events + FRIENDS_ONLY events from user's friends
-    // Note: Don't filter by status as some events might be in DRAFT but still visible
+    // For public events, ensure they are PUBLISHED. User's own events can be any status.
     const whereClause: any = {
       type: 'EVENT',
       OR: [
-        // Public events (everyone can see) - check both isPublic flag and privacyLevel
-        { isPublic: true },
-        { privacyLevel: 'PUBLIC' },
+        // Public events (everyone can see) - must be PUBLISHED and have isPublic=true OR privacyLevel=PUBLIC
+        {
+          AND: [
+            { status: 'PUBLISHED' },
+            {
+              OR: [
+                { isPublic: true },
+                { privacyLevel: 'PUBLIC' }
+              ]
+            }
+          ]
+        },
         // User's own events (if authenticated) - regardless of status
         ...(userId ? [{ creatorId: userId }] : []),
-        // Friends-only events from user's friends (if authenticated)
+        // Friends-only events from user's friends (if authenticated) - must be PUBLISHED
         ...(userId && friendIds.length > 0 ? [{
           AND: [
             { privacyLevel: 'FRIENDS_ONLY' },
+            { status: 'PUBLISHED' },
             { creatorId: { in: friendIds } }
           ]
         }] : [])
       ]
-      // Removed status filter to allow DRAFT events from creators and friends
-      // status: 'PUBLISHED'
     }
     
     if (search) {
@@ -192,6 +200,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
+    const isPublic = body.isPublic !== false
     const event = await db.content.create({
       data: {
         id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -205,7 +214,8 @@ export async function POST(request: NextRequest) {
         startTime: body.startDate ? new Date(body.startDate) : new Date(),
         endTime: body.endDate ? new Date(body.endDate) : null,
         status: 'PUBLISHED',
-        privacyLevel: body.isPublic !== false ? 'PUBLIC' : 'PRIVATE',
+        privacyLevel: isPublic ? 'PUBLIC' : 'PRIVATE',
+        isPublic: isPublic, // Set isPublic flag to match privacyLevel
         creatorId: user.id,
         updatedAt: new Date()
       }

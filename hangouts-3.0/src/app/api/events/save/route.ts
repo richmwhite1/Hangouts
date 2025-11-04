@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
         source: 'SCRAPED',
         status: 'PUBLISHED',
         privacyLevel: 'PUBLIC',
+        isPublic: true, // Set isPublic for public scraped events
         creatorId: user.id,
         updatedAt: new Date()
       }

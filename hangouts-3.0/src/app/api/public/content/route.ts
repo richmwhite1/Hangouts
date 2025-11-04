@@ -11,8 +11,11 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const whereBase: any = {
-      isPublic: true,
       status: 'PUBLISHED',
+      OR: [
+        { isPublic: true },
+        { privacyLevel: 'PUBLIC' }
+      ]
     }
 
     if (typeParam === 'HANGOUT' || typeParam === 'EVENT') {
