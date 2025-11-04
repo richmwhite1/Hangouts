@@ -12,4 +12,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd hangouts-3.0 && npm start"
+cmd = "cd hangouts-3.0 && npm run start:next"
