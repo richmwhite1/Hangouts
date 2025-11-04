@@ -45,15 +45,20 @@ interface Hangout {
 }
 
 export function ProfileClient() {
-  const { signOut } = useAuth()
+  const { signOut, isSignedIn, isLoaded } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [attendedEventsCount, setAttendedEventsCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchProfile()
-  }, [])
+    if (isLoaded && isSignedIn) {
+      fetchProfile()
+    } else if (isLoaded && !isSignedIn) {
+      // Redirect handled by middleware, but show loading state
+      setLoading(false)
+    }
+  }, [isLoaded, isSignedIn])
 
   const fetchProfile = async () => {
     try {
@@ -80,13 +85,15 @@ export function ProfileClient() {
           if (statsRes.ok) {
             const statsData = await statsRes.json()
             if (statsData.success && statsData.data?.stats?.attendedEventsCount !== undefined) {
-              setAttendedEventsCount(statsData.data.stats.attendedEventsCount)
+              setAttendedEventsCount(statsData.data.stats.attendedEventsCount || 0)
             }
           }
         } catch (error) {
-          // Silently fail - stats are optional
-          // Stats fetch failed (non-critical) - silently continue
+          // Silently fail - stats are optional, default to 0
+          setAttendedEventsCount(0)
         }
+      } else {
+        setAttendedEventsCount(0)
       }
     } catch (error) {
       // Error fetching profile - user will see error state
@@ -95,12 +102,22 @@ export function ProfileClient() {
     }
   }
 
-  if (loading) {
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-gray-400">Loading your profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-400 mb-4">Please sign in to view your profile</p>
         </div>
       </div>
     )
@@ -123,7 +140,7 @@ export function ProfileClient() {
   const stats = [
     { label: 'Hangouts', value: hangouts.length, icon: Calendar },
     { label: 'Friends', value: '0', icon: Users },
-    { label: 'Events', value: attendedEventsCount, icon: Ticket }
+    { label: 'Events', value: attendedEventsCount || 0, icon: Ticket }
   ]
 
   return (

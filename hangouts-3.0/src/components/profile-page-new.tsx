@@ -13,7 +13,7 @@ import {
   Users, 
   LogOut,
   Edit,
-  Star,
+  Ticket,
   Heart,
   Coffee,
   Music,
@@ -48,6 +48,7 @@ export function ProfilePageNew() {
   const { isSignedIn, isLoaded, signOut } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [hangouts, setHangouts] = useState<Hangout[]>([])
+  const [attendedEventsCount, setAttendedEventsCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -72,6 +73,24 @@ export function ProfilePageNew() {
       
       setProfile(profileData.data.profile)
       setHangouts(profileData.data.hangouts || [])
+
+      // Fetch user stats to get attended events count
+      if (profileData.data.profile?.id) {
+        try {
+          const statsRes = await fetch(`/api/users/${profileData.data.profile.id}/stats`)
+          if (statsRes.ok) {
+            const statsData = await statsRes.json()
+            if (statsData.success && statsData.data?.stats?.attendedEventsCount !== undefined) {
+              setAttendedEventsCount(statsData.data.stats.attendedEventsCount || 0)
+            }
+          }
+        } catch (error) {
+          // Silently fail - stats are optional, default to 0
+          setAttendedEventsCount(0)
+        }
+      } else {
+        setAttendedEventsCount(0)
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -109,7 +128,7 @@ export function ProfilePageNew() {
   const stats = [
     { label: 'Hangouts', value: hangouts.length, icon: Calendar },
     { label: 'Friends', value: '0', icon: Users },
-    { label: 'Joined', value: new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), icon: Star }
+    { label: 'Events', value: attendedEventsCount || 0, icon: Ticket }
   ]
 
   return (
@@ -283,6 +302,7 @@ export function ProfilePageNew() {
     </div>
   )
 }
+
 
 
 

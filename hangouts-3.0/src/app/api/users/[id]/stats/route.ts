@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 
-import { logger } from '@/lib/logger'
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id
+    const { id: userId } = await params
 
     // Get user's hosted hangouts count
     const hostedHangoutsCount = await db.content.count({
@@ -88,8 +87,14 @@ export async function GET(
     return NextResponse.json(createSuccessResponse({ stats }, 'User stats retrieved successfully'))
 
   } catch (error: any) {
-    logger.error('Error fetching user stats:', error);
-    return NextResponse.json(createErrorResponse('Failed to fetch user stats', error.message), { status: 500 })
+    console.error('Error fetching user stats:', error);
+    return NextResponse.json(
+      createErrorResponse(
+        'Failed to fetch user stats', 
+        error?.message || 'Unknown error'
+      ), 
+      { status: 500 }
+    )
   }
 }
 

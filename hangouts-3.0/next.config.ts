@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  compress: true,
   
   // Disable problematic features
   eslint: {
@@ -14,7 +15,6 @@ const nextConfig: NextConfig = {
   // Production optimizations
   poweredByHeader: false,
   generateEtags: true,
-  compress: true,
   
   // Images configuration
   images: {
