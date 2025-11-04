@@ -24,7 +24,7 @@ model User {
   birthDate                DateTime?
   favoriteActivities       String?                    @default("[]")
   favoritePlaces           String?                    @default("[]")
-  password                 String
+  password                 String?
   role                     UserRole                  @default(USER)
   isActive                 Boolean                   @default(true)
   isVerified               Boolean                   @default(false)

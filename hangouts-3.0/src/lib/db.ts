@@ -13,19 +13,27 @@ const createPrismaClient = () => {
     throw new Error('DATABASE_URL environment variable is required')
   }
   
-  // Normalize SQLite file URLs - ensure they start with file: protocol
-  if (databaseUrl.startsWith('file:')) {
-    // SQLite URL is already correct
-  } else if (databaseUrl.includes('dev.db') || databaseUrl.includes('.db')) {
-    // If it's a relative path, convert to absolute
-    const path = require('path')
-    const dbPath = path.isAbsolute(databaseUrl) 
-      ? databaseUrl 
-      : path.join(process.cwd(), databaseUrl.replace(/^file:/, ''))
-    databaseUrl = `file:${dbPath}`
+  // Only normalize SQLite file URLs in development
+  // PostgreSQL URLs (postgresql://) should pass through unchanged
+  if (!databaseUrl.startsWith('postgresql://') && !databaseUrl.startsWith('postgres://')) {
+    // This is likely a SQLite database for local development
+    if (databaseUrl.startsWith('file:')) {
+      // SQLite URL is already correct
+    } else if (databaseUrl.includes('dev.db') || databaseUrl.includes('.db')) {
+      // If it's a relative path, convert to absolute
+      const path = require('path')
+      const dbPath = path.isAbsolute(databaseUrl) 
+        ? databaseUrl 
+        : path.join(process.cwd(), databaseUrl.replace(/^file:/, ''))
+      databaseUrl = `file:${dbPath}`
+    }
   }
   
-  // console.log('🔗 Database URL configured:', databaseUrl.replace(/\/\/.*@/, '//***:***@'); // Removed for production)
+  // Log connection info (sanitized)
+  const sanitizedUrl = databaseUrl.startsWith('postgresql') 
+    ? databaseUrl.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')
+    : 'SQLite local database'
+  logger.info('Database connection configured:', { type: databaseUrl.startsWith('postgresql') ? 'PostgreSQL' : 'SQLite', sanitizedUrl })
   
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],

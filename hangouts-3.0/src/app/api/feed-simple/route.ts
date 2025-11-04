@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
         logger.info('No user ID, returning public content')
         const publicContent = await db.content.findMany({
           where: {
-            status: 'PUBLISHED',
             privacyLevel: 'PUBLIC',
             type: 'HANGOUT'
           },
@@ -97,15 +96,17 @@ export async function GET(request: NextRequest) {
               }
             },
             // RSVP data for current user (if authenticated)
-            rsvps: {
-              where: userId ? { userId: userId } : undefined,
-              select: {
-                id: true,
-                userId: true,
-                status: true,
-                respondedAt: true
+            ...(userId ? {
+              rsvps: {
+                where: { userId: userId },
+                select: {
+                  id: true,
+                  userId: true,
+                  status: true,
+                  respondedAt: true
+                }
               }
-            },
+            } : {}),
             // Participant data
             content_participants: {
               select: {
@@ -147,7 +148,6 @@ export async function GET(request: NextRequest) {
 
         const total = await db.content.count({
           where: {
-            status: 'PUBLISHED',
             privacyLevel: 'PUBLIC',
             type: 'HANGOUT'
           }
@@ -250,9 +250,7 @@ export async function GET(request: NextRequest) {
       logger.info('User authenticated, fetching personalized feed for user:', userId)
       
       // Build where clause based on feed type
-      let whereClause: any = {
-        status: 'PUBLISHED'
-      }
+      let whereClause: any = {}
 
       // Content type filter
       if (contentType === 'hangouts') {
@@ -328,15 +326,17 @@ export async function GET(request: NextRequest) {
               }
             },
             // RSVP data for current user
-            rsvps: {
-              where: { userId: userId },
-              select: {
-                id: true,
-                userId: true,
-                status: true,
-                respondedAt: true
+            ...(userId ? {
+              rsvps: {
+                where: { userId: userId },
+                select: {
+                  id: true,
+                  userId: true,
+                  status: true,
+                  respondedAt: true
+                }
               }
-            },
+            } : {}),
             // Participant data
             content_participants: {
               select: {
