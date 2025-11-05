@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if friend request already exists
+    // Check if friend request already exists (including non-pending ones)
     const existingRequest = await db.friendRequest.findFirst({
       where: {
         OR: [
@@ -46,7 +46,25 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingRequest) {
-      return NextResponse.json({ error: 'Friend request already exists' }, { status: 400 })
+      // If request is pending, return appropriate message
+      if (existingRequest.status === 'PENDING') {
+        if (existingRequest.senderId === user.id) {
+          return NextResponse.json({ 
+            error: 'You have already sent a friend request to this user',
+            requestId: existingRequest.id 
+          }, { status: 400 })
+        } else {
+          return NextResponse.json({ 
+            error: 'This user has already sent you a friend request',
+            requestId: existingRequest.id 
+          }, { status: 400 })
+        }
+      }
+      // If request was accepted, they're already friends
+      if (existingRequest.status === 'ACCEPTED') {
+        return NextResponse.json({ error: 'Already friends' }, { status: 400 })
+      }
+      // If declined, allow new request
     }
 
     // Check if already friends

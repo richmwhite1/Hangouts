@@ -25,3 +25,10 @@
 {"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T00:21:10.623Z"}
 {"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T00:21:10.635Z"}
 {"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T00:21:10.637Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:50.401Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:50.403Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:50.385Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:50.415Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:50.418Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:50.446Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-11-05T04:06:52.417Z"}

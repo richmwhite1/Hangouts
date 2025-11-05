@@ -5,7 +5,7 @@ import { triggerNotification, getUserDisplayName } from '@/lib/notification-trig
 import { logger } from '@/lib/logger'
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -14,7 +14,7 @@ export async function PATCH(
     }
 
     const { status } = await request.json()
-    const requestId = params.id
+    const { id: requestId } = await params
 
     if (!['ACCEPTED', 'DECLINED'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })

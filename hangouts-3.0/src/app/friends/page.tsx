@@ -56,9 +56,28 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     if (isSignedIn && isLoaded) {
+      // Get current user ID first
+      const fetchCurrentUser = async () => {
+        try {
+          const token = await getToken()
+          const response = await fetch('/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            setCurrentUserId(data.data?.id || data.user?.id || null)
+          }
+        } catch (error) {
+          logger.error('Error fetching current user:', error)
+        }
+      }
+      fetchCurrentUser()
       loadFriends()
       loadFriendRequests()
       // Load all users for discovery
@@ -86,6 +105,28 @@ export default function FriendsPage() {
   const loadFriendRequests = async () => {
     try {
       const token = await getToken()
+      
+      // Get current user ID first if not already set
+      let userId = currentUserId
+      if (!userId) {
+        try {
+          const userResponse = await fetch('/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
+            userId = userData.data?.id || userData.user?.id
+            if (userId) {
+              setCurrentUserId(userId)
+            }
+          }
+        } catch (error) {
+          logger.error('Error fetching current user in loadFriendRequests:', error)
+        }
+      }
+      
       const response = await fetch('/api/friends/requests', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -93,7 +134,27 @@ export default function FriendsPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        setFriendRequests([...data.sent, ...data.received])
+        const allRequests = [...data.sent, ...data.received]
+        setFriendRequests(allRequests)
+        
+        // Initialize pendingRequests Set from loaded friend requests
+        // This ensures the UI state matches the database state
+        if (userId) {
+          const pendingUserIds = new Set<string>()
+          allRequests.forEach(req => {
+            if (req.status === 'PENDING') {
+              // If current user sent the request, track the receiver
+              if (req.sender.id === userId) {
+                pendingUserIds.add(req.receiver.id)
+              }
+              // If current user received the request, track the sender
+              if (req.receiver.id === userId) {
+                pendingUserIds.add(req.sender.id)
+              }
+            }
+          })
+          setPendingRequests(pendingUserIds)
+        }
       }
     } catch (error) {
       logger.error('Error loading friend requests:', error);
@@ -143,16 +204,36 @@ export default function FriendsPage() {
 
       if (response.ok) {
         toast.success('Friend request sent!')
-        searchUsers(searchQuery) // Refresh search results
+        // Reload friend requests to sync state with database
+        await loadFriendRequests()
+        // Refresh search results to update button states
+        searchUsers(searchQuery)
       } else {
-        // Remove from pending if request failed
-        setPendingRequests(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(userId)
-          return newSet
-        })
-        const error = await response.json()
-        toast.error(error.message || 'Failed to send friend request')
+        const errorData = await response.json()
+        const errorMessage = errorData.error || errorData.message || 'Failed to send friend request'
+        
+        // If request already exists (400), reload friend requests instead of showing error
+        // This handles the case where the UI was out of sync
+        if (response.status === 400 && (
+          errorMessage.includes('already exists') || 
+          errorMessage.includes('Already friends') ||
+          errorMessage.includes('already sent') ||
+          errorMessage.includes('already sent you')
+        )) {
+          toast.info('Friend request already exists')
+          // Reload friend requests to sync UI with database
+          await loadFriendRequests()
+          // Refresh search results to update button states
+          searchUsers(searchQuery)
+        } else {
+          // Remove from pending if request failed
+          setPendingRequests(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(userId)
+            return newSet
+          })
+          toast.error(errorMessage)
+        }
       }
     } catch (error) {
       // Remove from pending if request failed
@@ -180,11 +261,25 @@ export default function FriendsPage() {
 
       if (response.ok) {
         toast.success(status === 'ACCEPTED' ? 'Friend request accepted!' : 'Friend request declined')
-        loadFriendRequests()
-        loadFriends()
+        await loadFriendRequests()
+        await loadFriends()
+        // Refresh search results if on find friends tab
+        if (searchQuery !== undefined) {
+          searchUsers(searchQuery)
+        }
       } else {
-        const error = await response.json()
-        toast.error(error.message || 'Failed to respond to friend request')
+        const errorData = await response.json()
+        const errorMessage = errorData.error || errorData.message || 'Failed to respond to friend request'
+        
+        // If 404, the request might have been deleted or already processed
+        if (response.status === 404) {
+          toast.info('Friend request not found - it may have been cancelled or already processed')
+          // Reload to sync UI
+          await loadFriendRequests()
+          await loadFriends()
+        } else {
+          toast.error(errorMessage)
+        }
       }
     } catch (error) {
       logger.error('Error responding to friend request:', error);
@@ -197,16 +292,29 @@ export default function FriendsPage() {
     const isFriend = friends.some(friendship => friendship.friend.id === userId)
     if (isFriend) return 'friends'
     
+    // We need currentUserId to properly determine status
+    if (!currentUserId) {
+      // If we don't have currentUserId yet, return 'none' to show "Add Friend"
+      // This will be corrected once currentUserId is loaded
+      return 'none'
+    }
+    
     // Check if there's a pending request SENT by current user
-    const sentRequest = friendRequests.some(req => 
-      req.receiver.id === userId && req.status === 'PENDING'
-    )
+    // Current user is the sender, target user is the receiver
+    const sentRequest = friendRequests.find(req => {
+      return req.status === 'PENDING' && 
+             req.sender.id === currentUserId && 
+             req.receiver.id === userId
+    })
     if (sentRequest) return 'sent'
     
     // Check if there's a pending request RECEIVED from this user
-    const receivedRequest = friendRequests.some(req => 
-      req.sender.id === userId && req.status === 'PENDING'
-    )
+    // Current user is the receiver, target user is the sender
+    const receivedRequest = friendRequests.find(req => {
+      return req.status === 'PENDING' && 
+             req.receiver.id === currentUserId && 
+             req.sender.id === userId
+    })
     if (receivedRequest) return 'received'
     
     return 'none'
@@ -475,12 +583,18 @@ export default function FriendsPage() {
             <div className="space-y-6">
               {/* Received Requests (Action Required) */}
               {(() => {
-                const receivedRequests = friendRequests.filter(req => req.receiver.id !== req.sender.id && req.status === 'PENDING')
-                  .filter(req => {
-                    // Only show requests where current user is the receiver
-                    const isSender = friends.some(f => f.friend.id === req.sender.id)
-                    return !isSender
-                  })
+                // Filter: current user is receiver, status is PENDING, not a self-request, and not already friends
+                const receivedRequests = friendRequests.filter(req => {
+                  // Must be pending
+                  if (req.status !== 'PENDING') return false
+                  // Current user must be the receiver
+                  if (currentUserId && req.receiver.id !== currentUserId) return false
+                  // Not a self-request
+                  if (req.sender.id === req.receiver.id) return false
+                  // Not already friends
+                  const isAlreadyFriend = friends.some(f => f.friend.id === req.sender.id)
+                  return !isAlreadyFriend
+                })
                 
                 return receivedRequests.length > 0 && (
                   <div className="space-y-4">
@@ -534,12 +648,18 @@ export default function FriendsPage() {
 
               {/* Sent Requests (Pending) */}
               {(() => {
-                const sentRequests = friendRequests.filter(req => req.sender.id !== req.receiver.id && req.status === 'PENDING')
-                  .filter(req => {
-                    // Only show requests where current user is the sender
-                    const isReceiver = friends.some(f => f.friend.id === req.receiver.id)
-                    return !isReceiver
-                  })
+                // Filter: current user is sender, status is PENDING, not a self-request, and not already friends
+                const sentRequests = friendRequests.filter(req => {
+                  // Must be pending
+                  if (req.status !== 'PENDING') return false
+                  // Current user must be the sender
+                  if (currentUserId && req.sender.id !== currentUserId) return false
+                  // Not a self-request
+                  if (req.sender.id === req.receiver.id) return false
+                  // Not already friends
+                  const isAlreadyFriend = friends.some(f => f.friend.id === req.receiver.id)
+                  return !isAlreadyFriend
+                })
                 
                 return sentRequests.length > 0 && (
                   <div className="space-y-4">

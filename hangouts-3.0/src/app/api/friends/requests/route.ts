@@ -17,6 +17,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get friend requests (both sent and received)
+    // Note: We'll filter out self-requests in application code since Prisma doesn't support field comparison in where clauses
     const friendRequests = await db.friendRequest.findMany({
       where: {
         OR: [
@@ -51,9 +52,12 @@ export async function GET(_request: NextRequest) {
       }
     })
 
+    // Filter out invalid self-requests (senderId === receiverId) - these shouldn't exist but handle them
+    const validRequests = friendRequests.filter(req => req.senderId !== req.receiverId)
+
     // Separate sent and received requests
-    const sentRequests = friendRequests.filter(req => req.senderId === user.id)
-    const receivedRequests = friendRequests.filter(req => req.receiverId === user.id)
+    const sentRequests = validRequests.filter(req => req.senderId === user.id)
+    const receivedRequests = validRequests.filter(req => req.receiverId === user.id)
 
     return NextResponse.json({
       success: true,
