@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       },
       tags: [], // No tags in unified table for now
       attendeeCount: 0, // Default count - could fetch from content_participants if needed
-      isPublic: event.isPublic || event.privacyLevel === 'PUBLIC',
+      isPublic: event.privacyLevel === 'PUBLIC',
       creator: event.users || { name: 'Unknown', username: 'unknown', avatar: null },
       createdAt: event.createdAt.toISOString()
     }))
@@ -202,7 +202,6 @@ export async function POST(request: NextRequest) {
         startTime: body.startDate ? new Date(body.startDate) : new Date(),
         endTime: body.endDate ? new Date(body.endDate) : null,
         privacyLevel: isPublic ? 'PUBLIC' : 'PRIVATE',
-        isPublic: isPublic, // Set isPublic flag to match privacyLevel
         creatorId: user.id,
         updatedAt: new Date()
       }

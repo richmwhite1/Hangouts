@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { useWebSocket } from "@/contexts/websocket-context"
+import { useUnreadCounts } from "@/hooks/use-unread-counts"
 import { User } from "@/types/api"
 import Link from "next/link"
 
@@ -105,6 +106,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const resolvedParams = use(params)
   const { isSignedIn, userId } = useAuth()
   const { socket, isConnected, typingUsers, onlineUsers, sendTypingIndicator, sendMessage, sendReaction, joinConversation, leaveConversation } = useWebSocket()
+  const { markConversationAsRead: markAsReadInHook, fetchUnreadCounts } = useUnreadCounts()
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -160,10 +162,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       await fetch(`/api/conversations/${resolvedParams.id}/mark-read`, {
         method: 'POST'
       })
+      // Update the unread count in the hook immediately
+      await markAsReadInHook(resolvedParams.id)
+      // Also refresh counts to ensure accuracy
+      await fetchUnreadCounts()
     } catch (error) {
       logger.error('Error marking conversation as read:', error);
     }
-  }, [resolvedParams.id])
+  }, [resolvedParams.id, markAsReadInHook, fetchUnreadCounts])
 
   // Mark conversation as read when it's loaded and user is viewing it
   useEffect(() => {

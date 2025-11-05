@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
         },
         messages: {
           where: {
-            isDeleted: false
+            isDeleted: false,
+            senderId: {
+              not: userId // Don't count user's own messages as unread
+            }
           },
           select: {
             id: true,
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
       const participant = conv.participants[0]
       const lastReadAt = participant?.lastReadAt
       
-      // Count messages after lastReadAt
+      // Count messages after lastReadAt (excluding user's own messages)
       const unreadCount = lastReadAt 
         ? conv.messages.filter(msg => msg.createdAt > lastReadAt).length
         : conv.messages.length
