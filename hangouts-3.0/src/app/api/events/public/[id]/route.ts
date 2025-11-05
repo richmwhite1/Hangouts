@@ -15,7 +15,6 @@ export async function GET(
       where: {
         id: id,
         type: 'EVENT',
-        status: 'PUBLISHED',
         privacyLevel: 'PUBLIC'
       },
       select: {

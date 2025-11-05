@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
         longitude: validatedData.longitude,
         startTime: startTime,
         endTime: endTime,
-        status: 'PUBLISHED',
         privacyLevel: validatedData.privacyLevel,
         creatorId: user.id,
         // Event-specific fields

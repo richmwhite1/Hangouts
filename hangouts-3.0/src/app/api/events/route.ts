@@ -60,25 +60,19 @@ export async function GET(request: NextRequest) {
     const whereClause: any = {
       type: 'EVENT',
       OR: [
-        // Public events (everyone can see) - must be PUBLISHED and have isPublic=true OR privacyLevel=PUBLIC
+        // Public events (everyone can see) - have isPublic=true OR privacyLevel=PUBLIC
         {
-          AND: [
-            { status: 'PUBLISHED' },
-            {
-              OR: [
-                { isPublic: true },
-                { privacyLevel: 'PUBLIC' }
-              ]
-            }
+          OR: [
+            { isPublic: true },
+            { privacyLevel: 'PUBLIC' }
           ]
         },
-        // User's own events (if authenticated) - regardless of status
+        // User's own events (if authenticated)
         ...(userId ? [{ creatorId: userId }] : []),
-        // Friends-only events from user's friends (if authenticated) - must be PUBLISHED
+        // Friends-only events from user's friends (if authenticated)
         ...(userId && friendIds.length > 0 ? [{
           AND: [
             { privacyLevel: 'FRIENDS_ONLY' },
-            { status: 'PUBLISHED' },
             { creatorId: { in: friendIds } }
           ]
         }] : [])
@@ -213,7 +207,6 @@ export async function POST(request: NextRequest) {
         longitude: body.longitude || null,
         startTime: body.startDate ? new Date(body.startDate) : new Date(),
         endTime: body.endDate ? new Date(body.endDate) : null,
-        status: 'PUBLISHED',
         privacyLevel: isPublic ? 'PUBLIC' : 'PRIVATE',
         isPublic: isPublic, // Set isPublic flag to match privacyLevel
         creatorId: user.id,

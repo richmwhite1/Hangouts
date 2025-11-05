@@ -487,7 +487,6 @@ export async function POST(request: NextRequest) {
         longitude: validatedData.longitude || null,
         startTime,
         endTime,
-        status: 'PUBLISHED',
         privacyLevel: validatedData.privacyLevel || 'PUBLIC',
         creatorId: userId,
         image: validatedData.image || null,

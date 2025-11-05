@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const whereBase: any = {
-      status: 'PUBLISHED',
       OR: [
         { isPublic: true },
         { privacyLevel: 'PUBLIC' }
