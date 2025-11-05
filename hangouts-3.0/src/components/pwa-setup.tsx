@@ -5,6 +5,11 @@ import { registerServiceWorker, setupInstallPrompt } from '@/lib/register-sw'
 
 export function PWASetup() {
   useEffect(() => {
+    // Skip in development
+    if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return
+    }
+
     // Register service worker
     registerServiceWorker({
       onUpdate: (registration) => {

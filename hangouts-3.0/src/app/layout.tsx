@@ -89,6 +89,21 @@ export default function RootLayout({
           {/* Windows Tiles */}
           <meta name="msapplication-TileImage" content="/icon-192x192.png" />
           
+          {/* Unregister service worker in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  if ('serviceWorker' in navigator && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                      registrations.forEach(reg => reg.unregister());
+                    });
+                  }
+                `
+              }}
+            />
+          )}
+          
           {/* Heroicons are imported as React components, not as scripts */}
         </head>
         <body className={inter.className}>

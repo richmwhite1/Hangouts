@@ -13,6 +13,19 @@ export async function registerServiceWorker(options: ServiceWorkerRegistrationOp
     return null
   }
 
+  // Skip service worker registration in development mode
+  if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('Service worker disabled in development mode')
+    // Unregister any existing service workers
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(registrations.map(registration => registration.unregister()))
+    } catch (error) {
+      // Ignore errors
+    }
+    return null
+  }
+
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/'

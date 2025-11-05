@@ -11,10 +11,8 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const whereBase: any = {
-      OR: [
-        { isPublic: true },
-        { privacyLevel: 'PUBLIC' }
-      ]
+      privacyLevel: 'PUBLIC',
+      status: 'PUBLISHED' // Only show published content
     }
 
     if (typeParam === 'HANGOUT' || typeParam === 'EVENT') {
@@ -42,7 +40,6 @@ export async function GET(req: NextRequest) {
       description: true,
       image: true,
       privacyLevel: true,
-      isPublic: true,
       startTime: true,
       endTime: true,
       venue: true,
@@ -82,7 +79,6 @@ export async function GET(req: NextRequest) {
       description: item.description ?? undefined,
       image: item.image ?? undefined,
       privacyLevel: item.privacyLevel,
-      isPublic: item.isPublic,
       startTime: item.startTime ?? undefined,
       endTime: item.endTime ?? undefined,
       venue: item.venue ?? undefined,
@@ -107,7 +103,12 @@ export async function GET(req: NextRequest) {
       hasMore: hangouts.length + events.length < totalHangouts + totalEvents,
     })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Failed to load public content' }, { status: 500 })
+    console.error('Error in /api/public/content:', error)
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || 'Failed to load public content',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 })
   }
 }
 

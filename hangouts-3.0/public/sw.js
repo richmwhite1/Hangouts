@@ -87,6 +87,11 @@ self.addEventListener('fetch', (event) => {
     return // Let requests go through normally in dev
   }
 
+  // Skip non-HTTP(S) schemes (chrome-extension:, file:, etc.)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return // Let non-HTTP requests pass through
+  }
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return
@@ -163,6 +168,12 @@ async function networkFirstStrategy(request) {
 
 // Cache-first strategy for static assets
 async function cacheFirstStrategy(request) {
+  // Skip non-HTTP(S) schemes
+  const url = new URL(request.url)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return fetch(request) // Let non-HTTP requests pass through
+  }
+
   const cachedResponse = await caches.match(request)
   
   if (cachedResponse) {
@@ -174,7 +185,10 @@ async function cacheFirstStrategy(request) {
     
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME)
-      cache.put(request, networkResponse.clone())
+      // Only cache HTTP(S) requests
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        cache.put(request, networkResponse.clone())
+      }
     }
     
     return networkResponse
