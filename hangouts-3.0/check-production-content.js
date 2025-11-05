@@ -21,7 +21,8 @@ async function checkContent() {
         title: true,
         privacyLevel: true,
         startTime: true,
-        creator: {
+        creatorId: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -39,7 +40,8 @@ async function checkContent() {
         title: true,
         privacyLevel: true,
         startTime: true,
-        creator: {
+        creatorId: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -64,7 +66,7 @@ async function checkContent() {
     if (hangouts.length > 0) {
       console.log('Sample Hangouts:')
       hangouts.forEach(h => {
-        console.log(`  - ${h.title} (${h.privacyLevel}) by ${h.creator?.name || 'Unknown'}`)
+        console.log(`  - ${h.title} (${h.privacyLevel}) by ${h.users?.name || 'Unknown'}`)
       })
       console.log('')
     } else {
@@ -75,7 +77,7 @@ async function checkContent() {
     if (events.length > 0) {
       console.log('Sample Events:')
       events.forEach(e => {
-        console.log(`  - ${e.title} (${e.privacyLevel}) by ${e.creator?.name || 'Unknown'}`)
+        console.log(`  - ${e.title} (${e.privacyLevel}) by ${e.users?.name || 'Unknown'}`)
       })
       console.log('')
     } else {

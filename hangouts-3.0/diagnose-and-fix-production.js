@@ -1,5 +1,7 @@
 const { PrismaClient } = require('@prisma/client')
-const { clerkClient } = require('@clerk/clerk-sdk-node')
+const { Clerk } = require('@clerk/clerk-sdk-node')
+
+const clerkClient = Clerk({ secretKey: process.env.CLERK_SECRET_KEY })
 
 // Initialize Prisma with production DATABASE_URL
 const prisma = new PrismaClient({
@@ -59,8 +61,22 @@ async function diagnoseAndFix() {
     
     // Step 4: Fetch Clerk users
     console.log('4️⃣  Fetching users from Clerk...')
-    const clerkUsers = await clerkClient.users.getUserList({ limit: 100 })
-    console.log(`   📊 Found ${clerkUsers.data.length} users in Clerk\n`)
+    let clerkUsers
+    try {
+      clerkUsers = await clerkClient.users.getUserList({ limit: 100 })
+      console.log('   Clerk API response:', clerkUsers)
+      
+      // Handle different response formats
+      const userList = clerkUsers.data || clerkUsers || []
+      console.log(`   📊 Found ${userList.length} users in Clerk\n`)
+      
+      // Normalize the response
+      clerkUsers = { data: userList }
+    } catch (clerkError) {
+      console.error('   ❌ Error fetching from Clerk:', clerkError.message)
+      console.error('   Full error:', clerkError)
+      throw clerkError
+    }
     
     // Step 5: Sync users
     console.log('5️⃣  Syncing Clerk users to database...\n')
