@@ -1,10 +1,11 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { db } from './db'
+import { logger } from './logger'
 
 export async function getClerkApiUser() {
   try {
     const { userId } = await auth()
-    console.log('getClerkApiUser - Clerk userId:', userId)
+    logger.info('getClerkApiUser - Clerk userId:', { userId })
     if (!userId) return null
     
     // First, try to find user by clerkId
@@ -23,7 +24,7 @@ export async function getClerkApiUser() {
     
     // If user not found, sync from Clerk
     if (!user) {
-      console.log('getClerkApiUser - User not found, syncing from Clerk...')
+      logger.info('getClerkApiUser - User not found, syncing from Clerk...')
       const clerkUser = await currentUser()
       
       if (clerkUser) {
@@ -56,7 +57,7 @@ export async function getClerkApiUser() {
               isActive: true
             }
           })
-          console.log('getClerkApiUser - Updated existing user with Clerk ID')
+          logger.info('getClerkApiUser - Updated existing user with Clerk ID', { userId: existingUser.id })
         } else {
           // Create new user
           // Ensure username is unique
@@ -88,15 +89,15 @@ export async function getClerkApiUser() {
               isActive: true
             }
           })
-          console.log('getClerkApiUser - Created new user:', user.username)
+          logger.info('getClerkApiUser - Created new user', { username: user.username })
         }
       }
     }
     
-    console.log('getClerkApiUser - Database user found:', user ? 'YES' : 'NO')
+    logger.info('getClerkApiUser - Database user found', { found: !!user, userId: user?.id })
     return user
   } catch (error) {
-    console.error('getClerkApiUser - Error:', error)
+    logger.error('getClerkApiUser - Error:', error)
     return null
   }
 }
