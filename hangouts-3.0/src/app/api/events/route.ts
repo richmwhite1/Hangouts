@@ -55,18 +55,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Build where clause with privacy logic: PUBLIC events (isPublic OR privacyLevel) + user's own events + FRIENDS_ONLY events from user's friends
-    // For public events, ensure they are PUBLISHED. User's own events can be any status.
+    // Build where clause with privacy logic: PUBLIC events + user's own events + FRIENDS_ONLY events from user's friends
     const whereClause: any = {
       type: 'EVENT',
       OR: [
-        // Public events (everyone can see) - have isPublic=true OR privacyLevel=PUBLIC
-        {
-          OR: [
-            { isPublic: true },
-            { privacyLevel: 'PUBLIC' }
-          ]
-        },
+        // Public events (everyone can see)
+        { privacyLevel: 'PUBLIC' },
         // User's own events (if authenticated)
         ...(userId ? [{ creatorId: userId }] : []),
         // Friends-only events from user's friends (if authenticated)
