@@ -60,12 +60,29 @@ export async function POST(
       }
     })
 
-    // Create message_reads entries for all unread messages
-    const messageReads = messages.map(message => ({
-      messageId: message.id,
-      userId: user.id,
-      readAt: new Date()
-    }))
+    // Get existing read receipts to avoid duplicates
+    const existingReads = await db.message_reads.findMany({
+      where: {
+        userId: user.id,
+        messageId: {
+          in: messages.map(m => m.id)
+        }
+      },
+      select: {
+        messageId: true
+      }
+    })
+
+    const existingMessageIds = new Set(existingReads.map(r => r.messageId))
+    
+    // Create message_reads entries only for messages that haven't been read yet
+    const messageReads = messages
+      .filter(message => !existingMessageIds.has(message.id))
+      .map(message => ({
+        messageId: message.id,
+        userId: user.id,
+        readAt: new Date()
+      }))
 
     if (messageReads.length > 0) {
       await db.message_reads.createMany({

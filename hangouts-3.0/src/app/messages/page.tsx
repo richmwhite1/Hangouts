@@ -322,7 +322,12 @@ export default function MessagesPage() {
                       <Link 
                         key={conversation.id} 
                         href={`/messages/${conversation.id}`}
-                        onClick={() => markConversationAsRead(conversation.id)}
+                        onClick={async (e) => {
+                          // Mark as read without preventing navigation
+                          markConversationAsRead(conversation.id).catch(err => {
+                            logger.error('Error marking conversation as read:', err);
+                          })
+                        }}
                       >
                         <div className={`group relative ${viewMode === "grid" ? "p-4" : "p-3"} rounded-lg cursor-pointer transition-all duration-200 ${
                           isSelected 

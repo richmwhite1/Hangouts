@@ -30,14 +30,6 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        participants: {
-          where: {
-            userId: userId
-          },
-          select: {
-            lastReadAt: true
-          }
-        },
         messages: {
           where: {
             isDeleted: false,
@@ -47,7 +39,15 @@ export async function GET(request: NextRequest) {
           },
           select: {
             id: true,
-            createdAt: true
+            createdAt: true,
+            message_reads: {
+              where: {
+                userId: userId
+              },
+              select: {
+                id: true
+              }
+            }
           },
           orderBy: {
             createdAt: 'desc'
@@ -57,14 +57,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate unread counts for each conversation
+    // A message is unread if it doesn't have a message_reads entry for this user
     const unreadCounts = conversations.map(conv => {
-      const participant = conv.participants[0]
-      const lastReadAt = participant?.lastReadAt
-      
-      // Count messages after lastReadAt (excluding user's own messages)
-      const unreadCount = lastReadAt 
-        ? conv.messages.filter(msg => msg.createdAt > lastReadAt).length
-        : conv.messages.length
+      // Count messages that don't have a read receipt for this user
+      const unreadCount = conv.messages.filter(msg => msg.message_reads.length === 0).length
 
       return {
         conversationId: conv.id,

@@ -65,11 +65,13 @@ export function useUnreadCounts() {
           setTotalUnreadCount(newCounts.reduce((sum, conv) => sum + conv.unreadCount, 0))
           return newCounts
         })
+        // Refresh unread counts from server to ensure accuracy
+        await fetchUnreadCounts()
       }
     } catch (err) {
       logger.error('Error marking conversation as read:', err);
     }
-  }, [])
+  }, [fetchUnreadCounts])
   const getUnreadCount = useCallback((conversationId: string) => {
     const conversation = unreadCounts.find(conv => conv.conversationId === conversationId)
     return conversation?.unreadCount || 0
@@ -77,7 +79,27 @@ export function useUnreadCounts() {
   // Fetch unread counts on mount and when authentication changes
   useEffect(() => {
     fetchUnreadCounts()
-  }, [fetchUnreadCounts])
+    
+    // Set up periodic refresh every 30 seconds to keep counts accurate
+    const interval = setInterval(() => {
+      if (isLoaded && isSignedIn) {
+        fetchUnreadCounts()
+      }
+    }, 30000) // Refresh every 30 seconds
+    
+    // Also refresh when page becomes visible (user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isLoaded && isSignedIn) {
+        fetchUnreadCounts()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchUnreadCounts, isLoaded, isSignedIn])
   return {
     unreadCounts,
     totalUnreadCount,

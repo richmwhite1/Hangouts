@@ -173,10 +173,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   // Mark conversation as read when it's loaded and user is viewing it
   useEffect(() => {
-    if (conversation && databaseUserId && !isLoading) {
+    if (conversation && databaseUserId && !isLoading && resolvedParams.id) {
+      // Mark as read when conversation is viewed
       markConversationAsRead()
     }
-  }, [conversation, databaseUserId, isLoading, markConversationAsRead])
+  }, [conversation, databaseUserId, isLoading, resolvedParams.id, markConversationAsRead])
+
+  // Also mark as read when messages are loaded
+  useEffect(() => {
+    if (messages.length > 0 && databaseUserId && !isLoading && resolvedParams.id) {
+      // Mark conversation as read when messages are displayed
+      markConversationAsRead()
+    }
+  }, [messages.length, databaseUserId, isLoading, resolvedParams.id, markConversationAsRead])
 
   const fetchDatabaseUserId = async () => {
     try {
