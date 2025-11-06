@@ -134,6 +134,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const hasMarkedAsReadRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (isSignedIn && resolvedParams.id) {
@@ -159,9 +160,16 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const markConversationAsRead = useCallback(async () => {
     if (!resolvedParams.id) return
     try {
-      await fetch(`/api/conversations/${resolvedParams.id}/mark-read`, {
+      const response = await fetch(`/api/conversations/${resolvedParams.id}/mark-read`, {
         method: 'POST'
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        logger.error('Failed to mark conversation as read:', errorData)
+        return
+      }
+      
       // Update the unread count in the hook immediately
       await markAsReadInHook(resolvedParams.id)
       // Also refresh counts to ensure accuracy
@@ -171,21 +179,28 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
   }, [resolvedParams.id, markAsReadInHook, fetchUnreadCounts])
 
-  // Mark conversation as read when it's loaded and user is viewing it
+  // Mark conversation as read when it's loaded, messages are loaded, and user is viewing it
   useEffect(() => {
-    if (conversation && databaseUserId && !isLoading && resolvedParams.id) {
-      // Mark as read when conversation is viewed
-      markConversationAsRead()
+    // Only mark as read when all conditions are met: conversation loaded, messages loaded, user authenticated, not loading
+    // Also check if we've already marked this conversation as read to avoid duplicate calls
+    if (conversation && messages.length > 0 && databaseUserId && !isLoading && resolvedParams.id) {
+      // Only mark if we haven't already marked this conversation
+      if (hasMarkedAsReadRef.current !== resolvedParams.id) {
+        // Use a small delay to ensure everything is rendered
+        const timer = setTimeout(() => {
+          markConversationAsRead()
+          hasMarkedAsReadRef.current = resolvedParams.id
+        }, 100)
+        
+        return () => clearTimeout(timer)
+      }
     }
-  }, [conversation, databaseUserId, isLoading, resolvedParams.id, markConversationAsRead])
-
-  // Also mark as read when messages are loaded
-  useEffect(() => {
-    if (messages.length > 0 && databaseUserId && !isLoading && resolvedParams.id) {
-      // Mark conversation as read when messages are displayed
-      markConversationAsRead()
+    
+    // Reset the ref when conversation changes
+    if (resolvedParams.id !== hasMarkedAsReadRef.current) {
+      hasMarkedAsReadRef.current = null
     }
-  }, [messages.length, databaseUserId, isLoading, resolvedParams.id, markConversationAsRead])
+  }, [conversation, messages.length, databaseUserId, isLoading, resolvedParams.id, markConversationAsRead])
 
   const fetchDatabaseUserId = async () => {
     try {

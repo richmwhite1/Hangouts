@@ -62,6 +62,10 @@ export async function GET(request: NextRequest) {
       // Count messages that don't have a read receipt for this user
       const unreadCount = conv.messages.filter(msg => msg.message_reads.length === 0).length
 
+      if (unreadCount > 0) {
+        logger.info(`Conversation ${conv.id} has ${unreadCount} unread messages`)
+      }
+
       return {
         conversationId: conv.id,
         unreadCount: Math.max(0, unreadCount)
@@ -70,6 +74,8 @@ export async function GET(request: NextRequest) {
 
     // Calculate total unread count
     const totalUnreadCount = unreadCounts.reduce((sum, conv) => sum + conv.unreadCount, 0)
+    
+    logger.info(`Total unread count for user ${userId}: ${totalUnreadCount}`)
 
     return NextResponse.json(createSuccessResponse({
       unreadCounts,

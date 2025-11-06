@@ -47,26 +47,23 @@ export function useUnreadCounts() {
     try {
       const response = await fetch(`/api/conversations/${conversationId}/mark-read`, { method: 'POST' })
       if (response.ok) {
-        // Update local state immediately
-        setUnreadCounts(prev =>
-          prev.map(conv =>
-            conv.conversationId === conversationId
-              ? { ...conv, unreadCount: 0 }
-              : conv
-          )
-        )
-        // Recalculate total
+        // Update local state immediately for instant UI feedback
         setUnreadCounts(prev => {
           const newCounts = prev.map(conv =>
             conv.conversationId === conversationId
               ? { ...conv, unreadCount: 0 }
               : conv
           )
-          setTotalUnreadCount(newCounts.reduce((sum, conv) => sum + conv.unreadCount, 0))
+          // Recalculate total immediately
+          const newTotal = newCounts.reduce((sum, conv) => sum + conv.unreadCount, 0)
+          setTotalUnreadCount(newTotal)
           return newCounts
         })
-        // Refresh unread counts from server to ensure accuracy
+        // Refresh unread counts from server to ensure accuracy (will override if different)
         await fetchUnreadCounts()
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        logger.error('Failed to mark conversation as read:', errorData)
       }
     } catch (err) {
       logger.error('Error marking conversation as read:', err);

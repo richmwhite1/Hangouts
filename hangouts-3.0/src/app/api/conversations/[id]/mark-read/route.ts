@@ -60,6 +60,8 @@ export async function POST(
       }
     })
 
+    logger.info(`Marking ${messages.length} messages as read for conversation ${conversationId}`)
+
     // Get existing read receipts to avoid duplicates
     const existingReads = await db.message_reads.findMany({
       where: {
@@ -85,10 +87,13 @@ export async function POST(
       }))
 
     if (messageReads.length > 0) {
-      await db.message_reads.createMany({
+      const result = await db.message_reads.createMany({
         data: messageReads,
         skipDuplicates: true
       })
+      logger.info(`Created ${result.count} read receipts for conversation ${conversationId}`)
+    } else {
+      logger.info(`All messages already marked as read for conversation ${conversationId}`)
     }
 
     // Mark all MESSAGE_RECEIVED notifications related to this conversation as read
