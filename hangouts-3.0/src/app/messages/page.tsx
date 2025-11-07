@@ -75,13 +75,30 @@ export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
   const [selectedConversations, setSelectedConversations] = useState<string[]>([])
+  const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
 
   useEffect(() => {
     if (isSignedIn) {
+      fetchDatabaseUserId()
       fetchConversations()
       fetchFriends()
     }
   }, [isSignedIn])
+
+  const fetchDatabaseUserId = async () => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data?.id) {
+          logger.info('Database user ID fetched for messages page:', data.data.id)
+          setDatabaseUserId(data.data.id)
+        }
+      }
+    } catch (error) {
+      logger.error('Error fetching database user ID:', error)
+    }
+  }
 
   const fetchConversations = async () => {
     try {
@@ -314,7 +331,10 @@ export default function MessagesPage() {
               ) : (
                 <div className={`p-2 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" : "space-y-1"}`}>
                   {filteredConversations.map((conversation) => {
-                    const otherParticipant = conversation.participants.find(p => p.id !== userId)
+                    // Use database user ID to find the other participant (not Clerk ID)
+                    const otherParticipant = databaseUserId 
+                      ? conversation.participants.find(p => p.id !== databaseUserId)
+                      : conversation.participants.find(p => p.id !== userId) // Fallback to Clerk ID if database ID not loaded
                     const isSelected = selectedConversations.includes(conversation.id)
                     const unreadCount = getUnreadCount(conversation.id)
                     
@@ -324,9 +344,12 @@ export default function MessagesPage() {
                         href={`/messages/${conversation.id}`}
                         onClick={async (e) => {
                           // Mark as read without preventing navigation
-                          markConversationAsRead(conversation.id).catch(err => {
+                          try {
+                            logger.info('Marking conversation as read from messages list:', conversation.id)
+                            await markConversationAsRead(conversation.id)
+                          } catch (err) {
                             logger.error('Error marking conversation as read:', err);
-                          })
+                          }
                         }}
                       >
                         <div className={`group relative ${viewMode === "grid" ? "p-4" : "p-3"} rounded-lg cursor-pointer transition-all duration-200 ${

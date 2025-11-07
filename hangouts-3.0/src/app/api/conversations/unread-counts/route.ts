@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       const unreadCount = conv.messages.filter(msg => msg.message_reads.length === 0).length
 
       if (unreadCount > 0) {
-        logger.info(`Conversation ${conv.id} has ${unreadCount} unread messages`)
+        logger.info(`Conversation ${conv.id} has ${unreadCount} unread messages for user ${userId} (Clerk: ${clerkUserId})`)
       }
 
       return {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     // Calculate total unread count
     const totalUnreadCount = unreadCounts.reduce((sum, conv) => sum + conv.unreadCount, 0)
     
-    logger.info(`Total unread count for user ${userId}: ${totalUnreadCount}`)
+    logger.info(`Total unread count for user ${userId} (Clerk: ${clerkUserId}): ${totalUnreadCount} across ${conversations.length} conversations`)
 
     return NextResponse.json(createSuccessResponse({
       unreadCounts,

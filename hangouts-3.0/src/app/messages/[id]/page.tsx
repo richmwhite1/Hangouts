@@ -158,24 +158,32 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   }, [isSignedIn, resolvedParams.id, isConnected])
 
   const markConversationAsRead = useCallback(async () => {
-    if (!resolvedParams.id) return
+    if (!resolvedParams.id) {
+      logger.warn('Cannot mark conversation as read: no conversation ID')
+      return
+    }
     try {
+      logger.info(`Marking conversation ${resolvedParams.id} as read from detail page`)
       const response = await fetch(`/api/conversations/${resolvedParams.id}/mark-read`, {
         method: 'POST'
       })
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        logger.error('Failed to mark conversation as read:', errorData)
+        logger.error(`Failed to mark conversation ${resolvedParams.id} as read:`, errorData)
         return
       }
+      
+      const responseData = await response.json().catch(() => null)
+      logger.info(`Successfully marked conversation ${resolvedParams.id} as read:`, responseData)
       
       // Update the unread count in the hook immediately
       await markAsReadInHook(resolvedParams.id)
       // Also refresh counts to ensure accuracy
       await fetchUnreadCounts()
+      logger.info(`Unread counts refreshed after marking ${resolvedParams.id} as read`)
     } catch (error) {
-      logger.error('Error marking conversation as read:', error);
+      logger.error(`Error marking conversation ${resolvedParams.id} as read:`, error);
     }
   }, [resolvedParams.id, markAsReadInHook, fetchUnreadCounts])
 

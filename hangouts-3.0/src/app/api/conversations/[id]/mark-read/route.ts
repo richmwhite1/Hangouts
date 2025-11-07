@@ -21,6 +21,8 @@ export async function POST(
     }
 
     const { id: conversationId } = await params
+    
+    logger.info(`Mark-read called for conversation ${conversationId} by user ${user.id} (Clerk: ${clerkUserId})`)
 
     // Verify user is a participant in this conversation
     const participant = await db.conversationParticipant.findUnique({
@@ -91,9 +93,9 @@ export async function POST(
         data: messageReads,
         skipDuplicates: true
       })
-      logger.info(`Created ${result.count} read receipts for conversation ${conversationId}`)
+      logger.info(`Created ${result.count} read receipts for conversation ${conversationId} (user ${user.id})`)
     } else {
-      logger.info(`All messages already marked as read for conversation ${conversationId}`)
+      logger.info(`All messages already marked as read for conversation ${conversationId} (user ${user.id})`)
     }
 
     // Mark all MESSAGE_RECEIVED notifications related to this conversation as read
