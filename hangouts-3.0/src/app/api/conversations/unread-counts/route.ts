@@ -29,48 +29,60 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      include: {
-        messages: {
-          where: {
-            isDeleted: false,
-            senderId: {
-              not: userId // Don't count user's own messages as unread
-            }
-          },
-          select: {
-            id: true,
-            createdAt: true,
-            message_reads: {
-              where: {
-                userId: userId
+      select: {
+        id: true
+      }
+    })
+
+    const conversationIds = conversations.map(c => c.id)
+
+    if (conversationIds.length === 0) {
+      logger.info(`No conversations found for user ${userId} (Clerk: ${clerkUserId})`)
+      return NextResponse.json(createSuccessResponse({
+        unreadCounts: [],
+        totalUnreadCount: 0
+      }, 'Unread counts retrieved successfully'))
+    }
+
+    // Use a more efficient query to count unread messages per conversation
+    // Count messages that don't have a read receipt for this user
+    const unreadCounts = await Promise.all(
+      conversationIds.map(async (conversationId) => {
+        try {
+          // Count messages that haven't been read by this user
+          // This is more efficient than counting total and subtracting read
+          const unreadCount = await db.messages.count({
+            where: {
+              conversationId: conversationId,
+              isDeleted: false,
+              senderId: {
+                not: userId
               },
-              select: {
-                id: true
+              message_reads: {
+                none: {
+                  userId: userId
+                }
               }
             }
-          },
-          orderBy: {
-            createdAt: 'desc'
+          })
+
+          if (unreadCount > 0) {
+            logger.info(`Conversation ${conversationId} has ${unreadCount} unread messages for user ${userId} (Clerk: ${clerkUserId})`)
+          }
+
+          return {
+            conversationId,
+            unreadCount
+          }
+        } catch (error) {
+          logger.error(`Error counting unread messages for conversation ${conversationId}:`, error)
+          return {
+            conversationId,
+            unreadCount: 0
           }
         }
-      }
-    })
-
-    // Calculate unread counts for each conversation
-    // A message is unread if it doesn't have a message_reads entry for this user
-    const unreadCounts = conversations.map(conv => {
-      // Count messages that don't have a read receipt for this user
-      const unreadCount = conv.messages.filter(msg => msg.message_reads.length === 0).length
-
-      if (unreadCount > 0) {
-        logger.info(`Conversation ${conv.id} has ${unreadCount} unread messages for user ${userId} (Clerk: ${clerkUserId})`)
-      }
-
-      return {
-        conversationId: conv.id,
-        unreadCount: Math.max(0, unreadCount)
-      }
-    })
+      })
+    )
 
     // Calculate total unread count
     const totalUnreadCount = unreadCounts.reduce((sum, conv) => sum + conv.unreadCount, 0)

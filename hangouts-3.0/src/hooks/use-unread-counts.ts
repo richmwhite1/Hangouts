@@ -46,31 +46,54 @@ export function useUnreadCounts() {
   const markConversationAsRead = useCallback(async (conversationId: string) => {
     try {
       logger.info(`Marking conversation ${conversationId} as read`)
-      const response = await fetch(`/api/conversations/${conversationId}/mark-read`, { method: 'POST' })
+      const response = await fetch(`/api/conversations/${conversationId}/mark-read`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
+        const responseData = await response.json().catch(() => null)
+        const serverUnreadCount = responseData?.data?.unreadCount ?? 0
+        
+        logger.info(`Mark-read response for ${conversationId}: unreadCount=${serverUnreadCount}`, responseData)
+        
         // Update local state immediately for instant UI feedback
         setUnreadCounts(prev => {
           const oldTotal = prev.reduce((sum, conv) => sum + conv.unreadCount, 0)
           const newCounts = prev.map(conv =>
             conv.conversationId === conversationId
-              ? { ...conv, unreadCount: 0 }
+              ? { ...conv, unreadCount: serverUnreadCount }
               : conv
           )
+          // If conversation not in list, add it
+          if (!newCounts.find(c => c.conversationId === conversationId)) {
+            newCounts.push({ conversationId, unreadCount: serverUnreadCount })
+          }
           // Recalculate total immediately
           const newTotal = newCounts.reduce((sum, conv) => sum + conv.unreadCount, 0)
           setTotalUnreadCount(newTotal)
           logger.info(`Unread count updated: ${oldTotal} -> ${newTotal} for conversation ${conversationId}`)
           return newCounts
         })
+        
         // Refresh unread counts from server to ensure accuracy (will override if different)
-        await fetchUnreadCounts()
-        logger.info(`Refreshed unread counts from server after marking ${conversationId} as read`)
+        // Use a small delay to ensure database transaction is committed
+        setTimeout(async () => {
+          await fetchUnreadCounts()
+          logger.info(`Refreshed unread counts from server after marking ${conversationId} as read`)
+        }, 500)
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         logger.error(`Failed to mark conversation ${conversationId} as read:`, errorData)
+        // Still refresh to get accurate state
+        await fetchUnreadCounts()
       }
     } catch (err) {
       logger.error(`Error marking conversation ${conversationId} as read:`, err);
+      // Still refresh to get accurate state
+      await fetchUnreadCounts()
     }
   }, [fetchUnreadCounts])
   const getUnreadCount = useCallback((conversationId: string) => {

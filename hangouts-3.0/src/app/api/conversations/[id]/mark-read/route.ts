@@ -93,7 +93,18 @@ export async function POST(
         data: messageReads,
         skipDuplicates: true
       })
-      logger.info(`Created ${result.count} read receipts for conversation ${conversationId} (user ${user.id})`)
+      logger.info(`Created ${result.count} read receipts for conversation ${conversationId} (user ${user.id}) out of ${messageReads.length} messages`)
+      
+      // Verify the read receipts were created
+      const verifyReads = await db.message_reads.count({
+        where: {
+          userId: user.id,
+          messageId: {
+            in: messages.map(m => m.id)
+          }
+        }
+      })
+      logger.info(`Verified ${verifyReads} read receipts exist for conversation ${conversationId} (user ${user.id})`)
     } else {
       logger.info(`All messages already marked as read for conversation ${conversationId} (user ${user.id})`)
     }
@@ -152,9 +163,28 @@ export async function POST(
       })
     }
 
+    // Get the final unread count for this conversation to return in response
+    const finalUnreadCount = await db.messages.count({
+      where: {
+        conversationId,
+        isDeleted: false,
+        senderId: {
+          not: user.id
+        },
+        message_reads: {
+          none: {
+            userId: user.id
+          }
+        }
+      }
+    })
+
+    logger.info(`Final unread count for conversation ${conversationId} (user ${user.id}): ${finalUnreadCount}`)
+
     return NextResponse.json(createSuccessResponse({
       conversationId,
-      readAt: new Date().toISOString()
+      readAt: new Date().toISOString(),
+      unreadCount: finalUnreadCount
     }, 'Conversation marked as read'))
   } catch (error) {
     logger.error('Error marking conversation as read:', error);
