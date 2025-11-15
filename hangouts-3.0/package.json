@@ -5,11 +5,11 @@
   "scripts": {
     "dev": "NODE_ENV=development next dev",
     "build": "prisma generate && next build",
-    "build:production": "NODE_ENV=production prisma generate && next build",
+    "build:production": "NODE_ENV=production prisma generate --schema=./prisma/schema.prisma && next build",
     "start": "next start -p ${PORT:-8080} -H 0.0.0.0",
     "start:next": "next start -p ${PORT:-8080} -H 0.0.0.0",
     "lint": "next lint",
-    "postinstall": "prisma generate",
+    "postinstall": "echo 'Skipping postinstall - prisma generate will run during build'",
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "node scripts/seed-local-data.js",
