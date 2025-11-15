@@ -92,11 +92,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
     
     // Create inviting title and description for link previews
+    // Keep description concise for Open Graph (max 200 chars recommended)
     const title = `${hangout.title} - Plans`
     const invitationText = `Hey, are you interested in ${hangout.title}?`
-    const description = hangout.description 
-      ? `${invitationText}\n\n${hangout.description}\n\nWhen: ${formatDate(hangout.startTime)}${hangout.startTime ? ` at ${formatTime(hangout.startTime)}` : ''}\nWhere: ${hangout.location || 'TBD'}\nCreated by: ${hangout.creator?.name || 'Someone'}`
-      : `${invitationText}\n\nWhen: ${formatDate(hangout.startTime)}${hangout.startTime ? ` at ${formatTime(hangout.startTime)}` : ''}\nWhere: ${hangout.location || 'TBD'}\nCreated by: ${hangout.creator?.name || 'Someone'}`
+    
+    // Build description without newlines (Open Graph doesn't support them well)
+    const dateTime = hangout.startTime 
+      ? `${formatDate(hangout.startTime)}${hangout.startTime ? ` at ${formatTime(hangout.startTime)}` : ''}`
+      : 'TBD'
+    const location = hangout.location || 'TBD'
+    const creator = hangout.creator?.name || 'Someone'
+    
+    // Create a clean description (remove newlines, limit length)
+    let description = hangout.description 
+      ? `${invitationText} ${hangout.description.substring(0, 100)}${hangout.description.length > 100 ? '...' : ''} When: ${dateTime}. Where: ${location}.`
+      : `${invitationText} When: ${dateTime}. Where: ${location}. Created by: ${creator}.`
+    
+    // Ensure description is not too long (Open Graph recommends max 200 chars)
+    if (description.length > 200) {
+      description = description.substring(0, 197) + '...'
+    }
     
     const shareUrl = `${baseUrl}/hangouts/public/${id}`
     
@@ -115,38 +130,60 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title,
       description,
+      metadataBase: new URL(baseUrl),
+      alternates: {
+        canonical: shareUrl,
+      },
       openGraph: {
         title: invitationText,
         description,
         url: shareUrl,
         siteName: 'Plans',
         type: 'website',
-        images: [{
-          url: hangoutImage,
-          width: 1200,
-          height: 630,
-          alt: hangout.title,
-        }],
         locale: 'en_US',
+        images: [
+          {
+            url: hangoutImage,
+            width: 1200,
+            height: 630,
+            alt: hangout.title,
+            type: 'image/jpeg',
+            secureUrl: hangoutImage,
+          }
+        ],
+        ...(hangout.startTime && {
+          publishedTime: new Date(hangout.startTime).toISOString(),
+        }),
       },
       twitter: {
         card: 'summary_large_image',
         title: invitationText,
         description,
         images: [hangoutImage],
+        creator: hangout.creator?.name || '@Plans',
       },
       other: {
         'og:type': 'website',
         'og:site_name': 'Plans',
+        'og:image': hangoutImage,
+        'og:image:url': hangoutImage,
+        'og:image:secure_url': hangoutImage,
         'og:image:width': '1200',
         'og:image:height': '630',
         'og:image:type': 'image/jpeg',
-        'og:image:secure_url': hangoutImage,
+        'og:image:alt': hangout.title,
         'og:updated_time': new Date().toISOString(),
         'og:locale': 'en_US',
-        'article:author': hangout.creator?.name || 'Plans',
-        'article:section': 'Hangouts',
-        'article:tag': 'Hangout',
+        'og:locale:alternate': 'en_US',
+        ...(hangout.startTime && {
+          'event:start_time': new Date(hangout.startTime).toISOString(),
+        }),
+        ...(hangout.endTime && {
+          'event:end_time': new Date(hangout.endTime).toISOString(),
+        }),
+        ...(hangout.location && {
+          'event:location': hangout.location,
+        }),
       },
     }
   } catch (error) {

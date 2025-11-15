@@ -96,11 +96,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
     
     // Create inviting title and description for link previews
+    // Keep description concise for Open Graph (max 200 chars recommended)
     const title = `${event.title} - Plans`
     const invitationText = `Hey, are you interested in ${event.title}?`
-    const description = event.description 
-      ? `${invitationText}\n\n${event.description}\n\nWhen: ${formatDate(event.startTime)}${event.startTime ? ` at ${formatTime(event.startTime)}` : ''}\nWhere: ${event.venue || 'TBD'}${event.city ? `, ${event.city}` : ''}\nPrice: ${formatPrice(event.priceMin)}\nCreated by: ${event.creator?.name || 'Someone'}`
-      : `${invitationText}\n\nWhen: ${formatDate(event.startTime)}${event.startTime ? ` at ${formatTime(event.startTime)}` : ''}\nWhere: ${event.venue || 'TBD'}${event.city ? `, ${event.city}` : ''}\nPrice: ${formatPrice(event.priceMin)}\nCreated by: ${event.creator?.name || 'Someone'}`
+    
+    // Build description without newlines (Open Graph doesn't support them well)
+    const dateTime = event.startTime 
+      ? `${formatDate(event.startTime)}${event.startTime ? ` at ${formatTime(event.startTime)}` : ''}`
+      : 'TBD'
+    const venue = event.venue || 'TBD'
+    const city = event.city ? `, ${event.city}` : ''
+    const price = formatPrice(event.priceMin)
+    const creator = event.creator?.name || 'Someone'
+    
+    // Create a clean description (remove newlines, limit length)
+    let description = event.description 
+      ? `${invitationText} ${event.description.substring(0, 100)}${event.description.length > 100 ? '...' : ''} When: ${dateTime}. Where: ${venue}${city}. Price: ${price}.`
+      : `${invitationText} When: ${dateTime}. Where: ${venue}${city}. Price: ${price}. Created by: ${creator}.`
+    
+    // Ensure description is not too long (Open Graph recommends max 200 chars)
+    if (description.length > 200) {
+      description = description.substring(0, 197) + '...'
+    }
     
     const shareUrl = `${baseUrl}/events/public/${id}`
     
@@ -119,38 +136,60 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title,
       description,
+      metadataBase: new URL(baseUrl),
+      alternates: {
+        canonical: shareUrl,
+      },
       openGraph: {
         title: invitationText,
         description,
         url: shareUrl,
         siteName: 'Plans',
         type: 'website',
-        images: [{
-          url: eventImage,
-          width: 1200,
-          height: 630,
-          alt: event.title,
-        }],
         locale: 'en_US',
+        images: [
+          {
+            url: eventImage,
+            width: 1200,
+            height: 630,
+            alt: event.title,
+            type: 'image/jpeg',
+            secureUrl: eventImage,
+          }
+        ],
+        ...(event.startTime && {
+          publishedTime: new Date(event.startTime).toISOString(),
+        }),
       },
       twitter: {
         card: 'summary_large_image',
         title: invitationText,
         description,
         images: [eventImage],
+        creator: event.creator?.name || '@Plans',
       },
       other: {
         'og:type': 'website',
         'og:site_name': 'Plans',
+        'og:image': eventImage,
+        'og:image:url': eventImage,
+        'og:image:secure_url': eventImage,
         'og:image:width': '1200',
         'og:image:height': '630',
         'og:image:type': 'image/jpeg',
-        'og:image:secure_url': eventImage,
+        'og:image:alt': event.title,
         'og:updated_time': new Date().toISOString(),
         'og:locale': 'en_US',
-        'article:author': event.creator?.name || 'Plans',
-        'article:section': 'Events',
-        'article:tag': 'Event',
+        'og:locale:alternate': 'en_US',
+        ...(event.startTime && {
+          'event:start_time': new Date(event.startTime).toISOString(),
+        }),
+        ...(event.endTime && {
+          'event:end_time': new Date(event.endTime).toISOString(),
+        }),
+        ...(event.venue && {
+          'event:location': `${event.venue}${event.city ? `, ${event.city}` : ''}`,
+        }),
       },
     }
   } catch (error) {
