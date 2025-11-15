@@ -125,13 +125,14 @@ export function PublicHangoutViewer({ params }: Props) {
     if (!currentHangout) return
 
     const shareUrl = `${window.location.origin}/hangouts/public/${hangoutId}`
-    const shareText = `Come check out ${currentHangout.title} hangout!\n\n${currentHangout.description || 'Join us for this hangout!'}\n\nWhen: ${formatDate(currentHangout.startTime)}\nWhere: ${currentHangout.location || 'TBD'}\n\n${shareUrl}`
+    const invitationText = `Hey, are you interested in ${currentHangout.title}?`
+    const shareText = `${invitationText}\n\n${currentHangout.description || 'Join us for this hangout!'}\n\nWhen: ${formatDate(currentHangout.startTime)}\nWhere: ${currentHangout.location || 'TBD'}\n\n${shareUrl}`
 
     // Check if native sharing is supported
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Come check out ${currentHangout.title} hangout!`,
+          title: invitationText,
           text: shareText,
           url: shareUrl
         })
@@ -564,18 +565,18 @@ END:VCALENDAR`
       </div>
 
       {/* Share Modal */}
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        url={`${window.location.origin}/hangouts/public/${hangoutId}`}
-        title={currentHangout.title}
-        description={currentHangout.description}
-        type="hangout"
-        startTime={currentHangout.startTime}
-        endTime={currentHangout.endTime}
-        location={currentHangout.location}
-        image={currentHangout.image}
-      />
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          url={`${window.location.origin}/hangouts/public/${hangoutId}`}
+          title={currentHangout.title}
+          description={currentHangout.description || ''}
+          type="hangout"
+          startTime={currentHangout.startTime}
+          endTime={currentHangout.endTime}
+          location={currentHangout.location || ''}
+          image={currentHangout.image || ''}
+        />
     </div>
   )
 }

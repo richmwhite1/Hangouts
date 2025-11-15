@@ -58,11 +58,12 @@ export class SharingService {
       const { includeImage = true, includeDescription = true, customMessage } = options
       // Check if native sharing is supported
       if (navigator.share && navigator.canShare) {
+        const invitationText = customMessage || `Hey, are you interested in ${title}?`
         const sharePayload: any = {
-          title: customMessage || `Do you want to join ${title}?`,
+          title: invitationText,
           text: customMessage || (includeDescription && description
-            ? `Do you want to join ${title}?\n\n${description}\n\nJoin us for this ${type}!`
-            : `Do you want to join ${title}? Join us for this ${type}!`),
+            ? `${invitationText}\n\n${description}\n\nCheck it out:`
+            : `${invitationText}\n\nCheck it out:`),
           url: url
         }
         // Note: We don't include image files in native sharing

@@ -28,8 +28,8 @@ interface EventData {
   description?: string
   venue?: string
   city?: string
-  startDate: string
-  endDate?: string
+  startTime: string
+  endTime?: string
   image?: string
   price?: number
   category?: string
@@ -109,13 +109,14 @@ export function PublicEventViewer({ params }: Props) {
     if (!event) return
 
     const shareUrl = `${window.location.origin}/events/public/${event.id}`
-    const shareText = `Check out this event: ${event.title}!\n\n${event.description || 'Join us for this amazing event!'}\n\nWhen: ${formatDate(event.startTime)}\nWhere: ${event.venue || 'TBD'}${event.city ? `, ${event.city}` : ''}\nPrice: ${formatPrice(event.price)}\n\n${shareUrl}`
+    const invitationText = `Hey, are you interested in ${event.title}?`
+    const shareText = `${invitationText}\n\n${event.description || 'Join us for this amazing event!'}\n\nWhen: ${formatDate(event.startTime)}\nWhere: ${event.venue || 'TBD'}${event.city ? `, ${event.city}` : ''}\nPrice: ${formatPrice(event.price)}\n\n${shareUrl}`
 
     // Check if native sharing is supported
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Check out ${event.title}!`,
+          title: invitationText,
           text: shareText,
           url: shareUrl
         })
@@ -347,10 +348,10 @@ export function PublicEventViewer({ params }: Props) {
                       {formatDate(event.startTime)}
                       {event.startTime && ` at ${formatTime(event.startTime)}`}
                     </p>
-                    {event.endDate && (
+                    {event.endTime && (
                       <p className="text-sm text-gray-400">
-                        Ends: {formatDate(event.endDate)}
-                        {event.endDate && ` at ${formatTime(event.endDate)}`}
+                        Ends: {formatDate(event.endTime)}
+                        {event.endTime && ` at ${formatTime(event.endTime)}`}
                       </p>
                     )}
                   </div>
@@ -520,14 +521,14 @@ export function PublicEventViewer({ params }: Props) {
           onClose={() => setShowShareModal(false)}
           url={`${window.location.origin}/events/public/${event.id}`}
           title={event.title}
-          description={event.description}
+          description={event.description || ''}
           type="event"
           startTime={event.startTime}
-          endTime={event.endDate}
-          venue={event.venue}
-          city={event.city}
-          price={event.price}
-          image={event.image}
+          endTime={event.endTime || undefined}
+          venue={event.venue || undefined}
+          city={event.city || undefined}
+          price={event.price || undefined}
+          image={event.image || undefined}
         />
       )}
     </div>

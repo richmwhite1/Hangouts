@@ -252,11 +252,15 @@ export default function HangoutDetailPage() {
   }
   const handleShare = async () => {
     if (!hangout) return
+    // Use public URL for sharing so link previews work correctly
+    const shareUrl = hangout.privacyLevel === 'PUBLIC' 
+      ? `${window.location.origin}/hangouts/public/${hangoutId}`
+      : `${window.location.origin}/hangout/${hangoutId}`
     const shareData = {
       title: hangout.title,
       description: hangout.description || '',
       image: hangout.image || '',
-      url: `${window.location.origin}/hangout/${hangoutId}`,
+      url: shareUrl,
       type: 'hangout' as const,
       privacyLevel: hangout.privacyLevel
     }
