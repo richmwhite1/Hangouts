@@ -11,7 +11,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     // Fetch event data for metadata
     // Use internal API call instead of external URL to avoid CORS issues
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // For production, use the actual production URL for absolute image URLs
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' 
+      ? 'https://hangouts-production-adc4.up.railway.app'
+      : 'http://localhost:3000')
     const apiUrl = process.env.NODE_ENV === 'production' 
       ? `${baseUrl}/api/events/public/${id}`
       : `http://localhost:3000/api/events/public/${id}`
@@ -102,7 +105,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const shareUrl = `${baseUrl}/events/public/${id}`
     
     // Use the actual event image if available, otherwise fallback to generic
-    const eventImage = event.image || `${baseUrl}/placeholder-event.jpg`
+    // Ensure image URL is absolute for Open Graph previews
+    let eventImage = event.image || `${baseUrl}/placeholder-event.jpg`
+    // Convert relative URLs to absolute URLs
+    if (eventImage && eventImage.startsWith('/')) {
+      eventImage = `${baseUrl}${eventImage}`
+    }
+    // Ensure it's a full URL (not just a path)
+    if (eventImage && !eventImage.startsWith('http')) {
+      eventImage = `${baseUrl}${eventImage.startsWith('/') ? '' : '/'}${eventImage}`
+    }
     
     return {
       title,
@@ -143,7 +155,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   } catch (error) {
     console.error('Error generating metadata:', error)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hangouts-production-adc4.up.railway.app'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' 
+      ? 'https://hangouts-production-adc4.up.railway.app'
+      : 'http://localhost:3000')
     return {
       title: 'Event - Plans',
       description: 'Join this event and connect with friends!',
