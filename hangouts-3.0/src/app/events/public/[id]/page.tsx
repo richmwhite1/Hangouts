@@ -12,12 +12,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Fetch event data for metadata
     // Use internal API call instead of external URL to avoid CORS issues
     // For production, use the actual production URL for absolute image URLs
+    // IMPORTANT: NEXT_PUBLIC_APP_URL must be set in Railway environment variables
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' 
       ? 'https://hangouts-production-adc4.up.railway.app'
       : 'http://localhost:3000')
+    
+    // Use localhost for API calls in all environments (server-side fetch)
+    // This avoids CORS and ensures we can fetch data during metadata generation
     const apiUrl = process.env.NODE_ENV === 'production' 
-      ? `${baseUrl}/api/events/public/${id}`
+      ? `http://localhost:${process.env.PORT || 8080}/api/events/public/${id}`
       : `http://localhost:3000/api/events/public/${id}`
+    
+    console.log('Metadata generation - Fetching event', { 
+      id, 
+      baseUrl, 
+      apiUrl,
+      nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL || 'NOT SET',
+      nodeEnv: process.env.NODE_ENV 
+    })
     
     const response = await fetch(apiUrl, {
       cache: 'no-store',
@@ -132,6 +144,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (eventImage && !eventImage.startsWith('http')) {
       eventImage = `${baseUrl}${eventImage.startsWith('/') ? '' : '/'}${eventImage}`
     }
+    
+    console.log('Metadata generation - Generated metadata', { 
+      id,
+      title: event.title,
+      imageUrl: eventImage,
+      baseUrl,
+      shareUrl: `${baseUrl}/events/public/${id}`
+    })
     
     return {
       title,
