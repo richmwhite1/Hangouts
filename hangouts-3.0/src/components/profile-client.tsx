@@ -193,7 +193,15 @@ export function ProfileClient() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => signOut()}
+                    onClick={async () => {
+                      try {
+                        await signOut({ redirectUrl: '/' })
+                      } catch (error) {
+                        console.error('Sign out error:', error)
+                        // Force redirect even if signOut fails
+                        window.location.href = '/'
+                      }
+                    }}
                     className="text-red-400 border-red-400/50 hover:bg-red-400/10"
                   >
                     <LogOut className="w-4 h-4 mr-2" />

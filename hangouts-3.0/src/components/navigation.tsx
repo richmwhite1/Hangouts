@@ -21,7 +21,7 @@ export function Navigation() {
   const [showNotificationHistory, setShowNotificationHistory] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   
-  const { isSignedIn, isLoaded, user } = useAuth()
+  const { isSignedIn } = useAuth()
   const clerk = useClerk()
   const { profile, isLoading: profileLoading } = useProfile()
   const { totalUnreadCount } = useUnreadCounts()
@@ -133,9 +133,15 @@ export function Navigation() {
                           variant="ghost" 
                           size="sm" 
                           className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            clerk.signOut()
+                          onClick={async () => {
                             setShowUserMenu(false)
+                            try {
+                              await clerk.signOut({ redirectUrl: '/' })
+                            } catch (error) {
+                              console.error('Sign out error:', error)
+                              // Force redirect even if signOut fails
+                              window.location.href = '/'
+                            }
                           }}
                         >
                           <LogOut className="w-4 h-4 mr-2" />

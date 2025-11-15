@@ -494,8 +494,14 @@ export function ProfilePage() {
 
             <div className="flex justify-center">
               <Button
-                onClick={() => {
-                  signOut()
+                onClick={async () => {
+                  try {
+                    await signOut({ redirectUrl: '/' })
+                  } catch (error) {
+                    console.error('Sign out error:', error)
+                    // Force redirect even if signOut fails
+                    window.location.href = '/'
+                  }
                 }}
                 variant="outline"
                 size="sm"
