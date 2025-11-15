@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
 
 [phases.install]
-cmds = ["cd hangouts-3.0 && npm ci --omit=dev"]
+cmds = ["cd hangouts-3.0 && NPM_CONFIG_PRODUCTION=false npm ci --omit=dev"]
 
 [phases.build]
 cmds = [
