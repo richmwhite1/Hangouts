@@ -55,7 +55,7 @@ export function ProfilePage() {
   useEffect(() => {
     if (profile) {
       // Parse bio field for activities and places
-      let bioData = {}
+      let bioData: { text?: string; favoriteActivities?: string[]; favoritePlaces?: string[] } = {}
       let bioText = ''
       
       try {
@@ -173,7 +173,9 @@ export function ProfilePage() {
   const handlePhotoUpload = (type: "profile" | "background") => {
     setShowUploadModal(type)
     setUploadPreview(null)
-    clearError()
+    if (clearError) {
+      clearError()
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
       fileInputRef.current.click()
@@ -239,7 +241,9 @@ export function ProfilePage() {
   const cancelUpload = () => {
     setShowUploadModal(null)
     setUploadPreview(null)
-    clearError()
+    if (clearError) {
+      clearError()
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -277,7 +281,9 @@ export function ProfilePage() {
         zodiac: editForm.zodiac,
         enneagram: editForm.enneagram,
         bigFive: editForm.bigFive,
-        loveLanguage: editForm.loveLanguage
+        loveLanguage: editForm.loveLanguage,
+        favoriteActivities: activities,
+        favoritePlaces: places
       })
 
       if (updatedUser) {

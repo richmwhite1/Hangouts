@@ -19,7 +19,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { avatar, backgroundImage, bio, location, name, zodiac, enneagram, bigFive, loveLanguage } = body
+    const { avatar, backgroundImage, bio, location, name, zodiac, enneagram, bigFive, loveLanguage, favoriteActivities, favoritePlaces } = body
     
     console.log('🔍 Profile update API received:', {
       bio,
@@ -35,8 +35,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Update user profile
-    const updateData = {
+    // Prepare update data
+    const updateData: any = {
       ...(avatar && { avatar }),
       ...(backgroundImage && { backgroundImage }),
       ...(bio !== undefined && { bio }),
@@ -46,6 +46,18 @@ export async function PUT(request: NextRequest) {
       ...(enneagram !== undefined && { enneagram }),
       ...(bigFive !== undefined && { bigFive }),
       ...(loveLanguage !== undefined && { loveLanguage })
+    }
+
+    // Handle favoriteActivities and favoritePlaces
+    if (favoriteActivities !== undefined) {
+      updateData.favoriteActivities = Array.isArray(favoriteActivities) 
+        ? JSON.stringify(favoriteActivities) 
+        : favoriteActivities
+    }
+    if (favoritePlaces !== undefined) {
+      updateData.favoritePlaces = Array.isArray(favoritePlaces) 
+        ? JSON.stringify(favoritePlaces) 
+        : favoritePlaces
     }
     
     console.log('🔍 Profile update data:', updateData)
