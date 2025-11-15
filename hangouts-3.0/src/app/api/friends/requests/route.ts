@@ -17,13 +17,14 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get friend requests (both sent and received)
-    // Note: We'll filter out self-requests in application code since Prisma doesn't support field comparison in where clauses
+    // Only return PENDING requests for the requests tab - other statuses are handled separately
     const friendRequests = await db.friendRequest.findMany({
       where: {
         OR: [
           { senderId: user.id },
           { receiverId: user.id }
-        ]
+        ],
+        status: 'PENDING' // Only return pending requests
       },
       include: {
         sender: {

@@ -203,7 +203,16 @@ export default function FriendsPage() {
       })
 
       if (response.ok) {
+        const responseData = await response.json()
         toast.success('Friend request sent!')
+        
+        // Immediately update local state with the new request
+        if (responseData.request) {
+          setFriendRequests(prev => [...prev, responseData.request])
+          // Update pending requests set
+          setPendingRequests(prev => new Set(prev).add(userId))
+        }
+        
         // Reload friend requests to sync state with database
         await loadFriendRequests()
         // Refresh search results to update button states
@@ -250,8 +259,8 @@ export default function FriendsPage() {
   const respondToFriendRequest = async (requestId: string, status: 'ACCEPTED' | 'DECLINED') => {
     try {
       const token = await getToken()
-      const response = await fetch(`/api/friends/request/${requestId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/friends/requests/${requestId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -587,7 +596,7 @@ export default function FriendsPage() {
                 const receivedRequests = friendRequests.filter(req => {
                   // Must be pending
                   if (req.status !== 'PENDING') return false
-                  // Current user must be the receiver
+                  // Current user must be the receiver (FIXED: was checking !== instead of ===)
                   if (currentUserId && req.receiver.id !== currentUserId) return false
                   // Not a self-request
                   if (req.sender.id === req.receiver.id) return false

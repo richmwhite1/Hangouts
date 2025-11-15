@@ -12,22 +12,14 @@ export async function PUT(
   try {
     const { id: requestId } = await params
     
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -108,11 +100,25 @@ export async function PUT(
 
     // If accepted, create friendship and notification
     if (status === 'ACCEPTED') {
-      await db.friendship.create({
-        data: {
-          user1Id: friendRequest.senderId,
-          user2Id: friendRequest.receiverId}
+      // Check if friendship already exists
+      const existingFriendship = await db.friendship.findFirst({
+        where: {
+          OR: [
+            { userId: friendRequest.senderId, friendId: friendRequest.receiverId },
+            { userId: friendRequest.receiverId, friendId: friendRequest.senderId }
+          ]
+        }
       })
+
+      if (!existingFriendship) {
+        await db.friendship.create({
+          data: {
+            userId: friendRequest.senderId,
+            friendId: friendRequest.receiverId,
+            status: 'ACTIVE'
+          }
+        })
+      }
 
       // Create notification for the sender
       await createFriendAcceptedNotification(
@@ -149,22 +155,14 @@ export async function DELETE(
   try {
     const { id: requestId } = await params
     
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     // Find the friend request
