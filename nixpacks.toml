@@ -6,10 +6,10 @@ cmds = ["npm install"]
 
 [phases.build]
 cmds = [
-  "cd hangouts-3.0 && npm install",
+  "cd hangouts-3.0 && npm ci --omit=dev",
   "cd hangouts-3.0 && npx prisma generate",
   "cd hangouts-3.0 && npm run build:production"
 ]
 
 [start]
-cmd = "cd hangouts-3.0 && npm run start:next"
+cmd = "cd hangouts-3.0 && npm start"

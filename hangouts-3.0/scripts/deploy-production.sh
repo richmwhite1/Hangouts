@@ -26,7 +26,7 @@ if [ ! -d ".git" ]; then
 fi
 
 echo "📦 Installing production dependencies..."
-npm ci --only=production
+npm ci --omit=dev
 
 echo "🔧 Building application..."
 npm run build:production
