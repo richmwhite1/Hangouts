@@ -524,11 +524,11 @@ export function PublicEventViewer({ params }: Props) {
           description={event.description || ''}
           type="event"
           startTime={event.startTime}
-          endTime={event.endTime || undefined}
-          venue={event.venue || undefined}
-          city={event.city || undefined}
-          price={event.price || undefined}
-          image={event.image || undefined}
+          {...(event.endTime && { endTime: event.endTime })}
+          {...(event.venue && { venue: event.venue })}
+          {...(event.city && { city: event.city })}
+          {...(event.price !== undefined && { price: event.price })}
+          {...(event.image && { image: event.image })}
         />
       )}
     </div>
