@@ -1230,68 +1230,56 @@ export function MergedDiscoveryPage() {
             <TabsTrigger value="hangouts" className="data-[state=active]:bg-blue-600">Hangouts</TabsTrigger>
             <TabsTrigger value="saved" className="data-[state=active]:bg-blue-600">Saved</TabsTrigger>
           </TabsList>
-          {/* Discreet Sort and Filter Controls - Single Line */}
-          <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <span className="text-gray-400">Sort:</span>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-6 w-auto min-w-[80px] bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="closest" className="text-white hover:bg-gray-700 text-xs">Distance</SelectItem>
-                    <SelectItem value="coming-up" className="text-white hover:bg-gray-700 text-xs">Date</SelectItem>
-                    <SelectItem value="newest" className="text-white hover:bg-gray-700 text-xs">Newest</SelectItem>
-                    <SelectItem value="popular" className="text-white hover:bg-gray-700 text-xs">Popular</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-gray-400">Within:</span>
-                <Select value={maxDistance} onValueChange={setMaxDistance}>
-                  <SelectTrigger className="h-6 w-auto min-w-[60px] bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="10" className="text-white hover:bg-gray-700 text-xs">10mi</SelectItem>
-                    <SelectItem value="25" className="text-white hover:bg-gray-700 text-xs">25mi</SelectItem>
-                    <SelectItem value="50" className="text-white hover:bg-gray-700 text-xs">50mi</SelectItem>
-                    <SelectItem value="100" className="text-white hover:bg-gray-700 text-xs">100mi</SelectItem>
-                    <SelectItem value="unlimited" className="text-white hover:bg-gray-700 text-xs">All</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPastContent(prev => !prev)}
-                  className="h-6 bg-gray-800 border-gray-700 text-gray-300 text-xs hover:bg-gray-700 px-2"
-                >
-                  {showPastContent ? 'Hide past' : 'Show past'}
-                </Button>
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-gray-400" />
-                <span className="text-gray-300 text-xs">
-                  {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting...'}
-                </span>
-                <Input
-                  placeholder="ZIP"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  className="w-12 h-5 bg-gray-800 border-gray-700 text-white text-xs px-1"
-                />
-                <TouchButton
-                  onClick={handleZipCodeSubmit}
-                  className="h-5 w-5 bg-gray-700 text-white text-xs p-0"
-                  hapticType="light"
-                >
-                  ✓
-                </TouchButton>
-              </div>
-            </div>
+          {/* Minimal Sort and Filter Controls - Single Line */}
+          <div className="flex items-center gap-1.5 mt-2 text-xs overflow-x-auto">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-7 w-20 bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-1.5">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="closest" className="text-white hover:bg-gray-700 text-xs">Distance</SelectItem>
+                <SelectItem value="coming-up" className="text-white hover:bg-gray-700 text-xs">Date</SelectItem>
+                <SelectItem value="newest" className="text-white hover:bg-gray-700 text-xs">Newest</SelectItem>
+                <SelectItem value="popular" className="text-white hover:bg-gray-700 text-xs">Popular</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={maxDistance} onValueChange={setMaxDistance}>
+              <SelectTrigger className="h-7 w-14 bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="10" className="text-white hover:bg-gray-700 text-xs">10mi</SelectItem>
+                <SelectItem value="25" className="text-white hover:bg-gray-700 text-xs">25mi</SelectItem>
+                <SelectItem value="50" className="text-white hover:bg-gray-700 text-xs">50mi</SelectItem>
+                <SelectItem value="100" className="text-white hover:bg-gray-700 text-xs">100mi</SelectItem>
+                <SelectItem value="unlimited" className="text-white hover:bg-gray-700 text-xs">All</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPastContent(prev => !prev)}
+              className="h-7 bg-gray-800 border-gray-700 text-gray-300 text-xs hover:bg-gray-700 px-2 whitespace-nowrap flex-shrink-0"
+            >
+              {showPastContent ? 'Hide past' : 'Past'}
+            </Button>
+            <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+            <span className="text-gray-400 text-xs truncate max-w-[80px]">
+              {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting...'}
+            </span>
+            <Input
+              placeholder="ZIP"
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+              className="w-12 h-7 bg-gray-800 border-gray-700 text-white text-xs px-1.5 flex-shrink-0"
+            />
+            <TouchButton
+              onClick={handleZipCodeSubmit}
+              className="h-7 w-7 bg-gray-700 text-white text-xs p-0 flex-shrink-0"
+              hapticType="light"
+            >
+              ✓
+            </TouchButton>
           </div>
         </Tabs>
       </div>
