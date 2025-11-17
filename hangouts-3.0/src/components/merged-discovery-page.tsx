@@ -132,7 +132,6 @@ export function MergedDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [selectedTimeFilter, setSelectedTimeFilter] = useState('all')
   const [sortBy, setSortBy] = useState('closest')
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -143,7 +142,6 @@ export function MergedDiscoveryPage() {
   // Comprehensive filtering state
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   // Location filtering state
   const [zipCode, setZipCode] = useState('')
   const [maxDistance, setMaxDistance] = useState('50')
@@ -272,10 +270,8 @@ export function MergedDiscoveryPage() {
   const clearAllFilters = () => {
     setSearchQuery('')
     setSelectedCategory('all')
-    setSelectedTimeFilter('all')
     setSelectedTags([])
     setPriceRange({ min: '', max: '' })
-    setDateRange({ start: '', end: '' })
     setZipCode('')
     setMaxDistance('unlimited')
     setUserLocation(null)
@@ -287,32 +283,6 @@ export function MergedDiscoveryPage() {
       if (searchQuery) params.append('search', searchQuery)
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
       params.append('includePast', showPastContent ? 'true' : 'false')
-      // Handle time filters
-      if (selectedTimeFilter !== 'all') {
-        const now = new Date()
-        switch (selectedTimeFilter) {
-          case 'today':
-            params.append('dateFrom', now.toISOString())
-            params.append('dateTo', new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString())
-            break
-          case 'tomorrow':
-            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-            params.append('dateFrom', tomorrow.toISOString())
-            params.append('dateTo', new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000).toISOString())
-            break
-          case 'this-week':
-            params.append('dateFrom', now.toISOString())
-            params.append('dateTo', new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString())
-            break
-          case 'this-month':
-            params.append('dateFrom', now.toISOString())
-            params.append('dateTo', new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString())
-            break
-        }
-      }
-      // Handle custom date range
-      if (dateRange.start) params.append('dateFrom', new Date(dateRange.start).toISOString())
-      if (dateRange.end) params.append('dateTo', new Date(dateRange.end).toISOString())
       
       // Use public API for non-authenticated users
       const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content'
@@ -468,10 +438,6 @@ export function MergedDiscoveryPage() {
       // Price filter
       const matchesPrice = (!priceRange.min || (item.price && item.price.min >= parseInt(priceRange.min))) &&
                           (!priceRange.max || (item.price && item.price.min <= parseInt(priceRange.max)))
-      // Date filter
-      const itemDate = new Date(item.startDate || item.date)
-      const matchesDate = (!dateRange.start || itemDate >= new Date(dateRange.start)) &&
-                         (!dateRange.end || itemDate <= new Date(dateRange.end))
       // Location filter
       let matchesLocation = true
       if (userLocation && maxDistance !== 'unlimited') {
@@ -489,9 +455,9 @@ export function MergedDiscoveryPage() {
           matchesLocation = false // Hide items without coordinates when location filtering is active
         }
       }
-      return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate && matchesLocation
+      return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesLocation
     })
-  }, [searchQuery, selectedCategory, selectedTags, priceRange, dateRange, userLocation, maxDistance])
+  }, [searchQuery, selectedCategory, selectedTags, priceRange, userLocation, maxDistance])
   // Merge and sort content (memoized)
   const mergeAndSortContent = useMemo(() => {
     const now = Date.now()
@@ -588,7 +554,7 @@ export function MergedDiscoveryPage() {
     
     // Refetch both events and hangouts when filters change
     Promise.all([fetchEvents(), fetchHangouts()])
-  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, showPastContent, isLoaded])
+  }, [searchQuery, selectedCategory, showPastContent, isLoaded])
   // Handle zip code geocoding
   useEffect(() => {
     const handleZipCodeGeocoding = async () => {
@@ -1081,24 +1047,6 @@ export function MergedDiscoveryPage() {
                 />
               </div>
             </div>
-            {/* Date Range Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
-              <div className="flex gap-2">
-                <Input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-                <Input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-              </div>
-            </div>
             {/* Location Filter */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
@@ -1140,22 +1088,6 @@ export function MergedDiscoveryPage() {
                 )}
               </div>
             </div>
-            {/* Time Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Quick Time Filter</label>
-              <Select value={selectedTimeFilter} onValueChange={setSelectedTimeFilter}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  {timeFilters.map(filter => (
-                    <SelectItem key={filter.id} value={filter.id} className="text-white">
-                      {filter.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             {/* Sort By */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">Sort By</label>
@@ -1173,7 +1105,7 @@ export function MergedDiscoveryPage() {
               </Select>
             </div>
             {/* Active Filters Display */}
-            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || dateRange.start || dateRange.end || zipCode || maxDistance !== 'unlimited') && (
+            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || zipCode || maxDistance !== 'unlimited') && (
               <div className="pt-4 border-t border-gray-700">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Active Filters</label>
                 <div className="flex flex-wrap gap-2">
@@ -1195,16 +1127,6 @@ export function MergedDiscoveryPage() {
                   {priceRange.max && (
                     <Badge className="bg-green-600 text-white">
                       Max: ${priceRange.max}
-                    </Badge>
-                  )}
-                  {dateRange.start && (
-                    <Badge className="bg-orange-600 text-white">
-                      From: {new Date(dateRange.start).toLocaleDateString()}
-                    </Badge>
-                  )}
-                  {dateRange.end && (
-                    <Badge className="bg-orange-600 text-white">
-                      To: {new Date(dateRange.end).toLocaleDateString()}
                     </Badge>
                   )}
                   {zipCode && (
@@ -1411,24 +1333,6 @@ export function MergedDiscoveryPage() {
                 placeholder="Max Price"
                 value={priceRange.max}
                 onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-          </div>
-          {/* Date Range Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-              <Input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                 className="bg-gray-700 border-gray-600 text-white"
               />
             </div>
