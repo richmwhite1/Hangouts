@@ -12,6 +12,9 @@ export function createStartTimeFilter(options: {
       filter.gte = parsedStart
     }
   } else if (!includePast) {
+    // When includePast is false, we want to show events that haven't ended yet
+    // So we filter by startTime >= now, but we'll also need to check endTime in the query
+    // For now, use startTime >= now, but the API should also check endTime >= now OR endTime is null
     filter.gte = new Date()
   }
 

@@ -60,38 +60,41 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause with privacy logic: PUBLIC events + user's own events + FRIENDS_ONLY events from user's friends
+    const privacyOr: any[] = [
+      // Public events (everyone can see)
+      { privacyLevel: 'PUBLIC' },
+      // User's own events (if authenticated)
+      ...(userId ? [{ creatorId: userId }] : []),
+      // Friends-only events from user's friends (if authenticated)
+      ...(userId && friendIds.length > 0 ? [{
+        AND: [
+          { privacyLevel: 'FRIENDS_ONLY' },
+          { creatorId: { in: friendIds } }
+        ]
+      }] : [])
+    ]
+
     const whereClause: any = {
       type: 'EVENT',
-      OR: [
-        // Public events (everyone can see)
-        { privacyLevel: 'PUBLIC' },
-        // User's own events (if authenticated)
-        ...(userId ? [{ creatorId: userId }] : []),
-        // Friends-only events from user's friends (if authenticated)
-        ...(userId && friendIds.length > 0 ? [{
-          AND: [
-            { privacyLevel: 'FRIENDS_ONLY' },
-            { creatorId: { in: friendIds } }
-          ]
-        }] : [])
-      ]
-    }
-    
-    if (search) {
-      whereClause.AND = [
-        ...(whereClause.AND || []),
+      AND: [
         {
-          OR: [
-            { title: { contains: search } },
-            { description: { contains: search } },
-            { location: { contains: search } }
-          ]
+          OR: privacyOr
         }
       ]
     }
     
+    if (search) {
+      whereClause.AND.push({
+        OR: [
+          { title: { contains: search } },
+          { description: { contains: search } },
+          { location: { contains: search } }
+        ]
+      })
+    }
+    
     if (category) {
-      whereClause.category = category
+      whereClause.AND.push({ category })
     }
     
     const startTimeFilter = createStartTimeFilter({
@@ -99,8 +102,25 @@ export async function GET(request: NextRequest) {
       endDate: endDateParam || dateTo,
       includePast
     })
-    if (startTimeFilter) {
-      whereClause.startTime = startTimeFilter
+    
+    // When includePast is false, show events that haven't ended yet
+    // This means: startTime >= now OR (endTime >= now OR endTime is null)
+    if (!includePast && !startDateParam && !dateFrom) {
+      const now = new Date()
+      // Add date filter: show events that either start in the future OR haven't ended yet
+      whereClause.AND.push({
+        OR: [
+          { startTime: { gte: now } },
+          {
+            OR: [
+              { endTime: { gte: now } },
+              { endTime: null }
+            ]
+          }
+        ]
+      })
+    } else if (startTimeFilter) {
+      whereClause.AND.push({ startTime: startTimeFilter })
     }
     
     const events = await db.content.findMany({
