@@ -52,6 +52,7 @@ export default function EventsPage() {
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [showFilters, setShowFilters] = useState(false)
+  const [showPastEvents, setShowPastEvents] = useState(false)
 
   const categories = [
     'Music', 'Food', 'Sports', 'Art', 'Technology', 'Business', 'Education',
@@ -116,6 +117,7 @@ export default function EventsPage() {
             const normalizedEvents = (data.events || []).map((event: any) => ({
               ...event,
               startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : undefined,
+              endDate: event.endTime ? new Date(event.endTime).toISOString().split('T')[0] : undefined,
               coverImage: event.image || event.coverImage,
               venue: event.venue || event.location || '',
               address: event.address || '',
@@ -151,6 +153,23 @@ export default function EventsPage() {
     fetchEvents()
   }, [isLoaded, isSignedIn])
 
+  // Helper function to check if event is past
+  const isEventPast = (event: Event) => {
+    const now = Date.now()
+    const startDate = event.startDate ? new Date(event.startDate).getTime() : null
+    const endDate = (event as any).endDate ? new Date((event as any).endDate).getTime() : null
+    
+    // Event is past if it has ended (endTime < now) or if no endTime, startTime < now
+    if (endDate) {
+      return endDate < now
+    }
+    if (startDate) {
+      return startDate < now
+    }
+    // If no date info, consider it future
+    return false
+  }
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -168,8 +187,16 @@ export default function EventsPage() {
     const matchesDate = (!dateRange.start || (eventDate && new Date(eventDate) >= new Date(dateRange.start))) &&
                        (!dateRange.end || (eventDate && new Date(eventDate) <= new Date(dateRange.end)))
     
-    return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate
+    // Filter by past/future
+    const isPast = isEventPast(event)
+    const matchesPastFilter = showPastEvents || !isPast
+    
+    return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesDate && matchesPastFilter
   })
+
+  // Separate future and past events for display
+  const futureEvents = filteredEvents.filter(event => !isEventPast(event))
+  const pastEvents = filteredEvents.filter(event => isEventPast(event))
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => 
@@ -210,9 +237,17 @@ export default function EventsPage() {
       <div className="min-h-screen bg-background">
         {/* Header with sign-in prompt */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-white">Public Events</h1>
-            <div className="flex items-center gap-2" suppressHydrationWarning>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-white">Public Events</h1>
+          <div className="flex items-center gap-2" suppressHydrationWarning>
+            <Button
+              variant="outline"
+              onClick={() => setShowPastEvents(!showPastEvents)}
+              className={`border-gray-600 text-white hover:bg-gray-700 ${showPastEvents ? 'bg-gray-700' : ''}`}
+              size="sm"
+            >
+              {showPastEvents ? 'Hide' : 'Show'} Past Events
+            </Button>
               <Button 
                 onClick={() => window.location.href = '/signup'}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -424,7 +459,7 @@ export default function EventsPage() {
                 </Card>
               ))}
             </div>
-          ) : filteredEvents.length === 0 ? (
+          ) : futureEvents.length === 0 && (!showPastEvents || pastEvents.length === 0) ? (
             <div className="text-center py-16">
               <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No events found</h3>
@@ -446,8 +481,11 @@ export default function EventsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredEvents.map(event => (
+            <div className="space-y-6">
+              {futureEvents.length > 0 && (
+                <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {futureEvents.map(event => (
                 <Link key={event.id} href={`/events/public/${event.id}`}>
                   <Card className="bg-gray-800 border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                     {/* Event Image */}
@@ -511,7 +549,84 @@ export default function EventsPage() {
                     </CardContent>
                   </Card>
                 </Link>
-              ))}
+                    ))}
+                  </div>
+                </div>
+              )}
+              {showPastEvents && pastEvents.length > 0 && (
+                <div>
+                  <div className="sticky top-16 z-0 bg-background/95 backdrop-blur-sm border-t border-border py-3 mb-4">
+                    <h2 className="text-center text-xs uppercase tracking-wide text-gray-400">Past Events</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pastEvents.map(event => (
+                      <Link key={event.id} href={`/events/public/${event.id}`}>
+                        <Card className="bg-gray-800 border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer opacity-75">
+                          {/* Event Image */}
+                          <div className="relative h-48 bg-gray-700">
+                            <img
+                              src={event.coverImage || event.image}
+                              alt={event.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                                const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                                if (nextElement) {
+                                  nextElement.style.display = 'flex'
+                                }
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
+                              <Calendar className="w-12 h-12" />
+                            </div>
+                            
+                            {/* Type Badge */}
+                            <div className="absolute top-2 left-2">
+                              <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+                                <TrendingUp className="w-3 h-3 mr-1" />
+                                Event
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <CardContent className="p-4">
+                            <div className="space-y-2">
+                              <h3 className="font-semibold text-white text-lg line-clamp-2">
+                                {event.title}
+                              </h3>
+                              
+                              <div className="flex items-center text-gray-300 text-sm">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {formatDate(event.startDate || event.startTime)} at {event.startTime}
+                              </div>
+                              
+                              {event.venue || event.city ? (
+                                <div className="flex items-center text-gray-300 text-sm">
+                                  <MapPin className="w-4 h-4 mr-2" />
+                                  {[event.venue, event.city].filter(Boolean).join(', ') || 'Location TBD'}
+                                </div>
+                              ) : null}
+                              
+                              <div className="flex items-center text-gray-300 text-sm">
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                {formatPrice(event.price || { min: 0, max: 0, currency: 'USD' })}
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {event.tags.slice(0, 3).map(tag => (
+                                  <Badge key={tag} variant="outline" className="text-xs bg-gray-700 border-gray-600 text-gray-300">
+                                    #{tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -538,6 +653,14 @@ export default function EventsPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-white">Events</h1>
           <div className="flex items-center gap-2" suppressHydrationWarning>
+            <Button
+              variant="outline"
+              onClick={() => setShowPastEvents(!showPastEvents)}
+              className={`border-gray-600 text-white hover:bg-gray-700 ${showPastEvents ? 'bg-gray-700' : ''}`}
+              size="sm"
+            >
+              {showPastEvents ? 'Hide' : 'Show'} Past Events
+            </Button>
             <ImprovedCreateEventModal />
           </div>
         </div>
@@ -732,7 +855,7 @@ export default function EventsPage() {
               </Card>
             ))}
           </div>
-        ) : filteredEvents.length === 0 ? (
+        ) : futureEvents.length === 0 && (!showPastEvents || pastEvents.length === 0) ? (
           <div className="text-center py-12">
             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">No events found</h3>
@@ -742,8 +865,11 @@ export default function EventsPage() {
             <ImprovedCreateEventModal />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredEvents.map(event => (
+          <div className="space-y-6">
+            {futureEvents.length > 0 && (
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {futureEvents.map(event => (
               <Link key={event.id} href={`/event/${event.id}`}>
                 <Card className="bg-gray-800 border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                   {/* Event Image */}
@@ -823,8 +949,102 @@ export default function EventsPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
+                  </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {showPastEvents && pastEvents.length > 0 && (
+              <div>
+                <div className="sticky top-16 z-0 bg-background/95 backdrop-blur-sm border-t border-border py-3 mb-4">
+                  <h2 className="text-center text-xs uppercase tracking-wide text-gray-400">Past Events</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pastEvents.map(event => (
+                    <Link key={event.id} href={`/event/${event.id}`}>
+                      <Card className="bg-gray-800 border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer opacity-75">
+                        {/* Event Image */}
+                        <div className="relative h-48 bg-gray-700">
+                          <img
+                            src={event.coverImage}
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                              if (nextElement) {
+                                nextElement.style.display = 'flex'
+                              }
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
+                            <Calendar className="w-12 h-12" />
+                          </div>
+                          
+                          {/* Action Buttons - Bottom Right */}
+                          <div className="absolute bottom-2 right-2">
+                            <TileActions
+                              itemId={event.id}
+                              itemType="event"
+                              itemTitle={event.title}
+                              itemDescription={event.description || ''}
+                              itemImage={event.coverImage || ''}
+                              privacyLevel={event.isPublic ? 'PUBLIC' : 'PRIVATE'}
+                              onSave={(_id, _type) => {
+                                // console.log('Save event:', id, type); // Removed for production
+                              }}
+                              onUnsave={(_id, _type) => {
+                                // console.log('Unsave event:', id, type); // Removed for production
+                              }}
+                              className="scale-75"
+                            />
+                          </div>
+                          
+                          {/* Type Badge */}
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+                              <TrendingUp className="w-3 h-3 mr-1" />
+                              Event
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <h3 className="font-semibold text-white text-lg line-clamp-2">
+                              {event.title}
+                            </h3>
+                            
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              {event.startDate ? formatDate(event.startDate) : 'Date TBD'} {event.startTime ? `at ${event.startTime}` : ''}
+                            </div>
+                            
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {event.venue}, {event.city}
+                            </div>
+                            
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <DollarSign className="w-4 h-4 mr-2" />
+                                {formatPrice(event.price || { min: 0, max: 0, currency: 'USD' })}
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {event.tags.slice(0, 3).map(tag => (
+                                <Badge key={tag} variant="outline" className="text-xs bg-gray-700 border-gray-600 text-gray-300">
+                                  #{tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
