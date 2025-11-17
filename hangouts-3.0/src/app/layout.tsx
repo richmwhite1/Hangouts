@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Oswald, Roboto } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 import { RealtimeProvider } from '@/contexts/realtime-context'
@@ -14,10 +14,18 @@ import { InstallPrompt } from '@/components/install-prompt'
 import { ConsoleErrorHandler } from '@/components/console-error-handler'
 // import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
-const inter = Inter({ 
+const oswald = Oswald({ 
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
-  display: 'swap'
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-oswald'
+})
+
+const roboto = Roboto({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  display: 'swap',
+  variable: '--font-roboto'
 })
 
 export const metadata: Metadata = {
@@ -67,7 +75,7 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
     >
-      <html lang="en" className="dark">
+      <html lang="en" className={`dark ${oswald.variable} ${roboto.variable}`}>
         <head>
           {/* Viewport for iPhone safe areas */}
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -106,7 +114,7 @@ export default function RootLayout({
           
           {/* Heroicons are imported as React components, not as scripts */}
         </head>
-        <body className={inter.className}>
+        <body className={roboto.className}>
           <GlobalErrorBoundary>
             <RealtimeProvider>
               <WebSocketProvider>

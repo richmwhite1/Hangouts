@@ -524,10 +524,10 @@ export default function FriendsPage() {
             <div className="grid gap-4">
               {friends.length === 0 ? (
                 <Card>
-                  <CardContent className="text-center py-8">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <CardContent className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">No friends yet</h3>
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-muted-foreground mb-6">
                       Start by searching for people to connect with
                     </p>
                     <Button onClick={() => (document.querySelector('[value="find"]') as HTMLElement)?.click()}>
@@ -712,8 +712,8 @@ export default function FriendsPage() {
               {/* No Requests */}
               {pendingFriendRequests.length === 0 && (
                 <Card>
-                  <CardContent className="text-center py-8">
-                    <UserPlus className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <CardContent className="text-center py-12">
+                    <UserPlus className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
                     <p className="text-muted-foreground">
                       You don't have any pending friend requests
@@ -778,8 +778,8 @@ export default function FriendsPage() {
 
               {searchQuery && searchResults.length === 0 && !searching && (
                 <Card>
-                  <CardContent className="text-center py-8">
-                    <Search className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <CardContent className="text-center py-12">
+                    <Search className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">No users found</h3>
                     <p className="text-muted-foreground">
                       Try searching with a different name or username

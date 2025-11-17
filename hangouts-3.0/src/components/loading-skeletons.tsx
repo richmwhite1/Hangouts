@@ -26,8 +26,8 @@ export const HangoutCardSkeleton = () => (
       </div>
       
       <div className="flex space-x-2">
-        <Skeleton className="h-6 w-16 rounded-full" />
-        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-6 w-16 rounded-sm" />
+        <Skeleton className="h-6 w-20 rounded-sm" />
       </div>
     </CardContent>
   </Card>
@@ -36,7 +36,7 @@ export const HangoutCardSkeleton = () => (
 export const HangoutFeedSkeleton = () => (
   <div className="space-y-4">
     <div className="relative">
-      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-sm" />
     </div>
     {Array.from({ length: 3 }).map((_, i) => (
       <HangoutCardSkeleton key={i} />
@@ -70,7 +70,7 @@ export const ProfileSkeleton = () => (
 export const FriendsSkeleton = () => (
   <div className="space-y-4">
     <div className="relative">
-      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-sm" />
     </div>
     <div className="grid grid-cols-1 gap-3">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -102,7 +102,7 @@ export const CreateHangoutSkeleton = () => (
       <Skeleton className="h-6 w-32" />
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-8 w-full rounded-full" />
+          <Skeleton key={i} className="h-8 w-full rounded-sm" />
         ))}
       </div>
     </div>

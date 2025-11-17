@@ -425,23 +425,21 @@ export default function EventsPage() {
               ))}
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">No events found</h3>
-              <p className="text-gray-400 mb-4">
+            <div className="text-center py-16">
+              <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No events found</h3>
+              <p className="text-muted-foreground mb-6">
                 {searchQuery ? 'Try adjusting your search terms' : 'No public events available yet'}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button 
                   onClick={() => window.location.href = '/signup'}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Sign Up to Create Events
                 </Button>
                 <Button 
                   onClick={() => window.location.href = '/signin'}
                   variant="outline"
-                  className="border-gray-600 text-white hover:bg-gray-700"
                 >
                   Sign In
                 </Button>

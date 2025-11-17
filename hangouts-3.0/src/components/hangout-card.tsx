@@ -74,7 +74,7 @@ export function HangoutCard({ hangout }: HangoutCardProps) {
 
   return (
     <Link href={`/hangout/${hangout.id}`}>
-      <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden bg-card border-border relative">
+      <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden bg-card border-border relative">
         {hangout.hasNewActivity && (
           <div className="absolute top-2 left-2 z-10">
             <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium flex items-center space-x-1">

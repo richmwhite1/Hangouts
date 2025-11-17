@@ -45,7 +45,7 @@ export function BottomNavigation() {
               <Button
                 variant={isActive ? "default" : "ghost"}
                 size="sm"
-                className="flex flex-col items-center justify-center gap-1 h-auto py-1.5 px-2 min-w-0 w-full max-w-[70px]"
+                className="flex flex-col items-center justify-center gap-1 h-auto py-2 px-2 min-h-[44px] min-w-[44px] w-full max-w-[70px]"
                 onClick={() => {
                   if (isActive) {
                     hapticLight()
