@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { createStartTimeFilter } from '@/lib/date-utils'
 
 async function getFeedHandler(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -13,16 +14,23 @@ async function getFeedHandler(request: NextRequest) {
   const endDate = searchParams.get('endDate')
   const limit = parseInt(searchParams.get('limit') || '20')
   const offset = parseInt(searchParams.get('offset') || '0')
+  const includePast = searchParams.get('includePast') === 'true'
+  const startDateParam = searchParams.get('startDate')
+  const endDateParam = searchParams.get('endDate')
 
   // Get user ID for friend context (optional for discover page)
   let userId: string | null = null
-  const authHeader = request.headers.get('authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    if (payload) {
-      userId = user.id
+  try {
+    const { userId: clerkUserId } = await auth()
+    if (clerkUserId) {
+      const user = await getClerkApiUser()
+      if (user) {
+        userId = user.id
+      }
     }
+  } catch (error) {
+    // User not authenticated - that's okay for discover page
+    logger.debug('No authenticated user for feed request', {}, 'FEED')
   }
 
   try {
@@ -79,7 +87,7 @@ async function getFeedHandler(request: NextRequest) {
         }] : [])
       ]
     } else {
-      // HOME FEED: Show content user created, was invited to, or has saved/RSVP'd
+      // HOME FEED: Show content user created, was invited to, has saved/RSVP'd, OR public content
       if (userId) {
         whereClause.OR = [
           // User's own content (all privacy levels)
@@ -104,13 +112,25 @@ async function getFeedHandler(request: NextRequest) {
                 status: { in: ['YES', 'MAYBE'] }
               }
             }
-          }
+          },
+          // PUBLIC content (everyone can see public hangouts and events)
+          { privacyLevel: 'PUBLIC' }
         ]
         logger.debug('Using OR filter for user', { userId }, 'FEED')
       } else {
-        // If no user, show nothing for home feed
-        whereClause.id = 'nonexistent'
+        // If no user, show only public content
+        whereClause.privacyLevel = 'PUBLIC'
       }
+    }
+
+    // Add time filter
+    const startTimeFilter = createStartTimeFilter({
+      startDate: startDateParam,
+      endDate: endDateParam,
+      includePast
+    })
+    if (startTimeFilter) {
+      whereClause.startTime = startTimeFilter
     }
 
     // Add location filter
@@ -400,7 +420,7 @@ async function getFeedHandler(request: NextRequest) {
         }
       }
       } catch (transformError) {
-        logger.error('Error transforming content item:', item.id, transformError);
+        logger.error('Error transforming content item:', item.id, String(transformError));
         return null;
       }
     }).filter(item => item !== null)

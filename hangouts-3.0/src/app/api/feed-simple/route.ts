@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { createStartTimeFilter } from '@/lib/date-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,9 @@ export async function GET(request: NextRequest) {
     const contentType = searchParams.get('contentType') || 'all'
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const includePast = searchParams.get('includePast') === 'true'
+    const startDateParam = searchParams.get('startDate')
+    const endDateParam = searchParams.get('endDate')
 
     // Log request details for debugging
     const userAgent = request.headers.get('user-agent') || 'unknown'
@@ -69,11 +73,21 @@ export async function GET(request: NextRequest) {
         if (!userId) {
       try {
         logger.info('No user ID, returning public content')
+        const publicWhere: any = {
+          privacyLevel: 'PUBLIC',
+          type: contentType === 'events' ? 'EVENT' : 'HANGOUT'
+        }
+        const publicStartFilter = createStartTimeFilter({
+          startDate: startDateParam,
+          endDate: endDateParam,
+          includePast
+        })
+        if (publicStartFilter) {
+          publicWhere.startTime = publicStartFilter
+        }
+
         const publicContent = await db.content.findMany({
-          where: {
-            privacyLevel: 'PUBLIC',
-            type: 'HANGOUT'
-          },
+          where: publicWhere,
           select: {
             id: true,
             type: true,
@@ -147,10 +161,7 @@ export async function GET(request: NextRequest) {
         })
 
         const total = await db.content.count({
-          where: {
-            privacyLevel: 'PUBLIC',
-            type: 'HANGOUT'
-          }
+          where: publicWhere
         })
 
         logger.info('Public content fetched:', { count: publicContent.length, total })
@@ -296,6 +307,15 @@ export async function GET(request: NextRequest) {
             }
           }
         ]
+      }
+
+      const startTimeFilter = createStartTimeFilter({
+        startDate: startDateParam,
+        endDate: endDateParam,
+        includePast
+      })
+      if (startTimeFilter) {
+        whereClause.startTime = startTimeFilter
       }
 
       // Simple query with minimal fields

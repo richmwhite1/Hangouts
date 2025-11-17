@@ -188,6 +188,7 @@ export async function POST(
     }, 'Conversation marked as read'))
   } catch (error) {
     logger.error('Error marking conversation as read:', error);
-    return NextResponse.json(createErrorResponse('Failed to mark conversation as read', error.message), { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json(createErrorResponse('Failed to mark conversation as read', errorMessage), { status: 500 })
   }
 }

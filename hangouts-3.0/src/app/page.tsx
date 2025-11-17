@@ -10,14 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
 import { useRouter } from "next/navigation"
 import { logger } from '@/lib/logger'
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { isPastDate } from "@/lib/date-utils"
 
-interface Hangout {
+interface FeedItem {
   id: string
   title: string
   description?: string
   location?: string
   startTime: string
   endTime: string
+  type?: 'HANGOUT' | 'EVENT' | string
   creator: {
     name: string
     username: string
@@ -54,11 +58,13 @@ interface Hangout {
 export default function HomePage() {
   const { isSignedIn, isLoaded, getToken, userId } = useAuth()
   const router = useRouter()
-  const [hangouts, setHangouts] = useState<Hangout[]>([])
+  const [hangouts, setHangouts] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'recent-activity' | 'coming-up'>('recent-activity')
   const [isClient, setIsClient] = useState(false)
+  const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'hangouts' | 'events'>('all')
+  const [dateFilter, setDateFilter] = useState<{ start: string; end: string }>({ start: '', end: '' })
   // Swipe gestures for mobile navigation
   const swipeGestures = useSwipeGestures({
     onSwipeLeft: () => router.push('/discover'),
@@ -128,6 +134,39 @@ export default function HomePage() {
     })
     return sorted.map(item => item.hangout)
   }, [hangoutActions, sortBy])
+
+  const filteredHangouts = useMemo(() => {
+    const startFilter = dateFilter.start ? new Date(dateFilter.start) : null
+    const endFilter = dateFilter.end ? new Date(dateFilter.end) : null
+
+    return sortedHangouts.filter(item => {
+      if (contentTypeFilter === 'hangouts' && item.type === 'EVENT') return false
+      if (contentTypeFilter === 'events' && item.type !== 'EVENT') return false
+
+      if ((startFilter || endFilter) && item.startTime) {
+        const itemDate = new Date(item.startTime)
+        if (startFilter && !isNaN(startFilter.getTime()) && itemDate < startFilter) return false
+        if (endFilter && !isNaN(endFilter.getTime()) && itemDate > endFilter) return false
+      }
+
+      return true
+    })
+  }, [sortedHangouts, contentTypeFilter, dateFilter.start, dateFilter.end])
+
+  const { upcomingHangouts, pastHangouts } = useMemo(() => {
+    const upcoming: FeedItem[] = []
+    const past: FeedItem[] = []
+    filteredHangouts.forEach(item => {
+      const referenceDate = item.endTime || item.startTime
+      if (isPastDate(referenceDate)) {
+        past.push(item)
+      } else {
+        upcoming.push(item)
+      }
+    })
+    return { upcomingHangouts: upcoming, pastHangouts: past }
+  }, [filteredHangouts])
+  const totalVisible = upcomingHangouts.length + pastHangouts.length
   useEffect(() => {
     setIsClient(true)
     const fetchHangouts = async () => {
@@ -154,7 +193,25 @@ export default function HomePage() {
           ...(token && { 'Authorization': `Bearer ${token}` })
         }
         
-        const response = await fetch('/api/feed-simple?type=home&contentType=all', {
+        const params = new URLSearchParams({
+          type: 'home',
+          contentType: contentTypeFilter
+        })
+        params.append('includePast', 'true')
+        if (dateFilter.start) {
+          const startDate = new Date(dateFilter.start)
+          if (!isNaN(startDate.getTime())) {
+            params.append('startDate', startDate.toISOString())
+          }
+        }
+        if (dateFilter.end) {
+          const endDate = new Date(dateFilter.end)
+          if (!isNaN(endDate.getTime())) {
+            params.append('endDate', endDate.toISOString())
+          }
+        }
+
+        const response = await fetch(`/api/feed-simple?${params.toString()}`, {
           headers
         })
         
@@ -177,7 +234,7 @@ export default function HomePage() {
       }
     }
     fetchHangouts()
-  }, [isLoaded, isSignedIn])
+  }, [isLoaded, isSignedIn, contentTypeFilter, dateFilter.start, dateFilter.end])
   // Show guest landing for non-authenticated users
   if (!isSignedIn) {
     return (
@@ -199,14 +256,14 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
           <HangoutCalendar 
-            hangouts={hangouts} 
+            hangouts={hangouts as any} 
             events={[]} 
-            currentUserId={userId || undefined} 
+            currentUserId={userId || ''} 
           />
         </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-white">Hangouts ({hangouts.length})</h2>
+            <h2 className="text-sm font-medium text-white">Hangouts ({totalVisible})</h2>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Sort by:</span>
               {isClient ? (
@@ -224,6 +281,48 @@ export default function HomePage() {
               )}
             </div>
           </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="text-xs uppercase text-gray-500 tracking-wide">Type</label>
+              <Select value={contentTypeFilter} onValueChange={(value: 'all' | 'hangouts' | 'events') => setContentTypeFilter(value)}>
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="All content" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="hangouts">Hangouts</SelectItem>
+                  <SelectItem value="events">Events</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500 tracking-wide">Start date</label>
+              <Input
+                type="date"
+                value={dateFilter.start}
+                onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500 tracking-wide">End date</label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="date"
+                  value={dateFilter.end}
+                  onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDateFilter({ start: '', end: '' })}
+                  disabled={!dateFilter.start && !dateFilter.end}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </div>
           {loading && (
             <div className="p-4 text-center">Loading hangouts...</div>
           )}
@@ -232,7 +331,7 @@ export default function HomePage() {
               Error: {error}
             </div>
           )}
-          {!loading && !error && hangouts.length === 0 && (
+          {!loading && !error && totalVisible === 0 && (
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold mb-4">Welcome to Hangouts 3.0</h2>
               <p className="text-gray-600 mb-6">
@@ -240,14 +339,30 @@ export default function HomePage() {
               </p>
             </div>
           )}
-          {!loading && !error && sortedHangouts.length > 0 && (
+          {!loading && !error && totalVisible > 0 && (
             <div className="space-y-0">
-              {sortedHangouts.map((hangout, index) => (
+              {upcomingHangouts.map((hangout, index) => (
                 <StackedHangoutTile
-                  key={hangout.id}
-                  hangout={hangout}
+                  key={`${hangout.id}-upcoming`}
+                  hangout={hangout as any}
                   index={index}
-                  totalCount={sortedHangouts.length}
+                  totalCount={totalVisible}
+                  showActivityIndicator={!!hangout.hasRecentActivity}
+                  activityType={hangout.activityType || 'comment'}
+                  activityCount={hangout.activityCount || 0}
+                />
+              ))}
+              {pastHangouts.length > 0 && (
+                <div className="py-4 text-center text-xs uppercase tracking-wide text-gray-500">
+                  Past events and hangouts
+                </div>
+              )}
+              {pastHangouts.map((hangout, index) => (
+                <StackedHangoutTile
+                  key={`${hangout.id}-past`}
+                  hangout={hangout as any}
+                  index={upcomingHangouts.length + index}
+                  totalCount={totalVisible}
                   showActivityIndicator={!!hangout.hasRecentActivity}
                   activityType={hangout.activityType || 'comment'}
                   activityCount={hangout.activityCount || 0}

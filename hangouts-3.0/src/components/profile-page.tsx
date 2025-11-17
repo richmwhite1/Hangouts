@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react"
 import { useProfile } from "@/hooks/use-profile"
 import { useAuth } from "@clerk/nextjs"
 import { useImageUpload } from "@/hooks/use-image-upload"
+import { performSignOut } from "@/lib/sign-out-utils"
 import { Loader2, Upload, X, Save, Edit, Users, Calendar, MapPin, Coffee, Moon, TreePine, Gamepad2, Plus } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -501,13 +502,7 @@ export function ProfilePage() {
             <div className="flex justify-center">
               <Button
                 onClick={async () => {
-                  try {
-                    await signOut({ redirectUrl: '/' })
-                  } catch (error) {
-                    console.error('Sign out error:', error)
-                    // Force redirect even if signOut fails
-                    window.location.href = '/'
-                  }
+                  await performSignOut(signOut, '/')
                 }}
                 variant="outline"
                 size="sm"

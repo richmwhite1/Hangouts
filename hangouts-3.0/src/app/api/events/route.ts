@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
+import { createStartTimeFilter } from '@/lib/date-utils'
 
 import { logger } from '@/lib/logger'
 // GET /api/events - List events
@@ -15,6 +16,9 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || ''
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
+    const startDateParam = searchParams.get('startDate')
+    const endDateParam = searchParams.get('endDate')
+    const includePast = searchParams.get('includePast') === 'true'
     
     // console.log('🔍 Query params:', { search, category, dateFrom, dateTo }); // Removed for production
     // console.log('🔍 Available db models:', Object.keys(db); // Removed for production)
@@ -90,14 +94,13 @@ export async function GET(request: NextRequest) {
       whereClause.category = category
     }
     
-    if (dateFrom || dateTo) {
-      whereClause.startTime = {}
-      if (dateFrom) {
-        whereClause.startTime.gte = new Date(dateFrom)
-      }
-      if (dateTo) {
-        whereClause.startTime.lte = new Date(dateTo)
-      }
+    const startTimeFilter = createStartTimeFilter({
+      startDate: startDateParam || dateFrom,
+      endDate: endDateParam || dateTo,
+      includePast
+    })
+    if (startTimeFilter) {
+      whereClause.startTime = startTimeFilter
     }
     
     const events = await db.content.findMany({

@@ -11,13 +11,12 @@ import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
 import { useVisualFeedback } from '@/hooks/use-visual-feedback'
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
+import { isPastDate } from '@/lib/date-utils'
 import {
   Search,
   Filter,
   MapPin,
   Calendar,
-  Heart,
-  Share2,
   Users,
   Music,
   Coffee,
@@ -35,7 +34,6 @@ import {
 import { useAuth } from '@clerk/nextjs'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
-import { GuestLanding } from '@/components/guest-landing'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
 interface Event {
@@ -129,7 +127,7 @@ const distanceOptions = [
   { id: 'unlimited', label: 'No limit' },
 ]
 export function MergedDiscoveryPage() {
-  const { getToken, isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
   const [contentView, setContentView] = useState<'all' | 'trending' | 'foryou'>('all') // New: content view tabs
@@ -142,6 +140,7 @@ export function MergedDiscoveryPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [mergedContent, setMergedContent] = useState<any[]>([])
+  const [showPastContent, setShowPastContent] = useState(false)
   const [trendingContent, setTrendingContent] = useState<any[]>([])
   const [recommendedContent, setRecommendedContent] = useState<any[]>([])
   const [recommendationMessage, setRecommendationMessage] = useState<string>('')
@@ -291,6 +290,7 @@ export function MergedDiscoveryPage() {
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
+      params.append('includePast', showPastContent ? 'true' : 'false')
       // Handle time filters
       if (selectedTimeFilter !== 'all') {
         const now = new Date()
@@ -320,6 +320,8 @@ export function MergedDiscoveryPage() {
       
       // Use public API for non-authenticated users
       const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content'
+      params.append('includePast', showPastContent ? 'true' : 'false')
+
       if (!isSignedIn) {
         params.append('type', 'EVENT')
         params.append('privacyLevel', 'PUBLIC')
@@ -496,11 +498,13 @@ export function MergedDiscoveryPage() {
   }, [searchQuery, selectedCategory, selectedTags, priceRange, dateRange, userLocation, maxDistance])
   // Merge and sort content (memoized)
   const mergeAndSortContent = useMemo(() => {
+    const now = Date.now()
     const allContent = [
       ...events.map(event => ({
         ...event,
         type: 'event',
         sortDate: new Date(event.startDate),
+        isPast: isPastDate(event.startDate),
         sortPrice: event.price.min,
         sortDistance: userLocation && event.latitude && event.longitude
           ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
@@ -510,6 +514,7 @@ export function MergedDiscoveryPage() {
         ...hangout,
         type: 'hangout',
         sortDate: new Date(hangout.date),
+        isPast: isPastDate(hangout.date),
         sortPrice: 0,
         sortDistance: userLocation && hangout.latitude && hangout.longitude
           ? calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude)
@@ -549,7 +554,11 @@ export function MergedDiscoveryPage() {
         sortedContent.sort((a, b) => b.sortPrice - a.sortPrice)
         break
     }
-    return sortedContent
+    const enrichedContent = sortedContent.map(item => ({
+      ...item,
+      isPast: typeof item.isPast === 'boolean' ? item.isPast : item.sortDate.getTime() < now
+    }))
+    return enrichedContent
   }, [events, hangouts, filterContent, sortBy, userLocation])
   // Update merged content when mergeAndSortContent changes
   useEffect(() => {
@@ -608,14 +617,14 @@ export function MergedDiscoveryPage() {
     ]).finally(() => {
       setIsLoading(false)
     })
-  }, [isSignedIn, isLoaded])
+  }, [isSignedIn, isLoaded, showPastContent])
   useEffect(() => {
     // Wait for authentication to load before refetching data
     if (!isLoaded) return
     
     // Refetch both events and hangouts when filters change
     Promise.all([fetchEvents(), fetchHangouts()])
-  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, isLoaded])
+  }, [searchQuery, selectedCategory, selectedTimeFilter, dateRange, showPastContent, isLoaded])
   // Handle zip code geocoding
   useEffect(() => {
     const handleZipCodeGeocoding = async () => {
@@ -648,7 +657,7 @@ export function MergedDiscoveryPage() {
     const categoryObj = categories.find(cat => cat.id === category)
     return categoryObj ? categoryObj.icon : TrendingUp
   }
-  const renderEventCard = (event: Event) => {
+  const renderEventCard = (event: Event & { isPast?: boolean }) => {
     const CategoryIcon = getCategoryIcon(event.category)
     const distance = userLocation && event.latitude && event.longitude
       ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
@@ -676,18 +685,23 @@ export function MergedDiscoveryPage() {
             </div>
           )}
           {/* Type Badge - Top Left - More Discreet */}
-          <div className="absolute top-4 left-4">
-            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+          <div className="absolute top-4 left-4 space-y-2">
+            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 flex items-center">
               <CategoryIcon className="w-3 h-3 mr-1" />
               Event
             </Badge>
-          </div>
-          {/* Price Badge - Under Type Badge - More Discreet */}
-          {event.price && event.price.min > 0 && (
-            <div className="absolute top-4 left-4 mt-10">
-              <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+            {/* Price Badge - Under Type Badge - More Discreet */}
+            {event.price && event.price.min > 0 && (
+              <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 flex items-center">
                 <DollarSign className="w-3 h-3 mr-1" />
                 {formatPrice(event.price)}
+              </Badge>
+            )}
+          </div>
+          {event.isPast && (
+            <div className="absolute top-4 right-4">
+              <Badge className="bg-red-600/80 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 uppercase">
+                Past
               </Badge>
             </div>
           )}
@@ -719,11 +733,11 @@ export function MergedDiscoveryPage() {
             <TileActions
               itemId={event.id}
               itemType="event"
-              onSave={(id, type) => {
+              onSave={() => {
                 // TODO: Implement save functionality
                 // console.log('Save event:', id, type); // Removed for production
               }}
-              onUnsave={(id, type) => {
+              onUnsave={() => {
                 // TODO: Implement unsave functionality
                 // console.log('Unsave event:', id, type); // Removed for production
               }}
@@ -733,7 +747,7 @@ export function MergedDiscoveryPage() {
       </Link>
     )
   }
-  const renderHangoutCard = (hangout: Hangout) => {
+  const renderHangoutCard = (hangout: Hangout & { isPast?: boolean }) => {
     const distance = userLocation && hangout.latitude && hangout.longitude
       ? calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude)
       : null
@@ -760,19 +774,24 @@ export function MergedDiscoveryPage() {
             </div>
           )}
           {/* Type Badge - Top Left - More Discreet */}
-          <div className="absolute top-4 left-4">
-            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+          <div className="absolute top-4 left-4 space-y-2">
+            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 flex items-center">
               <Users className="w-3 h-3 mr-1" />
               Hangout
             </Badge>
-          </div>
-          {/* Participants Count - Under Type Badge - More Discreet */}
-          <div className="absolute top-4 left-4 mt-10">
-            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20">
+            {/* Participants Count - Under Type Badge - More Discreet */}
+            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 flex items-center">
               <Users className="w-3 h-3 mr-1" />
               {hangout.participants?.length || 0}
             </Badge>
           </div>
+          {hangout.isPast && (
+            <div className="absolute top-4 right-4">
+              <Badge className="bg-red-600/80 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 uppercase">
+                Past
+              </Badge>
+            </div>
+          )}
           {/* Date - Top Right (if no distance) */}
           {!distance && (
             <div className="absolute top-4 right-4">
@@ -801,11 +820,11 @@ export function MergedDiscoveryPage() {
             <TileActions
               itemId={hangout.id}
               itemType="hangout"
-              onSave={(id, type) => {
+              onSave={() => {
                 // TODO: Implement save functionality
                 // console.log('Save hangout:', id, type); // Removed for production
               }}
-              onUnsave={(id, type) => {
+              onUnsave={() => {
                 // TODO: Implement unsave functionality
                 // console.log('Unsave hangout:', id, type); // Removed for production
               }}
@@ -1059,6 +1078,16 @@ export function MergedDiscoveryPage() {
           >
             <Filter className="w-5 h-5" />
           </TouchButton>
+        </div>
+        <div className="flex justify-end mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPastContent(prev => !prev)}
+            className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+          >
+            {showPastContent ? 'Hide past events' : 'Show past events'}
+          </Button>
         </div>
         {/* Comprehensive Filters */}
         {isFilterModalOpen && (
@@ -1358,7 +1387,8 @@ export function MergedDiscoveryPage() {
               displayContent = recommendedContent
             }
 
-            return displayContent.length === 0 ? (
+            if (displayContent.length === 0) {
+              return (
               <div className="text-center py-12">
                 <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">No content found</h3>
@@ -1367,20 +1397,49 @@ export function MergedDiscoveryPage() {
                 </p>
                 <CreateEventModal />
               </div>
-            ) : (
+              )
+            }
+
+            const filteredByTab = displayContent.filter(item => {
+              if (activeTab === 'events') return item.type === 'event' || item.type === 'EVENT'
+              if (activeTab === 'hangouts') return item.type === 'hangout' || item.type === 'HANGOUT'
+              if (activeTab === 'saved') return false // TODO: Implement saved items
+              return true // 'all' tab
+            })
+
+            const renderCards = (items: any[]) =>
+              items.map(item =>
+                (item.type === 'event' || item.type === 'EVENT')
+                  ? renderEventCard(item as Event & { isPast?: boolean })
+                  : renderHangoutCard(item as Hangout & { isPast?: boolean })
+              )
+
+            if (contentView !== 'all') {
+              return (
+                <div className="space-y-3 px-4">
+                  {renderCards(filteredByTab)}
+                </div>
+              )
+            }
+
+            const upcomingItems = filteredByTab.filter(item => !item.isPast)
+            const pastItems = filteredByTab.filter(item => item.isPast)
+
+            return (
               <div className="space-y-3 px-4">
-                {displayContent
-                  .filter(item => {
-                    if (activeTab === 'events') return item.type === 'event' || item.type === 'EVENT'
-                    if (activeTab === 'hangouts') return item.type === 'hangout' || item.type === 'HANGOUT'
-                    if (activeTab === 'saved') return false // TODO: Implement saved items
-                    return true // 'all' tab
-                  })
-                  .map(item =>
-                    (item.type === 'event' || item.type === 'EVENT')
-                      ? renderEventCard(item as Event)
-                      : renderHangoutCard(item as Hangout)
-                  )}
+                {upcomingItems.length > 0 ? renderCards(upcomingItems) : (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    No upcoming events match these filters.
+                  </div>
+                )}
+                {showPastContent && pastItems.length > 0 && (
+                  <>
+                    <div className="sticky top-16 z-0 bg-black/80 backdrop-blur py-3 text-center text-xs uppercase tracking-wide text-gray-400 border-t border-gray-800">
+                      Past events and hangouts
+                    </div>
+                    {renderCards(pastItems)}
+                  </>
+                )}
               </div>
             )
           })()}

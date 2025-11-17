@@ -1122,8 +1122,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           {Object.entries(
                             (message.reactions || []).reduce((acc, reaction) => {
                               if (!reaction?.emoji) return acc
-                              if (!acc[reaction.emoji]) acc[reaction.emoji] = []
-                              acc[reaction.emoji].push(reaction)
+                              const emoji = reaction.emoji
+                              if (!acc[emoji]) acc[emoji] = []
+                              acc[emoji].push(reaction)
                               return acc
                             }, {} as { [key: string]: any[] })
                           ).map(([emoji, reactions]) => (
@@ -1189,16 +1190,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         )}
         
         {/* Typing indicator */}
-        {typingUsers[resolvedParams.id] && typingUsers[resolvedParams.id]?.length > 0 && (
-          <div className="flex items-center space-x-2 text-gray-400 text-sm">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        {(() => {
+          const typingUsersForConversation = resolvedParams.id ? typingUsers[resolvedParams.id] : undefined
+          return typingUsersForConversation && typingUsersForConversation.length > 0 ? (
+            <div className="flex items-center space-x-2 text-gray-400 text-sm">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+              <span>{typingUsersForConversation.length} {typingUsersForConversation.length === 1 ? 'person is' : 'people are'} typing...</span>
             </div>
-            <span>{typingUsers[resolvedParams.id]?.length} {typingUsers[resolvedParams.id]?.length === 1 ? 'person is' : 'people are'} typing...</span>
-          </div>
-        )}
+          ) : null
+        })()}
         
         <div ref={messagesEndRef} />
       </div>

@@ -4,8 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createHangoutFlow } from '@/lib/hangout-flow'
-import { TransactionQueries } from '@/lib/db-queries'
-
+import { createStartTimeFilter } from '@/lib/date-utils'
 import { logger } from '@/lib/logger'
 const createHangoutSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
@@ -36,247 +35,7 @@ const createHangoutSchema = z.object({
     hangoutUrl: z.string().optional()
   })).optional()})
 
-async function getHangoutsHandler(request: AuthenticatedRequest) {
-  const userId = request.user?.userId
-  
-  if (!userId) {
-    return createErrorResponse('Authentication required', 'User ID not provided', 401)
-  }
-
-  try {
-    // Check if this is a discover request
-    const url = new URL(request.url)
-    const discover = url.searchParams.get('discover') === 'true'
-    
-    let whereClause
-    if (discover) {
-      // DISCOVER LOGIC: Show all public hangouts
-      whereClause = {
-        privacyLevel: 'PUBLIC' as const
-      }
-    } else {
-      // HOME FEED LOGIC: Only show hangouts user created or was invited to
-      whereClause = {
-        OR: [
-          // User's own hangouts (all privacy levels)
-          { creatorId: userId },
-          // Private hangouts where user is a participant (invited)
-          {
-            AND: [
-              { privacyLevel: 'PRIVATE' as const },
-              {
-                content_participants: {
-                  some: { userId: userId }
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-
-    const hangouts = await db.content.findMany({
-      where: {
-        type: 'HANGOUT',
-        ...whereClause
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        location: true,
-        latitude: true,
-        longitude: true,
-        startTime: true,
-        endTime: true,
-        privacyLevel: true,
-        image: true,
-        createdAt: true,
-        updatedAt: true,
-        users: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true,
-            lastSeen: true,
-            isActive: true
-          }
-        },
-        content_participants: {
-          include: {
-            users: {
-              select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-                lastSeen: true,
-                isActive: true
-              }
-            }
-          }
-        },
-        _count: {
-          select: {
-            content_participants: true,
-            comments: true,
-            content_likes: true,
-            content_shares: true,
-            messages: true
-          }
-        }
-      },
-      orderBy: { startTime: 'asc' },
-      take: 20,
-      skip: 0})
-
-    return createSuccessResponse({ hangouts })
-  } catch (error) {
-    logger.error('Database error in getHangoutsHandler:', error);
-    return createErrorResponse('Database error', 'Failed to fetch hangouts', 500)
-  }
-}
-
-async function createHangoutHandler(request: AuthenticatedRequest, validatedData?: z.infer<typeof createHangoutSchema>) {
-  try {
-    const userId = request.user?.userId
-    if (!userId) {
-      return createErrorResponse('Authentication required', 'User ID not provided', 401)
-    }
-
-    // Get data from request body if validation is disabled
-    let data = validatedData
-    if (!data) {
-      try {
-        data = await request.json()
-      } catch (error) {
-        return createErrorResponse('Invalid request', 'Could not parse request body', 400)
-      }
-    }
-
-    // For the new flow, get start/end times from the first option or use defaults
-    let startTime: Date
-    let endTime: Date
-    
-    if (data && data.options && data.options.length > 0 && data.options[0]?.dateTime) {
-      startTime = new Date(data.options[0].dateTime)
-      endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000) // 2 hours later
-    } else if (data && data.startTime && data.endTime) {
-      startTime = new Date(data.startTime)
-      endTime = new Date(data.endTime)
-    } else {
-      startTime = new Date()
-      endTime = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours later
-    }
-    
-    if (endTime <= startTime) {
-      return createErrorResponse('Invalid time range', 'End time must be after start time', 400)
-    }
-
-    // Determine hangout flow
-    const flowData = {
-      type: data?.type || 'SINGLE',
-      options: ((data?.options || [])).map(option => ({
-        id: option.id || `option_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        title: option.title,
-        description: option.description,
-        location: option.location,
-        dateTime: option.dateTime,
-        price: option.price,
-        eventImage: (option as any).eventImage
-      })),
-      participants: data?.participants || []
-    };
-
-    const flowResult = await createHangoutFlow(flowData);
-
-    // For single option hangouts, use the option data for the hangout's basic fields
-    const firstOption = data?.options && data.options.length > 0 ? data.options[0] : null;
-    const hangoutLocation = firstOption?.location || data?.location;
-
-    // Create hangout with creator as participant using transaction
-    const hangout = await TransactionQueries.createHangoutWithParticipant({
-      title: data?.title || '',
-      description: data?.description || null,
-      location: hangoutLocation || null,
-      latitude: data?.latitude || null,
-      longitude: data?.longitude || null,
-      startTime,
-      endTime,
-      privacyLevel: data?.privacyLevel || 'PUBLIC',
-      weatherEnabled: data?.weatherEnabled ?? false,
-      image: data?.image || null,
-      creatorId: userId,
-      maxParticipants: data?.maxParticipants || null,
-      participants: data?.participants || [],
-      mandatoryParticipants: data?.mandatoryParticipants || [],
-      coHosts: data?.coHosts || []});
-
-    // Create poll for all hangouts with options (both quick_plan and multi_option)
-    if (flowData.options.length > 0) {
-      // console.log('🔍 Creating poll for hangout:', hangout?.id); // Removed for production
-      // console.log('🔍 Poll options:', flowData.options); // Removed for production
-      // console.log('🔍 Requires voting:', flowResult.requiresVoting); // Removed for production
-      
-      try {
-        const pollData = {
-          id: `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          contentId: hangout?.id || '',
-          creatorId: userId,
-          title: data?.title || '',
-          description: data?.description || '',
-          options: flowData.options,
-          allowMultiple: false,
-          isAnonymous: false,
-          status: flowResult.requiresVoting ? 'ACTIVE' : 'CONSENSUS_REACHED',
-          consensusPercentage: 70,
-          expiresAt: flowResult.votingDeadline || null
-        };
-        
-        // console.log('🔍 Poll data to create:', JSON.stringify(pollData, null, 2); // Removed for production);
-        
-        const poll = await db.polls.create({
-          data: pollData
-        });
-        // console.log('✅ Poll created successfully:', poll.id); // Removed for production
-      } catch (error) {
-        logger.error('❌ Error creating poll:', error);
-        logger.error('❌ Error details:', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          code: (error as any)?.code,
-          meta: (error as any)?.meta
-        });
-        // Don't throw error, just log it and continue
-        // console.log('⚠️ Continuing without poll creation...'); // Removed for production
-      }
-    }
-
-    // Add flow-specific data to hangout
-    const hangoutWithFlow = {
-      ...hangout,
-      state: flowResult.state,
-      finalizedOption: flowResult.requiresVoting ? null : flowResult.finalizedOption, // Don't set finalized option if voting is required
-      requiresVoting: flowResult.requiresVoting,
-      requiresRSVP: flowResult.requiresRSVP,
-      votes: flowResult.votes || {},
-      votingDeadline: flowResult.votingDeadline,
-      options: flowData.options
-    };
-
-    return createSuccessResponse(hangoutWithFlow, 'Hangout created successfully')
-  } catch (error) {
-    logger.error('Error in createHangoutHandler:', error);
-    logger.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
-    return createErrorResponse('Internal error', `Failed to create hangout: ${error instanceof Error ? error.message : 'Unknown error'}`, 500)
-  }
-}
-
-// Export handlers with middleware
+// Export handlers
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication using Clerk
@@ -293,6 +52,9 @@ export async function GET(request: NextRequest) {
     const userId = user.id
     const { searchParams } = new URL(request.url)
     const discover = searchParams.get('discover') === 'true'
+    const includePast = searchParams.get('includePast') === 'true'
+    const startDateParam = searchParams.get('startDate')
+    const endDateParam = searchParams.get('endDate')
 
     // Build where clause based on feed type
     let whereClause: any
@@ -335,11 +97,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const baseWhere: any = {
+      type: 'HANGOUT',
+      ...whereClause
+    }
+
+    const startTimeFilter = createStartTimeFilter({
+      startDate: startDateParam,
+      endDate: endDateParam,
+      includePast
+    })
+    if (startTimeFilter) {
+      baseWhere.startTime = startTimeFilter
+    }
+
     const hangouts = await db.content.findMany({
-      where: {
-        type: 'HANGOUT',
-        ...whereClause
-      },
+      where: baseWhere,
       select: {
         id: true,
         title: true,
@@ -471,7 +244,7 @@ export async function POST(request: NextRequest) {
     if (validatedData.options && validatedData.options.length > 0) {
       // Use the first option's dateTime as start time
       const firstOption = validatedData.options[0]
-      startTime = new Date(firstOption.dateTime || new Date())
+      startTime = new Date(firstOption?.dateTime || new Date())
       // End time is 3 hours after start time
       endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
     } else {
@@ -576,7 +349,7 @@ export async function POST(request: NextRequest) {
           allowAbstention: true,
           allowAddOptions: true,
           isPublic: validatedData.privacyLevel === 'PUBLIC',
-          visibility: validatedData.privacyLevel === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'
+          visibility: (validatedData.privacyLevel === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE') as 'PUBLIC' | 'PRIVATE' | 'FRIENDS'
         }
 
         await db.polls.create({

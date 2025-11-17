@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     logger.error('Error fetching unread counts:', error);
-    return NextResponse.json(createErrorResponse('Failed to fetch unread counts', error.message), { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json(createErrorResponse('Failed to fetch unread counts', errorMessage), { status: 500 })
   }
 }

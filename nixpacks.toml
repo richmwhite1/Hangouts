@@ -2,13 +2,13 @@
 nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
 
 [phases.install]
-cmds = ["cd hangouts-3.0 && NPM_CONFIG_PRODUCTION=false npm ci --omit=dev"]
+cmds = ["cd hangouts-3.0 && npm ci --omit=dev"]
 
 [phases.build]
 cmds = [
-  "cd hangouts-3.0 && NPM_CONFIG_PRODUCTION=false npx prisma generate --schema=./prisma/schema.prisma",
-  "cd hangouts-3.0 && NPM_CONFIG_PRODUCTION=false npm run build"
+  "cd hangouts-3.0 && npx prisma generate --schema=./prisma/schema.prisma",
+  "cd hangouts-3.0 && npm run build"
 ]
 
 [start]
-cmd = "cd hangouts-3.0 && NPM_CONFIG_PRODUCTION=false npm start"
+cmd = "cd hangouts-3.0 && npm start"

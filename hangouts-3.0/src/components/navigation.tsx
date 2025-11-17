@@ -14,6 +14,7 @@ import { NotificationSettings } from "@/components/notifications/notification-se
 import { NotificationHistory } from "@/components/notifications/notification-history"
 import { UniversalSearch } from "@/components/universal-search"
 import { Logo } from "@/components/logo"
+import { performSignOut } from "@/lib/sign-out-utils"
 
 export function Navigation() {
   const [showNotifications, setShowNotifications] = useState(false)
@@ -135,13 +136,7 @@ export function Navigation() {
                           className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={async () => {
                             setShowUserMenu(false)
-                            try {
-                              await clerk.signOut({ redirectUrl: '/' })
-                            } catch (error) {
-                              console.error('Sign out error:', error)
-                              // Force redirect even if signOut fails
-                              window.location.href = '/'
-                            }
+                            await performSignOut(clerk.signOut.bind(clerk), '/')
                           }}
                         >
                           <LogOut className="w-4 h-4 mr-2" />

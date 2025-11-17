@@ -21,6 +21,7 @@ import {
   Gamepad2
 } from 'lucide-react'
 import Link from 'next/link'
+import { performSignOut } from '@/lib/sign-out-utils'
 
 interface UserProfile {
   id: string
@@ -185,13 +186,7 @@ export function ProfilePageNew() {
                     variant="outline" 
                     size="sm"
                     onClick={async () => {
-                      try {
-                        await signOut({ redirectUrl: '/' })
-                      } catch (error) {
-                        console.error('Sign out error:', error)
-                        // Force redirect even if signOut fails
-                        window.location.href = '/'
-                      }
+                      await performSignOut(signOut, '/')
                     }}
                     className="text-red-400 border-red-400/50 hover:bg-red-400/10"
                   >
