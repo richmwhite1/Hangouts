@@ -204,12 +204,12 @@ export function NotificationHistory({ isOpen, onClose }: NotificationHistoryProp
                       </div>
                     </div>
                   </div>
-                  <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="bg-blue-50 p-3 rounded-lg">
                     <div className="flex items-center">
-                      <Calendar className="w-4 h-4 text-purple-500 mr-2" />
+                      <Calendar className="w-4 h-4 text-blue-500 mr-2" />
                       <div>
-                        <p className="text-sm font-medium text-purple-900">This Week</p>
-                        <p className="text-lg font-bold text-purple-600">
+                        <p className="text-sm font-medium text-blue-900">This Week</p>
+                        <p className="text-lg font-bold text-blue-600">
                           {stats.byDay[new Date().toISOString().split('T')[0]] || 0}
                         </p>
                       </div>

@@ -150,7 +150,7 @@ export function Navigation() {
             ) : (
               // Sign In button for non-authenticated users
               <Link href="/signin">
-                <Button variant="default" size="lg" className="bg-[#6c47ff] hover:bg-[#5a3ae6] text-white">
+                <Button variant="default" size="lg" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
                   Sign In
                 </Button>
               </Link>

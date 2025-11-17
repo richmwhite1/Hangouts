@@ -40,7 +40,7 @@ const personalityTraits: PersonalityTrait[] = [
   { id: 'spontaneous-organizer', name: 'Spontaneous Organizer', description: 'Brings people together on a whim', icon: <Zap className="w-4 h-4" />, color: 'bg-yellow-500', category: 'connection' },
   { id: 'deep-conversationalist', name: 'Deep Conversationalist', description: 'Loves meaningful, thought-provoking chats', icon: <MessageCircle className="w-4 h-4" />, color: 'bg-blue-500', category: 'connection' },
   { id: 'social-catalyst', name: 'Social Catalyst', description: 'The person who makes everyone feel included', icon: <Users className="w-4 h-4" />, color: 'bg-green-500', category: 'connection' },
-  { id: 'creative-connector', name: 'Creative Connector', description: 'Brings artistic flair to social gatherings', icon: <Sparkles className="w-4 h-4" />, color: 'bg-purple-500', category: 'connection' },
+  { id: 'creative-connector', name: 'Creative Connector', description: 'Brings artistic flair to social gatherings', icon: <Sparkles className="w-4 h-4" />, color: 'bg-blue-500', category: 'connection' },
   
   // Hangout Preferences
   { id: 'coffee-lover', name: 'Coffee Lover', description: 'Always up for a coffee chat', icon: <Coffee className="w-4 h-4" />, color: 'bg-amber-600', category: 'preference' },
@@ -66,7 +66,7 @@ const connectionStyles: ConnectionStyle[] = [
     secondary: ['Deep Conversationalist', 'Creative Connector'],
     description: 'You create meaningful connections through thoughtful conversations and creative expression.',
     icon: <MessageCircle className="w-6 h-6" />,
-    color: 'bg-gradient-to-r from-blue-500 to-purple-500'
+    color: 'bg-gradient-to-r from-blue-500 to-blue-500'
   },
   {
     primary: 'The Explorer',
@@ -80,7 +80,7 @@ const connectionStyles: ConnectionStyle[] = [
     secondary: ['Creative Connector', 'Photo Enthusiast'],
     description: 'You bring artistic vision to social gatherings, creating memorable experiences through creativity.',
     icon: <Sparkles className="w-6 h-6" />,
-    color: 'bg-gradient-to-r from-purple-500 to-pink-500'
+    color: 'bg-gradient-to-r from-blue-500 to-pink-500'
   }
 ]
 
@@ -183,7 +183,7 @@ export function PersonalityTraits({ userTraits, connectionStyle, onTraitClick, i
             <div className="flex justify-end">
               <button
                 onClick={() => setSelectedTrait(null)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Got it
               </button>

@@ -268,7 +268,7 @@ export function SimplePollDisplay({ poll, onVote, onOptionAdded, userVote, curre
           <div className="mt-4">
             <Button
               variant="outline"
-              className="w-full border-purple-500 text-purple-400 hover:border-purple-400 hover:text-purple-300"
+              className="w-full border-blue-500 text-blue-400 hover:border-blue-400 hover:text-blue-300"
               onClick={() => {
                 // TODO: Implement mark preferred functionality
                 // console.log('Mark preferred clicked for votes:', userVotes); // Removed for production

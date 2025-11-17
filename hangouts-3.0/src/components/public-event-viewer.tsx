@@ -230,7 +230,7 @@ export function PublicEventViewer({ eventId, onSignInRequired }: PublicEventView
             )}
 
             <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-purple-400" />
+              <Users className="h-5 w-5 text-blue-400" />
               <div className="flex items-center gap-2">
                 <p>{event.counts?.rsvps || 0} people attending</p>
                 {/* Show attendee avatars */}

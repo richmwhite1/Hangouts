@@ -1187,10 +1187,10 @@ function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: stri
           icon: '🗳️',
           title: 'Voting Phase',
           subtitle: `${votedCount} of ${totalParticipants} participants voted`,
-          bgColor: 'bg-gradient-to-r from-purple-900/20 to-blue-900/20',
-          borderColor: 'border-purple-500/30',
+          bgColor: 'bg-gradient-to-r from-blue-900/20 to-blue-900/20',
+          borderColor: 'border-blue-500/30',
           textColor: 'text-white',
-          iconColor: 'text-purple-400'
+          iconColor: 'text-blue-400'
         }
       case HANGOUT_STATES.CONFIRMED:
         return null // Don't show the prominent status header for confirmed hangouts
@@ -1316,7 +1316,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
                     href={option.hangoutUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-purple-400 hover:text-purple-300 text-sm font-medium"
+                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
                   >
                     🔗 Open Hangout Link
                   </a>
@@ -1378,8 +1378,8 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
                     disabled={isVoting}
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
                       hasUserVoted
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-black border text-purple-400'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-black border text-blue-400'
                     }`}
                     style={!hasUserVoted ? { borderColor: '#792ADB' } : {}}
                   >
@@ -1738,7 +1738,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <MessageSquare className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -1751,7 +1751,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
             </p>
           </div>
           {hasNewMessages && !isExpanded && (
-            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
           )}
         </div>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
@@ -1769,7 +1769,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
         >
           {isLoadingMessages ? (
             <div className="flex items-center justify-center py-6">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
               <span className="ml-2 text-gray-400 text-sm">Loading messages...</span>
             </div>
           ) : messages.length === 0 ? (
@@ -1783,7 +1783,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
               {messages.map(message => (
                 <div key={message.id} className="flex items-start gap-3 group">
                   {/* Professional Avatar */}
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     <span className="text-white text-xs font-semibold">
                       {message.senderName?.charAt(0) || '?'}
                     </span>
@@ -1821,7 +1821,7 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
           <button
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               newMessage.trim()
-                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-700 text-gray-400 cursor-not-allowed'
             }`}
             onClick={handleSendMessage}
@@ -1913,7 +1913,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
             className={`px-3 py-1 rounded-lg font-bold text-sm ${
               isUploading
                 ? 'bg-gray-600 text-gray-400'
-                : 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
             disabled={isUploading}
           >
@@ -1923,7 +1923,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
       </div>
       {isLoadingPhotos ? (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading photos...</p>
         </div>
       ) : photos.length > 0 ? (
@@ -1980,7 +1980,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
                     key={index}
                     onClick={() => setCurrentPhotoIndex(index)}
                     className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentPhotoIndex ? 'bg-purple-500' : 'bg-gray-500'
+                      index === currentPhotoIndex ? 'bg-blue-500' : 'bg-gray-500'
                     }`}
                   />
                 ))}

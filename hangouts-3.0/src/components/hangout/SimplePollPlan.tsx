@@ -43,7 +43,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         setIsLoading(true)
         const token = localStorage.getItem('token')
         // Fetch polls
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           const pollsList = pollsData.polls || []
@@ -57,7 +57,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
           }
         }
         // Fetch RSVPs
-        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`))
+        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`)
         if (rsvpResponse.ok) {
           const rsvpData = await rsvpResponse.json()
           setRsvps(rsvpData.rsvps || [])
@@ -69,7 +69,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         }
         // Get user's current vote
         if (polls.length > 0) {
-          const voteResponse = await fetch(`/api/hangouts/${hangoutId}/polls/${polls[0].id}/vote`))
+          const voteResponse = await fetch(`/api/hangouts/${hangoutId}/polls/${polls[0].id}/vote`)
           if (voteResponse.ok) {
             const voteData = await voteResponse.json()
             setUserVote(voteData.userVotes?.[0] || '')
@@ -95,7 +95,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
       if (response.ok) {
         setUserVote(option)
         // Refresh polls data
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           setPolls(pollsData.polls || [])
@@ -132,7 +132,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
         const result = await response.json()
         // console.log('Poll created successfully:', result); // Removed for production
         // Refresh polls
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           // console.log('Refreshed polls:', pollsData); // Removed for production
@@ -158,7 +158,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
       if (response.ok) {
         setStep('rsvp')
         // Refresh polls to show updated status
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           setPolls(pollsData.polls || [])
@@ -180,7 +180,7 @@ export function SimplePollPlan({ hangoutId, isCreator, currentUserId, hangoutTit
       if (response.ok) {
         setUserRSVP(status)
         // Refresh RSVPs
-        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`))
+        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`)
         if (rsvpResponse.ok) {
           const rsvpData = await rsvpResponse.json()
           setRsvps(rsvpData.rsvps || [])

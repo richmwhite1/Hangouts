@@ -46,7 +46,7 @@ const personalityCategories = {
   'zodiac': {
     name: 'Zodiac',
     icon: <Star className="w-4 h-4" />,
-    color: 'bg-purple-500',
+    color: 'bg-blue-500',
     placeholder: 'e.g., Scorpio, Aquarius, Cancer...',
     description: 'Astrological personality characteristics'
   },
@@ -148,7 +148,7 @@ export function PersonalityTypes({ userTypes, onTypesChange, isEditable = true }
                 onClick={handleAddType}
                 disabled={!newType.trim()}
                 size="sm"
-                className="bg-purple-600 hover:bg-purple-700 text-white h-8 px-3"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3"
               >
                 Add
               </Button>

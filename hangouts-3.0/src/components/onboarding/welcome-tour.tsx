@@ -134,7 +134,7 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
       {/* Spotlight effect for target element */}
       {step.position !== 'center' && (
         <div
-          className="absolute rounded-lg ring-4 ring-purple-500/50 ring-offset-4 ring-offset-black/0 transition-all duration-300 pointer-events-none"
+          className="absolute rounded-lg ring-4 ring-blue-500/50 ring-offset-4 ring-offset-black/0 transition-all duration-300 pointer-events-none"
           style={{
             top: position.top - 8,
             left: position.left - 8,
@@ -161,7 +161,7 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
             : undefined
         }
       >
-        <div className="bg-card rounded-xl p-6 shadow-2xl border border-purple-500/30">
+        <div className="bg-card rounded-xl p-6 shadow-2xl border border-blue-500/30">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <h3 className="text-xl font-bold text-foreground">{step.title}</h3>
@@ -186,9 +186,9 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
                 key={index}
                 className={`h-2 rounded-full transition-all ${
                   index === currentStep
-                    ? 'w-8 bg-purple-500'
+                    ? 'w-8 bg-blue-500'
                     : index < currentStep
-                    ? 'w-2 bg-purple-500/50'
+                    ? 'w-2 bg-blue-500/50'
                     : 'w-2 bg-muted-foreground/30'
                 }`}
               />
@@ -229,7 +229,7 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
 
             <Button
               onClick={handleNext}
-              className="gap-2 bg-purple-600 hover:bg-purple-700"
+              className="gap-2 bg-blue-600 hover:bg-blue-700"
             >
               {isLastStep ? 'Get Started' : 'Next'}
               <ChevronRight className="w-4 h-4" />

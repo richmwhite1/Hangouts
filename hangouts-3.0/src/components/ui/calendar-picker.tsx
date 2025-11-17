@@ -178,7 +178,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                       key={index}
                       onClick={() => day && handleDateSelect(day)}
                       className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 ${
-                        isSelected ? 'bg-purple-600 text-white shadow-lg' : 
+                        isSelected ? 'bg-blue-600 text-white shadow-lg' : 
                         isToday ? 'bg-gray-600 text-white border-2 border-gray-400' :
                         'text-white hover:bg-gray-700 hover:text-white'
                       }`}
@@ -204,7 +204,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                     onClick={() => handleTimeSelect(time)}
                     className={`p-3 text-sm rounded-lg border-2 font-medium transition-all duration-200 active:scale-95 ${
                       selectedTime === time 
-                        ? 'bg-purple-600 border-purple-500 text-white shadow-lg' 
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg' 
                         : 'border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500'
                     }`}
                   >
@@ -254,7 +254,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                           setShowCustomTime(false)
                         }
                       }}
-                      className="w-full px-3 py-2 bg-purple-600 text-white rounded text-sm"
+                      className="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm"
                     >
                       Set Time
                     </button>
@@ -277,7 +277,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                 type="button"
                 onClick={handleConfirm}
                 disabled={!selectedDate || !selectedTime}
-                className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {!selectedDate ? 'Select Date' : !selectedTime ? 'Select Time' : 'Confirm'}
               </Button>

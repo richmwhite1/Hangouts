@@ -4,14 +4,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Instagram-like Dark Theme Color Palette - Refined */
+  /* Professional Dark Theme Color Palette - Masculine, Utilitarian */
   --background: #000000; /* True black background */
   --foreground: #FAFAFA; /* Brighter white text */
   --card: #121212; /* Very dark gray card */
   --card-foreground: #FAFAFA; /* White text on cards */
   --popover: #121212; /* Dark popover background */
   --popover-foreground: #FAFAFA; /* White text on popovers */
-  --primary: #0095F6; /* Instagram blue */
+  --primary: #2563EB; /* Deep slate blue - Professional, utilitarian */
   --primary-foreground: #FFFFFF; /* White text on primary */
   --secondary: #262626; /* Instagram border gray */
   --secondary-foreground: #FAFAFA; /* White text on secondary */
@@ -23,21 +23,21 @@
   --destructive-foreground: #FFFFFF; /* White text on destructive */
   --border: #262626; /* Instagram border color */
   --input: #121212; /* Dark input background */
-  --ring: #0095F6; /* Instagram blue ring */
-  --chart-1: #0095F6; /* Instagram blue chart */
+  --ring: #2563EB; /* Deep slate blue ring */
+  --chart-1: #2563EB; /* Deep slate blue chart */
   --chart-2: #34D399; /* Green chart */
   --chart-3: #F59E0B; /* Yellow chart */
   --chart-4: #ED4956; /* Instagram red chart */
-  --chart-5: #8B5CF6; /* Purple chart */
+  --chart-5: #2563EB; /* Deep slate blue chart */
   --radius: 0.25rem; /* 4px - Sharp, masculine corners */
   --sidebar: #000000; /* Black sidebar background */
   --sidebar-foreground: #FAFAFA; /* White sidebar text */
-  --sidebar-primary: #0095F6; /* Instagram blue sidebar primary */
+  --sidebar-primary: #2563EB; /* Deep slate blue sidebar primary */
   --sidebar-primary-foreground: #FFFFFF; /* White text on sidebar primary */
   --sidebar-accent: #121212; /* Dark sidebar accent */
   --sidebar-accent-foreground: #FAFAFA; /* White text on sidebar accent */
   --sidebar-border: #262626; /* Instagram border gray */
-  --sidebar-ring: #0095F6; /* Instagram blue sidebar ring */
+  --sidebar-ring: #2563EB; /* Deep slate blue sidebar ring */
 }
 
 .dark {
@@ -48,7 +48,7 @@
   --card-foreground: #FAFAFA; /* White text on cards */
   --popover: #121212; /* Dark popover background */
   --popover-foreground: #FAFAFA; /* White text on popovers */
-  --primary: #0095F6; /* Instagram blue */
+  --primary: #2563EB; /* Deep slate blue - Professional, utilitarian */
   --primary-foreground: #FFFFFF; /* White text on primary */
   --secondary: #262626; /* Instagram border gray */
   --secondary-foreground: #FAFAFA; /* White text on secondary */
@@ -60,20 +60,20 @@
   --destructive-foreground: #FFFFFF; /* White text on destructive */
   --border: #262626; /* Instagram border color */
   --input: #121212; /* Dark input background */
-  --ring: #0095F6; /* Instagram blue ring */
-  --chart-1: #0095F6; /* Instagram blue chart */
+  --ring: #2563EB; /* Deep slate blue ring */
+  --chart-1: #2563EB; /* Deep slate blue chart */
   --chart-2: #34D399; /* Green chart */
   --chart-3: #F59E0B; /* Yellow chart */
   --chart-4: #ED4956; /* Instagram red chart */
-  --chart-5: #8B5CF6; /* Purple chart */
+  --chart-5: #2563EB; /* Deep slate blue chart */
   --sidebar: #000000; /* Black sidebar background */
   --sidebar-foreground: #FAFAFA; /* White sidebar text */
-  --sidebar-primary: #0095F6; /* Instagram blue sidebar primary */
+  --sidebar-primary: #2563EB; /* Deep slate blue sidebar primary */
   --sidebar-primary-foreground: #FFFFFF; /* White text on sidebar primary */
   --sidebar-accent: #121212; /* Dark sidebar accent */
   --sidebar-accent-foreground: #FAFAFA; /* White text on sidebar accent */
   --sidebar-border: #262626; /* Instagram border gray */
-  --sidebar-ring: #0095F6; /* Instagram blue sidebar ring */
+  --sidebar-ring: #2563EB; /* Deep slate blue sidebar ring */
 }
 
 @theme inline {
@@ -256,7 +256,7 @@
   /* UI Components - Masculine, Clean, Sharp */
   .btn-primary {
     @apply bg-primary text-primary-foreground px-4 py-2 rounded-sm font-semibold;
-    background: #0095F6;
+    background: #2563EB;
     color: #FFFFFF;
     border-radius: 4px;
     padding: 8px 16px;
@@ -266,8 +266,8 @@
   
   .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 149, 246, 0.3);
-    background: #0087E6;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    background: #1D4ED8;
   }
   
   .btn-primary:active {
@@ -326,7 +326,7 @@
   
   .input-field:focus {
     outline: none;
-    border-color: #0095F6;
+    border-color: #2563EB;
     background: #1a1a1a;
   }
   

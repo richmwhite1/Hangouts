@@ -130,7 +130,6 @@ export function MergedDiscoveryPage() {
   const { isSignedIn, isLoaded } = useAuth()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
-  const [contentView, setContentView] = useState<'all' | 'trending' | 'foryou'>('all') // New: content view tabs
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all')
@@ -141,9 +140,6 @@ export function MergedDiscoveryPage() {
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [mergedContent, setMergedContent] = useState<any[]>([])
   const [showPastContent, setShowPastContent] = useState(false)
-  const [trendingContent, setTrendingContent] = useState<any[]>([])
-  const [recommendedContent, setRecommendedContent] = useState<any[]>([])
-  const [recommendationMessage, setRecommendationMessage] = useState<string>('')
   // Comprehensive filtering state
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
@@ -572,36 +568,6 @@ export function MergedDiscoveryPage() {
     }
   }, [searchParams])
 
-  // Fetch trending content
-  const fetchTrending = async () => {
-    try {
-      const response = await fetch('/api/discover/trending?limit=20')
-      const data = await response.json()
-      
-      if (data.success) {
-        setTrendingContent(data.trending || [])
-      }
-    } catch (error) {
-      console.error('Error fetching trending:', error)
-    }
-  }
-
-  // Fetch recommended content
-  const fetchRecommended = async () => {
-    try {
-      const response = await fetch('/api/discover/recommended?limit=20')
-      const data = await response.json()
-      
-      if (data.success) {
-        setRecommendedContent(data.recommended || [])
-        if (data.message) {
-          setRecommendationMessage(data.message)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching recommendations:', error)
-    }
-  }
 
   useEffect(() => {
     // Wait for authentication to load before fetching data
@@ -611,9 +577,7 @@ export function MergedDiscoveryPage() {
     setIsLoading(true)
     Promise.all([
       fetchEvents(), 
-      fetchHangouts(),
-      fetchTrending(),
-      isSignedIn ? fetchRecommended() : Promise.resolve()
+      fetchHangouts()
     ]).finally(() => {
       setIsLoading(false)
     })
@@ -850,7 +814,7 @@ export function MergedDiscoveryPage() {
     return (
       <div className="min-h-screen bg-black">
         {/* Subtle Guest Landing Banner */}
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-800">
+        <div className="bg-gradient-to-r from-blue-600/20 to-blue-700/20 border-b border-gray-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center">
               <h1 className="text-2xl md:text-3xl font-bold mb-2">
@@ -1017,47 +981,9 @@ export function MergedDiscoveryPage() {
     <div className="min-h-screen bg-black">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800 p-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-white">Discover</h1>
-          <CreateEventModal />
         </div>
-        
-        {/* Content View Tabs */}
-        <div className="flex gap-2 mb-4 overflow-x-auto">
-          <Button
-            variant={contentView === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setContentView('all')}
-            className={contentView === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}
-          >
-            All
-          </Button>
-          <Button
-            variant={contentView === 'trending' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setContentView('trending')}
-            className={contentView === 'trending' ? 'bg-purple-600 text-white' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}
-          >
-            🔥 Trending
-          </Button>
-          {isSignedIn && (
-            <Button
-              variant={contentView === 'foryou' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setContentView('foryou')}
-              className={contentView === 'foryou' ? 'bg-purple-600 text-white' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}
-            >
-              ✨ For You
-            </Button>
-          )}
-        </div>
-
-        {/* Recommendation Message */}
-        {contentView === 'foryou' && recommendationMessage && (
-          <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-            <p className="text-sm text-purple-300">{recommendationMessage}</p>
-          </div>
-        )}
         
         {/* Search and Filters */}
         <div className="flex gap-2 mb-4">
@@ -1078,16 +1004,6 @@ export function MergedDiscoveryPage() {
           >
             <Filter className="w-5 h-5" />
           </TouchButton>
-        </div>
-        <div className="flex justify-end mb-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPastContent(prev => !prev)}
-            className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
-          >
-            {showPastContent ? 'Hide past events' : 'Show past events'}
-          </Button>
         </div>
         {/* Comprehensive Filters */}
         {isFilterModalOpen && (
@@ -1262,7 +1178,7 @@ export function MergedDiscoveryPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Active Filters</label>
                 <div className="flex flex-wrap gap-2">
                   {selectedCategory !== 'all' && (
-                    <Badge className="bg-purple-600 text-white">
+                    <Badge className="bg-blue-600 text-white">
                       Category: {categories.find(c => c.id === selectedCategory)?.label}
                     </Badge>
                   )}
@@ -1309,10 +1225,10 @@ export function MergedDiscoveryPage() {
         {/* Content Type Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="grid w-full grid-cols-4 bg-gray-800">
-            <TabsTrigger value="all" className="data-[state=active]:bg-purple-600">All</TabsTrigger>
-            <TabsTrigger value="events" className="data-[state=active]:bg-purple-600">Events</TabsTrigger>
-            <TabsTrigger value="hangouts" className="data-[state=active]:bg-purple-600">Hangouts</TabsTrigger>
-            <TabsTrigger value="saved" className="data-[state=active]:bg-purple-600">Saved</TabsTrigger>
+            <TabsTrigger value="all" className="data-[state=active]:bg-blue-600">All</TabsTrigger>
+            <TabsTrigger value="events" className="data-[state=active]:bg-blue-600">Events</TabsTrigger>
+            <TabsTrigger value="hangouts" className="data-[state=active]:bg-blue-600">Hangouts</TabsTrigger>
+            <TabsTrigger value="saved" className="data-[state=active]:bg-blue-600">Saved</TabsTrigger>
           </TabsList>
           {/* Discreet Sort and Filter Controls - Single Line */}
           <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
@@ -1320,7 +1236,7 @@ export function MergedDiscoveryPage() {
               <div className="flex items-center gap-1">
                 <span className="text-gray-400">Sort:</span>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-20 h-6 bg-transparent border-0 text-gray-300 text-xs focus:ring-0">
+                  <SelectTrigger className="h-6 w-auto min-w-[80px] bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
@@ -1334,7 +1250,7 @@ export function MergedDiscoveryPage() {
               <div className="flex items-center gap-1">
                 <span className="text-gray-400">Within:</span>
                 <Select value={maxDistance} onValueChange={setMaxDistance}>
-                  <SelectTrigger className="w-16 h-6 bg-transparent border-0 text-gray-300 text-xs focus:ring-0">
+                  <SelectTrigger className="h-6 w-auto min-w-[60px] bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
@@ -1345,6 +1261,16 @@ export function MergedDiscoveryPage() {
                     <SelectItem value="unlimited" className="text-white hover:bg-gray-700 text-xs">All</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPastContent(prev => !prev)}
+                  className="h-6 bg-gray-800 border-gray-700 text-gray-300 text-xs hover:bg-gray-700 px-2"
+                >
+                  {showPastContent ? 'Hide past' : 'Show past'}
+                </Button>
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-gray-400" />
@@ -1379,13 +1305,8 @@ export function MergedDiscoveryPage() {
               ))}
             </div>
           ) : (() => {
-            // Determine which content to show based on contentView
-            let displayContent = mergedContent
-            if (contentView === 'trending') {
-              displayContent = trendingContent
-            } else if (contentView === 'foryou') {
-              displayContent = recommendedContent
-            }
+            // Display merged content
+            const displayContent = mergedContent
 
             if (displayContent.length === 0) {
               return (
@@ -1413,14 +1334,6 @@ export function MergedDiscoveryPage() {
                   ? renderEventCard(item as Event & { isPast?: boolean })
                   : renderHangoutCard(item as Hangout & { isPast?: boolean })
               )
-
-            if (contentView !== 'all') {
-              return (
-                <div className="space-y-3 px-4">
-                  {renderCards(filteredByTab)}
-                </div>
-              )
-            }
 
             const upcomingItems = filteredByTab.filter(item => !item.isPast)
             const pastItems = filteredByTab.filter(item => item.isPast)

@@ -163,7 +163,7 @@ export default function EventDetailPage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-white">Loading event...</p>
         </div>
       </div>
@@ -228,14 +228,14 @@ export default function EventDetailPage() {
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center text-gray-300">
-              <Calendar className="w-5 h-5 mr-3 text-purple-500" />
+              <Calendar className="w-5 h-5 mr-3 text-blue-500" />
               <div>
                 <p className="font-medium">{formatDateTime(event.startDate, event.startTime)}</p>
               </div>
             </div>
             
             <div className="flex items-center text-gray-300">
-              <MapPin className="w-5 h-5 mr-3 text-purple-500" />
+              <MapPin className="w-5 h-5 mr-3 text-blue-500" />
               <div>
                 <p className="font-medium">{event.venue}</p>
                 <p className="text-sm text-gray-400">{event.address}, {event.city}</p>
@@ -243,12 +243,12 @@ export default function EventDetailPage() {
             </div>
             
             <div className="flex items-center text-gray-300">
-              <DollarSign className="w-5 h-5 mr-3 text-purple-500" />
+              <DollarSign className="w-5 h-5 mr-3 text-blue-500" />
               <p className="font-medium">{formatPrice(event.price)}</p>
             </div>
             
             <div className="flex items-center text-gray-300">
-              <Users className="w-5 h-5 mr-3 text-purple-500" />
+              <Users className="w-5 h-5 mr-3 text-blue-500" />
               <p className="font-medium">{event.attendeeCount} attendees</p>
             </div>
           </CardContent>

@@ -80,7 +80,7 @@ export function useProfile() {
     }
   }
 
-  const { isSignedIn, isLoaded, getToken } = clerkAuth
+  const { isSignedIn, isLoaded, getToken, userId } = clerkAuth
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userHangouts, setUserHangouts] = useState<UserHangout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -107,9 +107,86 @@ export function useProfile() {
         console.log('🔍 use-profile - userData:', userData)
         const user = userData
         
-        if (!user || !user.username) {
-          console.error('🔍 use-profile - Invalid user data:', user)
-          throw new Error('Invalid user data - missing username')
+        // Handle case where user exists but profile is incomplete
+        if (!user) {
+          throw new Error('User not found')
+        }
+        
+        // If username is missing, try to force sync by calling /api/auth/me again
+        // This will trigger getClerkApiUser which should sync the user
+        if (!user.username) {
+          console.log('🔍 use-profile - Username missing, attempting to force sync...')
+          try {
+            // Force a refresh of the auth endpoint which should trigger sync
+            const refreshResponse = await fetch('/api/auth/me', {
+              method: 'GET',
+              cache: 'no-store'
+            })
+            
+            if (refreshResponse.ok) {
+              const { data: refreshedUser } = await refreshResponse.json()
+              if (refreshedUser?.username) {
+                // Retry with the refreshed username
+                const profileResponse = await fetch(`/api/profile?username=${refreshedUser.username}`)
+                if (profileResponse.ok) {
+                  const data = await profileResponse.json()
+                  if (data.success) {
+                    // Parse favorite activities and places
+                    let favoriteActivities: string[] = []
+                    let favoritePlaces: string[] = []
+                    
+                    try {
+                      if (data.data.profile.favoriteActivities) {
+                        favoriteActivities = typeof data.data.profile.favoriteActivities === 'string' 
+                          ? JSON.parse(data.data.profile.favoriteActivities) 
+                          : data.data.profile.favoriteActivities
+                      }
+                    } catch (e) {
+                      logger.warn('Failed to parse favoriteActivities:', e);
+                    }
+                    
+                    try {
+                      if (data.data.profile.favoritePlaces) {
+                        favoritePlaces = typeof data.data.profile.favoritePlaces === 'string' 
+                          ? JSON.parse(data.data.profile.favoritePlaces) 
+                          : data.data.profile.favoritePlaces
+                      }
+                    } catch (e) {
+                      logger.warn('Failed to parse favoritePlaces:', e);
+                    }
+
+                    const userProfile: UserProfile = {
+                      id: data.data.profile.id,
+                      name: data.data.profile.name || 'New User',
+                      username: data.data.profile.username,
+                      avatar: data.data.profile.avatar,
+                      backgroundImage: data.data.profile.backgroundImage,
+                      bio: data.data.profile.bio || '',
+                      location: data.data.profile.location || '',
+                      zodiac: data.data.profile.zodiac,
+                      enneagram: data.data.profile.enneagram,
+                      bigFive: data.data.profile.bigFive,
+                      loveLanguage: data.data.profile.loveLanguage,
+                      favoriteActivities: favoriteActivities,
+                      favoritePlaces: favoritePlaces,
+                      joinDate: data.data.profile.joinDate,
+                      stats: data.data.profile.stats
+                    }
+                    setProfile(userProfile)
+                    setUserHangouts(data.data.hangouts || [])
+                    return
+                  }
+                }
+              }
+            }
+          } catch (syncError) {
+            logger.warn('Failed to sync user:', syncError)
+          }
+          
+          // If sync failed or username still missing, set error but don't crash
+          setError('Profile setup required - missing username. Please refresh the page or contact support.')
+          setIsLoading(false)
+          return
         }
         
         // Fetch full profile data using the profile API

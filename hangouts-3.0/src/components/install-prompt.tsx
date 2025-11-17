@@ -168,7 +168,7 @@ export function InstallPrompt({ className, variant = 'banner', showForAllUsers =
 
   return (
     <div className={`fixed bottom-4 left-4 right-4 z-50 ${className}`}>
-      <Card className="shadow-lg border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-purple-50">
+      <Card className="shadow-lg border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

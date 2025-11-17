@@ -215,7 +215,7 @@ export function AddPollOptionModal({ pollId, onOptionAdded, children }: AddPollO
             <Button
               type="submit"
               disabled={isLoading || !formData.text.trim()}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               {isLoading ? (
                 <>

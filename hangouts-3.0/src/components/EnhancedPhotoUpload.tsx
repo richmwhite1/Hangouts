@@ -156,8 +156,8 @@ export function EnhancedPhotoUpload({
         className={cn(
           'border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer',
           isDragOver 
-            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
-            : 'border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+            : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -193,7 +193,7 @@ export function EnhancedPhotoUpload({
               onClick={handleUpload}
               disabled={isUploading || files.length === 0}
               size="sm"
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               {isUploading ? 'Uploading...' : `Upload ${files.length} Photo${files.length === 1 ? '' : 's'}`}
             </Button>

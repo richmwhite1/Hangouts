@@ -174,13 +174,13 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
                   onChange={(e) => setNewTaskText(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Add task..."
-                  className="flex-1 bg-gray-800/50 border border-gray-600/50 rounded px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 bg-gray-800/50 border border-gray-600/50 rounded px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                   maxLength={100}
                 />
                 <button
                   onClick={addTask}
                   disabled={!newTaskText.trim() || isLoading}
-                  className="px-2 py-1.5 bg-purple-600/80 text-white text-xs rounded hover:bg-purple-700/80 disabled:bg-gray-700/50 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  className="px-2 py-1.5 bg-blue-600/80 text-white text-xs rounded hover:bg-blue-700/80 disabled:bg-gray-700/50 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3" />
                   {isLoading ? 'Adding...' : 'Add'}
@@ -233,7 +233,7 @@ export default function SimpleTaskManager({ hangoutId, currentUser, isHost }: Si
                         type="checkbox"
                         checked={task.assignedTo.some(user => user.id === currentUser.id)}
                         onChange={() => toggleTaskAssignment(task.id)}
-                        className="w-3.5 h-3.5 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-1"
+                        className="w-3.5 h-3.5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-1"
                       />
                     </div>
                   )}

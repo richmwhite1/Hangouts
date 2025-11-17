@@ -153,7 +153,7 @@ export default function PublicDiscoveryPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-800">
+      <div className="bg-gradient-to-r from-blue-600/20 to-blue-700/20 border-b border-gray-800">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center mb-6">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Discover Amazing Events &amp; Hangouts</h1>
@@ -202,7 +202,7 @@ export default function PublicDiscoveryPage() {
             <TabsTrigger value="events" className="data-[state=active]:bg-green-600">
               <Calendar className="w-4 h-4 mr-2" />Events
             </TabsTrigger>
-            <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger value="trending" className="data-[state=active]:bg-blue-600">
               <Star className="w-4 h-4 mr-2" />Trending
             </TabsTrigger>
           </TabsList>

@@ -45,7 +45,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#8B5CF6'
+  themeColor: '#2563EB'
 }
 
 export default function RootLayout({
@@ -70,12 +70,12 @@ export default function RootLayout({
       <html lang="en" className="dark">
         <head>
           {/* PWA Meta Tags */}
-          <meta name="theme-color" content="#8B5CF6" />
+          <meta name="theme-color" content="#2563EB" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
           <meta name="apple-mobile-web-app-title" content="Plans" />
           <meta name="mobile-web-app-capable" content="yes" />
-          <meta name="msapplication-TileColor" content="#8B5CF6" />
+          <meta name="msapplication-TileColor" content="#2563EB" />
           <meta name="msapplication-tap-highlight" content="no" />
           
           {/* Apple Touch Icons */}

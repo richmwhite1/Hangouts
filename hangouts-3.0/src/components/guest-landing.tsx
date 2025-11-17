@@ -153,7 +153,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       icon: Share2,
       title: "Easy Sharing",
       description: "Share hangouts and events with friends instantly",
-      color: "text-purple-500"
+      color: "text-blue-500"
     }
   ]
 
@@ -477,7 +477,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                 </div>
               ))}
             </div>
-            <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-2xl p-8">
+            <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/20 rounded-2xl p-8">
               <h3 className="text-2xl font-bold mb-4">Ready to get started?</h3>
               <p className="text-gray-300 mb-6">
                 Sign up now and start planning your first hangout. It's completely free and takes less than a minute.

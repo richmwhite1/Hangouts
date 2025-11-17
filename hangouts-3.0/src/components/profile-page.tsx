@@ -142,19 +142,37 @@ export function ProfilePage() {
   }
 
   if (error || !profile) {
+    // Show setup message if profile needs to be created
+    const isSetupRequired = error?.includes('Profile setup required') || error?.includes('missing username')
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Failed to load profile</p>
-          <p className="text-gray-400">There was an error loading your profile data.</p>
-          <div className="mt-6">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
-              Try Again
-            </button>
-          </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          {isSetupRequired ? (
+            <>
+              <h2 className="text-2xl font-bold text-white mb-4">Complete Your Profile</h2>
+              <p className="text-gray-400 mb-6">
+                Your account needs to be set up. Please wait a moment while we sync your profile, or try refreshing the page.
+              </p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Refresh Page
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-red-400 mb-4">Failed to load profile</p>
+              <p className="text-gray-400 mb-4">There was an error loading your profile data.</p>
+              {error && <p className="text-sm text-gray-500 mb-4">{error}</p>}
+              <Button 
+                onClick={() => refetch()} 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Try Again
+              </Button>
+            </>
+          )}
         </div>
       </div>
     )
@@ -434,7 +452,7 @@ export function ProfilePage() {
                 {(profile.zodiac || profile.enneagram || profile.bigFive || profile.loveLanguage) && (
                   <div className="flex flex-wrap gap-2 justify-center mt-3">
                     {profile.zodiac && (
-                      <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+                      <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
                         ♈ {profile.zodiac}
                       </span>
                     )}

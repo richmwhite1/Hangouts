@@ -64,8 +64,7 @@ export function EventSelector({ onEventSelect, selectedEvent, onRemoveEvent }: E
       if (searchQuery) params.append('search', searchQuery)
       if (selectedCategory) params.append('category', selectedCategory)
       params.append('limit', '20')
-      const response = await fetch(`/api/events?${params}`, {
-        )
+      const response = await fetch(`/api/events?${params}`)
       if (response.ok) {
         const data = await response.json()
         setEvents(data.events || [])
@@ -102,7 +101,7 @@ export function EventSelector({ onEventSelect, selectedEvent, onRemoveEvent }: E
   }
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      MUSIC: 'bg-purple-600',
+      MUSIC: 'bg-blue-600',
       SPORTS: 'bg-green-600',
       FOOD: 'bg-orange-600',
       NIGHTLIFE: 'bg-pink-600',

@@ -198,7 +198,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-y-auto">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-600 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold">{hangout.title}</h1>
@@ -249,7 +249,7 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
             )}
 
             <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-purple-400" />
+              <Users className="h-5 w-5 text-blue-400" />
               <div className="flex items-center gap-2">
                 <p>{goingCount} people going</p>
                 {/* Show participant avatars */}

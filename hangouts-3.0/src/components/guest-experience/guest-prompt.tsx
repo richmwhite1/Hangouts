@@ -63,7 +63,7 @@ export function GuestPrompt({
   const displayParticipants = participants || attendees || 0
 
   return (
-    <Card className={`border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 ${className}`}>
+    <Card className={`border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-950/20 dark:to-blue-950/20 ${className}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">

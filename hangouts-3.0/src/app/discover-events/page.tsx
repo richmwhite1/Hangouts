@@ -74,8 +74,8 @@ export default function EventDiscoveryPage() {
                 </p>
               </div>
               <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-purple-600 dark:text-purple-400 font-bold">3</span>
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">3</span>
                 </div>
                 <h3 className="font-semibold">Create Hangout</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -179,7 +179,7 @@ export default function EventDiscoveryPage() {
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-purple-600" />
+                  <MapPin className="h-4 w-4 text-blue-600" />
                   Smart Suggestions
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">

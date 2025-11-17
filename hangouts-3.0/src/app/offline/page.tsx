@@ -140,7 +140,7 @@ export default function OfflinePage() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <MessageCircle className="w-5 h-5 text-purple-500" />
+                  <MessageCircle className="w-5 h-5 text-blue-500" />
                   <div>
                     <p className="font-medium">Recent Messages</p>
                     <p className="text-sm text-muted-foreground">Last conversations</p>

@@ -286,7 +286,7 @@ export default function HangoutDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
               }`}
             >

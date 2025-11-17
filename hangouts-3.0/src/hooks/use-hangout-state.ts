@@ -58,15 +58,13 @@ export function useHangoutState(hangoutId: string) {
     try {
       setIsLoading(true)
       // Fetch hangout details
-      const hangoutResponse = await fetch(`/api/hangouts/${hangoutId}`, {
-        )
+      const hangoutResponse = await fetch(`/api/hangouts/${hangoutId}`)
       if (!hangoutResponse.ok) throw new Error('Failed to fetch hangout')
       const hangoutData = await hangoutResponse.json()
       // Debug logging
       // console.log('Hangout API response:', hangoutData); // Removed for production
       // Fetch polls
-      const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls-simple`, {
-        )
+      const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls-simple`)
       let activePoll = null
       let polls = []
       let consensusPoll = null

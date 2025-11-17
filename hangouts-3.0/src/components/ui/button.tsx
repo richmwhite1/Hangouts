@@ -10,16 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[#0095F6] text-white hover:bg-[#0087E6] hover:shadow-lg focus-visible:ring-[#0095F6]/50 shadow-sm",
+          "bg-[#2563EB] text-white hover:bg-[#1D4ED8] hover:shadow-lg focus-visible:ring-[#2563EB]/50 shadow-sm",
         destructive:
           "bg-[#ED4956] text-white hover:bg-[#E83946] shadow-sm focus-visible:ring-[#ED4956]/50",
         outline:
-          "border border-[#262626] bg-transparent text-foreground hover:bg-[#121212] hover:border-[#3d3d3d] focus-visible:ring-[#0095F6]/50",
+          "border border-[#262626] bg-transparent text-foreground hover:bg-[#121212] hover:border-[#3d3d3d] focus-visible:ring-[#2563EB]/50",
         secondary:
-          "bg-[#262626] text-foreground hover:bg-[#2a2a2a] shadow-sm focus-visible:ring-[#0095F6]/50",
+          "bg-[#262626] text-foreground hover:bg-[#2a2a2a] shadow-sm focus-visible:ring-[#2563EB]/50",
         ghost:
-          "text-foreground hover:bg-[#121212] focus-visible:ring-[#0095F6]/50",
-        link: "text-[#0095F6] underline-offset-4 hover:underline"},
+          "text-foreground hover:bg-[#121212] focus-visible:ring-[#2563EB]/50",
+        link: "text-[#2563EB] underline-offset-4 hover:underline"},
       size: {
         default: "h-11 px-5 py-2.5 min-h-[44px]",
         sm: "h-9 rounded-sm gap-1.5 px-4 min-h-[36px]",

@@ -121,7 +121,7 @@ export function CalendarButtons({
                 }}
                 className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                   reminders.includes(minutes)
-                    ? 'bg-purple-500/20 border-purple-500 text-purple-300'
+                    ? 'bg-blue-500/20 border-blue-500 text-blue-300'
                     : 'bg-muted/30 border-muted text-muted-foreground hover:border-muted-foreground/50'
                 }`}
               >
@@ -169,7 +169,7 @@ export function CalendarButtons({
             addedTo === 'apple'
               ? 'bg-green-600 border-green-500 text-white'
               : 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-          } ${isIOS ? 'ring-2 ring-purple-500/30' : ''}`}
+          } ${isIOS ? 'ring-2 ring-blue-500/30' : ''}`}
           title={`Add to Apple Calendar with reminders${isIOS ? ' (Recommended for your device)' : ''}`}
         >
           {addedTo === 'apple' ? (

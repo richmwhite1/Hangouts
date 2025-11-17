@@ -70,7 +70,7 @@ export const RealtimeNotifications = memo(function RealtimeNotifications({
       case 'HANGOUT_UPDATE':
         return 'text-green-600 dark:text-green-400'
       case 'FRIEND_REQUEST':
-        return 'text-purple-600 dark:text-purple-400'
+        return 'text-blue-600 dark:text-blue-400'
       case 'RSVP_UPDATE':
         return 'text-orange-600 dark:text-orange-400'
       default:

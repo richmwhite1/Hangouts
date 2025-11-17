@@ -148,7 +148,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
 
   if (variant === 'card') {
     return (
-      <Card className={`bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 ${className}`}>
+      <Card className={`bg-gradient-to-r from-blue-50 to-blue-50 border-blue-200 ${className}`}>
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-2">
             {getPlatformIcon()}
@@ -174,8 +174,8 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
                 <div className="text-xs text-gray-600">3x faster loading</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-2 rounded-lg bg-purple-50">
-              <Wifi className="w-5 h-5 text-purple-600" />
+            <div className="flex items-center gap-3 p-2 rounded-lg bg-blue-50">
+              <Wifi className="w-5 h-5 text-blue-600" />
               <div>
                 <div className="font-medium text-sm">Works Offline</div>
                 <div className="text-xs text-gray-600">No internet needed</div>
@@ -209,7 +209,7 @@ export function PWAInstallBanner({ className, variant = 'hero', showForAllUsers 
   // Default banner variant
   return (
     <div className={`fixed top-4 left-4 right-4 z-50 ${className}`}>
-      <Card className="shadow-lg border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+      <Card className="shadow-lg border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-blue-50">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

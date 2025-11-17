@@ -1007,7 +1007,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           <div className="flex space-x-2">
             <Button
               onClick={() => exportConversation('json')}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               <Download className="w-4 h-4 mr-2" />
               Export as JSON
@@ -1060,13 +1060,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     {/* Message bubble */}
                     <div className={`relative rounded-2xl px-4 py-2 max-w-md ${
                       isOwn 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'bg-blue-600 text-white' 
                         : 'bg-gray-800 text-white'
                     }`}>
                       {/* Reply to message */}
                       {message.replyTo && (
                         <div className={`text-xs p-2 rounded-lg mb-2 border-l-2 ${
-                          isOwn ? 'bg-purple-500/20 border-purple-400' : 'bg-gray-700/50 border-gray-500'
+                          isOwn ? 'bg-blue-500/20 border-blue-400' : 'bg-gray-700/50 border-gray-500'
                         }`}>
                           <p className="font-medium">{message.replyTo.sender.name}</p>
                           <p className="truncate">{message.replyTo.content}</p>
@@ -1104,7 +1104,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       
                       {/* Message metadata */}
                       <div className={`flex items-center justify-between mt-1 ${
-                        isOwn ? 'text-purple-200' : 'text-gray-400'
+                        isOwn ? 'text-blue-200' : 'text-gray-400'
                       }`}>
                         <div className="flex items-center space-x-1">
                           <span className="text-xs">
@@ -1284,7 +1284,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             <Button
               onClick={editingMessage ? () => editMessage(editingMessage.id, newMessage) : handleSendMessage}
               disabled={!newMessage.trim()}
-              className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700"
             >
               <Send className="w-4 h-4" />
             </Button>
@@ -1386,7 +1386,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       <Button
                         onClick={addParticipants}
                         disabled={selectedFriends.length === 0 || isAddingParticipants}
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
                         {isAddingParticipants ? (
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />

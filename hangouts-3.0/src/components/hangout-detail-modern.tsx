@@ -274,7 +274,7 @@ export default function HangoutDetailModern({
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-br from-blue-500 to-purple-600 h-80 flex items-center justify-center">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 h-80 flex items-center justify-center">
             <div className="text-center text-white">
               <h1 className="text-3xl font-bold mb-2">{hangout.title}</h1>
               {hangout.description && (

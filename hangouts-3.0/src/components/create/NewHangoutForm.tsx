@@ -593,7 +593,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 type="button"
                 onClick={() => handleInputChange('allowMultipleVotes', !formData.allowMultipleVotes)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  formData.allowMultipleVotes ? 'bg-purple-600' : 'bg-gray-600'
+                  formData.allowMultipleVotes ? 'bg-blue-600' : 'bg-gray-600'
                 }`}
               >
                 <span
@@ -687,7 +687,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 type="button"
                 variant="outline"
                 onClick={addOption}
-                className="flex-1 border-purple-500 text-white hover:bg-purple-500 hover:text-white"
+                className="flex-1 border-blue-500 text-white hover:bg-blue-500 hover:text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Option
@@ -697,7 +697,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               type="button"
               variant="outline"
               onClick={() => setIsEventModalOpen(true)}
-              className="flex-1 border-purple-500 text-white hover:bg-purple-500 hover:text-white"
+              className="flex-1 border-blue-500 text-white hover:bg-blue-500 hover:text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Event
@@ -715,7 +715,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           {/* Friends List */}
           {isLoadingFriends ? (
             <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-2"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
               <p className="text-gray-400 text-sm">Loading friends...</p>
             </div>
           ) : allFriends.length > 0 ? (
@@ -736,7 +736,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                         onClick={() => addParticipant(friend.id)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                           isSelected 
-                            ? 'bg-purple-600 border-purple-500' 
+                            ? 'bg-blue-600 border-blue-500' 
                             : 'bg-gray-800 border-gray-600 hover:bg-gray-700'
                         } border`}
                       >
@@ -811,7 +811,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                       <Badge
                         variant="secondary"
                         className={`text-white flex items-center gap-1 ${
-                          isMandatory ? 'bg-red-600' : isCoHost ? 'bg-yellow-600' : 'bg-purple-600'
+                          isMandatory ? 'bg-red-600' : isCoHost ? 'bg-yellow-600' : 'bg-blue-600'
                         }`}
                       >
                         <img

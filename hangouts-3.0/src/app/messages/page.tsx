@@ -269,7 +269,7 @@ export default function MessagesPage() {
               </Button>
               <Button
                 onClick={() => setShowNewChat(!showNewChat)}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Chat
@@ -310,7 +310,7 @@ export default function MessagesPage() {
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="p-4 text-center">
@@ -322,7 +322,7 @@ export default function MessagesPage() {
                   <Button
                     onClick={() => setShowNewChat(true)}
                     size="sm"
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     New Chat
@@ -354,7 +354,7 @@ export default function MessagesPage() {
                       >
                         <div className={`group relative ${viewMode === "grid" ? "p-4" : "p-3"} rounded-lg cursor-pointer transition-all duration-200 ${
                           isSelected 
-                            ? 'bg-purple-600/20 border border-purple-500/30' 
+                            ? 'bg-blue-600/20 border border-blue-500/30' 
                             : 'hover:bg-gray-800/50'
                         }`}>
                           <div className={`flex ${viewMode === "grid" ? "flex-col text-center space-y-3" : "items-center space-x-3"}`}>
@@ -486,7 +486,7 @@ export default function MessagesPage() {
                             <Button
                               onClick={() => startConversation(friend.friend.id)}
                               size="sm"
-                              className="bg-purple-600/80 hover:bg-purple-700/80"
+                              className="bg-blue-600/80 hover:bg-blue-700/80"
                             >
                               <MessageSquare className="w-4 h-4 mr-1" />
                               Chat
@@ -530,7 +530,7 @@ export default function MessagesPage() {
                           <Button
                             onClick={() => startGroupConversation([friend.friend.id])}
                             size="sm"
-                            className="bg-purple-600/80 hover:bg-purple-700/80"
+                            className="bg-blue-600/80 hover:bg-blue-700/80"
                           >
                             <Users className="w-4 h-4 mr-1" />
                             Add

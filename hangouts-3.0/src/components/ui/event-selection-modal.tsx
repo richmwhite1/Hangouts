@@ -92,9 +92,9 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
     // Add a brief visual feedback
     const eventElement = document.querySelector(`[data-event-id="${event.id}"]`)
     if (eventElement) {
-      eventElement.classList.add('bg-purple-600/20', 'border-purple-500')
+      eventElement.classList.add('bg-blue-600/20', 'border-blue-500')
       setTimeout(() => {
-        eventElement.classList.remove('bg-purple-600/20', 'border-purple-500')
+        eventElement.classList.remove('bg-blue-600/20', 'border-blue-500')
       }, 200)
     }
     // Small delay to show the feedback before closing
@@ -156,7 +156,7 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <p className="text-gray-400">Loading events...</p>
             </div>
           ) : filteredEvents.length === 0 ? (
@@ -171,7 +171,7 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
                 <Card
                   key={event.id}
                   data-event-id={event.id}
-                  className="cursor-pointer transition-all border-gray-600 hover:border-purple-500 hover:bg-purple-900/10"
+                  className="cursor-pointer transition-all border-gray-600 hover:border-blue-500 hover:bg-blue-900/10"
                   onClick={() => handleSelectEvent(event)}
                 >
                   <CardContent className="p-4">

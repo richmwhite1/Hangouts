@@ -231,7 +231,7 @@ export function PollToRSVPTransition({
                 <div className="text-sm text-gray-600">Participants</div>
               </div>
               <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                <div className="text-2xl font-bold text-purple-600">{pollResult.timeToConsensus}h</div>
+                <div className="text-2xl font-bold text-blue-600">{pollResult.timeToConsensus}h</div>
                 <div className="text-sm text-gray-600">Time to Consensus</div>
               </div>
             </div>
@@ -345,11 +345,11 @@ export function PollToRSVPTransition({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                <ArrowRight className="w-5 h-5 text-purple-600" />
+              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                <ArrowRight className="w-5 h-5 text-blue-600" />
                 <div>
-                  <h4 className="font-semibold text-purple-800">Seamless Transition</h4>
-                  <p className="text-sm text-purple-600">
+                  <h4 className="font-semibold text-blue-800">Seamless Transition</h4>
+                  <p className="text-sm text-blue-600">
                     Poll data will be preserved and participants will be automatically invited
                   </p>
                 </div>

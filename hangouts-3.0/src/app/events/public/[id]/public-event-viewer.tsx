@@ -235,7 +235,7 @@ export function PublicEventViewer({ params }: Props) {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border-b border-gray-800">
+      <div className="bg-gradient-to-r from-green-600/20 to-blue-700/20 border-b border-gray-800">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center gap-4 mb-4">
             <Button
@@ -483,7 +483,7 @@ export function PublicEventViewer({ params }: Props) {
             </Card>
 
             {/* Sign Up Prompt */}
-            <Card className="bg-gradient-to-br from-green-600/20 to-blue-600/20 border-green-400/30">
+            <Card className="bg-gradient-to-br from-green-600/20 to-blue-700/20 border-green-400/30">
               <CardHeader>
                 <CardTitle className="text-white">Want to join this event?</CardTitle>
               </CardHeader>

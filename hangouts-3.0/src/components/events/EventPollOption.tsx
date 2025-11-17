@@ -74,7 +74,7 @@ export function EventPollOption({
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      MUSIC: 'bg-purple-600',
+      MUSIC: 'bg-blue-600',
       SPORTS: 'bg-green-600',
       FOOD: 'bg-orange-600',
       NIGHTLIFE: 'bg-pink-600',

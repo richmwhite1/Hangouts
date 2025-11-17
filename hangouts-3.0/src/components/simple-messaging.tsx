@@ -119,8 +119,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        )
+      const response = await fetch(`/api/conversations/${conversationId}/messages`)
       
       if (response.ok) {
         const data = await response.json()
@@ -385,7 +384,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                           <Button
                             onClick={startGroupConversation}
                             disabled={selectedFriends.length < 2 || isLoading}
-                            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700"
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700"
                           >
                             {isLoading ? 'Creating...' : 'Create Group'}
                           </Button>
@@ -415,7 +414,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                       <div
                         key={friend.id}
                         className={`p-3 cursor-pointer hover:bg-gray-800 transition-colors ${
-                          isSelected ? 'bg-purple-900/30 border border-purple-500/50' : ''
+                          isSelected ? 'bg-blue-900/30 border border-blue-500/50' : ''
                         }`}
                         onClick={() => {
                           if (isGroupMode) {
@@ -428,7 +427,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                         <div className="flex items-center space-x-3">
                           {isGroupMode && (
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-500'
+                              isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-500'
                             }`}>
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
@@ -458,7 +457,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                     <div className="p-3 border-t border-gray-700">
                       <Button
                         onClick={() => setIsGroupMode(true)}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        className="w-full bg-blue-600 hover:bg-blue-700"
                       >
                         <Users className="w-4 h-4 mr-2" />
                         Create Group Chat
@@ -530,18 +529,18 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                             <div className="flex flex-col">
                               {/* Show sender name for group chats or non-own messages */}
                               {(isGroupChat || !isOwn) && (
-                                <p className={`text-xs mb-1 px-1 ${isOwn ? 'text-right text-purple-300' : 'text-gray-400'}`}>
+                                <p className={`text-xs mb-1 px-1 ${isOwn ? 'text-right text-blue-300' : 'text-gray-400'}`}>
                                   {isOwn ? 'You' : message.sender.name}
                                 </p>
                               )}
                               <div className={`rounded-lg px-3 py-2 ${
                                 isOwn 
-                                  ? 'bg-purple-600 text-white' 
+                                  ? 'bg-blue-600 text-white' 
                                   : 'bg-gray-800 text-white'
                               }`}>
                                 <p className="text-sm">{message.content}</p>
                                 <p className={`text-xs mt-1 ${
-                                  isOwn ? 'text-purple-200' : 'text-gray-400'
+                                  isOwn ? 'text-blue-200' : 'text-gray-400'
                                 }`}>
                                   {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
@@ -567,7 +566,7 @@ export function SimpleMessaging({ isOpen, onClose, selectedFriend }: SimpleMessa
                     <Button
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || isLoading}
-                      className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700"
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700"
                     >
                       <Send className="w-4 h-4" />
                     </Button>

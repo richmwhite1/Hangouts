@@ -46,7 +46,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
         setIsLoading(true)
         // Fetch polls
         const token = localStorage.getItem('token') || apiClient.token
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           setPolls(pollsData.data?.polls || [])
@@ -59,14 +59,14 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
           }
         }
         // Fetch RSVPs
-        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`))
+        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`)
         if (rsvpResponse.ok) {
           const rsvpData = await rsvpResponse.json()
           setRsvps(rsvpData.data?.rsvps || [])
         }
         // Get user's current vote
         if (polls.length > 0) {
-          const voteResponse = await fetch(`/api/hangouts/${hangoutId}/polls/${polls[0].id}/vote`))
+          const voteResponse = await fetch(`/api/hangouts/${hangoutId}/polls/${polls[0].id}/vote`)
           if (voteResponse.ok) {
             const voteData = await voteResponse.json()
             setUserVote(voteData.userVotes?.[0] || '')
@@ -92,7 +92,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
       if (response.ok) {
         setUserVote(option)
         // Refresh polls data
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           setPolls(pollsData.data?.polls || [])
@@ -114,7 +114,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
       if (response.ok) {
         setActiveTab('plan')
         // Refresh polls to show updated status
-        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`))
+        const pollsResponse = await fetch(`/api/hangouts/${hangoutId}/polls`)
         if (pollsResponse.ok) {
           const pollsData = await pollsResponse.json()
           setPolls(pollsData.data?.polls || [])
@@ -135,7 +135,7 @@ export function PollPlanTabs({ hangoutId, isCreator, currentUserId }: PollPlanTa
       })
       if (response.ok) {
         // Refresh RSVPs
-        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`))
+        const rsvpResponse = await fetch(`/api/hangouts/${hangoutId}/rsvp`)
         if (rsvpResponse.ok) {
           const rsvpData = await rsvpResponse.json()
           setRsvps(rsvpData.data?.rsvps || [])

@@ -11,7 +11,7 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
-import { ConsoleErrorHandler } from '@/components/console-error-handler'
+// import { ConsoleErrorHandler } from '@/components/console-error-handler' // Removed - causes webpack bundling issues
 // import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
 const oswald = Oswald({ 
@@ -53,7 +53,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#8B5CF6'
+  themeColor: '#2563EB'
 }
 
 export default function RootLayout({
@@ -81,12 +81,12 @@ export default function RootLayout({
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
           
           {/* PWA Meta Tags */}
-          <meta name="theme-color" content="#8B5CF6" />
+          <meta name="theme-color" content="#2563EB" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
           <meta name="apple-mobile-web-app-title" content="Plans" />
           <meta name="mobile-web-app-capable" content="yes" />
-          <meta name="msapplication-TileColor" content="#8B5CF6" />
+          <meta name="msapplication-TileColor" content="#2563EB" />
           <meta name="msapplication-tap-highlight" content="no" />
           
           {/* Apple Touch Icons */}

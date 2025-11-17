@@ -302,7 +302,7 @@ export function PollDetails({ pollId, onClose }: PollDetailsProps) {
                 <div className="text-sm text-gray-600">Total Votes</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">
+                <div className="text-3xl font-bold text-blue-600">
                   {poll.consensus.participantCount}
                 </div>
                 <div className="text-sm text-gray-600">Participants</div>

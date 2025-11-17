@@ -119,7 +119,7 @@ export function PreferencesAndPlaces({
               <Button 
                 onClick={handleAddPreference} 
                 size="sm" 
-                className="h-8 px-3 text-xs bg-purple-600/80 hover:bg-purple-700/80"
+                className="h-8 px-3 text-xs bg-blue-600/80 hover:bg-blue-700/80"
               >
                 Add
               </Button>
@@ -193,7 +193,7 @@ export function PreferencesAndPlaces({
               <Button 
                 onClick={handleAddPlace} 
                 size="sm" 
-                className="h-8 px-3 text-xs bg-purple-600/80 hover:bg-purple-700/80"
+                className="h-8 px-3 text-xs bg-blue-600/80 hover:bg-blue-700/80"
               >
                 Add
               </Button>

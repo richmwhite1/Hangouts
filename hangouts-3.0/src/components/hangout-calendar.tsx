@@ -327,7 +327,7 @@ export function HangoutCalendar({ hangouts = [], events = [], currentUserId }: H
               {hoveredEvent.votingStatus && (
                 <div className={`text-xs px-2 py-1 rounded-full inline-block mb-2 ${
                   hoveredEvent.votingStatus === 'open' 
-                    ? 'bg-purple-100 text-purple-700' 
+                    ? 'bg-blue-100 text-blue-700' 
                     : hoveredEvent.votingStatus === 'pending'
                     ? 'bg-orange-100 text-orange-700'
                     : 'bg-gray-100 text-gray-700'

@@ -80,7 +80,7 @@ export function ContentTile({
       case 'HANGOUT':
         return 'bg-blue-500/90'
       case 'EVENT':
-        return 'bg-purple-500/90'
+        return 'bg-blue-500/90'
       case 'COMMUNITY':
         return 'bg-green-500/90'
       default:

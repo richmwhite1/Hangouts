@@ -144,7 +144,7 @@ export function LocationAutocomplete({
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
           </div>
         )}
         {!isLoading && value && (
@@ -162,7 +162,7 @@ export function LocationAutocomplete({
               className="w-full text-left p-3 hover:bg-gray-800 border-b border-gray-700 last:border-b-0"
             >
               <div className="flex items-start space-x-3">
-                <MapPin className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">
                     {formatAddress(location)}

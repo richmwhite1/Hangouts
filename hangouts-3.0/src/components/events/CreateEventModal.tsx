@@ -630,7 +630,7 @@ export function CreateEventModal() {
               <Badge
                 key={tag}
                 variant="secondary"
-                className="bg-purple-600 text-white cursor-pointer"
+                className="bg-blue-600 text-white cursor-pointer"
                 onClick={() => removeTag(tag)}
               >
                 #{tag} <X className="w-3 h-3 ml-1" />
@@ -648,7 +648,7 @@ export function CreateEventModal() {
             <Button
               type="button"
               onClick={() => addTag(newTag)}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               Add
             </Button>
@@ -713,7 +713,7 @@ export function CreateEventModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-purple-600 hover:bg-purple-700">
+        <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
           Create Event
         </Button>
@@ -732,7 +732,7 @@ export function CreateEventModal() {
           {/* Progress Bar */}
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div
-              className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             />
           </div>
@@ -757,7 +757,7 @@ export function CreateEventModal() {
               <Button
                 type="button"
                 onClick={nextStep}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 Next
                 <ChevronRight className="w-4 h-4 ml-2" />
@@ -767,7 +767,7 @@ export function CreateEventModal() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading || !formData.title || !formData.venue || !formData.address || !formData.city}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {isLoading ? 'Creating...' : 'Create Event'}
               </Button>
