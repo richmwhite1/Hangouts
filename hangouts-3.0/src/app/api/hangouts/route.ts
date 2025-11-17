@@ -302,7 +302,7 @@ export async function GET(request: NextRequest) {
         privacyLevel: 'PUBLIC' as const
       }
     } else {
-      // HOME FEED LOGIC: Only show hangouts user created or was invited to
+      // HOME FEED LOGIC: Show hangouts user created, was invited to, OR public hangouts
       whereClause = {
         OR: [
           // User's own hangouts (all privacy levels)
@@ -317,7 +317,20 @@ export async function GET(request: NextRequest) {
                 }
               }
             ]
-          }
+          },
+          // Friends-only hangouts where user is a participant
+          {
+            AND: [
+              { privacyLevel: 'FRIENDS_ONLY' as const },
+              {
+                content_participants: {
+                  some: { userId: userId }
+                }
+              }
+            ]
+          },
+          // PUBLIC hangouts (everyone can see)
+          { privacyLevel: 'PUBLIC' as const }
         ]
       }
     }
@@ -492,6 +505,7 @@ export async function POST(request: NextRequest) {
         image: validatedData.image || null,
         weatherEnabled: validatedData.weatherEnabled ?? false,
         maxParticipants: validatedData.maxParticipants || null,
+        status: 'PUBLISHED',
         priceMin: 0,
         priceMax: null,
         currency: 'USD',
