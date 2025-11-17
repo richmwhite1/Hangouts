@@ -13,6 +13,8 @@ import { logger } from '@/lib/logger'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { isPastDate } from "@/lib/date-utils"
+import { Filter, X } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface FeedItem {
   id: string
@@ -65,6 +67,7 @@ export default function HomePage() {
   const [isClient, setIsClient] = useState(false)
   const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'hangouts' | 'events'>('all')
   const [dateFilter, setDateFilter] = useState<{ start: string; end: string }>({ start: '', end: '' })
+  const [showFilters, setShowFilters] = useState(false)
   // Swipe gestures for mobile navigation
   const swipeGestures = useSwipeGestures({
     onSwipeLeft: () => router.push('/discover'),
@@ -262,65 +265,89 @@ export default function HomePage() {
           />
         </div>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-medium text-white">Hangouts ({totalVisible})</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort by:</span>
+            <div className="flex items-center gap-1.5">
               {isClient ? (
-                <Select value={sortBy} onValueChange={(value: 'recent-activity' | 'coming-up') => setSortBy(value)}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select sort option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recent-activity">Most Recent Activity</SelectItem>
-                    <SelectItem value="coming-up">Coming Up</SelectItem>
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select value={contentTypeFilter} onValueChange={(value: 'all' | 'hangouts' | 'events') => setContentTypeFilter(value)}>
+                    <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs border-gray-700 bg-transparent text-gray-400 hover:text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="hangouts">Hangouts</SelectItem>
+                      <SelectItem value="events">Events</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Popover open={showFilters} onOpenChange={setShowFilters}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-gray-400 hover:text-white relative"
+                      >
+                        <Filter className="w-3.5 h-3.5" />
+                        {(dateFilter.start || dateFilter.end) && (
+                          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3 bg-gray-900 border-gray-700" align="end">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-400">Date Range</span>
+                          {(dateFilter.start || dateFilter.end) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs text-gray-500 hover:text-white"
+                              onClick={() => {
+                                setDateFilter({ start: '', end: '' })
+                                setShowFilters(false)
+                              }}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-xs text-gray-500 mb-1 block">From</label>
+                            <Input
+                              type="date"
+                              value={dateFilter.start}
+                              onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
+                              className="h-8 text-xs bg-gray-800 border-gray-700 text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 mb-1 block">To</label>
+                            <Input
+                              type="date"
+                              value={dateFilter.end}
+                              onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
+                              className="h-8 text-xs bg-gray-800 border-gray-700 text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Select value={sortBy} onValueChange={(value: 'recent-activity' | 'coming-up') => setSortBy(value)}>
+                    <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs border-gray-700 bg-transparent text-gray-400 hover:text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recent-activity">Recent</SelectItem>
+                      <SelectItem value="coming-up">Coming Up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
               ) : (
                 <div className="w-48 h-9 bg-gray-100 rounded-md animate-pulse" />
               )}
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <label className="text-xs uppercase text-gray-500 tracking-wide">Type</label>
-              <Select value={contentTypeFilter} onValueChange={(value: 'all' | 'hangouts' | 'events') => setContentTypeFilter(value)}>
-                <SelectTrigger className="w-full mt-1">
-                  <SelectValue placeholder="All content" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="hangouts">Hangouts</SelectItem>
-                  <SelectItem value="events">Events</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs uppercase text-gray-500 tracking-wide">Start date</label>
-              <Input
-                type="date"
-                value={dateFilter.start}
-                onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-xs uppercase text-gray-500 tracking-wide">End date</label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="date"
-                  value={dateFilter.end}
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDateFilter({ start: '', end: '' })}
-                  disabled={!dateFilter.start && !dateFilter.end}
-                >
-                  Clear
-                </Button>
-              </div>
             </div>
           </div>
           {loading && (
