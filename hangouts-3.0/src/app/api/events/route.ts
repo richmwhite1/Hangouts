@@ -153,6 +153,8 @@ export async function GET(request: NextRequest) {
       city: event.city || event.location || '',
       startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       startTime: event.startTime ? new Date(event.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '12:00 PM',
+      endDate: event.endTime ? new Date(event.endTime).toISOString().split('T')[0] : undefined,
+      endTime: event.endTime ? new Date(event.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : undefined,
       coverImage: event.image || '/placeholder-event.jpg',
       price: {
         min: event.priceMin || 0,

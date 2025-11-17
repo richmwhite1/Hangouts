@@ -56,14 +56,14 @@ export async function GET(req: NextRequest) {
       db.content.findMany({
         where: { ...whereBase, type: 'HANGOUT' },
         select,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { startTime: 'asc' },
         take: limit,
         skip: offset,
       }),
       db.content.findMany({
         where: { ...whereBase, type: 'EVENT' },
         select,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { startTime: 'asc' },
         take: limit,
         skip: offset,
       }),

@@ -46,6 +46,8 @@ interface Event {
   city: string
   startDate: string
   startTime: string
+  endDate?: string
+  endTime?: string
   price: {
     min: number
     max?: number
@@ -132,7 +134,7 @@ export function MergedDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [sortBy, setSortBy] = useState('closest')
+  const [sortBy, setSortBy] = useState('coming-up')
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
@@ -314,6 +316,12 @@ export function MergedDiscoveryPage() {
               minute: '2-digit',
               hour12: true
             }) : '',
+            endDate: item.endTime ? new Date(item.endTime).toISOString().split('T')[0] : undefined,
+            endTime: item.endTime ? new Date(item.endTime).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }) : undefined,
             price: {
               min: item.priceMin || 0,
               max: item.priceMax,
@@ -400,6 +408,7 @@ export function MergedDiscoveryPage() {
             minute: '2-digit',
             hour12: true
           }) : '',
+          endTime: hangout.endTime ? new Date(hangout.endTime).toISOString() : undefined,
           image: hangout.image,
           participants: hangout.content_participants || hangout._count?.participants || [],
           photos: [], // Will be fetched separately if needed
@@ -462,26 +471,45 @@ export function MergedDiscoveryPage() {
   const mergeAndSortContent = useMemo(() => {
     const now = Date.now()
     const allContent = [
-      ...events.map(event => ({
-        ...event,
-        type: 'event',
-        sortDate: new Date(event.startDate),
-        isPast: isPastDate(event.startDate),
-        sortPrice: event.price.min,
-        sortDistance: userLocation && event.latitude && event.longitude
-          ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
-          : Infinity
-      })),
-      ...hangouts.map(hangout => ({
-        ...hangout,
-        type: 'hangout',
-        sortDate: new Date(hangout.date),
-        isPast: isPastDate(hangout.date),
-        sortPrice: 0,
-        sortDistance: userLocation && hangout.latitude && hangout.longitude
-          ? calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude)
-          : Infinity
-      }))
+      ...events.map(event => {
+        const startDate = new Date(event.startDate)
+        const endDate = event.endDate ? new Date(event.endDate) : null
+        // An event is past only if it has ended (endTime < now, or if no endTime, startTime < now)
+        const isPast = endDate 
+          ? endDate.getTime() < now 
+          : startDate.getTime() < now
+        
+        return {
+          ...event,
+          type: 'event',
+          sortDate: startDate,
+          isPast,
+          sortPrice: event.price.min,
+          sortDistance: userLocation && event.latitude && event.longitude
+            ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
+            : Infinity
+        }
+      }),
+      ...hangouts.map(hangout => {
+        const hangoutDate = new Date(hangout.date)
+        // For hangouts, check if there's an endTime in the original data
+        // If hangout has endTime, use it; otherwise use startTime
+        const hangoutEndTime = (hangout as any).endTime ? new Date((hangout as any).endTime) : null
+        const isPast = hangoutEndTime 
+          ? hangoutEndTime.getTime() < now 
+          : hangoutDate.getTime() < now
+        
+        return {
+          ...hangout,
+          type: 'hangout',
+          sortDate: hangoutDate,
+          isPast,
+          sortPrice: 0,
+          sortDistance: userLocation && hangout.latitude && hangout.longitude
+            ? calculateDistance(userLocation.lat, userLocation.lng, hangout.latitude, hangout.longitude)
+            : Infinity
+        }
+      })
     ]
     // Apply filtering first
     const filteredContent = filterContent(allContent)
