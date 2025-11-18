@@ -309,24 +309,40 @@ export default function MessagesPage() {
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <div className="space-y-2 p-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg animate-pulse">
+                      <div className="w-12 h-12 bg-gray-700 rounded-full flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-700 rounded w-1/3" />
+                        <div className="h-3 bg-gray-700 rounded w-2/3" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="p-4 text-center">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium text-white mb-2">No conversations</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    {activeTab === "unread" ? "No unread messages" : "Start a new conversation"}
+                <div className="p-8 text-center">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                    <MessageSquare className="w-10 h-10 text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">
+                    {activeTab === "unread" ? "No unread messages" : "No conversations yet"}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-6">
+                    {activeTab === "unread" 
+                      ? "You're all caught up! No unread messages." 
+                      : "Start a conversation with your friends to coordinate your next hangout."}
                   </p>
-                  <Button
-                    onClick={() => setShowNewChat(true)}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Chat
-                  </Button>
+                  {activeTab !== "unread" && (
+                    <Button
+                      onClick={() => setShowNewChat(true)}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Chat
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className={`p-2 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" : "space-y-1"}`}>

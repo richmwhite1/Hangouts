@@ -84,6 +84,97 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoadingFriends, setIsLoadingFriends] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+
+  // Calculate form completion progress
+  const calculateProgress = () => {
+    let completed = 0
+    let total = 0
+    
+    // Title (required)
+    total++
+    if (formData.title.trim()) completed++
+    
+    // Options validation
+    const validOptions = formData.options.filter(option => option.title.trim() !== '')
+    const minOptions = formData.type === 'multi_option' ? 2 : 1
+    
+    // Count required options
+    for (let i = 0; i < minOptions; i++) {
+      total++ // Each option needs title
+      if (validOptions[i]) {
+        completed++ // Title is filled
+        
+        // Each option also needs dateTime
+        total++
+        if (validOptions[i].dateTime && validOptions[i].dateTime.trim() !== '') {
+          completed++
+        }
+      }
+    }
+    
+    return { completed, total, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 }
+  }
+  
+  const progress = calculateProgress()
+
+  // Set smart defaults on mount (if not editing and no prefill event)
+  useEffect(() => {
+    if (!isEditMode && !prefillEvent) {
+      // Set default date/time to tomorrow at 7pm
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(19, 0, 0, 0) // 7pm
+      const defaultDateTime = tomorrow.toISOString()
+      
+      // Try to get user's location from browser
+      const getLocation = async () => {
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+            })
+            
+            // Reverse geocode to get address (simplified - in production, use a geocoding service)
+            // For now, we'll just set a placeholder that user can update
+            setFormData(prev => ({
+              ...prev,
+              options: prev.options.map((opt, idx) => 
+                idx === 0 ? { ...opt, dateTime: defaultDateTime } : opt
+              )
+            }))
+          } catch (error) {
+            // If geolocation fails, just set the date/time
+            setFormData(prev => ({
+              ...prev,
+              options: prev.options.map((opt, idx) => 
+                idx === 0 ? { ...opt, dateTime: defaultDateTime } : opt
+              )
+            }))
+          }
+        } else {
+          // No geolocation support, just set date/time
+          setFormData(prev => ({
+            ...prev,
+            options: prev.options.map((opt, idx) => 
+              idx === 0 ? { ...opt, dateTime: defaultDateTime } : opt
+            )
+          }))
+        }
+      }
+      
+      // Set default date/time immediately
+      setFormData(prev => ({
+        ...prev,
+        options: prev.options.map((opt, idx) => 
+          idx === 0 ? { ...opt, dateTime: defaultDateTime } : opt
+        )
+      }))
+      
+      // Try to get location (non-blocking)
+      getLocation()
+    }
+  }, [isEditMode, prefillEvent])
 
   // Prefill form with event data if provided
   useEffect(() => {
@@ -518,46 +609,90 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </CardContent>
       </Card>
 
-      {/* Flow Type Selection */}
+      {/* Flow Type Selection - Simplified */}
       <Card className="bg-black border-gray-600">
         <CardHeader>
-          <CardTitle className="text-white">Hangout Type</CardTitle>
+          <CardTitle className="text-white">How do you want to plan?</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <Button
+          <div className="grid grid-cols-1 gap-3">
+            <button
               type="button"
-              variant={formData.type === 'quick_plan' ? 'default' : 'outline'}
               onClick={() => handleInputChange('type', 'quick_plan')}
-              className={formData.type === 'quick_plan' ? 'text-white text-black' : 'border-gray-600 text-white'}
+              aria-label="Select Simple Plan option"
+              aria-pressed={formData.type === 'quick_plan'}
+              className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                formData.type === 'quick_plan'
+                  ? 'border-purple-500 bg-purple-500/10'
+                  : 'border-gray-600 hover:border-gray-500'
+              }`}
             >
-              Quick Plan
-            </Button>
-            <Button
+              <div className="flex items-start gap-3">
+                <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                  formData.type === 'quick_plan' ? 'border-purple-500 bg-purple-500' : 'border-gray-500'
+                }`}>
+                  {formData.type === 'quick_plan' && (
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-semibold mb-1">Simple Plan</div>
+                  <div className="text-gray-400 text-sm">
+                    Create a single confirmed plan. Friends RSVP directly - no voting needed.
+                  </div>
+                </div>
+              </div>
+            </button>
+            
+            <button
               type="button"
-              variant={formData.type === 'multi_option' ? 'default' : 'outline'}
               onClick={() => handleInputChange('type', 'multi_option')}
-              className={formData.type === 'multi_option' ? 'text-white text-black' : 'border-gray-600 text-white'}
+              aria-label="Select Let Friends Vote option"
+              aria-pressed={formData.type === 'multi_option'}
+              className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                formData.type === 'multi_option'
+                  ? 'border-purple-500 bg-purple-500/10'
+                  : 'border-gray-600 hover:border-gray-500'
+              }`}
             >
-              Multi-Option Poll
-            </Button>
+              <div className="flex items-start gap-3">
+                <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                  formData.type === 'multi_option' ? 'border-purple-500 bg-purple-500' : 'border-gray-500'
+                }`}>
+                  {formData.type === 'multi_option' && (
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-semibold mb-1">Let Friends Vote</div>
+                  <div className="text-gray-400 text-sm">
+                    Add multiple options and let friends vote to decide together.
+                  </div>
+                </div>
+              </div>
+            </button>
           </div>
-          
-          <p className="text-gray-400 text-sm">
-            {formData.type === 'quick_plan' 
-              ? 'Skip voting and go straight to RSVP with one confirmed plan'
-              : 'Let friends vote on multiple options before finalizing the plan'
-            }
-          </p>
         </CardContent>
       </Card>
 
-      {/* Consensus Settings - Only for multi_option */}
+      {/* Consensus Settings - Only for multi_option, hidden by default */}
       {formData.type === 'multi_option' && (
         <Card className="bg-black border-gray-600">
           <CardHeader>
-            <CardTitle className="text-white">Consensus Settings</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white">Advanced Options</CardTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="text-gray-400 hover:text-white"
+              >
+                {showAdvancedOptions ? 'Hide' : 'Show'} Advanced
+              </Button>
+            </div>
           </CardHeader>
+          {showAdvancedOptions && (
           <CardContent className="space-y-4">
             <div>
               <Label className="text-white text-sm mb-2 block">
@@ -604,6 +739,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               </button>
             </div>
           </CardContent>
+          )}
         </Card>
       )}
 
@@ -712,6 +848,16 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           <CardTitle className="text-white">Invite Friends</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Search Friends - Moved to Top */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Search friends..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-black border-gray-600 text-white"
+            />
+          </div>
+
           {/* Friends List */}
           {isLoadingFriends ? (
             <div className="text-center py-4">
@@ -721,7 +867,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           ) : allFriends.length > 0 ? (
             <div>
               <Label className="text-white text-sm mb-2 block">
-                {searchQuery ? 'Search Results' : 'Recent Friends'} ({filteredFriends.length})
+                {searchQuery ? 'Search Results' : 'All Friends'} ({filteredFriends.length})
               </Label>
               <div className="flex flex-wrap gap-2 mb-4 max-h-40 overflow-y-auto bg-gray-900 p-3 rounded-lg">
                 {filteredFriends.map((friend) => {
@@ -749,28 +895,36 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                       </button>
                       
                       {isSelected && (
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 mt-1">
                           <button
                             type="button"
-                            onClick={() => toggleMandatory(friend.id)}
-                            className={`px-2 py-1 text-xs rounded ${
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleMandatory(friend.id)
+                            }}
+                            className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
                               isMandatory 
-                                ? 'bg-red-600 text-white' 
-                                : 'bg-gray-700 text-gray-300 hover:bg-red-500'
+                                ? 'bg-red-600 text-white border border-red-500' 
+                                : 'bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white border border-gray-600'
                             }`}
+                            title={isMandatory ? 'Required to attend' : 'Mark as required'}
                           >
-                            {isMandatory ? '★' : '☆'} Mandatory
+                            {isMandatory ? '★ Required' : '☆ Optional'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => toggleCoHost(friend.id)}
-                            className={`px-2 py-1 text-xs rounded ${
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleCoHost(friend.id)
+                            }}
+                            className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
                               isCoHost 
-                                ? 'bg-yellow-600 text-white' 
-                                : 'bg-gray-700 text-gray-300 hover:bg-yellow-500'
+                                ? 'bg-yellow-600 text-white border border-yellow-500' 
+                                : 'bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white border border-gray-600'
                             }`}
+                            title={isCoHost ? 'Co-host can edit hangout' : 'Make co-host'}
                           >
-                            {isCoHost ? '👑' : '👤'} Co-host
+                            {isCoHost ? '👑 Co-host' : '👤 Member'}
                           </button>
                         </div>
                       )}
@@ -786,16 +940,6 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               <p className="text-gray-500 text-xs">Add friends to invite them to hangouts</p>
             </div>
           )}
-
-          {/* Search Friends */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search friends..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-black border-gray-600 text-white"
-            />
-          </div>
 
           {formData.participants.length > 0 && (
             <div>
@@ -839,15 +983,31 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </CardContent>
       </Card>
 
-      {/* Submit Button */}
-      <Button 
-        type="submit" 
-        className="w-full text-white font-bold py-3" 
-        style={{ backgroundColor: '#792ADB' }}
-        disabled={isLoading}
-      >
-        {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Hangout' : 'Create Hangout')}
-      </Button>
+      {/* Sticky Submit Button with Progress */}
+      <div className="sticky bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 -mx-4 -mb-4 z-10">
+        {/* Progress Indicator */}
+        <div className="mb-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-gray-400 text-xs">Form Progress</span>
+            <span className="text-gray-400 text-xs">{progress.completed} of {progress.total} required fields</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-1.5">
+            <div
+              className="bg-purple-600 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${progress.percentage}%` }}
+            />
+          </div>
+        </div>
+        
+        <Button 
+          type="submit" 
+          className="w-full text-white font-bold py-3" 
+          style={{ backgroundColor: '#792ADB' }}
+          disabled={isLoading || progress.completed < progress.total}
+        >
+          {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Hangout' : 'Create Hangout')}
+        </Button>
+      </div>
       </form>
 
       {/* Event Selection Modal */}

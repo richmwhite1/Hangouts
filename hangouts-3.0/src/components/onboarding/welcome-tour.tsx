@@ -161,13 +161,20 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
             : undefined
         }
       >
-        <div className="bg-card rounded-xl p-6 shadow-2xl border border-blue-500/30">
+        <div className="bg-gray-900 rounded-xl p-6 shadow-2xl border border-purple-500/30">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
-            <h3 className="text-xl font-bold text-foreground">{step.title}</h3>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-white mb-1">{step.title}</h3>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span>Step {currentStep + 1} of {steps.length}</span>
+                <span>•</span>
+                <span>Press ESC to skip</span>
+              </div>
+            </div>
             <button
               onClick={handleSkip}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800"
               aria-label="Skip tour"
             >
               <X className="w-5 h-5" />
@@ -175,10 +182,24 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
           </div>
 
           {/* Description */}
-          <p className="text-muted-foreground mb-6 leading-relaxed">
+          <p className="text-gray-300 mb-6 leading-relaxed">
             {step.description}
           </p>
 
+          {/* Progress bar */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+              <span>Progress</span>
+              <span>{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
+            </div>
+            <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+          </div>
+          
           {/* Progress dots */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {steps.map((_, index) => (
@@ -186,11 +207,12 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
                 key={index}
                 className={`h-2 rounded-full transition-all ${
                   index === currentStep
-                    ? 'w-8 bg-blue-500'
+                    ? 'w-8 bg-purple-500'
                     : index < currentStep
-                    ? 'w-2 bg-blue-500/50'
-                    : 'w-2 bg-muted-foreground/30'
+                    ? 'w-2 bg-purple-500/50'
+                    : 'w-2 bg-gray-700'
                 }`}
+                aria-label={`Step ${index + 1}${index === currentStep ? ' (current)' : index < currentStep ? ' (completed)' : ' (upcoming)'}`}
               />
             ))}
           </div>
@@ -217,19 +239,23 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
               variant="ghost"
               onClick={handlePrevious}
               disabled={isFirstStep}
-              className="gap-2"
+              className="gap-2 text-gray-400 hover:text-white border-gray-700 hover:border-gray-600"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
             </Button>
 
-            <span className="text-sm text-muted-foreground">
-              {currentStep + 1} of {steps.length}
-            </span>
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              className="text-xs text-gray-500 hover:text-gray-400"
+            >
+              Skip Tour
+            </Button>
 
             <Button
               onClick={handleNext}
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
             >
               {isLastStep ? 'Get Started' : 'Next'}
               <ChevronRight className="w-4 h-4" />

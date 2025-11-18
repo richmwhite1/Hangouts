@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { HANGOUT_STATES, getVoteCount, checkMandatoryRSVP } from '@/lib/hangout-flow'
+import { useHapticFeedback } from '@/hooks/use-haptic-feedback'
 import { MapPin, Clock, DollarSign, MessageSquare, ChevronDown, Calendar, Edit, UserPlus, X, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -145,6 +146,9 @@ export default function HangoutDetailPage() {
   const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
   const [showPrimaryPhotoModal, setShowPrimaryPhotoModal] = useState(false)
   const [availablePhotos, setAvailablePhotos] = useState<any[]>([])
+
+  // Haptic feedback for mobile devices
+  const { hapticSuccess } = useHapticFeedback({ enabled: true })
 
   // Auto-join functionality for users coming from sign-in
   useAutoJoin({
@@ -428,6 +432,10 @@ export default function HangoutDetailPage() {
   }
   const handleVote = async (optionId: string, action: 'add' | 'remove' | 'preferred' | 'toggle' = 'add') => {
     if (!hangout) return
+    
+    // Haptic feedback on vote action
+    hapticSuccess()
+    
     try {
       setIsVoting(true)
       setSelectedOption(optionId)
@@ -481,12 +489,18 @@ export default function HangoutDetailPage() {
         await fetchHangout()
         console.log('🔍 Hangout data refreshed after vote')
         const actionText = action === 'add' ? 'Vote added' : action === 'remove' ? 'Vote removed' : action === 'toggle' ? 'Vote updated' : 'Preferred option updated'
-        toast.success(`${actionText} successfully!`)
+        toast.success(`${actionText} successfully!`, {
+          description: 'Your vote has been recorded and will be visible to others.',
+          duration: 3000,
+        })
       } else {
         // Revert optimistic update on error
         await fetchHangout()
         const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to update vote')
+        toast.error('Failed to update vote', {
+          description: errorData.error || 'Please try again. If the problem persists, refresh the page.',
+          duration: 4000,
+        })
       }
     } catch (error) {
       logger.error('Error voting:', error);
@@ -507,6 +521,10 @@ export default function HangoutDetailPage() {
       })
       return
     }
+    
+    // Haptic feedback on RSVP action
+    hapticSuccess()
+    
     try {
       setIsUpdatingRSVP(true)
       // Optimistic UI update
@@ -554,12 +572,22 @@ export default function HangoutDetailPage() {
       })
       if (response.ok) {
         await fetchHangout() // Refresh hangout data to get server state
-        toast.success(`RSVP set to ${status}!`)
+        toast.success(`RSVP set to ${status}!`, {
+          description: status === 'YES' 
+            ? 'You\'re going! Others will see your RSVP.' 
+            : status === 'MAYBE' 
+            ? 'You marked yourself as maybe. You can change this anytime.'
+            : 'You marked yourself as not going.',
+          duration: 3000,
+        })
       } else {
         // Revert optimistic update on error
         await fetchHangout()
         const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to update RSVP')
+        toast.error('Failed to update RSVP', {
+          description: errorData.error || 'Please try again. If the problem persists, refresh the page.',
+          duration: 4000,
+        })
       }
     } catch (error) {
       logger.error('Error updating RSVP:', error);
@@ -602,16 +630,19 @@ export default function HangoutDetailPage() {
       window.open(outlookUrl, '_blank')
     }
   }
-  // Add periodic refresh for voting data (every 30 seconds)
+  // Real-time polling for voting data - more frequent during voting phase
   useEffect(() => {
     if (!hangout || !hangout.requiresVoting) return
 
+    // More frequent polling when in voting phase for real-time feel
+    const pollingInterval = hangout.state === HANGOUT_STATES.POLLING ? 5000 : 30000 // 5 seconds for voting, 30 for others
+
     const interval = setInterval(() => {
       // Only refresh if we're in voting phase and not currently voting
-      if (hangout.state === 'polling' && !isVoting) {
+      if ((hangout.state === HANGOUT_STATES.POLLING || hangout.state === HANGOUT_STATES.CONFIRMED) && !isVoting) {
         fetchHangout()
       }
-    }, 30000) // Refresh every 30 seconds
+    }, pollingInterval)
 
     return () => clearInterval(interval)
   }, [hangout, isVoting])
@@ -988,11 +1019,27 @@ export default function HangoutDetailPage() {
             currentUser={userId ? { id: userId } : null}
             onVote={handleVote}
             isVoting={isVoting}
+            onRefresh={fetchHangout}
           />
         )}
         {/* Plan Details Section - Only show when confirmed or completed */}
         {hangout && (currentState === HANGOUT_STATES.CONFIRMED || currentState === HANGOUT_STATES.COMPLETED) && (
           <div className="p-4">
+            {/* Consensus Celebration Banner */}
+            {currentState === HANGOUT_STATES.CONFIRMED && hangout.finalizedOption?.consensusLevel && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-green-600/20 to-green-500/10 border border-green-500/50 rounded-lg animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🎉</div>
+                  <div className="flex-1">
+                    <h3 className="text-green-400 font-bold text-lg mb-1">Consensus Reached!</h3>
+                    <p className="text-green-300 text-sm">
+                      The group has decided! Time to RSVP and make it happen.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Plan Details Header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-gray-400 text-sm">
@@ -1185,6 +1232,7 @@ export default function HangoutDetailPage() {
               onRSVP={handleRSVP}
               isUpdating={isUpdatingRSVP}
               userRSVP={userRSVP}
+              hangout={hangout}
             />
             {/* Calendar Buttons - Smaller and more discreet */}
             <div className="p-4">
@@ -1462,11 +1510,12 @@ function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: stri
   )
 }
 // Voting Section Component (Stage 1) - REDESIGNED
-function VotingSection({ hangout, currentUser, onVote, isVoting }: {
+function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
   hangout: Hangout,
   currentUser: any,
   onVote: (optionId: string, action?: 'add' | 'remove' | 'preferred' | 'toggle') => void,
-  isVoting: boolean
+  isVoting: boolean,
+  onRefresh?: () => void
 }) {
   console.log('🔍 VotingSection Debug:', {
     hangoutId: hangout.id,
@@ -1489,14 +1538,22 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
       {/* Voting Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-bold text-white">Vote for Your Options</h2>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded border border-gray-600 hover:border-gray-400 transition-colors"
-            title="Refresh voting data"
-          >
-            🔄 Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white">Vote for Your Options</h2>
+            <span className="flex items-center gap-1 text-green-400 text-xs" aria-live="polite" aria-label="Live updates active">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" aria-hidden="true"></span>
+              Live
+            </span>
+          </div>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              aria-label="Refresh voting data"
+              className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded border border-gray-600 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
+            >
+              🔄 Refresh
+            </button>
+          )}
         </div>
         <p className="text-gray-400 text-sm">
           {votedCount} of {totalParticipants} friends have voted
@@ -1505,7 +1562,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting }: {
           You can vote for multiple options and mark one as preferred
         </p>
         <p className="text-gray-500 text-xs mt-1">
-          💡 Data refreshes automatically every 30 seconds
+          💡 Updates automatically every 5 seconds
         </p>
       </div>
       {/* Voting Options */}
@@ -1648,33 +1705,179 @@ function VotingProgressSummary({ hangout }: { hangout: Hangout }) {
   const remainingVotes = totalParticipants - votedCount
   const hoursLeft = hangout.votingDeadline ?
     Math.max(0, Math.ceil((new Date(hangout.votingDeadline).getTime() - Date.now()) / (1000 * 60 * 60))) : 0
+  
+  // Calculate consensus progress
+  const consensusThreshold = 70 // Default threshold, should come from API in future
+  let leadingOptionVotes = 0
+  let leadingOptionTitle = ''
+  let consensusProgress = 0
+  let votesNeededForConsensus = 0
+  
+  if (hangout.options && hangout.options.length > 0 && totalParticipants > 0) {
+    // Find the leading option by vote count
+    const optionVoteCounts = hangout.options.map(option => {
+      const voteCount = getVoteCount(hangout.userVotes || hangout.votes, option.id)
+      return { option, voteCount }
+    })
+    
+    const leading = optionVoteCounts.reduce((max, current) => 
+      current.voteCount > max.voteCount ? current : max
+    )
+    
+    leadingOptionVotes = leading.voteCount
+    leadingOptionTitle = leading.option.title
+    consensusProgress = totalParticipants > 0 ? (leadingOptionVotes / totalParticipants) * 100 : 0
+    
+    // Calculate votes needed to reach consensus threshold
+    const votesNeeded = Math.ceil((consensusThreshold / 100) * totalParticipants)
+    votesNeededForConsensus = Math.max(0, votesNeeded - leadingOptionVotes)
+  }
+  
+  const isConsensusReached = consensusProgress >= consensusThreshold
+  
   return (
     <div className="bg-black border border-gray-600 rounded-lg p-4 mt-4">
-      <h3 className="text-white font-bold mb-2">Voting Progress</h3>
-      <p className="text-gray-400 text-sm mb-2">
-        {votedCount} of {totalParticipants} friends have voted
-      </p>
-      {remainingVotes > 0 && (
+      <h3 className="text-white font-bold mb-3">Voting Progress</h3>
+      
+      {/* Consensus Progress Indicator */}
+      {hangout.options && hangout.options.length > 1 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-gray-300 text-sm font-medium">Consensus Progress</span>
+            <span className={`text-sm font-bold ${isConsensusReached ? 'text-green-400' : 'text-yellow-400'}`}>
+              {Math.round(consensusProgress)}% / {consensusThreshold}%
+            </span>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-700 rounded-full h-3 mb-2 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                isConsensusReached ? 'bg-green-500' : 'bg-yellow-500'
+              }`}
+              style={{ width: `${Math.min(100, (consensusProgress / consensusThreshold) * 100)}%` }}
+            />
+          </div>
+          
+          {/* Leading Option Info */}
+          {leadingOptionTitle && (
+            <p className="text-gray-400 text-xs mb-1">
+              Leading: <span className="text-white font-medium">{leadingOptionTitle}</span> ({leadingOptionVotes} votes)
+            </p>
+          )}
+          
+          {/* Votes Needed */}
+          {!isConsensusReached && votesNeededForConsensus > 0 && (
+            <p className="text-yellow-400 text-xs font-medium">
+              {votesNeededForConsensus} more vote{votesNeededForConsensus !== 1 ? 's' : ''} needed to reach consensus
+            </p>
+          )}
+          
+          {isConsensusReached && (
+            <p className="text-green-400 text-xs font-medium">
+              ✓ Consensus reached! The plan will be finalized soon.
+            </p>
+          )}
+        </div>
+      )}
+      
+      {/* General Voting Stats */}
+      <div className="border-t border-gray-700 pt-3">
         <p className="text-gray-400 text-sm mb-2">
-          Waiting for {remainingVotes} more vote{remainingVotes !== 1 ? 's' : ''}
+          {votedCount} of {totalParticipants} friend{totalParticipants !== 1 ? 's' : ''} have voted
         </p>
-      )}
-      {hoursLeft > 0 && (
-        <p className="text-white text-sm">
-          Voting ends in {hoursLeft} hours
-        </p>
-      )}
+        {remainingVotes > 0 && (
+          <p className="text-gray-400 text-sm mb-2">
+            Waiting for {remainingVotes} more vote{remainingVotes !== 1 ? 's' : ''}
+          </p>
+        )}
+        {hoursLeft > 0 && (
+          <p className="text-white text-sm">
+            Voting ends in {hoursLeft} hour{hoursLeft !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
-// RSVP Section - REDESIGNED with visual feedback
-function RSVPSection({ onRSVP, isUpdating, userRSVP }: {
+// RSVP Section - REDESIGNED with visual feedback and social proof
+function RSVPSection({ onRSVP, isUpdating, userRSVP, hangout }: {
   onRSVP: (status: 'YES' | 'NO' | 'MAYBE') => void,
   isUpdating: boolean,
-  userRSVP: string
+  userRSVP: string,
+  hangout: Hangout | null
 }) {
+  // Calculate RSVP counts
+  const rsvpCounts = hangout?.rsvps?.reduce((acc, rsvp) => {
+    if (rsvp.status === 'YES') acc.yes++
+    else if (rsvp.status === 'MAYBE') acc.maybe++
+    else if (rsvp.status === 'NO') acc.no++
+    return acc
+  }, { yes: 0, maybe: 0, no: 0 }) || { yes: 0, maybe: 0, no: 0 }
+  
+  // Get friend avatars for "Going" and "Maybe"
+  const goingAvatars = hangout?.rsvps
+    ?.filter(r => r.status === 'YES')
+    .slice(0, 5)
+    .map(r => r.user?.avatar) || []
+  
+  const maybeAvatars = hangout?.rsvps
+    ?.filter(r => r.status === 'MAYBE')
+    .slice(0, 3)
+    .map(r => r.user?.avatar) || []
+  
   return (
-    <div className="px-4 py-2">
+    <div className="px-4 py-3">
+      {/* Social Proof Section */}
+      {(rsvpCounts.yes > 0 || rsvpCounts.maybe > 0) && (
+        <div className="mb-4 pb-3 border-b border-gray-700">
+          <div className="flex items-center gap-3 mb-2">
+            {rsvpCounts.yes > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {goingAvatars.map((avatar, idx) => (
+                    <img
+                      key={idx}
+                      src={avatar || '/placeholder-avatar.png'}
+                      alt=""
+                      className="w-6 h-6 rounded-full border-2 border-green-500"
+                    />
+                  ))}
+                </div>
+                <span className="text-green-400 text-sm font-medium">
+                  {rsvpCounts.yes} going
+                </span>
+              </div>
+            )}
+            {rsvpCounts.maybe > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {maybeAvatars.map((avatar, idx) => (
+                    <img
+                      key={idx}
+                      src={avatar || '/placeholder-avatar.png'}
+                      alt=""
+                      className="w-6 h-6 rounded-full border-2 border-yellow-500"
+                    />
+                  ))}
+                </div>
+                <span className="text-yellow-400 text-sm font-medium">
+                  {rsvpCounts.maybe} maybe
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Show "Be the first" message when no one has RSVP'd */}
+      {rsvpCounts.yes === 0 && rsvpCounts.maybe === 0 && (
+        <div className="mb-4 pb-3 border-b border-gray-700">
+          <p className="text-gray-400 text-xs text-center">Be the first to RSVP!</p>
+        </div>
+      )}
+      
+      {/* RSVP Buttons */}
       <div className="flex gap-1">
         <button
           className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${

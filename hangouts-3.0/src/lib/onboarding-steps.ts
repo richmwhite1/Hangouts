@@ -11,35 +11,35 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Plans! 📅',
-    description: 'Let\'s show you around. This quick tour will help you get started in no time.',
+    description: 'Let\'s show you around. This quick 5-step tour will help you get started in no time. You can skip anytime with ESC.',
     targetSelector: 'body',
     position: 'center'
   },
   {
     id: 'discover',
-    title: 'Discover Events 🔍',
-    description: 'Find amazing events and hangouts happening around you. Filter by category, location, and date.',
+    title: 'Discover Events & Hangouts 🔍',
+    description: 'Find amazing events and hangouts happening around you. Filter by category, location, and date to find exactly what you\'re looking for.',
     targetSelector: '[data-tour="discover-nav"]',
     position: 'bottom'
   },
   {
     id: 'events',
-    title: 'Browse Events 🎉',
-    description: 'Explore curated events from concerts to workshops. Save your favorites by tapping the heart icon.',
+    title: 'Browse Public Events 🎉',
+    description: 'Explore curated events from concerts to workshops. Save your favorites by tapping the heart icon, and RSVP to join the fun!',
     targetSelector: '[data-tour="events-nav"]',
     position: 'bottom'
   },
   {
     id: 'create',
-    title: 'Create Hangouts ✨',
-    description: 'Plan your own hangouts! Create events, invite friends, and use polls to decide on details together.',
+    title: 'Create Your Own Hangouts ✨',
+    description: 'Plan your own hangouts! Create events, invite friends, and use polls to decide on details together. It\'s that simple!',
     targetSelector: '[data-tour="create-button"]',
     position: 'bottom'
   },
   {
     id: 'complete',
     title: 'You\'re all set! 🎊',
-    description: 'You\'re ready to start planning amazing hangouts. Have fun exploring!',
+    description: 'You\'re ready to start planning amazing hangouts. Create your first hangout or discover events happening near you. Have fun!',
     targetSelector: 'body',
     position: 'center'
   }

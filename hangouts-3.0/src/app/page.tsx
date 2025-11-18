@@ -13,7 +13,7 @@ import { logger } from '@/lib/logger'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { isPastDate } from "@/lib/date-utils"
-import { Filter, X } from "lucide-react"
+import { Filter, X, Calendar, Plus, Search } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface FeedItem {
@@ -366,19 +366,81 @@ export default function HomePage() {
             </div>
           </div>
           {loading && (
-            <div className="p-4 text-center">Loading hangouts...</div>
+            <div className="space-y-4 p-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-gray-900 rounded-lg p-4 animate-pulse">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-gray-700 rounded-lg flex-shrink-0" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-700 rounded w-3/4" />
+                      <div className="h-3 bg-gray-700 rounded w-1/2" />
+                      <div className="h-3 bg-gray-700 rounded w-2/3" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
           {error && (
-            <div className="p-4 text-red-600 bg-red-50 rounded-lg">
-              Error: {error}
+            <div className="p-4 mx-4 mb-4 bg-red-900/20 border border-red-700/50 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-5 h-5 text-red-400 mt-0.5">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="text-red-400 font-semibold mb-1">Unable to load hangouts</h3>
+                  <p className="text-red-300 text-sm mb-3">{error}</p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => window.location.reload()}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-600 text-red-400 hover:bg-red-900/30"
+                    >
+                      Retry
+                    </Button>
+                    <Button
+                      onClick={() => router.push('/discover')}
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-300 hover:text-red-200"
+                    >
+                      Browse Events Instead
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {!loading && !error && totalVisible === 0 && (
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold mb-4">Welcome to Hangouts 3.0</h2>
-              <p className="text-gray-600 mb-6">
-                No hangouts found. Create your first hangout!
-              </p>
+            <div className="text-center py-16 px-4">
+              <div className="max-w-md mx-auto">
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                  <Calendar className="w-12 h-12 text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-3">Welcome to Plans</h2>
+                <p className="text-gray-400 mb-2">
+                  You don't have any hangouts yet.
+                </p>
+                <p className="text-gray-500 text-sm mb-8">
+                  Create your first hangout or discover events happening near you.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={() => router.push('/create')}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Hangout
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/discover')}
+                    variant="outline"
+                    className="border-gray-600 text-white hover:bg-gray-800"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Discover Events
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
           {!loading && !error && totalVisible > 0 && (

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Calendar, Clock } from 'lucide-react'
 import { Button } from './button'
 import { Input } from './input'
@@ -18,6 +18,12 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
   const [selectedTime, setSelectedTime] = useState('')
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth())
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear())
+  const [isMobile, setIsMobile] = useState(false)
+  
+  // Detect mobile device (client-side only)
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+  }, [])
 
   // Generate calendar days for displayed month
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate()
@@ -118,13 +124,34 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
   const [customTime, setCustomTime] = useState('')
   const [showCustomTime, setShowCustomTime] = useState(false)
 
+  // Use native date/time inputs on mobile for better UX
+  if (isMobile) {
+    const dateValue = value ? new Date(value).toISOString().slice(0, 16) : ''
+    
+    return (
+      <div className={`relative ${className}`}>
+        <input
+          type="datetime-local"
+          value={dateValue}
+          onChange={(e) => {
+            if (e.target.value) {
+              onChange(new Date(e.target.value).toISOString())
+            }
+          }}
+          placeholder={placeholder}
+          className="w-full p-3 bg-black border border-gray-600 rounded-lg text-white min-h-[44px] text-base"
+        />
+      </div>
+    )
+  }
+
   return (
     <div className={`relative ${className}`}>
       <Button
         type="button"
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full justify-start text-left font-normal bg-black border-gray-600 text-white hover:bg-gray-800"
+        className="w-full justify-start text-left font-normal bg-black border-gray-600 text-white hover:bg-gray-800 min-h-[44px]"
       >
         <Calendar className="mr-2 h-4 w-4" />
         {formatDisplayValue(value)}
@@ -177,7 +204,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                     <button
                       key={index}
                       onClick={() => day && handleDateSelect(day)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 ${
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] ${
                         isSelected ? 'bg-blue-600 text-white shadow-lg' : 
                         isToday ? 'bg-gray-600 text-white border-2 border-gray-400' :
                         'text-white hover:bg-gray-700 hover:text-white'
@@ -202,7 +229,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                   <button
                     key={time}
                     onClick={() => handleTimeSelect(time)}
-                    className={`p-3 text-sm rounded-lg border-2 font-medium transition-all duration-200 active:scale-95 ${
+                    className={`p-3 text-sm rounded-lg border-2 font-medium transition-all duration-200 active:scale-95 min-h-[44px] ${
                       selectedTime === time 
                         ? 'bg-blue-600 border-blue-500 text-white shadow-lg' 
                         : 'border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500'

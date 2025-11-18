@@ -131,6 +131,47 @@ export function LocationAutocomplete({
     }
   }, [])
 
+  // Get current location
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      setIsLoading(true)
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            // Try reverse geocode to get address (if endpoint exists)
+            const response = await fetch(
+              `/api/locations/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+            )
+            if (response.ok) {
+              const data = await response.json()
+              if (data.success && data.location) {
+                const fullAddress = formatAddress(data.location)
+                onChange(fullAddress)
+                if (onLocationSelect) {
+                  onLocationSelect(data.location)
+                }
+                setIsLoading(false)
+                return
+              }
+            }
+            // Fallback: use coordinates as location string
+            onChange(`${position.coords.latitude}, ${position.coords.longitude}`)
+          } catch (error) {
+            logger.error('Reverse geocoding error:', error);
+            // Fallback: use coordinates
+            onChange(`${position.coords.latitude}, ${position.coords.longitude}`)
+          } finally {
+            setIsLoading(false)
+          }
+        },
+        (error) => {
+          logger.error('Geolocation error:', error);
+          setIsLoading(false)
+        }
+      )
+    }
+  }
+
   return (
     <div className={`relative ${className}`} ref={inputRef}>
       <div className="relative">
@@ -140,8 +181,17 @@ export function LocationAutocomplete({
           value={value}
           onChange={handleInputChange}
           placeholder={placeholder}
-          className="pl-10 pr-10 bg-black border-gray-600 text-white"
+          className="pl-10 pr-24 bg-black border-gray-600 text-white min-h-[44px] text-base"
         />
+        {/* Use Current Location Button */}
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          className="absolute right-10 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-300 text-xs font-medium px-2 py-1 rounded"
+          title="Use current location"
+        >
+          📍
+        </button>
         {isLoading && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
