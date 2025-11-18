@@ -143,6 +143,8 @@ export default function HangoutDetailPage() {
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
   const [showEditModal, setShowEditModal] = useState(false)
   const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
+  const [showPrimaryPhotoModal, setShowPrimaryPhotoModal] = useState(false)
+  const [availablePhotos, setAvailablePhotos] = useState<any[]>([])
 
   // Auto-join functionality for users coming from sign-in
   useAutoJoin({
@@ -826,9 +828,62 @@ export default function HangoutDetailPage() {
               <div className="absolute top-3 right-3 bg-black/80 text-white px-2 py-1 rounded-md text-xs font-medium backdrop-blur-sm">
                 📸 Primary
               </div>
-              {/* Host/Cohost Controls for Primary Photo */}
+              {/* Edit Button - Always Visible in Upper Right */}
               {isHost && (
-                <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = await getToken()
+                      // Fetch available photos
+                      const photosResponse = await fetch(`/api/hangouts/${hangout.id}/photos`, {
+                        headers: token ? {
+                          'Authorization': `Bearer ${token}`
+                        } : {}
+                      })
+                      if (photosResponse.ok) {
+                        const photosData = await photosResponse.json()
+                        setAvailablePhotos(photosData.data?.photos || [])
+                        setShowPrimaryPhotoModal(true)
+                      }
+                    } catch (error) {
+                      logger.error('Error fetching photos:', error);
+                      toast.error('Failed to load photos')
+                    }
+                  }}
+                  className="absolute top-3 left-3 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-110 z-10"
+                  title="Edit primary photo"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              )}
+              {/* Host/Cohost Controls for Primary Photo - Always Visible */}
+              {isHost && (
+                <div className="absolute bottom-3 left-3 right-3 flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const token = await getToken()
+                        // Fetch available photos
+                        const photosResponse = await fetch(`/api/hangouts/${hangout.id}/photos`, {
+                          headers: token ? {
+                            'Authorization': `Bearer ${token}`
+                          } : {}
+                        })
+                        if (photosResponse.ok) {
+                          const photosData = await photosResponse.json()
+                          setAvailablePhotos(photosData.data?.photos || [])
+                          setShowPrimaryPhotoModal(true)
+                        }
+                      } catch (error) {
+                        logger.error('Error fetching photos:', error);
+                        toast.error('Failed to load photos')
+                      }
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium shadow-lg"
+                    title="Change primary photo"
+                  >
+                    ✏️ Change Photo
+                  </button>
                   <button
                     onClick={async () => {
                       // Find the photo that matches the primary image and delete it
@@ -862,7 +917,6 @@ export default function HangoutDetailPage() {
                           } else {
                             // If no matching photo found, just clear the primary image
                             if (confirm('Remove this primary photo?')) {
-                              // This would require a PATCH endpoint on the hangout itself
                               toast.info('Please use the photo gallery below to manage photos')
                             }
                           }
@@ -872,13 +926,46 @@ export default function HangoutDetailPage() {
                         toast.error('Failed to delete primary photo')
                       }
                     }}
-                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium"
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium shadow-lg"
                     title="Delete primary photo"
                   >
                     🗑️ Delete
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+        {/* No Primary Photo - Show upload option for hosts */}
+        {!hangout.image && isHost && (
+          <div className="px-4 py-2">
+            <div className="w-full h-64 bg-gray-800 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-600">
+              <div className="text-center">
+                <p className="text-gray-400 mb-3">No primary photo set</p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = await getToken()
+                      const photosResponse = await fetch(`/api/hangouts/${hangout.id}/photos`, {
+                        headers: token ? {
+                          'Authorization': `Bearer ${token}`
+                        } : {}
+                      })
+                      if (photosResponse.ok) {
+                        const photosData = await photosResponse.json()
+                        setAvailablePhotos(photosData.data?.photos || [])
+                        setShowPrimaryPhotoModal(true)
+                      }
+                    } catch (error) {
+                      logger.error('Error fetching photos:', error);
+                      toast.error('Failed to load photos')
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium"
+                >
+                  + Set Primary Photo
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1240,6 +1327,81 @@ export default function HangoutDetailPage() {
             isOpen={showEditModal}
             onClose={() => setShowEditModal(false)}
             onUpdate={handleHangoutUpdate}
+          />
+        )}
+
+        {/* Primary Photo Selection Modal */}
+        {showPrimaryPhotoModal && (
+          <PrimaryPhotoModal
+            hangout={hangout}
+            availablePhotos={availablePhotos}
+            onClose={() => setShowPrimaryPhotoModal(false)}
+            onPhotoSelected={async (photoId: string) => {
+              try {
+                const token = await getToken()
+                const response = await fetch(`/api/hangouts/${hangout.id}/photos/${photoId}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                  },
+                  body: JSON.stringify({ setAsPrimary: true })
+                })
+                if (response.ok) {
+                  toast.success('Primary photo updated!')
+                  await fetchHangout()
+                  setShowPrimaryPhotoModal(false)
+                } else {
+                  const errorData = await response.json()
+                  toast.error(errorData.message || 'Failed to set primary photo')
+                }
+              } catch (error) {
+                logger.error('Error setting primary photo:', error);
+                toast.error('An error occurred while setting primary photo')
+              }
+            }}
+            onUploadNew={async (file: File) => {
+              try {
+                const token = await getToken()
+                const formData = new FormData()
+                formData.append('photos', file)
+                const response = await fetch(`/api/hangouts/${hangout.id}/photos`, {
+                  method: 'POST',
+                  headers: token ? {
+                    'Authorization': `Bearer ${token}`
+                  } : {},
+                  body: formData
+                })
+                if (response.ok) {
+                  const data = await response.json()
+                  const newPhoto = data.data?.photos?.[0]
+                  if (newPhoto) {
+                    // Set the newly uploaded photo as primary
+                    const setPrimaryResponse = await fetch(`/api/hangouts/${hangout.id}/photos/${newPhoto.id}`, {
+                      method: 'PATCH',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                      },
+                      body: JSON.stringify({ setAsPrimary: true })
+                    })
+                    if (setPrimaryResponse.ok) {
+                      toast.success('Photo uploaded and set as primary!')
+                      await fetchHangout()
+                      setShowPrimaryPhotoModal(false)
+                    } else {
+                      toast.success('Photo uploaded!')
+                      await fetchHangout()
+                    }
+                  }
+                } else {
+                  toast.error('Failed to upload photo')
+                }
+              } catch (error) {
+                logger.error('Error uploading photo:', error);
+                toast.error('An error occurred while uploading photo')
+              }
+            }}
           />
         )}
       </div>
@@ -2058,7 +2220,8 @@ function PhotosSection({
   
   return (
     <div className="p-4">
-      <div className="flex justify-end items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-white font-semibold text-sm">Additional Photos</h3>
         <div className="relative">
           <input
             type="file"
@@ -2101,19 +2264,26 @@ function PhotosSection({
                     hangout.image === photo.mediumUrl ||
                     hangout.image === photo.largeUrl
                   
+                  // Use the best available image URL
+                  const imageUrl = photo.mediumUrl || photo.largeUrl || photo.originalUrl || photo.smallUrl || photo.thumbnailUrl
+                  
                   return (
                     <div key={photo.id} className="w-full flex-shrink-0 relative group">
                       <img
-                        src={photo.originalUrl || photo.thumbnailUrl}
+                        src={imageUrl}
                         alt={`Photo ${index + 1}`}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-cover rounded-xl"
                         onError={(e) => {
-                          // Handle broken images
+                          // Try fallback URLs if primary fails
                           const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
+                          if (target.src !== photo.thumbnailUrl) {
+                            target.src = photo.thumbnailUrl || photo.smallUrl || photo.originalUrl || ''
+                          } else {
+                            target.style.display = 'none'
+                          }
                         }}
                       />
-                      {/* Host/Cohost Controls - Show on hover */}
+                      {/* Host/Cohost Controls - Show on hover/tap */}
                       {isHost && (
                         <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                           {!isPhotoPrimary && (
@@ -2137,9 +2307,9 @@ function PhotosSection({
                         </div>
                       )}
                       {/* Photo Info Overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 rounded-b-xl">
                         <p className="text-white text-sm">
-                          by {photo.users?.name || 'Unknown'}
+                          by {photo.users?.name || photo.creator?.name || 'Unknown'}
                         </p>
                         {photo.caption && (
                           <p className="text-gray-300 text-xs mt-1">{photo.caption}</p>
@@ -2186,8 +2356,150 @@ function PhotosSection({
             )}
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="text-center py-8 bg-gray-800/50 rounded-xl border border-gray-700">
+          <p className="text-gray-400 text-sm mb-2">No additional photos yet</p>
+          <p className="text-gray-500 text-xs">Upload photos to share with participants</p>
+        </div>
+      )}
 
+    </div>
+  )
+}
+
+// Primary Photo Selection Modal
+function PrimaryPhotoModal({
+  hangout,
+  availablePhotos,
+  onClose,
+  onPhotoSelected,
+  onUploadNew
+}: {
+  hangout: Hangout
+  availablePhotos: any[]
+  onClose: () => void
+  onPhotoSelected: (photoId: string) => Promise<void>
+  onUploadNew: (file: File) => Promise<void>
+}) {
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const currentPrimaryPhotoId = availablePhotos.find((p: any) => 
+    hangout.image === p.originalUrl ||
+    hangout.image === p.thumbnailUrl ||
+    hangout.image === p.smallUrl ||
+    hangout.image === p.mediumUrl ||
+    hangout.image === p.largeUrl
+  )?.id
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      await onUploadNew(file)
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-white">Change Primary Photo</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Upload New Photo Section */}
+        <div className="mb-6">
+          <label className="block text-white font-medium mb-2">Upload New Photo</label>
+          <div className="relative">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              disabled={isUploading}
+            />
+            <button
+              className={`w-full px-4 py-3 rounded-lg font-medium text-sm ${
+                isUploading
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? 'Uploading...' : '+ Upload New Photo'}
+            </button>
+          </div>
+        </div>
+
+        {/* Select from Existing Photos */}
+        {availablePhotos.length > 0 && (
+          <div>
+            <label className="block text-white font-medium mb-2">Select from Existing Photos</label>
+            <div className="grid grid-cols-3 gap-3">
+              {availablePhotos.map((photo: any) => {
+                const isCurrentPrimary = photo.id === currentPrimaryPhotoId
+                return (
+                  <div
+                    key={photo.id}
+                    className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 ${
+                      isCurrentPrimary ? 'border-yellow-500' : 'border-gray-600 hover:border-blue-500'
+                    }`}
+                    onClick={() => {
+                      if (!isCurrentPrimary) {
+                        onPhotoSelected(photo.id)
+                      }
+                    }}
+                  >
+                    <img
+                      src={photo.thumbnailUrl || photo.originalUrl}
+                      alt="Photo"
+                      className="w-full h-32 object-cover"
+                    />
+                    {isCurrentPrimary && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-medium">
+                        Current
+                      </div>
+                    )}
+                    {!isCurrentPrimary && (
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100">
+                          Select
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {availablePhotos.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No photos available. Upload a new photo to set as primary.</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
