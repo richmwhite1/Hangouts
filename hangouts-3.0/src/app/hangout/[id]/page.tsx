@@ -148,7 +148,7 @@ export default function HangoutDetailPage() {
   useAutoJoin({
     hangoutId,
     hangout,
-    currentUserId: databaseUserId,
+    ...(databaseUserId ? { currentUserId: databaseUserId } : {}),
     onJoinSuccess: () => {
       // Refresh hangout data to show updated participants
       fetchHangout()
@@ -310,7 +310,7 @@ export default function HangoutDetailPage() {
     }
   }
 
-  const handleHangoutUpdate = async (updatedHangout: any) => {
+  const handleHangoutUpdate = async (_updatedHangout: any) => {
     // Instead of just setting the state, refetch the full hangout data
     // to ensure we have all the latest information including options
     await fetchHangout()
@@ -809,10 +809,76 @@ export default function HangoutDetailPage() {
                 src={hangout.image}
                 alt={hangout.title}
                 className="w-full h-64 object-cover rounded-xl shadow-lg"
+                onError={(e) => {
+                  // Handle broken images - hide the broken image
+                  const target = e.target as HTMLImageElement
+                  target.style.display = 'none'
+                  // Show a placeholder or error message
+                  const parent = target.parentElement
+                  if (parent && !parent.querySelector('.broken-image-placeholder')) {
+                    const placeholder = document.createElement('div')
+                    placeholder.className = 'broken-image-placeholder w-full h-64 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400'
+                    placeholder.textContent = 'Image failed to load'
+                    parent.appendChild(placeholder)
+                  }
+                }}
               />
               <div className="absolute top-3 right-3 bg-black/80 text-white px-2 py-1 rounded-md text-xs font-medium backdrop-blur-sm">
                 📸 Primary
               </div>
+              {/* Host/Cohost Controls for Primary Photo */}
+              {isHost && (
+                <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={async () => {
+                      // Find the photo that matches the primary image and delete it
+                      try {
+                        const token = await getToken()
+                        const photosResponse = await fetch(`/api/hangouts/${hangout.id}/photos`, {
+                          headers: token ? {
+                            'Authorization': `Bearer ${token}`
+                          } : {}
+                        })
+                        if (photosResponse.ok) {
+                          const photosData = await photosResponse.json()
+                          const primaryPhoto = photosData.data?.photos?.find((p: any) => 
+                            hangout.image === p.originalUrl ||
+                            hangout.image === p.thumbnailUrl ||
+                            hangout.image === p.smallUrl ||
+                            hangout.image === p.mediumUrl ||
+                            hangout.image === p.largeUrl
+                          )
+                          if (primaryPhoto) {
+                            if (confirm('Are you sure you want to delete the primary photo?')) {
+                              await fetch(`/api/hangouts/${hangout.id}/photos/${primaryPhoto.id}`, {
+                                method: 'DELETE',
+                                headers: token ? {
+                                  'Authorization': `Bearer ${token}`
+                                } : {}
+                              })
+                              toast.success('Primary photo deleted!')
+                              await fetchHangout()
+                            }
+                          } else {
+                            // If no matching photo found, just clear the primary image
+                            if (confirm('Remove this primary photo?')) {
+                              // This would require a PATCH endpoint on the hangout itself
+                              toast.info('Please use the photo gallery below to manage photos')
+                            }
+                          }
+                        }
+                      } catch (error) {
+                        logger.error('Error deleting primary photo:', error);
+                        toast.error('Failed to delete primary photo')
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium"
+                    title="Delete primary photo"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -823,7 +889,11 @@ export default function HangoutDetailPage() {
           </div>
         )}
         {/* Additional Photos Section - Show below primary photo */}
-        <PhotosSection hangout={hangout} />
+        <PhotosSection 
+          hangout={hangout} 
+          isHost={isHost}
+          onHangoutUpdate={fetchHangout}
+        />
         {/* Stage 1: Polling Interface - Show for poll hangouts */}
         {(currentState === HANGOUT_STATES.POLLING || (hangout.options && hangout.options.length > 1)) && (
           <VotingSection
@@ -1839,22 +1909,40 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
   )
 }
 // Photos Section - REDESIGNED
-function PhotosSection({ hangout }: { hangout: Hangout }) {
+function PhotosSection({ 
+  hangout, 
+  isHost, 
+  onHangoutUpdate 
+}: { 
+  hangout: Hangout
+  isHost: boolean
+  onHangoutUpdate: () => Promise<void>
+}) {
+  const { getToken } = useAuth()
   const [photos, setPhotos] = useState<any[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(false)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null)
+  const [settingPrimaryPhotoId, setSettingPrimaryPhotoId] = useState<string | null>(null)
+  
   // Fetch photos when component mounts
   useEffect(() => {
     if (hangout?.id) {
       fetchPhotos()
     }
   }, [hangout?.id])
+  
   const fetchPhotos = async () => {
     if (!hangout?.id) return
     setIsLoadingPhotos(true)
     try {
-      const response = await fetch(`/api/hangouts/${hangout.id}/photos`)
+      const token = await getToken()
+      const response = await fetch(`/api/hangouts/${hangout.id}/photos`, {
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {}
+      })
       if (response.ok) {
         const data = await response.json()
         setPhotos(data.data?.photos || [])
@@ -1865,6 +1953,7 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
       setIsLoadingPhotos(false)
     }
   }
+  
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
@@ -1874,8 +1963,12 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
       Array.from(files).forEach(file => {
         formData.append('photos', file)
       })
+      const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangout.id}/photos`, {
         method: 'POST',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {},
         body: formData
       })
       if (response.ok) {
@@ -1891,12 +1984,78 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
       setIsUploading(false)
     }
   }
+  
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) {
+      return
+    }
+    
+    setDeletingPhotoId(photoId)
+    try {
+      const token = await getToken()
+      const response = await fetch(`/api/hangouts/${hangout.id}/photos/${photoId}`, {
+        method: 'DELETE',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {}
+      })
+      
+      if (response.ok) {
+        toast.success('Photo deleted successfully!')
+        await fetchPhotos() // Refresh photos
+        await onHangoutUpdate() // Refresh hangout to update primary photo if needed
+        // Reset carousel if we deleted the current photo
+        if (currentPhotoIndex >= photos.length - 1) {
+          setCurrentPhotoIndex(Math.max(0, photos.length - 2))
+        }
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.message || 'Failed to delete photo')
+      }
+    } catch (error) {
+      logger.error('Error deleting photo:', error);
+      toast.error('An error occurred while deleting photo')
+    } finally {
+      setDeletingPhotoId(null)
+    }
+  }
+  
+  const handleSetAsPrimary = async (photoId: string) => {
+    setSettingPrimaryPhotoId(photoId)
+    try {
+      const token = await getToken()
+      const response = await fetch(`/api/hangouts/${hangout.id}/photos/${photoId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ setAsPrimary: true })
+      })
+      
+      if (response.ok) {
+        toast.success('Primary photo updated!')
+        await onHangoutUpdate() // Refresh hangout to show new primary photo
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.message || 'Failed to set primary photo')
+      }
+    } catch (error) {
+      logger.error('Error setting primary photo:', error);
+      toast.error('An error occurred while setting primary photo')
+    } finally {
+      setSettingPrimaryPhotoId(null)
+    }
+  }
+  
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % photos.length)
   }
   const prevPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length)
   }
+  
+  
   return (
     <div className="p-4">
       <div className="flex justify-end items-center mb-4">
@@ -1935,24 +2094,63 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
                 className="flex transition-transform duration-300 ease-in-out"
                 style={{ transform: `translateX(-${currentPhotoIndex * 100}%)` }}
               >
-                {photos.map((photo, index) => (
-                  <div key={photo.id} className="w-full flex-shrink-0 relative">
-                    <img
-                      src={photo.originalUrl || photo.thumbnailUrl}
-                      alt={`Photo ${index + 1}`}
-                      className="w-full h-48 object-cover"
-                    />
-                    {/* Photo Info Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                      <p className="text-white text-sm">
-                        by {photo.users?.name || 'Unknown'}
-                      </p>
-                      {photo.caption && (
-                        <p className="text-gray-300 text-xs mt-1">{photo.caption}</p>
+                {photos.map((photo, index) => {
+                  const isPhotoPrimary = hangout.image === photo.originalUrl ||
+                    hangout.image === photo.thumbnailUrl ||
+                    hangout.image === photo.smallUrl ||
+                    hangout.image === photo.mediumUrl ||
+                    hangout.image === photo.largeUrl
+                  
+                  return (
+                    <div key={photo.id} className="w-full flex-shrink-0 relative group">
+                      <img
+                        src={photo.originalUrl || photo.thumbnailUrl}
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          // Handle broken images
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                      {/* Host/Cohost Controls - Show on hover */}
+                      {isHost && (
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                          {!isPhotoPrimary && (
+                            <button
+                              onClick={() => handleSetAsPrimary(photo.id)}
+                              disabled={settingPrimaryPhotoId === photo.id}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                              title="Set as primary photo"
+                            >
+                              {settingPrimaryPhotoId === photo.id ? '...' : '⭐ Set Primary'}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            disabled={deletingPhotoId === photo.id}
+                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                            title="Delete photo"
+                          >
+                            {deletingPhotoId === photo.id ? '...' : '🗑️ Delete'}
+                          </button>
+                        </div>
                       )}
+                      {/* Photo Info Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                        <p className="text-white text-sm">
+                          by {photo.users?.name || 'Unknown'}
+                        </p>
+                        {photo.caption && (
+                          <p className="text-gray-300 text-xs mt-1">{photo.caption}</p>
+                        )}
+                        {isPhotoPrimary && (
+                          <p className="text-yellow-400 text-xs mt-1 font-medium">⭐ Primary Photo</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
             {/* Navigation Arrows */}
@@ -1960,13 +2158,13 @@ function PhotosSection({ hangout }: { hangout: Hangout }) {
               <>
                 <button
                   onClick={prevPhoto}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
                 >
                   ←
                 </button>
                 <button
                   onClick={nextPhoto}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
                 >
                   →
                 </button>
