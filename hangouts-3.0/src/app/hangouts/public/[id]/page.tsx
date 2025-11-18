@@ -139,24 +139,48 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     let hangoutImage: string
     const rawImage = hangout.image
     
+    // Helper function to ensure absolute HTTPS URL
+    const ensureAbsoluteHttpsUrl = (url: string): string => {
+      if (!url || url.trim().length === 0) return ''
+      
+      // Reject data URLs (not supported by iPhone Messages)
+      if (url.startsWith('data:')) return ''
+      
+      // If already absolute HTTPS, return as-is
+      if (url.startsWith('https://')) return url
+      
+      // Convert HTTP to HTTPS
+      if (url.startsWith('http://')) {
+        return url.replace('http://', 'https://')
+      }
+      
+      // If relative URL, make it absolute
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      
+      // If no protocol, assume relative and prepend baseUrl
+      return `${baseUrl}/${url}`
+    }
+    
     // Check if image is valid for preview (not a data URL and not empty)
     const isValidImage = rawImage && 
       !rawImage.startsWith('data:') && 
       rawImage.trim().length > 0
     
     if (isValidImage) {
-      hangoutImage = rawImage
-      // Convert relative URLs to absolute URLs
-      if (hangoutImage.startsWith('/')) {
-        hangoutImage = `${baseUrl}${hangoutImage}`
-      }
-      // Ensure it's a full HTTPS URL (not just a path or HTTP)
-      if (!hangoutImage.startsWith('http')) {
-        hangoutImage = `${baseUrl}${hangoutImage.startsWith('/') ? '' : '/'}${hangoutImage}`
-      }
-      // Force HTTPS for iPhone Messages compatibility
-      if (hangoutImage.startsWith('http://')) {
-        hangoutImage = hangoutImage.replace('http://', 'https://')
+      hangoutImage = ensureAbsoluteHttpsUrl(rawImage)
+      
+      // If conversion failed or still not HTTPS, fall back to OG image
+      if (!hangoutImage || !hangoutImage.startsWith('https://')) {
+        const ogImageParams = new URLSearchParams({
+          title: hangout.title,
+          creator: hangout.creator?.name || 'Someone',
+          date: formatDate(hangout.startTime),
+          location: hangout.location || 'TBD',
+          participants: String(hangout._count?.participants || 0)
+        })
+        hangoutImage = `${baseUrl}/api/og/hangout?${ogImageParams.toString()}`
       }
     } else {
       // Generate OG image as fallback - always works and is reliable
@@ -170,9 +194,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       hangoutImage = `${baseUrl}/api/og/hangout?${ogImageParams.toString()}`
     }
     
-    // Final validation: ensure it's an absolute HTTPS URL
-    if (!hangoutImage.startsWith('https://')) {
-      // If somehow we still don't have HTTPS, use OG image
+    // Final validation: ensure it's an absolute HTTPS URL (critical for iPhone Messages)
+    if (!hangoutImage || !hangoutImage.startsWith('https://')) {
+      // Force use of OG image if validation fails
       const ogImageParams = new URLSearchParams({
         title: hangout.title,
         creator: hangout.creator?.name || 'Someone',
@@ -182,6 +206,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       })
       hangoutImage = `${baseUrl}/api/og/hangout?${ogImageParams.toString()}`
     }
+    
+    // Log for debugging (helps identify issues in production)
+    logger.info('OG Image URL validation', {
+      originalImage: rawImage,
+      finalImage: hangoutImage,
+      isHttps: hangoutImage.startsWith('https://'),
+      baseUrl
+    })
     
     logger.info('Metadata generation - Generated metadata', { 
       id,

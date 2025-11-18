@@ -1549,7 +1549,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
             <button
               onClick={onRefresh}
               aria-label="Refresh voting data"
-              className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded border border-gray-600 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
+              className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded border border-gray-600 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-black"
             >
               🔄 Refresh
             </button>
@@ -1670,7 +1670,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
                         ? 'bg-blue-600 text-white'
                         : 'bg-black border text-blue-400'
                     }`}
-                    style={!hasUserVoted ? { borderColor: '#792ADB' } : {}}
+                    style={!hasUserVoted ? { borderColor: '#2563EB' } : {}}
                   >
                     {hasUserVoted ? '✓ Voted' : 'Tap to Vote'}
                   </button>

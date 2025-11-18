@@ -161,7 +161,7 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
             : undefined
         }
       >
-        <div className="bg-gray-900 rounded-xl p-6 shadow-2xl border border-purple-500/30">
+        <div className="bg-gray-900 rounded-xl p-6 shadow-2xl border border-[#2563EB]/30">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
@@ -194,7 +194,7 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
             </div>
             <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                className="h-full bg-[#2563EB] transition-all duration-300"
                 style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
               />
             </div>
@@ -207,9 +207,9 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
                 key={index}
                 className={`h-2 rounded-full transition-all ${
                   index === currentStep
-                    ? 'w-8 bg-purple-500'
+                    ? 'w-8 bg-[#2563EB]'
                     : index < currentStep
-                    ? 'w-2 bg-purple-500/50'
+                    ? 'w-2 bg-[#2563EB]/50'
                     : 'w-2 bg-gray-700'
                 }`}
                 aria-label={`Step ${index + 1}${index === currentStep ? ' (current)' : index < currentStep ? ' (completed)' : ' (upcoming)'}`}
@@ -255,7 +255,7 @@ export function WelcomeTour({ onComplete, onSkip, isMobile = false }: WelcomeTou
 
             <Button
               onClick={handleNext}
-              className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              className="gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
             >
               {isLastStep ? 'Get Started' : 'Next'}
               <ChevronRight className="w-4 h-4" />

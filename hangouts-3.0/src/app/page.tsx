@@ -413,8 +413,8 @@ export default function HomePage() {
           {!loading && !error && totalVisible === 0 && (
             <div className="text-center py-16 px-4">
               <div className="max-w-md mx-auto">
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                  <Calendar className="w-12 h-12 text-purple-400" />
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
+                  <Calendar className="w-12 h-12 text-[#60A5FA]" />
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-3">Welcome to Plans</h2>
                 <p className="text-gray-400 mb-2">
@@ -426,7 +426,7 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button
                     onClick={() => router.push('/create')}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Hangout

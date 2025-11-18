@@ -572,6 +572,23 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* Blue Gradient Utilities - Consistent Design System */
+  .gradient-primary {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  }
+
+  .gradient-primary-hover {
+    background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+  }
+
+  .gradient-icon {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(29, 78, 216, 0.2) 100%);
+  }
+
+  .gradient-icon-light {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+  }
   
   /* Professional Avatar Enhancements */
   .avatar-container {

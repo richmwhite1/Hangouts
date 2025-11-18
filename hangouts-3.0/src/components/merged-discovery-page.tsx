@@ -1251,8 +1251,8 @@ export function MergedDiscoveryPage() {
               return (
               <div className="text-center py-16 px-4">
                 <div className="max-w-md mx-auto">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-10 h-10 text-purple-400" />
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
+                    <TrendingUp className="w-10 h-10 text-[#60A5FA]" />
                   </div>
                   <h3 className="text-xl font-semibold text-white mb-2">
                     {searchQuery ? 'No results found' : 'No content yet'}

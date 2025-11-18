@@ -621,15 +621,15 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               onClick={() => handleInputChange('type', 'quick_plan')}
               aria-label="Select Simple Plan option"
               aria-pressed={formData.type === 'quick_plan'}
-              className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+              className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-black ${
                 formData.type === 'quick_plan'
-                  ? 'border-purple-500 bg-purple-500/10'
+                  ? 'border-[#2563EB] bg-[#2563EB]/10'
                   : 'border-gray-600 hover:border-gray-500'
               }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                  formData.type === 'quick_plan' ? 'border-purple-500 bg-purple-500' : 'border-gray-500'
+                  formData.type === 'quick_plan' ? 'border-[#2563EB] bg-[#2563EB]' : 'border-gray-500'
                 }`}>
                   {formData.type === 'quick_plan' && (
                     <div className="w-2 h-2 rounded-full bg-white" />
@@ -649,15 +649,15 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               onClick={() => handleInputChange('type', 'multi_option')}
               aria-label="Select Let Friends Vote option"
               aria-pressed={formData.type === 'multi_option'}
-              className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+              className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-black ${
                 formData.type === 'multi_option'
-                  ? 'border-purple-500 bg-purple-500/10'
+                  ? 'border-[#2563EB] bg-[#2563EB]/10'
                   : 'border-gray-600 hover:border-gray-500'
               }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                  formData.type === 'multi_option' ? 'border-purple-500 bg-purple-500' : 'border-gray-500'
+                  formData.type === 'multi_option' ? 'border-[#2563EB] bg-[#2563EB]' : 'border-gray-500'
                 }`}>
                   {formData.type === 'multi_option' && (
                     <div className="w-2 h-2 rounded-full bg-white" />
@@ -993,7 +993,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           </div>
           <div className="w-full bg-gray-700 rounded-full h-1.5">
             <div
-              className="bg-purple-600 h-1.5 rounded-full transition-all duration-300"
+              className="bg-[#2563EB] h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${progress.percentage}%` }}
             />
           </div>

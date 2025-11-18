@@ -22,6 +22,7 @@ import { logger } from '@/lib/logger'
 import { ShareModal } from '@/components/sharing/share-modal'
 import { useAuth } from '@clerk/nextjs'
 import { useAutoJoin } from '@/hooks/use-auto-join'
+import { toast } from 'sonner'
 
 interface Hangout {
   id: string
@@ -78,8 +79,9 @@ export function PublicHangoutViewer({ params }: Props) {
   // Comments not available for public viewing
   const [hangoutId, setHangoutId] = useState<string | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
   const router = useRouter()
-  const { userId } = useAuth()
+  const { userId, isSignedIn, isLoaded } = useAuth()
 
   // Auto-join functionality for users coming from sign-in
   useAutoJoin({
@@ -134,10 +136,50 @@ export function PublicHangoutViewer({ params }: Props) {
 
 
   const handleSignIn = () => {
-    // Redirect to sign-in with current hangout URL as redirect parameter
+    // If user is already signed in, try to join directly
+    if (isSignedIn && isLoaded && userId) {
+      handleDirectJoin()
+      return
+    }
+    
+    // Otherwise, redirect to sign-in with current hangout URL as redirect parameter
     // After sign-in, user will be redirected back and auto-joined
+    setIsJoining(true)
     const currentUrl = encodeURIComponent(window.location.href)
     router.push(`/signin?redirect_url=${currentUrl}`)
+  }
+  
+  const handleDirectJoin = async () => {
+    if (!hangoutId || !userId) return
+    
+    setIsJoining(true)
+    try {
+      const response = await fetch(`/api/hangouts/${hangoutId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      if (response.ok) {
+        // Redirect to authenticated hangout page
+        window.location.href = `/hangout/${hangoutId}`
+      } else {
+        const errorData = await response.json()
+        logger.error('Direct join failed:', errorData)
+        // If already a participant, just redirect
+        if (response.status === 400 && errorData.error?.includes('already')) {
+          window.location.href = `/hangout/${hangoutId}`
+        } else {
+          toast.error(errorData.error || 'Failed to join hangout')
+          setIsJoining(false)
+        }
+      }
+    } catch (error) {
+      logger.error('Error joining hangout:', error)
+      toast.error('Failed to join hangout. Please try again.')
+      setIsJoining(false)
+    }
   }
 
   const handleAddToCalendar = () => {
@@ -346,16 +388,73 @@ END:VCALENDAR`
               <span>{rsvpCounts.yes} going</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button 
-              size="lg" 
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={handleSignIn}
-            >
-              <UserPlus className="w-5 h-5 mr-2" />
-              Join Hangout
-            </Button>
+      {/* Join Hangout CTA Section */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30 rounded-lg p-6 mb-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white mb-2">Join This Hangout</h2>
+              <p className="text-gray-300 text-sm mb-4">
+                Sign in to join, RSVP, vote on options, and chat with other participants.
+              </p>
+              <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
+                {rsvpCounts.yes > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>{rsvpCounts.yes} going</span>
+                  </div>
+                )}
+                {currentHangout.participants && currentHangout.participants.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">•</span>
+                    <span>{currentHangout.participants.length} invited</span>
+                  </div>
+                )}
+              </div>
+              {/* Show participant avatars for social proof */}
+              {currentHangout.participants && currentHangout.participants.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex -space-x-2">
+                    {currentHangout.participants.slice(0, 5).map((participant) => (
+                      <Avatar key={participant.id} className="w-8 h-8 border-2 border-gray-800">
+                        <AvatarImage src={participant.user?.avatar} alt={participant.user?.name} />
+                        <AvatarFallback className="bg-blue-600 text-white text-xs">
+                          {participant.user?.name?.charAt(0) || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                  </div>
+                  {currentHangout.participants.length > 5 && (
+                    <span className="text-xs text-gray-400 ml-2">
+                      +{currentHangout.participants.length - 5} more
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold flex-1 min-h-[52px]"
+                onClick={handleSignIn}
+                disabled={isJoining}
+              >
+                {isJoining ? (
+                  <>
+                    <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    {userId ? 'Joining...' : 'Redirecting to sign in...'}
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    {userId ? 'Join Hangout' : 'Sign In to Join'}
+                  </>
+                )}
+              </Button>
             <Button 
               size="lg" 
               variant="outline"
@@ -365,16 +464,23 @@ END:VCALENDAR`
               <CalendarPlus className="w-5 h-5 mr-2" />
               Add to Calendar
             </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-gray-600 text-white hover:bg-gray-700"
-                  onClick={() => setShowShareModal(true)}
-                >
-                  <Share2 className="w-5 h-5 mr-2" />
-                  Share
-                </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-gray-600 text-white hover:bg-gray-700"
+              onClick={() => setShowShareModal(true)}
+            >
+              <Share2 className="w-5 h-5 mr-2" />
+              Share
+            </Button>
           </div>
+          {!userId && (
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-xs text-gray-400 text-center">
+                New to Plans? <button onClick={() => router.push(`/signup?redirect_url=${encodeURIComponent(window.location.href)}`)} className="text-blue-400 hover:text-blue-300 underline">Sign up for free</button> to join this hangout.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -385,7 +491,7 @@ END:VCALENDAR`
           <div className="lg:col-span-2 space-y-6">
             {/* Hangout Image */}
             {currentHangout.image && (
-              <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden">
+              <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden">
                 <img 
                   src={currentHangout.image} 
                   alt={currentHangout.title}

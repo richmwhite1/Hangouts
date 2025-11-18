@@ -322,7 +322,7 @@ export default function MessagesPage() {
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="p-8 text-center">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
                     <MessageSquare className="w-10 h-10 text-blue-400" />
                   </div>
                   <h3 className="text-lg font-medium text-white mb-2">

@@ -51,8 +51,15 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     logger.error('Error fetching friends:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    console.error('Friends API Error:', errorMessage, errorStack)
     return NextResponse.json(
-      { error: 'Failed to fetch friends' },
+      { 
+        error: 'Failed to fetch friends',
+        message: errorMessage,
+        ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
+      },
       { status: 500 }
     )
   }
