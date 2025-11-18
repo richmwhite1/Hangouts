@@ -127,16 +127,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     
     const shareUrl = `${baseUrl}/hangouts/public/${id}`
     
-    // Use the actual hangout image if available, otherwise fallback to generic
-    // Ensure image URL is absolute for Open Graph previews
-    let hangoutImage = hangout.image || `${baseUrl}/placeholder-hangout.jpg`
-    // Convert relative URLs to absolute URLs
-    if (hangoutImage && hangoutImage.startsWith('/')) {
-      hangoutImage = `${baseUrl}${hangoutImage}`
-    }
-    // Ensure it's a full URL (not just a path)
-    if (hangoutImage && !hangoutImage.startsWith('http')) {
-      hangoutImage = `${baseUrl}${hangoutImage.startsWith('/') ? '' : '/'}${hangoutImage}`
+    // Use the actual hangout image if available, otherwise generate OG image
+    // Ensure image URL is absolute for Open Graph previews (required for iPhone Messages)
+    let hangoutImage: string
+    if (hangout.image) {
+      hangoutImage = hangout.image
+      // Convert relative URLs to absolute URLs
+      if (hangoutImage.startsWith('/')) {
+        hangoutImage = `${baseUrl}${hangoutImage}`
+      }
+      // Ensure it's a full URL (not just a path)
+      if (!hangoutImage.startsWith('http')) {
+        hangoutImage = `${baseUrl}${hangoutImage.startsWith('/') ? '' : '/'}${hangoutImage}`
+      }
+    } else {
+      // Generate OG image as fallback for better preview support
+      const ogImageParams = new URLSearchParams({
+        title: hangout.title,
+        creator: hangout.creator?.name || 'Someone',
+        date: formatDate(hangout.startTime),
+        location: hangout.location || 'TBD',
+        participants: String(hangout._count?.participants || 0)
+      })
+      hangoutImage = `${baseUrl}/api/og/hangout?${ogImageParams.toString()}`
     }
     
     logger.info('Metadata generation - Generated metadata', { 
@@ -167,8 +180,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             width: 1200,
             height: 630,
             alt: hangout.title,
-            type: 'image/jpeg',
-            secureUrl: hangoutImage,
+            type: 'image/png', // OG images are PNG
+            secureUrl: hangoutImage.startsWith('https') ? hangoutImage : hangoutImage.replace('http://', 'https://'),
           }
         ],
         ...(hangout.startTime && {
@@ -187,14 +200,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'og:site_name': 'Plans',
         'og:image': hangoutImage,
         'og:image:url': hangoutImage,
-        'og:image:secure_url': hangoutImage,
+        'og:image:secure_url': hangoutImage.startsWith('https') ? hangoutImage : hangoutImage.replace('http://', 'https://'),
         'og:image:width': '1200',
         'og:image:height': '630',
-        'og:image:type': 'image/jpeg',
+        'og:image:type': hangout.image ? 'image/jpeg' : 'image/png',
         'og:image:alt': hangout.title,
         'og:updated_time': new Date().toISOString(),
         'og:locale': 'en_US',
         'og:locale:alternate': 'en_US',
+        // iOS Messages specific tags
+        'apple-mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-status-bar-style': 'black-translucent',
         ...(hangout.startTime && {
           'event:start_time': new Date(hangout.startTime).toISOString(),
         }),

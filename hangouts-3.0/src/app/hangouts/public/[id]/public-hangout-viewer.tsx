@@ -1,21 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { 
   Calendar, 
   MapPin, 
   Users, 
   Clock,
-  Globe,
-  Lock,
-  Loader2,
   ArrowLeft,
-  MessageSquare,
   Share2,
   UserPlus,
   CalendarPlus,
-  ExternalLink,
   Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -25,6 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 import { logger } from '@/lib/logger'
 import { ShareModal } from '@/components/sharing/share-modal'
+import { useAuth } from '@clerk/nextjs'
+import { useAutoJoin } from '@/hooks/use-auto-join'
 
 interface Hangout {
   id: string
@@ -82,6 +79,20 @@ export function PublicHangoutViewer({ params }: Props) {
   const [hangoutId, setHangoutId] = useState<string | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const router = useRouter()
+  const { userId } = useAuth()
+
+  // Auto-join functionality for users coming from sign-in
+  useAutoJoin({
+    hangoutId: hangoutId || '',
+    hangout: currentHangout,
+    ...(userId && { currentUserId: userId }),
+    onJoinSuccess: () => {
+      // Refresh hangout data to show updated participants
+      if (hangoutId) {
+        fetchHangout()
+      }
+    }
+  })
 
   useEffect(() => {
     const getParams = async () => {
@@ -91,70 +102,42 @@ export function PublicHangoutViewer({ params }: Props) {
     getParams()
   }, [params])
 
-  useEffect(() => {
-    const fetchHangout = async () => {
-      if (!hangoutId) return
+  const fetchHangout = async () => {
+    if (!hangoutId) return
+    
+    try {
+      setIsLoading(true)
+      setError(null)
       
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Fetch hangout details from public API
-        const response = await fetch(`/api/hangouts/public/${hangoutId}`)
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Hangout not found')
-        }
-        
-        const data = await response.json()
-        setCurrentHangout(data.hangout)
-        
-        // Comments not available for public viewing
-      } catch (err) {
-        logger.error('Error fetching hangout:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load hangout')
-      } finally {
-        setIsLoading(false)
+      // Fetch hangout details from public API
+      const response = await fetch(`/api/hangouts/public/${hangoutId}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Hangout not found')
       }
-    }
-
-    fetchHangout()
-  }, [hangoutId])
-
-  const handleShare = async () => {
-    if (!currentHangout) return
-
-    const shareUrl = `${window.location.origin}/hangouts/public/${hangoutId}`
-    const invitationText = `Hey, are you interested in ${currentHangout.title}?`
-    const shareText = `${invitationText}\n\n${currentHangout.description || 'Join us for this hangout!'}\n\nWhen: ${formatDate(currentHangout.startTime)}\nWhere: ${currentHangout.location || 'TBD'}\n\n${shareUrl}`
-
-    // Check if native sharing is supported
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: invitationText,
-          text: shareText,
-          url: shareUrl
-        })
-      } catch (error) {
-        // User cancelled sharing or error occurred
-        logger.warn('Share cancelled or failed:', error)
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareText)
-        // Success - no popup needed
-      } catch (error) {
-        logger.error('Failed to copy to clipboard:', error);
-        // Final fallback: show the URL
-        prompt('Copy this link to share:', shareUrl)
-      }
+      
+      const data = await response.json()
+      setCurrentHangout(data.hangout)
+      
+      // Comments not available for public viewing
+    } catch (err) {
+      logger.error('Error fetching hangout:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load hangout')
+    } finally {
+      setIsLoading(false)
     }
   }
 
+  useEffect(() => {
+    fetchHangout()
+  }, [hangoutId])
+
+
   const handleSignIn = () => {
-    router.push('/signin')
+    // Redirect to sign-in with current hangout URL as redirect parameter
+    // After sign-in, user will be redirected back and auto-joined
+    const currentUrl = encodeURIComponent(window.location.href)
+    router.push(`/signin?redirect_url=${currentUrl}`)
   }
 
   const handleAddToCalendar = () => {
