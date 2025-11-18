@@ -156,9 +156,12 @@ export default function HomePage() {
     })
   }, [sortedHangouts, contentTypeFilter, dateFilter.start, dateFilter.end])
 
-  const { upcomingHangouts, pastHangouts } = useMemo(() => {
+  const { upcomingHangouts, pastHangouts, events, hangoutsOnly } = useMemo(() => {
     const upcoming: FeedItem[] = []
     const past: FeedItem[] = []
+    const eventsList: FeedItem[] = []
+    const hangoutsList: FeedItem[] = []
+    
     filteredHangouts.forEach(item => {
       const referenceDate = item.endTime || item.startTime
       if (isPastDate(referenceDate)) {
@@ -166,8 +169,20 @@ export default function HomePage() {
       } else {
         upcoming.push(item)
       }
+      
+      // Separate events from hangouts for calendar
+      if (item.type === 'EVENT') {
+        eventsList.push(item)
+      } else {
+        hangoutsList.push(item)
+      }
     })
-    return { upcomingHangouts: upcoming, pastHangouts: past }
+    return { 
+      upcomingHangouts: upcoming, 
+      pastHangouts: past,
+      events: eventsList,
+      hangoutsOnly: hangoutsList
+    }
   }, [filteredHangouts])
   const totalVisible = upcomingHangouts.length + pastHangouts.length
   useEffect(() => {
@@ -259,8 +274,8 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-8">
           <HangoutCalendar 
-            hangouts={hangouts as any} 
-            events={[]} 
+            hangouts={hangoutsOnly as any} 
+            events={events as any} 
             currentUserId={userId || ''} 
           />
         </div>

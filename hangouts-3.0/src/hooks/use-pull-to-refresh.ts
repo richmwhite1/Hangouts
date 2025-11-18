@@ -36,8 +36,8 @@ export function usePullToRefresh({
 
   // Handle touch start
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    // Only trigger if at the top of the scrollable area
-    if (elementRef.current && elementRef.current.scrollTop === 0) {
+    // Only trigger if at the top of the document (window scroll position)
+    if (typeof window !== 'undefined' && window.scrollY === 0) {
       startY.current = e.touches[0].clientY
       currentY.current = e.touches[0].clientY
       setState(prev => ({ ...prev, isPulling: true }))
@@ -94,19 +94,19 @@ export function usePullToRefresh({
     }
   }, [state.isPulling, state.canRefresh, state.isRefreshing, onRefresh])
 
-  // Attach event listeners
+  // Attach event listeners to document for pull-to-refresh
   useEffect(() => {
-    const element = elementRef.current
-    if (!element) return
+    if (typeof window === 'undefined') return
 
-    element.addEventListener('touchstart', handleTouchStart, { passive: false })
-    element.addEventListener('touchmove', handleTouchMove, { passive: false })
-    element.addEventListener('touchend', handleTouchEnd, { passive: false })
+    // Use document for touch events to work with window scrolling
+    document.addEventListener('touchstart', handleTouchStart, { passive: false })
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleTouchEnd, { passive: false })
 
     return () => {
-      element.removeEventListener('touchstart', handleTouchStart)
-      element.removeEventListener('touchmove', handleTouchMove)
-      element.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
     }
   }, [handleTouchStart, handleTouchMove, handleTouchEnd])
 

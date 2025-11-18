@@ -25,10 +25,10 @@ export function PullToRefresh({
   })
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Pull Indicator */}
+    <div className={`relative ${className || ''}`}>
+      {/* Pull Indicator - positioned at top of viewport */}
       <div
-        className={`absolute top-0 left-0 right-0 flex items-center justify-center transition-all duration-200 ${
+        className={`fixed top-0 left-0 right-0 flex items-center justify-center transition-all duration-200 z-50 ${
           pullDistance > 0 ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
@@ -59,7 +59,7 @@ export function PullToRefresh({
       </div>
 
       {/* Content */}
-      <div ref={elementRef} className="h-full overflow-auto">
+      <div ref={elementRef} className="w-full">
         {children}
       </div>
     </div>

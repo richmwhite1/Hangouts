@@ -97,30 +97,37 @@ export async function GET(request: NextRequest) {
       whereClause.AND.push({ category })
     }
     
-    const startTimeFilter = createStartTimeFilter({
-      startDate: startDateParam || dateFrom,
-      endDate: endDateParam || dateTo,
-      includePast
-    })
-    
-    // When includePast is false, show events that haven't ended yet
+    // When includePast is false and no date range specified, show events that haven't ended yet
     // This means: startTime >= now OR (endTime >= now OR endTime is null)
-    if (!includePast && !startDateParam && !dateFrom) {
+    if (!includePast && !startDateParam && !endDateParam && !dateFrom && !dateTo) {
       const now = new Date()
       // Add date filter: show events that either start in the future OR haven't ended yet
       whereClause.AND.push({
         OR: [
           { startTime: { gte: now } },
           {
-            OR: [
-              { endTime: { gte: now } },
-              { endTime: null }
+            AND: [
+              { startTime: { lt: now } },
+              {
+                OR: [
+                  { endTime: { gte: now } },
+                  { endTime: null }
+                ]
+              }
             ]
           }
         ]
       })
-    } else if (startTimeFilter) {
-      whereClause.AND.push({ startTime: startTimeFilter })
+    } else {
+      // Use date range filter if provided
+      const startTimeFilter = createStartTimeFilter({
+        startDate: startDateParam || dateFrom,
+        endDate: endDateParam || dateTo,
+        includePast
+      })
+      if (startTimeFilter) {
+        whereClause.AND.push({ startTime: startTimeFilter })
+      }
     }
     
     const events = await db.content.findMany({

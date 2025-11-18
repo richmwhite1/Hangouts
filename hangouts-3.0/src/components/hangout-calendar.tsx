@@ -90,15 +90,29 @@ export function HangoutCalendar({ hangouts = [], events = [], currentUserId }: H
     
     // Process events
     events.forEach(event => {
-      const eventDate = new Date(event.startDate || event.startTime)
+      const eventDate = new Date(event.startDate || event.startTime || event.date)
+      
+      // Determine RSVP status - check multiple possible sources
+      let rsvpStatus = 'not-going'
+      if (event.myRsvpStatus) {
+        rsvpStatus = event.myRsvpStatus === 'YES' ? 'going' : 
+                    event.myRsvpStatus === 'MAYBE' ? 'maybe' : 'not-going'
+      } else if (event.participants && Array.isArray(event.participants) && currentUserId) {
+        // Look for current user's RSVP in participants array
+        const currentUserParticipant = event.participants.find(p => p.user?.id === currentUserId)
+        if (currentUserParticipant) {
+          rsvpStatus = currentUserParticipant.rsvpStatus === 'YES' ? 'going' : 
+                      currentUserParticipant.rsvpStatus === 'MAYBE' ? 'maybe' : 'not-going'
+        }
+      }
+      
       allEvents.push({
         id: event.id,
         title: event.title,
         date: eventDate,
-        status: event.myRsvpStatus === 'YES' ? 'going' : 
-                event.myRsvpStatus === 'MAYBE' ? 'maybe' : 'not-going',
-        participants: event.attendeeCount || 0,
-        image: event.coverImage || '/default-event.png',
+        status: rsvpStatus,
+        participants: event.attendeeCount || event.participants?.length || event._count?.participants || 0,
+        image: event.coverImage || event.image || '/default-event.png',
         type: 'event',
         votingStatus: event.votingStatus,
         myRsvpStatus: event.myRsvpStatus

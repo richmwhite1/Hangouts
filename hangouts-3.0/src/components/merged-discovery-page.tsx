@@ -378,6 +378,7 @@ export function MergedDiscoveryPage() {
       const apiEndpoint = isSignedIn ? '/api/discover' : '/api/public/content'
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
+      params.append('includePast', showPastContent ? 'true' : 'false')
       if (!isSignedIn) {
         params.append('type', 'HANGOUT')
         params.append('privacyLevel', 'PUBLIC')

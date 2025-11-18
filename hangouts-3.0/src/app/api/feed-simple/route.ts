@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
           }] : [])
         ]
       } else if (feedType === 'home') {
-        // HOME PAGE: Show user's own content + content they're invited to + content they've RSVPed to
+        // HOME PAGE: Show user's own content + content they're invited to + content they've RSVPed to + PUBLIC content
         whereClause.OR = [
           // User's own content (all privacy levels)
           { creatorId: userId },
@@ -305,7 +305,9 @@ export async function GET(request: NextRequest) {
                 status: { in: ['YES', 'MAYBE', 'NO'] }
               }
             }
-          }
+          },
+          // PUBLIC content (everyone can see public hangouts and events)
+          { privacyLevel: 'PUBLIC' }
         ]
       }
 

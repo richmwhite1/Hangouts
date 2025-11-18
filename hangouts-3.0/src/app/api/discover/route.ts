@@ -10,18 +10,23 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
   const location = searchParams.get('location')
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
+  const includePast = searchParams.get('includePast') === 'true'
   const limit = parseInt(searchParams.get('limit') || '20')
   const offset = parseInt(searchParams.get('offset') || '0')
 
   // Get user ID for friend context (optional for discover page)
   let userId: string | null = null
-  const authHeader = request.headers.get('authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    if (payload) {
-      userId = user.id
+  try {
+    const { userId: clerkUserId } = await auth()
+    if (clerkUserId) {
+      const user = await getClerkApiUser()
+      if (user) {
+        userId = user.id
+      }
     }
+  } catch (error) {
+    // User not authenticated, continue with public content
+    logger.debug('No authenticated user for discover page')
   }
 
   try {
@@ -48,37 +53,66 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
     }
 
     // DISCOVER PAGE LOGIC: Show public hangouts + friends' hangouts + user's own hangouts
-    const whereClause = {
-      OR: [
-        // Public hangouts (everyone can see)
-        { privacyLevel: 'PUBLIC' },
-        // User's own hangouts (if authenticated)
-        ...(userId ? [{ creatorId: userId }] : []),
-        // Friends-only hangouts from user's friends (if authenticated)
-        ...(userId && friendIds.length > 0 ? [{
-          AND: [
-            { privacyLevel: 'FRIENDS_ONLY' },
-            { creatorId: { in: friendIds } }
-          ]
-        }] : [])
+    const privacyOr: any[] = [
+      // Public hangouts (everyone can see)
+      { privacyLevel: 'PUBLIC' },
+      // User's own hangouts (if authenticated)
+      ...(userId ? [{ creatorId: userId }] : []),
+      // Friends-only hangouts from user's friends (if authenticated)
+      ...(userId && friendIds.length > 0 ? [{
+        AND: [
+          { privacyLevel: 'FRIENDS_ONLY' },
+          { creatorId: { in: friendIds } }
+        ]
+      }] : [])
+    ]
+
+    const whereClause: any = {
+      AND: [
+        {
+          OR: privacyOr
+        }
       ],
       status: 'PUBLISHED'
     }
 
     // Add location filter
     if (location) {
-      whereClause.location = {
-        contains: location,
-        mode: 'insensitive'
-      }
+      whereClause.AND.push({
+        location: {
+          contains: location,
+          mode: 'insensitive'
+        }
+      })
     }
 
     // Add date filters
     if (startDate || endDate) {
-      whereClause.startTime = {
-        ...(startDate && { gte: new Date(startDate) }),
-        ...(endDate && { lte: new Date(endDate) })
-      }
+      whereClause.AND.push({
+        startTime: {
+          ...(startDate && { gte: new Date(startDate) }),
+          ...(endDate && { lte: new Date(endDate) })
+        }
+      })
+    } else if (!includePast) {
+      // Filter out past hangouts by default (show only future or ongoing hangouts)
+      const now = new Date()
+      whereClause.AND.push({
+        OR: [
+          { startTime: { gte: now } },
+          {
+            AND: [
+              { startTime: { lt: now } },
+              {
+                OR: [
+                  { endTime: { gte: now } },
+                  { endTime: null }
+                ]
+              }
+            ]
+          }
+        ]
+      })
     }
 
     const hangouts = await db.content.findMany({
