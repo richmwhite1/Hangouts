@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     console.log('OG Image API: Generating image for:', { title, creator, date, location, participants })
 
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -154,6 +154,13 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     )
+    
+    // Add headers for iPhone Messages compatibility
+    imageResponse.headers.set('Content-Type', 'image/png')
+    imageResponse.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=3600')
+    imageResponse.headers.set('Access-Control-Allow-Origin', '*')
+    
+    return imageResponse
   } catch (error) {
     console.error('Error generating OG image:', error)
     console.error('Error details:', error.message, error.stack)
