@@ -1,5 +1,5 @@
 import { ReminderService } from './reminder-service'
-
+import { RelationshipReminderProcessor } from './relationship-reminder-processor'
 import { logger } from '@/lib/logger'
 export class ReminderProcessor {
   private static intervalId: NodeJS.Timeout | null = null
@@ -22,6 +22,9 @@ export class ReminderProcessor {
     this.intervalId = setInterval(() => {
       this.processReminders()
     }, intervalMs)
+
+    // Start relationship reminder processor (runs daily)
+    RelationshipReminderProcessor.start()
   }
 
   // Stop the reminder processor
@@ -32,6 +35,9 @@ export class ReminderProcessor {
     }
     this.isRunning = false
     // console.log('Reminder processor stopped'); // Removed for production
+    
+    // Stop relationship reminder processor
+    RelationshipReminderProcessor.stop()
   }
 
   // Process due reminders

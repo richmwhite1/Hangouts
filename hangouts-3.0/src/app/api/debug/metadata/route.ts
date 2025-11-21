@@ -28,3 +28,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(debugInfo, { status: 200 })
 }
 
+
+
+

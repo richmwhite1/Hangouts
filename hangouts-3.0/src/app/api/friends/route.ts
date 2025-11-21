@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
-
+import { getHangoutStats } from '@/lib/services/friend-relationship-service'
 import { logger } from '@/lib/logger'
+
 export async function GET(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -37,17 +38,47 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Transform friendships to match expected format
-    const friends = friendships.map(friendship => ({
-      id: friendship.id,
-      friend: friendship.friend,
-      status: friendship.status,
-      createdAt: friendship.createdAt
-    }))
+    // Get hangout stats for each friend (in parallel for performance)
+    const friendsWithStats = await Promise.all(
+      friendships.map(async (friendship) => {
+        try {
+          const stats = await getHangoutStats(user.id, friendship.friendId)
+          return {
+            id: friendship.id,
+            friend: friendship.friend,
+            status: friendship.status,
+            createdAt: friendship.createdAt,
+            desiredHangoutFrequency: friendship.desiredHangoutFrequency,
+            stats: {
+              lastHangoutDate: stats.lastHangoutDate,
+              totalHangouts: stats.totalHangouts,
+              invitedCount: stats.invitedCount,
+              wasInvitedCount: stats.wasInvitedCount
+            }
+          }
+        } catch (error) {
+          logger.error(`Error getting stats for friend ${friendship.friendId}:`, error)
+          // Return friend without stats if there's an error
+          return {
+            id: friendship.id,
+            friend: friendship.friend,
+            status: friendship.status,
+            createdAt: friendship.createdAt,
+            desiredHangoutFrequency: friendship.desiredHangoutFrequency,
+            stats: {
+              lastHangoutDate: null,
+              totalHangouts: 0,
+              invitedCount: 0,
+              wasInvitedCount: 0
+            }
+          }
+        }
+      })
+    )
 
     return NextResponse.json({
       success: true,
-      friends: friends
+      friends: friendsWithStats
     })
   } catch (error) {
     logger.error('Error fetching friends:', error);

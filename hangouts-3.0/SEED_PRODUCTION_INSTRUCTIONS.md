@@ -87,3 +87,6 @@ After running the script, you can verify the events were created by:
 - Verify the DATABASE_URL is correct
 - Make sure your IP is allowed (Railway databases are usually accessible from anywhere)
 
+
+
+

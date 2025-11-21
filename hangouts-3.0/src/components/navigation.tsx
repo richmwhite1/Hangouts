@@ -14,13 +14,13 @@ import { NotificationSettings } from "@/components/notifications/notification-se
 import { NotificationHistory } from "@/components/notifications/notification-history"
 import { UniversalSearch } from "@/components/universal-search"
 import { Logo } from "@/components/logo"
-import { performSignOut } from "@/lib/sign-out-utils"
 
 export function Navigation() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showNotificationSettings, setShowNotificationSettings] = useState(false)
   const [showNotificationHistory, setShowNotificationHistory] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   
   const { isSignedIn } = useAuth()
   const clerk = useClerk()
@@ -134,13 +134,27 @@ export function Navigation() {
                           variant="ghost" 
                           size="sm" 
                           className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={isSigningOut}
                           onClick={async () => {
+                            if (isSigningOut) return
+                            
+                            setIsSigningOut(true)
                             setShowUserMenu(false)
-                            await performSignOut(clerk.signOut.bind(clerk), '/')
+                            
+                            try {
+                              // Use Clerk's signOut with redirectUrl - let Clerk handle everything
+                              await clerk.signOut({ redirectUrl: '/' })
+                            } catch (error) {
+                              console.error('Sign out error:', error)
+                              // Even if there's an error, try to redirect
+                              if (typeof window !== 'undefined') {
+                                window.location.href = '/'
+                              }
+                            }
                           }}
                         >
                           <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
+                          {isSigningOut ? 'Signing out...' : 'Sign Out'}
                         </Button>
                       </div>
                     </div>

@@ -102,6 +102,24 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/_next/static/css/(.*)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/chunks/(.*\\.js)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript',
+          },
+        ],
+      },
     ]
   },
   

@@ -88,30 +88,19 @@ export async function performSignOut(
   redirectUrl: string = '/'
 ): Promise<void> {
   try {
-    // Step 1: Clear all local auth data first
+    // Clear local auth data first
     clearAllAuthData()
 
-    // Step 2: Sign out from Clerk (this will handle the redirect)
-    // We don't pass redirectUrl to let Clerk handle it, then we'll do our own redirect
-    await clerkSignOut()
-
-    // Step 3: Clear auth data again after Clerk sign-out (in case Clerk added anything)
-    clearAllAuthData()
-
-    // Step 4: Force a hard reload to clear any cached state
-    // Use a small delay to ensure Clerk sign-out completes
-    if (typeof window !== 'undefined') {
-      // Force a hard reload by navigating to the redirect URL
-      // This ensures all cached state is cleared
-      window.location.href = redirectUrl
-    }
+    // Sign out from Clerk with redirectUrl - Clerk will handle the redirect
+    // This prevents multiple requests and rate limiting issues
+    await clerkSignOut({ redirectUrl })
   } catch (error) {
     console.error('Sign out error:', error)
     
     // Even if Clerk sign-out fails, clear all local data and redirect
     clearAllAuthData()
     
-    // Force redirect
+    // Force redirect as fallback
     if (typeof window !== 'undefined') {
       window.location.href = redirectUrl
     }

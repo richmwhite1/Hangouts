@@ -14,7 +14,8 @@ import {
   UserX, 
   Search,
   MessageCircle,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -45,6 +46,12 @@ interface Friendship {
   friend: User
   status: 'ACTIVE' | 'BLOCKED'
   createdAt: string
+  stats?: {
+    lastHangoutDate?: string
+    totalHangouts: number
+    invitedCount: number
+    wasInvitedCount: number
+  }
 }
 
 export default function FriendsPage() {
@@ -561,25 +568,57 @@ export default function FriendsPage() {
                               📍 {friendship.friend.location}
                             </p>
                           )}
+                          {friendship.stats && (
+                            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                              {friendship.stats.totalHangouts > 0 ? (
+                                <>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}
+                                  </span>
+                                  {friendship.stats.lastHangoutDate && (
+                                    <span>
+                                      Last: {new Date(friendship.stats.lastHangoutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground/70">No hangouts together yet</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => startConversation(friendship.friend.id)}
-                          className="px-3"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => removeFriend(friendship.id)}
-                          className="px-3"
-                        >
-                          <UserX className="w-4 h-4" />
-                        </Button>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = `/profile/${friendship.friend.username}`}
+                            className="px-3"
+                            title="View Profile"
+                          >
+                            View Profile
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => startConversation(friendship.friend.id)}
+                            className="px-3"
+                            title="Message"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => removeFriend(friendship.id)}
+                            className="px-3"
+                            title="Remove Friend"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

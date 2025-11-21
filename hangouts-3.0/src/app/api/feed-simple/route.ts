@@ -339,6 +339,7 @@ export async function GET(request: NextRequest) {
             privacyLevel: true,
             createdAt: true,
             updatedAt: true,
+            lastActivityAt: true,
             creatorId: true,
             // Creator info
             users: {
@@ -396,7 +397,17 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-        orderBy: feedType === 'home' ? { createdAt: 'desc' } : { startTime: 'asc' },
+        // Prioritize hangouts with recent activity, then sort by creation/start time
+        // For home feed: sort by lastActivityAt DESC (nulls last), then createdAt DESC
+        // For discover feed: sort by startTime ASC (upcoming events first)
+        // Note: Prisma orderBy with nulls handling - we'll sort by lastActivityAt first
+        // Items without lastActivityAt will appear after those with it
+        orderBy: feedType === 'home' 
+          ? [
+              { lastActivityAt: 'desc' },
+              { createdAt: 'desc' }
+            ]
+          : { startTime: 'asc' },
         take: limit,
         skip: offset
         })
@@ -447,6 +458,7 @@ export async function GET(request: NextRequest) {
             location: item.location,
             startTime: item.startTime?.toISOString(),
             endTime: item.endTime?.toISOString(),
+            lastActivityAt: item.lastActivityAt?.toISOString(),
             privacyLevel: item.privacyLevel,
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),

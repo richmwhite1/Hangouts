@@ -19,6 +19,7 @@ export type NotificationType =
   | 'POLL_CONSENSUS_REACHED'
   | 'HANGOUT_CONFIRMED'
   | 'HANGOUT_CANCELLED'
+  | 'RELATIONSHIP_REMINDER'
 
 export interface NotificationTriggerParams {
   type: NotificationType
@@ -75,7 +76,8 @@ async function checkNotificationPreferences(
         POLL_VOTE_CAST: { inApp: true, push: false, email: false },
         POLL_CONSENSUS_REACHED: { inApp: true, push: true, email: false },
         HANGOUT_CONFIRMED: { inApp: true, push: true, email: false },
-        HANGOUT_CANCELLED: { inApp: true, push: true, email: false }
+        HANGOUT_CANCELLED: { inApp: true, push: true, email: false },
+        RELATIONSHIP_REMINDER: { inApp: true, push: true, email: false }
       }
       return defaults[type] || { inApp: true, push: false, email: false }
     }

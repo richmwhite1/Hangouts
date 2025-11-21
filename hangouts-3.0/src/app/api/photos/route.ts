@@ -36,18 +36,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (hangoutId) {
-      where.hangoutId = hangoutId
-    }
-
-    if (albumId) {
-      where.albumId = albumId
+      where.contentId = hangoutId
     }
 
     // Get photos with pagination
-    const photos = await db.photo.findMany({
+    const photos = await db.photos.findMany({
       where,
       include: {
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -55,22 +51,16 @@ export async function GET(request: NextRequest) {
             avatar: true
           }
         },
-        hangout: {
+        content: {
           select: {
             id: true,
             title: true
           }
         },
-        album: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        tags: true,
-        likes: {
+        photo_tags: true,
+        photo_likes: {
           include: {
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -82,8 +72,8 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            likes: true,
-            comments: true
+            photo_likes: true,
+            photo_comments: true
           }
         }
       },
@@ -95,7 +85,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Get total count for pagination
-    const totalCount = await db.photo.count({ where })
+    const totalCount = await db.photos.count({ where })
     const totalPages = Math.ceil(totalCount / limit)
 
     return NextResponse.json({
@@ -265,11 +255,16 @@ export async function POST(request: NextRequest) {
     const tagList = tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
 
     // Save photo metadata to database
-    const photo = await db.photo.create({
+    // Note: Using contentId (hangoutId is passed as contentId parameter)
+    const contentId = hangoutId || null
+    
+    // Create photo with proper model name
+    const photoId = `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const photo = await db.photos.create({
       data: {
+        id: photoId,
         creatorId: user.id,
-        hangoutId: hangoutId || null,
-        albumId: albumId || null,
+        contentId: contentId,
         caption: caption || null,
         isPublic,
         originalUrl: savedFiles.original,
@@ -281,15 +276,17 @@ export async function POST(request: NextRequest) {
         originalHeight,
         fileSize: processedImages.original.buffer.length,
         mimeType: 'image/webp',
-        tags: {
+        updatedAt: new Date(),
+        photo_tags: {
           create: tagList.map(tag => ({
+            id: `tag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             name: tag,
             creatorId: user.id
           }))
         }
       },
       include: {
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -297,27 +294,37 @@ export async function POST(request: NextRequest) {
             avatar: true
           }
         },
-        hangout: {
+        content: {
           select: {
             id: true,
             title: true
           }
         },
-        album: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        tags: true,
+        photo_tags: true,
         _count: {
           select: {
-            likes: true,
-            comments: true
+            photo_likes: true,
+            photo_comments: true
           }
         }
       }
     })
+
+    // Update hangout's lastActivityAt if photo is associated with a hangout
+    if (contentId) {
+      try {
+        await db.content.update({
+          where: { id: contentId },
+          data: {
+            lastActivityAt: new Date(),
+            updatedAt: new Date()
+          }
+        })
+      } catch (error) {
+        // Log but don't fail the photo upload if hangout update fails
+        logger.error('Error updating hangout lastActivityAt:', error)
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -334,6 +341,7 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
 
 
 

@@ -46,3 +46,6 @@ echo "🚀 Running seed script with provided DATABASE_URL..."
 export DATABASE_URL
 node seed-december-january-events.js
 
+
+
+

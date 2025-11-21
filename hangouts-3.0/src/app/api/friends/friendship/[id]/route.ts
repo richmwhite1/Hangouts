@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -13,7 +13,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const friendshipId = params.id
+    const { id: friendshipId } = await params
 
     // Find the friendship
     const friendship = await db.friendship.findFirst({

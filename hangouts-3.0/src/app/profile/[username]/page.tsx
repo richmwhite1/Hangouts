@@ -19,8 +19,11 @@ import {
   Settings,
   UserPlus,
   UserMinus,
-  Check
+  Check,
+  History
 } from 'lucide-react'
+import { FriendHangoutsList } from '@/components/friend-hangouts-list'
+import { ProfileFriendsList } from '@/components/profile-friends-list'
 import Link from 'next/link'
 
 import { logger } from '@/lib/logger'
@@ -59,7 +62,7 @@ interface Event {
 
 export default function ProfilePage() {
   const params = useParams()
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded, userId: currentClerkUserId } = useAuth()
   const [profileUser, setProfileUser] = useState<User | null>(null)
   const [stats, setStats] = useState<ProfileStats>({
     friendsCount: 0,
@@ -79,6 +82,17 @@ export default function ProfilePage() {
   const [isFriend, setIsFriend] = useState(false)
   const [friendRequestSent, setFriendRequestSent] = useState(false)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const [friendStats, setFriendStats] = useState<{
+    lastHangoutDate?: string
+    totalHangouts: number
+    invitedCount: number
+    wasInvitedCount: number
+  } | null>(null)
+  const [sharedHangouts, setSharedHangouts] = useState<any[]>([])
+  const [loadingSharedHangouts, setLoadingSharedHangouts] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [friends, setFriends] = useState<any[]>([])
+  const [loadingFriends, setLoadingFriends] = useState(false)
 
   const username = params?.username as string
 
@@ -93,6 +107,23 @@ export default function ProfilePage() {
       setLoading(true)
       setError(null)
 
+      // Fetch current user ID if signed in
+      let fetchedCurrentUserId: string | null = null
+      if (isSignedIn) {
+        try {
+          const currentUserResponse = await fetch('/api/auth/me')
+          if (currentUserResponse.ok) {
+            const currentUserData = await currentUserResponse.json()
+            if (currentUserData.success && currentUserData.user) {
+              fetchedCurrentUserId = currentUserData.user.id
+              setCurrentUserId(fetchedCurrentUserId)
+            }
+          }
+        } catch (err) {
+          logger.error('Error fetching current user:', err)
+        }
+      }
+
       // Fetch user profile
       const userResponse = await fetch(`/api/profile?username=${username}`)
       if (!userResponse.ok) {
@@ -100,7 +131,13 @@ export default function ProfilePage() {
       }
       const userData = await userResponse.json()
       setProfileUser(userData.data.profile)
-      setIsOwnProfile(userData.data.profile.username === username)
+      
+      // Check if this is the current user's own profile
+      if (isSignedIn && fetchedCurrentUserId) {
+        setIsOwnProfile(userData.data.profile.id === fetchedCurrentUserId)
+      } else {
+        setIsOwnProfile(false)
+      }
 
       // Fetch user stats
       const statsResponse = await fetch(`/api/users/${userData.data.profile.id}/stats`)
@@ -137,13 +174,58 @@ export default function ProfilePage() {
         setAttendedEvents(attendedEventsData.events || [])
       }
 
-      // Check friendship status
+      // Fetch friends list if viewing own profile
+      if (isOwnProfile && isSignedIn) {
+        try {
+          setLoadingFriends(true)
+          const friendsResponse = await fetch('/api/friends')
+          if (friendsResponse.ok) {
+            const friendsData = await friendsResponse.json()
+            if (friendsData.success) {
+              setFriends(friendsData.friends || [])
+            }
+          }
+        } catch (err) {
+          logger.error('Error fetching friends:', err)
+        } finally {
+          setLoadingFriends(false)
+        }
+      }
+
+      // Check friendship status and fetch friend stats if they're a friend
       if (!isOwnProfile && isSignedIn) {
         const friendshipResponse = await fetch(`/api/friends/status/${userData.data.profile.id}`)
         if (friendshipResponse.ok) {
           const friendshipData = await friendshipResponse.json()
           setIsFriend(friendshipData.isFriend)
           setFriendRequestSent(friendshipData.friendRequestSent)
+          
+          // If they're a friend, fetch relationship stats
+          if (friendshipData.isFriend) {
+            try {
+              const statsResponse = await fetch(`/api/friends/${userData.data.profile.id}/stats`)
+              if (statsResponse.ok) {
+                const statsData = await statsResponse.json()
+                if (statsData.success) {
+                  setFriendStats(statsData.stats)
+                }
+              }
+              
+              // Fetch shared hangouts
+              setLoadingSharedHangouts(true)
+              const hangoutsResponse = await fetch(`/api/friends/${userData.data.profile.id}/hangouts`)
+              if (hangoutsResponse.ok) {
+                const hangoutsData = await hangoutsResponse.json()
+                if (hangoutsData.success) {
+                  setSharedHangouts(hangoutsData.hangouts || [])
+                }
+              }
+            } catch (err) {
+              logger.error('Error fetching friend stats:', err)
+            } finally {
+              setLoadingSharedHangouts(false)
+            }
+          }
         }
       }
     } catch (err) {
@@ -320,9 +402,69 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Hangouts Together Section - Only show for friends */}
+        {isFriend && friendStats && !isOwnProfile && (
+          <Card className="bg-gray-800 border-gray-700 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  Hangouts Together
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{friendStats.totalHangouts}</div>
+                  <div className="text-sm text-gray-400">Total Hangouts</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{friendStats.invitedCount}</div>
+                  <div className="text-sm text-gray-400">You Invited</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{friendStats.wasInvitedCount}</div>
+                  <div className="text-sm text-gray-400">They Invited</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-white">
+                    {friendStats.lastHangoutDate 
+                      ? new Date(friendStats.lastHangoutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : 'Never'}
+                  </div>
+                  <div className="text-sm text-gray-400">Last Hangout</div>
+                </div>
+              </div>
+
+              {friendStats.lastHangoutDate && (
+                <p className="text-sm text-gray-400 text-center">
+                  Last hung out {new Date(friendStats.lastHangoutDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Content Tabs */}
-        <Tabs defaultValue="hangouts" className="space-y-6">
+        <Tabs defaultValue={isOwnProfile ? "friends" : (isFriend && !isOwnProfile ? "together" : "hangouts")} className="space-y-6">
           <TabsList className="bg-gray-800 border-gray-700">
+            {isOwnProfile && (
+              <TabsTrigger value="friends" className="data-[state=active]:bg-gray-700">
+                <Users className="w-4 h-4 mr-2" />
+                Friends ({friends.length})
+              </TabsTrigger>
+            )}
+            {isFriend && !isOwnProfile && (
+              <TabsTrigger value="together" className="data-[state=active]:bg-gray-700">
+                <History className="w-4 h-4 mr-2" />
+                Together ({sharedHangouts.length})
+              </TabsTrigger>
+            )}
             <TabsTrigger value="hangouts" className="data-[state=active]:bg-gray-700">
               <Calendar className="w-4 h-4 mr-2" />
               Hangouts ({userHangouts.length})
@@ -336,6 +478,59 @@ export default function ProfilePage() {
               Attended ({attendedHangouts.length + attendedEvents.length})
             </TabsTrigger>
           </TabsList>
+
+          {isOwnProfile && (
+            <TabsContent value="friends" className="space-y-4">
+              {loadingFriends ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="bg-gray-800 border-gray-700 animate-pulse">
+                      <CardContent className="p-4">
+                        <div className="h-16 bg-gray-700 rounded" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : currentUserId ? (
+                <ProfileFriendsList currentUserId={currentUserId} />
+              ) : (
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-gray-400">Loading friends...</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          )}
+
+          {isFriend && !isOwnProfile && (
+            <TabsContent value="together" className="space-y-4">
+              {loadingSharedHangouts ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="bg-gray-800 border-gray-700 animate-pulse">
+                      <CardContent className="p-4">
+                        <div className="h-48 bg-gray-700 rounded-lg mb-4" />
+                        <div className="h-4 bg-gray-700 rounded w-3/4 mb-2" />
+                        <div className="h-3 bg-gray-700 rounded w-1/2" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : currentUserId ? (
+                <FriendHangoutsList 
+                  friendId={profileUser.id} 
+                  currentUserId={currentUserId} 
+                />
+              ) : (
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-gray-400">Loading shared hangouts...</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          )}
 
           <TabsContent value="hangouts" className="space-y-4">
             {userHangouts.length === 0 ? (

@@ -36,6 +36,7 @@ export function ProfilePage() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [deleteConfirmed, setDeleteConfirmed] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const { isSignedIn, isLoaded, signOut } = useAuth()
   const { profile, userHangouts, isLoading, error, refetch, updateProfile } = useProfile()
   const { uploadImage, updateProfile: updateProfileImage, isUploading, error: uploadError, clearError } = useImageUpload()
@@ -520,13 +521,22 @@ export function ProfilePage() {
             <div className="flex justify-center">
               <Button
                 onClick={async () => {
-                  await performSignOut(signOut, '/')
+                  if (isSigningOut) return
+                  
+                  setIsSigningOut(true)
+                  try {
+                    await performSignOut(signOut, '/')
+                  } catch (error) {
+                    console.error('Sign out error:', error)
+                    setIsSigningOut(false)
+                  }
                 }}
+                disabled={isSigningOut}
                 variant="outline"
                 size="sm"
                 className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"
               >
-                Sign Out
+                {isSigningOut ? 'Signing out...' : 'Sign Out'}
               </Button>
             </div>
           </CardContent>

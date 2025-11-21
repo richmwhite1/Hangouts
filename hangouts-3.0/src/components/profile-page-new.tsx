@@ -51,6 +51,7 @@ export function ProfilePageNew() {
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [attendedEventsCount, setAttendedEventsCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   useEffect(() => {
     if (isSignedIn && isLoaded) {
@@ -185,13 +186,22 @@ export function ProfilePageNew() {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    disabled={isSigningOut}
                     onClick={async () => {
-                      await performSignOut(signOut, '/')
+                      if (isSigningOut) return
+                      
+                      setIsSigningOut(true)
+                      try {
+                        await performSignOut(signOut, '/')
+                      } catch (error) {
+                        console.error('Sign out error:', error)
+                        setIsSigningOut(false)
+                      }
                     }}
                     className="text-red-400 border-red-400/50 hover:bg-red-400/10"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
+                    {isSigningOut ? 'Signing out...' : 'Sign Out'}
                   </Button>
                 </div>
               </div>
