@@ -224,10 +224,10 @@ export default function ProfilePage() {
         setAttendedEvents(attendedEventsData.events || [])
       }
 
-      // Fetch friends list - try loading if signed in and loaded
+      // Fetch friends list - try loading if signed in
       // We'll determine if it's own profile based on whether friends load successfully
       // If friends load, it's likely the user's own profile
-      if (isSignedIn && isLoaded) {
+      if (isSignedIn) {
         try {
           setLoadingFriends(true)
           const friendsResponse = await fetch('/api/friends')
