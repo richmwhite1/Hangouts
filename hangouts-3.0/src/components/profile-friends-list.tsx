@@ -37,7 +37,7 @@ interface Friendship {
 }
 
 interface ProfileFriendsListProps {
-  currentUserId: string
+  currentUserId: string | null
 }
 
 export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
@@ -55,16 +55,32 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
       setLoading(true)
       setError(null)
       const response = await fetch('/api/friends')
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch friends'}`)
+      }
+      
       const data = await response.json()
 
       if (data.success) {
         setFriends(data.friends || [])
       } else {
-        throw new Error(data.error || 'Failed to fetch friends')
+        throw new Error(data.error || data.message || 'Failed to fetch friends')
       }
     } catch (err) {
       logger.error('Error fetching friends:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load friends')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load friends'
+      setError(errorMessage)
+      
+      // Log additional details in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Friends fetch error details:', {
+          error: err,
+          currentUserId,
+          url: '/api/friends'
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -123,10 +139,17 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
     return (
       <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-8 text-center">
+          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Friends</h3>
           <p className="text-red-400 mb-4">{error}</p>
-          <Button onClick={fetchFriends} variant="outline">
-            Try Again
-          </Button>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={fetchFriends} variant="outline">
+              Try Again
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="ghost">
+              Refresh Page
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )

@@ -100,7 +100,7 @@ export default function ProfilePage() {
     if (username && isLoaded) {
       fetchProfileData()
     }
-  }, [username, isLoaded]) // Removed currentUser to prevent infinite loops
+  }, [username, isLoaded, isSignedIn]) // Include isSignedIn to re-fetch when auth state changes
 
   const fetchProfileData = async () => {
     try {
@@ -114,9 +114,13 @@ export default function ProfilePage() {
           const currentUserResponse = await fetch('/api/auth/me')
           if (currentUserResponse.ok) {
             const currentUserData = await currentUserResponse.json()
-            if (currentUserData.success && currentUserData.user) {
-              fetchedCurrentUserId = currentUserData.user.id
-              setCurrentUserId(fetchedCurrentUserId)
+            if (currentUserData.success) {
+              // Support both 'data' and 'user' response formats for backward compatibility
+              const user = currentUserData.data || currentUserData.user
+              if (user?.id) {
+                fetchedCurrentUserId = user.id
+                setCurrentUserId(fetchedCurrentUserId)
+              }
             }
           }
         } catch (err) {
@@ -132,11 +136,57 @@ export default function ProfilePage() {
       const userData = await userResponse.json()
       setProfileUser(userData.data.profile)
       
-      // Check if this is the current user's own profile
-      if (isSignedIn && fetchedCurrentUserId) {
-        setIsOwnProfile(userData.data.profile.id === fetchedCurrentUserId)
-      } else {
-        setIsOwnProfile(false)
+      // Enhanced profile detection with multiple fallback checks
+      let profileIsOwn = false
+      if (isSignedIn) {
+        if (fetchedCurrentUserId) {
+          // Primary check: Compare database IDs
+          profileIsOwn = userData.data.profile.id === fetchedCurrentUserId
+          
+          // Fallback: Check Clerk ID if database ID doesn't match
+          if (!profileIsOwn && userData.data.profile.clerkId && currentClerkUserId) {
+            profileIsOwn = userData.data.profile.clerkId === currentClerkUserId
+          }
+        }
+        
+        // Fallback: Check Clerk ID directly (even if fetchedCurrentUserId is null)
+        if (!profileIsOwn && userData.data.profile.clerkId && currentClerkUserId) {
+          profileIsOwn = userData.data.profile.clerkId === currentClerkUserId
+        }
+        
+        // Fallback: Check username match (try to get current user's username)
+        if (!profileIsOwn && username) {
+          try {
+            const currentUserCheck = await fetch('/api/auth/me')
+            if (currentUserCheck.ok) {
+              const currentUserData = await currentUserCheck.json()
+              if (currentUserData.success) {
+                const user = currentUserData.data || currentUserData.user
+                if (user?.username === username) {
+                  profileIsOwn = true
+                }
+              }
+            }
+          } catch (err) {
+            // Silently fail - username check is just a fallback
+          }
+        }
+      }
+      
+      setIsOwnProfile(profileIsOwn)
+      
+      // Debug logging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Profile Detection Debug:', {
+          fetchedCurrentUserId,
+          profileUserId: userData.data.profile.id,
+          profileUsername: userData.data.profile.username,
+          profileClerkId: userData.data.profile.clerkId,
+          currentClerkUserId,
+          currentUsername: username,
+          isOwnProfile: profileIsOwn,
+          isSignedIn
+        })
       }
 
       // Fetch user stats
@@ -174,19 +224,46 @@ export default function ProfilePage() {
         setAttendedEvents(attendedEventsData.events || [])
       }
 
-      // Fetch friends list if viewing own profile
-      if (isOwnProfile && isSignedIn) {
+      // Fetch friends list - try loading if signed in and loaded
+      // We'll determine if it's own profile based on whether friends load successfully
+      // If friends load, it's likely the user's own profile
+      if (isSignedIn && isLoaded) {
         try {
           setLoadingFriends(true)
           const friendsResponse = await fetch('/api/friends')
           if (friendsResponse.ok) {
             const friendsData = await friendsResponse.json()
             if (friendsData.success) {
-              setFriends(friendsData.friends || [])
+              const friendsList = friendsData.friends || []
+              setFriends(friendsList)
+              
+              // If we got friends back and haven't determined it's own profile yet,
+              // it's likely the user's own profile (you can only see your own friends)
+              if (!profileIsOwn && friendsList.length > 0) {
+                profileIsOwn = true
+                setIsOwnProfile(true)
+              }
+            } else {
+              logger.error('Friends API returned success=false:', friendsData)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Friends API error response:', friendsData)
+              }
+            }
+          } else {
+            // If 401/403, it's probably not their profile
+            if (friendsResponse.status === 401 || friendsResponse.status === 403) {
+              // Not their profile, that's okay
+            } else {
+              const errorText = await friendsResponse.text()
+              logger.error('Friends API error:', friendsResponse.status, errorText)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Friends API HTTP error:', friendsResponse.status, errorText)
+              }
             }
           }
         } catch (err) {
           logger.error('Error fetching friends:', err)
+          // Don't show error if it's just because it's not their profile
         } finally {
           setLoadingFriends(false)
         }
@@ -453,10 +530,11 @@ export default function ProfilePage() {
         {/* Content Tabs */}
         <Tabs defaultValue={isOwnProfile ? "friends" : (isFriend && !isOwnProfile ? "together" : "hangouts")} className="space-y-6">
           <TabsList className="bg-gray-800 border-gray-700">
-            {isOwnProfile && (
+            {/* Always show Friends tab if signed in - will load friends to determine if it's own profile */}
+            {isSignedIn && (
               <TabsTrigger value="friends" className="data-[state=active]:bg-gray-700">
                 <Users className="w-4 h-4 mr-2" />
-                Friends ({friends.length})
+                Friends {friends.length > 0 && `(${friends.length})`}
               </TabsTrigger>
             )}
             {isFriend && !isOwnProfile && (
@@ -479,20 +557,37 @@ export default function ProfilePage() {
             </TabsTrigger>
           </TabsList>
 
-          {isOwnProfile && (
+          {/* Always show Friends tab content if signed in */}
+          {isSignedIn ? (
             <TabsContent value="friends" className="space-y-4">
               {loadingFriends ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <Card key={i} className="bg-gray-800 border-gray-700 animate-pulse">
                       <CardContent className="p-4">
-                        <div className="h-16 bg-gray-700 rounded" />
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full bg-gray-700" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gray-700 rounded w-1/3" />
+                            <div className="h-3 bg-gray-700 rounded w-1/2" />
+                            <div className="h-3 bg-gray-700 rounded w-2/3" />
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              ) : currentUserId ? (
-                <ProfileFriendsList currentUserId={currentUserId} />
+              ) : error && error.includes('friends') ? (
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-red-400 mb-4">{error}</p>
+                    <Button onClick={() => window.location.reload()} variant="outline">
+                      Refresh Page
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (currentUserId || isSignedIn) ? (
+                <ProfileFriendsList currentUserId={currentUserId || ''} />
               ) : (
                 <Card className="bg-gray-800 border-gray-700">
                   <CardContent className="p-8 text-center">

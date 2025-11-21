@@ -21,39 +21,46 @@ export async function GET(_request: NextRequest) {
       if (!user) {
         // User exists in Clerk but not in database - return minimal info
         logger.warn(`User not found in database for Clerk ID: ${userId}`)
-        return NextResponse.json({
-          success: true,
-          data: { 
-            id: userId,
-            clerkId: userId,
-            username: null,
-            name: null,
-            email: null
-          }
-        })
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: { 
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          email: user.email
-        }
-      })
-    } catch (userError) {
-      logger.error('Error fetching user from database:', userError)
-      // Return minimal info if database lookup fails
-      return NextResponse.json({
-        success: true,
-        data: { 
+        const minimalData = {
           id: userId,
           clerkId: userId,
           username: null,
           name: null,
           email: null
         }
+        return NextResponse.json({
+          success: true,
+          user: minimalData,  // Add 'user' field for backward compatibility
+          data: minimalData   // Keep 'data' field
+        })
+      }
+
+      const userData = {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        email: user.email
+      }
+      
+      return NextResponse.json({
+        success: true,
+        user: userData,  // Add 'user' field for backward compatibility
+        data: userData   // Keep 'data' field
+      })
+    } catch (userError) {
+      logger.error('Error fetching user from database:', userError)
+      // Return minimal info if database lookup fails
+      const minimalData = {
+        id: userId,
+        clerkId: userId,
+        username: null,
+        name: null,
+        email: null
+      }
+      return NextResponse.json({
+        success: true,
+        user: minimalData,  // Add 'user' field for backward compatibility
+        data: minimalData   // Keep 'data' field
       })
     }
 

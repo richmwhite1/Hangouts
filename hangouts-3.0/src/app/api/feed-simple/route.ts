@@ -261,9 +261,7 @@ export async function GET(request: NextRequest) {
       logger.info('User authenticated, fetching personalized feed for user:', userId)
       
       // Build where clause based on feed type
-      let whereClause: any = {
-        status: 'PUBLISHED' // Only show published content
-      }
+      let whereClause: any = {}
 
       // Content type filter
       if (contentType === 'hangouts') {

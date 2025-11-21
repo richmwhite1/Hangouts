@@ -590,7 +590,7 @@ export default function FriendsPage() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <div className="flex space-x-2">
+                      <div className="flex space-x-2">
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -600,24 +600,24 @@ export default function FriendsPage() {
                           >
                             View Profile
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => startConversation(friendship.friend.id)}
-                            className="px-3"
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => startConversation(friendship.friend.id)}
+                          className="px-3"
                             title="Message"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => removeFriend(friendship.id)}
-                            className="px-3"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => removeFriend(friendship.id)}
+                          className="px-3"
                             title="Remove Friend"
-                          >
-                            <UserX className="w-4 h-4" />
-                          </Button>
+                        >
+                          <UserX className="w-4 h-4" />
+                        </Button>
                         </div>
                       </div>
                     </CardContent>
