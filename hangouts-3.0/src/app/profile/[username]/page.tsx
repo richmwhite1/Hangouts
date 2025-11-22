@@ -558,7 +558,7 @@ export default function ProfilePage() {
           </TabsList>
 
           {/* Always show Friends tab content if signed in */}
-          {isSignedIn ? (
+          {isSignedIn && (
             <TabsContent value="friends" className="space-y-4">
               {loadingFriends ? (
                 <div className="space-y-4">
