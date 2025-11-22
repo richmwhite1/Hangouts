@@ -531,14 +531,14 @@ export async function GET(request: NextRequest) {
 
   } catch (outerError) {
     logger.error('Outer error in feed API:', outerError)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: 'An unexpected error occurred',
-        details: outerError instanceof Error ? outerError.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    // Return empty result instead of 500 error to prevent homepage from breaking
+    return NextResponse.json({
+      success: true,
+      data: {
+        content: [],
+        total: 0,
+        hasMore: false
+      }
+    })
   }
 }
