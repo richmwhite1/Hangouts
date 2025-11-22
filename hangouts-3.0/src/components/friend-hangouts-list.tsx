@@ -30,40 +30,87 @@ interface SharedHangout {
   }
 }
 
+interface SharedEvent {
+  id: string
+  title: string
+  description?: string
+  image?: string
+  location?: string
+  startTime?: string
+  endTime?: string
+  createdAt: string
+  lastActivityAt?: string
+  photoCount: number
+  commentCount: number
+  creator: {
+    id: string
+    name: string
+    username: string
+    avatar?: string
+  }
+}
+
 interface FriendHangoutsListProps {
   friendId: string
   currentUserId: string
 }
 
+type ActivityItem = (SharedHangout | SharedEvent) & { type: 'hangout' | 'event' }
+
 export function FriendHangoutsList({ friendId, currentUserId }: FriendHangoutsListProps) {
   const router = useRouter()
   const [hangouts, setHangouts] = useState<SharedHangout[]>([])
+  const [events, setEvents] = useState<SharedEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchSharedHangouts()
+    fetchSharedActivities()
   }, [friendId])
 
-  const fetchSharedHangouts = async () => {
+  const fetchSharedActivities = async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(`/api/friends/${friendId}/hangouts`)
-      const data = await response.json()
+      
+      // Fetch both hangouts and events in parallel
+      const [hangoutsResponse, eventsResponse] = await Promise.all([
+        fetch(`/api/friends/${friendId}/hangouts`),
+        fetch(`/api/friends/${friendId}/events`)
+      ])
 
-      if (data.success) {
-        setHangouts(data.hangouts || [])
+      const hangoutsData = await hangoutsResponse.json()
+      const eventsData = await eventsResponse.json()
+
+      if (hangoutsData.success) {
+        setHangouts(hangoutsData.hangouts || [])
       } else {
-        throw new Error(data.error || 'Failed to fetch shared hangouts')
+        throw new Error(hangoutsData.error || 'Failed to fetch shared hangouts')
+      }
+
+      if (eventsData.success) {
+        setEvents(eventsData.events || [])
+      } else {
+        // Don't throw error for events, just log it
+        logger.warn('Failed to fetch shared events:', eventsData.error)
       }
     } catch (err) {
-      logger.error('Error fetching shared hangouts:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load hangouts')
+      logger.error('Error fetching shared activities:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load activities')
     } finally {
       setLoading(false)
     }
   }
+
+  // Combine and sort activities by date
+  const activities: ActivityItem[] = [
+    ...hangouts.map(h => ({ ...h, type: 'hangout' as const })),
+    ...events.map(e => ({ ...e, type: 'event' as const }))
+  ].sort((a, b) => {
+    const dateA = a.startTime ? new Date(a.startTime).getTime() : new Date(a.createdAt).getTime()
+    const dateB = b.startTime ? new Date(b.startTime).getTime() : new Date(b.createdAt).getTime()
+    return dateB - dateA // Most recent first
+  })
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'TBD'
@@ -121,15 +168,15 @@ export function FriendHangoutsList({ friendId, currentUserId }: FriendHangoutsLi
     )
   }
 
-  if (hangouts.length === 0) {
+  if (activities.length === 0) {
     return (
       <div className="text-center py-12 px-4">
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
           <Calendar className="w-10 h-10 text-purple-400" />
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2">No hangouts together yet</h3>
+        <h3 className="text-xl font-semibold text-white mb-2">No activities together yet</h3>
         <p className="text-gray-400 mb-6">
-          Start planning your first hangout together!
+          Start planning your first hangout or event together!
         </p>
       </div>
     )
@@ -137,21 +184,22 @@ export function FriendHangoutsList({ friendId, currentUserId }: FriendHangoutsLi
 
   return (
     <div className="space-y-4">
-      {hangouts.map((hangout) => {
-        const hasActivity = hasRecentActivity(hangout.lastActivityAt)
+      {activities.map((activity) => {
+        const hasActivity = hasRecentActivity(activity.lastActivityAt)
+        const isEvent = activity.type === 'event'
         return (
           <Card
-            key={hangout.id}
+            key={activity.id}
             className="bg-gray-900 border-gray-800 hover:border-purple-500/50 transition-colors cursor-pointer"
-            onClick={() => router.push(`/hangout/${hangout.id}`)}
+            onClick={() => router.push(`/${isEvent ? 'event' : 'hangout'}/${activity.id}`)}
           >
             <CardContent className="p-0">
-              {/* Hangout Image */}
-              {hangout.image && (
+              {/* Activity Image */}
+              {activity.image && (
                 <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
                   <Image
-                    src={hangout.image}
-                    alt={hangout.title}
+                    src={activity.image}
+                    alt={activity.title}
                     fill
                     className="object-cover"
                   />
@@ -163,6 +211,13 @@ export function FriendHangoutsList({ friendId, currentUserId }: FriendHangoutsLi
                       </Badge>
                     </div>
                   )}
+                  {isEvent && (
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-blue-600 text-white border-blue-500">
+                        Event
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -171,41 +226,41 @@ export function FriendHangoutsList({ friendId, currentUserId }: FriendHangoutsLi
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-white mb-1">
-                      {hangout.title}
+                      {activity.title}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-gray-400">
                       <Avatar className="w-4 h-4">
-                        <AvatarImage src={hangout.creator.avatar} />
+                        <AvatarImage src={activity.creator.avatar} />
                         <AvatarFallback className="text-xs">
-                          {hangout.creator.name.charAt(0)}
+                          {activity.creator.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <span>by {hangout.creator.name}</span>
+                      <span>by {activity.creator.name}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Date and Time */}
-                {hangout.startTime && (
+                {activity.startTime && (
                   <div className="flex items-center gap-4 text-sm text-gray-300 mb-3">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-gray-400" />
-                      <span>{formatDate(hangout.startTime)}</span>
+                      <span>{formatDate(activity.startTime)}</span>
                     </div>
-                    {formatTime(hangout.startTime) && (
+                    {formatTime(activity.startTime) && (
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4 text-gray-400" />
-                        <span>{formatTime(hangout.startTime)}</span>
+                        <span>{formatTime(activity.startTime)}</span>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Location */}
-                {hangout.location && (
+                {activity.location && (
                   <div className="flex items-center gap-1 text-sm text-gray-400 mb-3">
                     <MapPin className="w-4 h-4" />
-                    <span>{hangout.location}</span>
+                    <span>{activity.location}</span>
                   </div>
                 )}
 
@@ -213,11 +268,11 @@ export function FriendHangoutsList({ friendId, currentUserId }: FriendHangoutsLi
                 <div className="flex items-center gap-4 pt-3 border-t border-gray-800">
                   <div className="flex items-center gap-1 text-sm text-gray-400">
                     <Camera className="w-4 h-4" />
-                    <span>{hangout.photoCount} photos</span>
+                    <span>{activity.photoCount} photos</span>
                   </div>
                   <div className="flex items-center gap-1 text-sm text-gray-400">
                     <MessageSquare className="w-4 h-4" />
-                    <span>{hangout.commentCount} comments</span>
+                    <span>{activity.commentCount} comments</span>
                   </div>
                 </div>
               </div>

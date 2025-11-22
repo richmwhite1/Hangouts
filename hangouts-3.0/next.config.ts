@@ -103,11 +103,11 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/_next/static/css/(.*)',
+        source: '/_next/static/css/(.*\\.css)',
         headers: [
           {
             key: 'Content-Type',
-            value: 'text/css',
+            value: 'text/css; charset=utf-8',
           },
         ],
       },
@@ -116,7 +116,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Type',
-            value: 'application/javascript',
+            value: 'application/javascript; charset=utf-8',
           },
         ],
       },

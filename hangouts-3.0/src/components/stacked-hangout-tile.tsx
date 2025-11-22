@@ -54,6 +54,7 @@ interface StackedHangoutTileProps {
   showActivityIndicator?: boolean
   activityType?: 'comment' | 'photo' | 'rsvp' | 'poll'
   activityCount?: number
+  type?: 'hangout' | 'event'
 }
 
 export function StackedHangoutTile({ 
@@ -62,7 +63,8 @@ export function StackedHangoutTile({
   totalCount, 
   showActivityIndicator = false, 
   activityType, 
-  activityCount 
+  activityCount,
+  type = 'hangout'
 }: StackedHangoutTileProps) {
   // Format date and time
   const formatDate = (dateString: string) => {
@@ -92,8 +94,11 @@ export function StackedHangoutTile({
   const stackOffset = index * 4 // 4px offset per tile (reduced from 8px)
   const zIndex = totalCount - index // Higher z-index for tiles on top
 
+  // Determine route based on type
+  const route = type === 'event' ? `/event/${hangout.id}` : `/hangout/${hangout.id}`
+
   return (
-    <Link href={`/hangout/${hangout.id}`}>
+    <Link href={route}>
       <Card 
         className="group transition-all duration-300 cursor-pointer overflow-hidden bg-[#121212] border-[#262626] rounded-lg fade-in"
       >
@@ -144,6 +149,13 @@ export function StackedHangoutTile({
             }}
           />
           
+          {type === 'event' && (
+            <div className="absolute top-3 left-3">
+              <Badge className="bg-blue-600 text-white border-0 text-xs font-medium px-2 py-1">
+                Event
+              </Badge>
+            </div>
+          )}
           {showActivityIndicator && (
             <div className="absolute top-3 right-3">
               <Badge className="bg-orange-500 text-white border-0 text-xs font-medium px-2 py-1">

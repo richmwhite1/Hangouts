@@ -18,6 +18,8 @@ import {
   Calendar
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { FriendFrequencySelector, HangoutFrequency } from '@/components/friend-frequency-selector'
+import Link from 'next/link'
 
 import { logger } from '@/lib/logger'
 
@@ -46,6 +48,7 @@ interface Friendship {
   friend: User
   status: 'ACTIVE' | 'BLOCKED'
   createdAt: string
+  desiredHangoutFrequency?: 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'ANNUALLY' | 'SOMETIMES' | null
   stats?: {
     lastHangoutDate?: string
     totalHangouts: number
@@ -547,17 +550,23 @@ export default function FriendsPage() {
                   <Card key={friendship.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={friendship.friend.avatar} />
-                          <AvatarFallback>
-                            {friendship.friend.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{friendship.friend.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            @{friendship.friend.username}
-                          </p>
+                        <Link href={`/profile/${friendship.friend.username}`}>
+                          <Avatar className="w-12 h-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
+                            <AvatarImage src={friendship.friend.avatar} />
+                            <AvatarFallback>
+                              {friendship.friend.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
+                        <div className="flex-1">
+                          <Link href={`/profile/${friendship.friend.username}`}>
+                            <h3 className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                              {friendship.friend.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                              @{friendship.friend.username}
+                            </p>
+                          </Link>
                           {friendship.friend.bio && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {friendship.friend.bio}
@@ -589,35 +598,51 @@ export default function FriendsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                      <div className="flex space-x-2">
+                      <div className="flex flex-col items-end gap-3">
+                        <div className="flex flex-col items-end gap-2">
+                          <label className="text-xs font-medium text-muted-foreground">Hangout Goal</label>
+                          <FriendFrequencySelector
+                            friendshipId={friendship.id}
+                            friendId={friendship.friend.id}
+                            currentFrequency={friendship.desiredHangoutFrequency || null}
+                            onUpdate={(frequency) => {
+                              // Update local state
+                              setFriends(prev => prev.map(f => 
+                                f.id === friendship.id 
+                                  ? { ...f, desiredHangoutFrequency: frequency }
+                                  : f
+                              ))
+                            }}
+                          />
+                        </div>
+                        <div className="flex space-x-2">
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => window.location.href = `/profile/${friendship.friend.username}`}
                             className="px-3"
-                            title="View Profile"
+                            title="View Activity"
                           >
-                            View Profile
+                            View Activity
                           </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => startConversation(friendship.friend.id)}
-                          className="px-3"
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => startConversation(friendship.friend.id)}
+                            className="px-3"
                             title="Message"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => removeFriend(friendship.id)}
-                          className="px-3"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => removeFriend(friendship.id)}
+                            className="px-3"
                             title="Remove Friend"
-                        >
-                          <UserX className="w-4 h-4" />
-                        </Button>
+                          >
+                            <UserX className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>

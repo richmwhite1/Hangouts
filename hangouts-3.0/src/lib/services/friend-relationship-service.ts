@@ -21,6 +21,26 @@ export interface SharedHangout {
   }
 }
 
+export interface SharedEvent {
+  id: string
+  title: string
+  description?: string
+  image?: string
+  location?: string
+  startTime?: Date
+  endTime?: Date
+  createdAt: Date
+  lastActivityAt?: Date
+  photoCount: number
+  commentCount: number
+  creator: {
+    id: string
+    name: string
+    username: string
+    avatar?: string
+  }
+}
+
 export interface FriendHangoutStats {
   lastHangoutDate?: Date
   totalHangouts: number
@@ -151,6 +171,112 @@ export async function getSharedHangouts(
     }))
   } catch (error) {
     logger.error('Error getting shared hangouts:', error)
+    throw error
+  }
+}
+
+/**
+ * Get all shared events between two users
+ */
+export async function getSharedEvents(
+  userId1: string,
+  userId2: string
+): Promise<SharedEvent[]> {
+  try {
+    // Find events where both users are participants
+    const events = await db.content.findMany({
+      where: {
+        type: 'EVENT',
+        status: { in: ['PUBLISHED', 'ACTIVE'] },
+        content_participants: {
+          some: {
+            userId: userId1
+          }
+        }
+      },
+      include: {
+        content_participants: {
+          where: {
+            userId: { in: [userId1, userId2] }
+          }
+        },
+        rsvps: {
+          where: {
+            userId: { in: [userId1, userId2] }
+          }
+        },
+        users: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true
+          }
+        },
+        photos: {
+          select: {
+            id: true
+          }
+        },
+        comments: {
+          select: {
+            id: true
+          }
+        },
+        _count: {
+          select: {
+            photos: true,
+            comments: true
+          }
+        }
+      },
+      orderBy: {
+        startTime: 'desc'
+      }
+    })
+
+    // Filter to only successful events (both participants, both YES)
+    const successfulEvents = events.filter(event => {
+      // Check if user2 is also a participant
+      const hasUser2 = event.content_participants.some(
+        (p: any) => p.userId === userId2
+      )
+      if (!hasUser2) return false
+
+      // Check if both have RSVP'd YES
+      const rsvps = event.rsvps || []
+      const user1RSVP = rsvps.find((r: any) => r.userId === userId1)
+      const user2RSVP = rsvps.find((r: any) => r.userId === userId2)
+
+      if (!user1RSVP || !user2RSVP) {
+        return false
+      }
+
+      return user1RSVP.status === 'YES' && user2RSVP.status === 'YES'
+    })
+
+    // Transform to SharedEvent format
+    return successfulEvents.map(event => ({
+      id: event.id,
+      title: event.title,
+      description: event.description || undefined,
+      image: event.image || undefined,
+      location: event.location || undefined,
+      startTime: event.startTime || undefined,
+      endTime: event.endTime || undefined,
+      createdAt: event.createdAt,
+      lastActivityAt: event.lastActivityAt || undefined,
+      photoCount: event._count.photos,
+      commentCount: event._count.comments,
+      creator: {
+        id: event.users.id,
+        name: event.users.name,
+        username: event.users.username,
+        avatar: event.users.avatar || undefined
+      }
+    }))
+  } catch (error) {
+    logger.error('Error getting shared events:', error)
     throw error
   }
 }

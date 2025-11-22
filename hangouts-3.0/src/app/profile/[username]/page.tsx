@@ -23,6 +23,7 @@ import {
   History
 } from 'lucide-react'
 import { FriendHangoutsList } from '@/components/friend-hangouts-list'
+import { SharedActivitiesFeed } from '@/components/shared-activities-feed'
 import { ProfileFriendsList } from '@/components/profile-friends-list'
 import Link from 'next/link'
 
@@ -89,6 +90,7 @@ export default function ProfilePage() {
     wasInvitedCount: number
   } | null>(null)
   const [sharedHangouts, setSharedHangouts] = useState<any[]>([])
+  const [sharedEvents, setSharedEvents] = useState<any[]>([])
   const [loadingSharedHangouts, setLoadingSharedHangouts] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [friends, setFriends] = useState<any[]>([])
@@ -288,13 +290,24 @@ export default function ProfilePage() {
                 }
               }
               
-              // Fetch shared hangouts
+              // Fetch shared hangouts and events
               setLoadingSharedHangouts(true)
-              const hangoutsResponse = await fetch(`/api/friends/${userData.data.profile.id}/hangouts`)
+              const [hangoutsResponse, eventsResponse] = await Promise.all([
+                fetch(`/api/friends/${userData.data.profile.id}/hangouts`),
+                fetch(`/api/friends/${userData.data.profile.id}/events`)
+              ])
+              
               if (hangoutsResponse.ok) {
                 const hangoutsData = await hangoutsResponse.json()
                 if (hangoutsData.success) {
                   setSharedHangouts(hangoutsData.hangouts || [])
+                }
+              }
+              
+              if (eventsResponse.ok) {
+                const eventsData = await eventsResponse.json()
+                if (eventsData.success) {
+                  setSharedEvents(eventsData.events || [])
                 }
               }
             } catch (err) {
@@ -479,14 +492,14 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Hangouts Together Section - Only show for friends */}
+        {/* Activities Together Section - Only show for friends */}
         {isFriend && friendStats && !isOwnProfile && (
           <Card className="bg-gray-800 border-gray-700 mb-6">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                   <History className="w-5 h-5" />
-                  Hangouts Together
+                  Activities Together
                 </h2>
               </div>
               
@@ -540,7 +553,7 @@ export default function ProfilePage() {
             {isFriend && !isOwnProfile && (
               <TabsTrigger value="together" className="data-[state=active]:bg-gray-700">
                 <History className="w-4 h-4 mr-2" />
-                Together ({sharedHangouts.length})
+                Together ({sharedHangouts.length + sharedEvents.length})
               </TabsTrigger>
             )}
             <TabsTrigger value="hangouts" className="data-[state=active]:bg-gray-700">
@@ -599,28 +612,16 @@ export default function ProfilePage() {
           )}
 
           {isFriend && !isOwnProfile && (
-            <TabsContent value="together" className="space-y-4">
-              {loadingSharedHangouts ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <Card key={i} className="bg-gray-800 border-gray-700 animate-pulse">
-                      <CardContent className="p-4">
-                        <div className="h-48 bg-gray-700 rounded-lg mb-4" />
-                        <div className="h-4 bg-gray-700 rounded w-3/4 mb-2" />
-                        <div className="h-3 bg-gray-700 rounded w-1/2" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : currentUserId ? (
-                <FriendHangoutsList 
+            <TabsContent value="together" className="space-y-0">
+              {currentUserId ? (
+                <SharedActivitiesFeed 
                   friendId={profileUser.id} 
                   currentUserId={currentUserId} 
                 />
               ) : (
                 <Card className="bg-gray-800 border-gray-700">
                   <CardContent className="p-8 text-center">
-                    <p className="text-gray-400">Loading shared hangouts...</p>
+                    <p className="text-gray-400">Loading shared activities...</p>
                   </CardContent>
                 </Card>
               )}
