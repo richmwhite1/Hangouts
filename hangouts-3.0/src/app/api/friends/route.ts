@@ -12,14 +12,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    logger.info('Fetching friends for user', { clerkUserId })
+
     const user = await getClerkApiUser()
     if (!user) {
+      logger.warn('User not found in database', { clerkUserId })
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
+    logger.info('Found user in database', { userId: user.id, username: user.username })
+
     // Get user's friends using the correct schema (userId/friendId)
     // Query from both directions to ensure we find all friendships
-    const friendships = await db.friendship.findMany({
+    let friendships
+    try {
+      friendships = await db.friendship.findMany({
       where: {
         OR: [
           { userId: user.id },
@@ -51,7 +58,21 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    })
+      })
+      logger.info('Found friendships', { count: friendships.length, userId: user.id })
+    } catch (dbError) {
+      logger.error('Database error fetching friendships:', dbError)
+      throw dbError
+    }
+
+    // If no friendships, return empty array
+    if (!friendships || friendships.length === 0) {
+      logger.info('No friendships found for user', { userId: user.id })
+      return NextResponse.json({
+        success: true,
+        friends: []
+      })
+    }
 
     // Get hangout stats for each friend (in parallel for performance)
     // Determine which user is the friend (not the current user)
@@ -62,7 +83,30 @@ export async function GET(request: NextRequest) {
           const friendUser = friendship.userId === user.id ? friendship.friend : friendship.user
           const friendId = friendship.userId === user.id ? friendship.friendId : friendship.userId
           
-          const stats = await getHangoutStats(user.id, friendId)
+          // Skip if friend user is missing (data integrity issue)
+          if (!friendUser || !friendId) {
+            logger.warn(`Skipping friendship ${friendship.id} - missing friend data`, {
+              userId: friendship.userId,
+              friendId: friendship.friendId,
+              hasUser: !!friendship.user,
+              hasFriend: !!friendship.friend
+            })
+            return null
+          }
+          
+          let stats
+          try {
+            stats = await getHangoutStats(user.id, friendId)
+          } catch (statsError) {
+            logger.error(`Error getting stats for friendship ${friendship.id}:`, statsError)
+            stats = {
+              lastHangoutDate: null,
+              totalHangouts: 0,
+              invitedCount: 0,
+              wasInvitedCount: 0
+            }
+          }
+          
           return {
             id: friendship.id,
             friend: friendUser,
@@ -77,9 +121,14 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          logger.error(`Error getting stats for friendship ${friendship.id}:`, error)
+          logger.error(`Error processing friendship ${friendship.id}:`, error)
           // Determine which user is the friend (the one that's not the current user)
           const friendUser = friendship.userId === user.id ? friendship.friend : friendship.user
+          
+          // Skip if friend user is missing
+          if (!friendUser) {
+            return null
+          }
           
           // Return friend without stats if there's an error
           return {
@@ -99,20 +148,30 @@ export async function GET(request: NextRequest) {
       })
     )
 
+    // Filter out null entries (friendships with missing data)
+    const validFriends = friendsWithStats.filter((f): f is NonNullable<typeof f> => f !== null)
+
     return NextResponse.json({
       success: true,
-      friends: friendsWithStats
+      friends: validFriends
     })
   } catch (error) {
     logger.error('Error fetching friends:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     const errorStack = error instanceof Error ? error.stack : undefined
-    console.error('Friends API Error:', errorMessage, errorStack)
+    const errorName = error instanceof Error ? error.name : 'Error'
+    console.error('Friends API Error:', {
+      name: errorName,
+      message: errorMessage,
+      stack: errorStack
+    })
     return NextResponse.json(
       { 
         error: 'Failed to fetch friends',
         message: errorMessage,
-        ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
+        name: errorName,
+        // Include stack in production for debugging (can remove later)
+        ...(errorStack && { stack: errorStack })
       },
       { status: 500 }
     )
