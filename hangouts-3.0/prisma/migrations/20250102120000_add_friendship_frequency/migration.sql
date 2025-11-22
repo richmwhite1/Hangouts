@@ -10,3 +10,4 @@ CREATE INDEX "friendships_desiredHangoutFrequency_idx" ON "friendships"("desired
 -- AlterEnum (add RELATIONSHIP_REMINDER to NotificationType)
 ALTER TYPE "NotificationType" ADD VALUE 'RELATIONSHIP_REMINDER';
 
+

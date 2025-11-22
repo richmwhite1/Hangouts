@@ -218,3 +218,4 @@ await RelationshipReminderProcessor.triggerCheck()
 2. **Bidirectional Friendships**: Frequency is stored per direction (user sets frequency for their view of friendship)
 3. **Manual Testing**: Reminders run daily, so testing requires manual trigger or waiting
 
+

@@ -23,18 +23,19 @@ export async function GET(request: NextRequest) {
     const hangoutId = searchParams.get('hangoutId')
     const contentId = searchParams.get('contentId')
 
-    // Get user's friends
+    // Get user's friends using the correct schema (userId/friendId)
     const friendships = await db.friendship.findMany({
       where: {
         OR: [
-          { user1Id: user.id },
-          { user2Id: user.id }
-        ]
+          { userId: user.id },
+          { friendId: user.id }
+        ],
+        status: 'ACTIVE'
       }
     })
 
     const friendIds = friendships.map(f => 
-      f.user1Id === user.id ? f.user2Id : f.user1Id
+      f.userId === user.id ? f.friendId : f.userId
     )
 
     let where: any = {

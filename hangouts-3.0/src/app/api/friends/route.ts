@@ -18,12 +18,27 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's friends using the correct schema (userId/friendId)
+    // Query from both directions to ensure we find all friendships
     const friendships = await db.friendship.findMany({
       where: {
-        userId: user.id,
+        OR: [
+          { userId: user.id },
+          { friendId: user.id }
+        ],
         status: 'ACTIVE'
       },
       include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            email: true,
+            avatar: true,
+            bio: true,
+            location: true
+          }
+        },
         friend: {
           select: {
             id: true,
@@ -39,13 +54,18 @@ export async function GET(request: NextRequest) {
     })
 
     // Get hangout stats for each friend (in parallel for performance)
+    // Determine which user is the friend (not the current user)
     const friendsWithStats = await Promise.all(
       friendships.map(async (friendship) => {
         try {
-          const stats = await getHangoutStats(user.id, friendship.friendId)
+          // Determine which user is the friend (the one that's not the current user)
+          const friendUser = friendship.userId === user.id ? friendship.friend : friendship.user
+          const friendId = friendship.userId === user.id ? friendship.friendId : friendship.userId
+          
+          const stats = await getHangoutStats(user.id, friendId)
           return {
             id: friendship.id,
-            friend: friendship.friend,
+            friend: friendUser,
             status: friendship.status,
             createdAt: friendship.createdAt,
             desiredHangoutFrequency: friendship.desiredHangoutFrequency,
@@ -57,11 +77,14 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          logger.error(`Error getting stats for friend ${friendship.friendId}:`, error)
+          logger.error(`Error getting stats for friendship ${friendship.id}:`, error)
+          // Determine which user is the friend (the one that's not the current user)
+          const friendUser = friendship.userId === user.id ? friendship.friend : friendship.user
+          
           // Return friend without stats if there's an error
           return {
             id: friendship.id,
-            friend: friendship.friend,
+            friend: friendUser,
             status: friendship.status,
             createdAt: friendship.createdAt,
             desiredHangoutFrequency: friendship.desiredHangoutFrequency,
