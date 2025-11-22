@@ -396,15 +396,10 @@ export async function GET(request: NextRequest) {
             }
           },
         // Prioritize hangouts with recent activity, then sort by creation/start time
-        // For home feed: sort by lastActivityAt DESC (nulls last), then createdAt DESC
+        // For home feed: sort by createdAt DESC (simplified - can't easily handle nulls in lastActivityAt)
         // For discover feed: sort by startTime ASC (upcoming events first)
-        // Note: Prisma orderBy with nulls handling - we'll sort by lastActivityAt first
-        // Items without lastActivityAt will appear after those with it
         orderBy: feedType === 'home' 
-          ? [
-              { lastActivityAt: 'desc' },
-              { createdAt: 'desc' }
-            ]
+          ? { createdAt: 'desc' }
           : { startTime: 'asc' },
         take: limit,
         skip: offset
