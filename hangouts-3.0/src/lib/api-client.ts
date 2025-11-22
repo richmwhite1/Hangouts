@@ -75,7 +75,11 @@ export class ApiClient {
   }
 
   async respondToFriendRequest(requestId: string, status: 'ACCEPTED' | 'DECLINED') {
-    return this.post(`/api/friends/request/${requestId}/respond`, { status })
+    return this.put(`/api/friends/requests/${requestId}`, { status })
+  }
+
+  async cancelFriendRequest(requestId: string) {
+    return this.delete(`/api/friends/requests/${requestId}`)
   }
 
   async searchUsers(query: string, limit: number = 20, offset: number = 0) {

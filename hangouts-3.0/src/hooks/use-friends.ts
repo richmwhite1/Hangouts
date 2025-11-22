@@ -10,7 +10,7 @@ interface FriendRequest {
   id: string
   senderId: string
   receiverId: string
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED'
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'BLOCKED'
   message?: string
   createdAt: string
   sender: User

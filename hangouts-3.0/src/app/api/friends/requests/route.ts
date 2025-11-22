@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
-import { db } from '@/lib/db'
-
+import { FriendRequestService } from '@/lib/services/friend-request-service'
+import { FriendRequestStatus } from '@prisma/client'
 import { logger } from '@/lib/logger'
-export async function GET(_request: NextRequest) {
+
+export async function GET(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth()
     if (!clerkUserId) {
@@ -16,49 +17,39 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    // Get friend requests (both sent and received)
-    // Only return PENDING requests for the requests tab - other statuses are handled separately
-    const friendRequests = await db.friendRequest.findMany({
-      where: {
-        OR: [
-          { senderId: user.id },
-          { receiverId: user.id }
-        ],
-        status: 'PENDING' // Only return pending requests
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true,
-            bio: true
-          }
-        },
-        receiver: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true,
-            bio: true
-          }
+    // Get optional status filter from query params
+    const { searchParams } = new URL(request.url)
+    const statusParam = searchParams.get('status')
+    let status: FriendRequestStatus | FriendRequestStatus[] | undefined = undefined
+
+    if (statusParam) {
+      if (statusParam === 'all') {
+        status = undefined // Get all statuses
+      } else {
+        // Validate status is a valid enum value
+        const validStatuses: FriendRequestStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED', 'BLOCKED', 'CANCELLED']
+        if (validStatuses.includes(statusParam as FriendRequestStatus)) {
+          status = statusParam as FriendRequestStatus
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
       }
+    } else {
+      // Default: only return PENDING requests
+      status = 'PENDING'
+    }
+
+    // Get sent requests
+    const sentRequests = await FriendRequestService.getFriendRequests(user.id, {
+      type: 'sent',
+      status,
+      includeDetails: true
     })
 
-    // Filter out invalid self-requests (senderId === receiverId) - these shouldn't exist but handle them
-    const validRequests = friendRequests.filter(req => req.senderId !== req.receiverId)
-
-    // Separate sent and received requests
-    const sentRequests = validRequests.filter(req => req.senderId === user.id)
-    const receivedRequests = validRequests.filter(req => req.receiverId === user.id)
+    // Get received requests
+    const receivedRequests = await FriendRequestService.getFriendRequests(user.id, {
+      type: 'received',
+      status,
+      includeDetails: true
+    })
 
     return NextResponse.json({
       success: true,
@@ -66,7 +57,7 @@ export async function GET(_request: NextRequest) {
       received: receivedRequests
     })
   } catch (error) {
-    logger.error('Error fetching friend requests:', error);
+    logger.error('Error fetching friend requests:', error)
     return NextResponse.json(
       { error: 'Failed to fetch friend requests' },
       { status: 500 }

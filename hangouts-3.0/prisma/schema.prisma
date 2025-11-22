@@ -755,6 +755,7 @@ enum FriendRequestStatus {
   ACCEPTED
   DECLINED
   BLOCKED
+  CANCELLED
 }
 
 enum FriendshipStatus {

@@ -35,7 +35,7 @@ interface FriendRequest {
   id: string
   sender: User
   receiver: User
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED'
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'BLOCKED'
   message?: string
   createdAt: string
 }

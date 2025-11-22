@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
+import { FriendRequestService } from '@/lib/services/friend-request-service'
 import { createFriendAcceptedNotification } from '@/lib/notifications'
-
 import { logger } from '@/lib/logger'
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -32,118 +33,48 @@ export async function PUT(
       )
     }
 
-    // Find the friend request
-    const friendRequest = await db.friendRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true}
-        },
-        receiver: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true}
-        }
-      }
-    })
+    let updatedRequest
 
-    if (!friendRequest) {
-      return NextResponse.json(
-        { error: 'Friend request not found' },
-        { status: 404 }
-      )
-    }
-
-    // Check if user is the receiver
-    if (friendRequest.receiverId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
-    // Check if request is still pending
-    if (friendRequest.status !== 'PENDING') {
-      return NextResponse.json(
-        { error: 'Friend request already processed' },
-        { status: 400 }
-      )
-    }
-
-    // Update the friend request status
-    const updatedRequest = await db.friendRequest.update({
-      where: { id: requestId },
-      data: { status },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true}
-        },
-        receiver: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true}
-        }
-      }
-    })
-
-    // If accepted, create friendship and notification
+    // Use FriendRequestService for proper transaction safety and bidirectional friendship creation
     if (status === 'ACCEPTED') {
-      // Check if friendship already exists
-      const existingFriendship = await db.friendship.findFirst({
-        where: {
-          OR: [
-            { userId: friendRequest.senderId, friendId: friendRequest.receiverId },
-            { userId: friendRequest.receiverId, friendId: friendRequest.senderId }
-          ]
-        }
-      })
-
-      if (!existingFriendship) {
-        await db.friendship.create({
-          data: {
-            userId: friendRequest.senderId,
-            friendId: friendRequest.receiverId,
-            status: 'ACTIVE'
-          }
-        })
-      }
+      const result = await FriendRequestService.acceptFriendRequest(requestId, user.id)
+      updatedRequest = result.request
 
       // Create notification for the sender
-      await createFriendAcceptedNotification(
-        friendRequest.senderId, 
-        friendRequest.receiverId, 
-        friendRequest.receiver.name
-      )
+      try {
+        await createFriendAcceptedNotification(
+          updatedRequest.sender.id,
+          updatedRequest.receiver.id,
+          updatedRequest.receiver.name
+        )
 
-      // Mark the original friend request notification as read for the receiver
-      // Use raw SQL to update the notification since Prisma JSON queries can be tricky
-      await db.$executeRaw`
-        UPDATE "Notification" 
-        SET "isRead" = true, "readAt" = NOW()
-        WHERE "userId" = ${friendRequest.receiverId} 
-        AND "type" = 'FRIEND_REQUEST'
-        AND "data"->>'senderId' = ${friendRequest.senderId}
-      `
+        // Mark the original friend request notification as read for the receiver
+        await db.$executeRaw`
+          UPDATE "Notification" 
+          SET "isRead" = true, "readAt" = NOW()
+          WHERE "userId" = ${updatedRequest.receiver.id} 
+          AND "type" = 'FRIEND_REQUEST'
+          AND "data"->>'senderId' = ${updatedRequest.sender.id}
+        `
+      } catch (notificationError) {
+        logger.error('Error handling notifications after acceptance:', notificationError)
+        // Don't fail the request if notification fails
+      }
+    } else {
+      // DECLINED
+      updatedRequest = await FriendRequestService.declineFriendRequest(requestId, user.id)
     }
 
-    return NextResponse.json(updatedRequest)
+    return NextResponse.json({
+      success: true,
+      request: updatedRequest
+    })
   } catch (error) {
-    logger.error('Update friend request error:', error);
+    logger.error('Update friend request error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: 400 }
     )
   }
 }
@@ -165,37 +96,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    // Find the friend request
-    const friendRequest = await db.friendRequest.findUnique({
-      where: { id: requestId }
+    // Use FriendRequestService to cancel (updates status to CANCELLED, doesn't delete)
+    const cancelledRequest = await FriendRequestService.cancelFriendRequest(requestId, user.id)
+
+    return NextResponse.json({
+      success: true,
+      request: cancelledRequest
     })
-
-    if (!friendRequest) {
-      return NextResponse.json(
-        { error: 'Friend request not found' },
-        { status: 404 }
-      )
-    }
-
-    // Check if user is the sender (can cancel) or receiver (can decline)
-    if (friendRequest.senderId !== user.id && friendRequest.receiverId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
-    // Delete the friend request
-    await db.friendRequest.delete({
-      where: { id: requestId }
-    })
-
-    return NextResponse.json({ success: true })
   } catch (error) {
-    logger.error('Delete friend request error:', error);
+    logger.error('Cancel friend request error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: 400 }
     )
   }
 }

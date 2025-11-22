@@ -1,8 +1,14 @@
+/**
+ * DEPRECATED: This route is maintained for backward compatibility.
+ * New code should use PUT /api/friends/requests/[id] instead.
+ * This route will be removed in a future version.
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { FriendRequestService } from '@/lib/services/friend-request-service'
 import { triggerNotification, getUserDisplayName } from '@/lib/notification-triggers'
 import { logger } from '@/lib/logger'
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -20,80 +26,33 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    // Find the friend request
-    const friendRequest = await db.friendRequest.findFirst({
-      where: {
-        id: requestId,
-        receiverId: user.id,
-        status: 'PENDING'
-      }
-    })
+    let updatedRequest
 
-    if (!friendRequest) {
-      return NextResponse.json({ error: 'Friend request not found' }, { status: 404 })
-    }
-
-    // Update the friend request status
-    const updatedRequest = await db.friendRequest.update({
-      where: { id: requestId },
-      data: { status },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true
-          }
-        },
-        receiver: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true
-          }
-        }
-      }
-    })
-
-    // If accepted, create friendship
+    // Use FriendRequestService for proper transaction safety and bidirectional friendship creation
     if (status === 'ACCEPTED') {
-      await db.friendship.createMany({
-        data: [
-          {
-            userId: friendRequest.senderId,
-            friendId: friendRequest.receiverId,
-            status: 'ACTIVE'
-          },
-          {
-            userId: friendRequest.receiverId,
-            friendId: friendRequest.senderId,
-            status: 'ACTIVE'
-          }
-        ],
-        skipDuplicates: true
-      })
+      const result = await FriendRequestService.acceptFriendRequest(requestId, user.id)
+      updatedRequest = result.request
 
       // Send notification to the sender that their friend request was accepted
       try {
-        const receiverName = await getUserDisplayName(friendRequest.receiverId)
+        const receiverName = await getUserDisplayName(user.id)
         await triggerNotification({
           type: 'FRIEND_ACCEPTED',
-          recipientId: friendRequest.senderId,
+          recipientId: updatedRequest.sender.id,
           title: 'Friend Request Accepted',
           message: `${receiverName} accepted your friend request`,
-          senderId: friendRequest.receiverId,
+          senderId: user.id,
           data: {
-            friendRequestId: friendRequest.id
+            friendRequestId: updatedRequest.id
           }
         })
       } catch (notificationError) {
         logger.error('Error sending friend accepted notification:', notificationError)
         // Don't fail the request if notification fails
       }
+    } else {
+      // DECLINED
+      updatedRequest = await FriendRequestService.declineFriendRequest(requestId, user.id)
     }
 
     return NextResponse.json({
@@ -101,10 +60,11 @@ export async function PATCH(
       request: updatedRequest
     })
   } catch (error) {
-    logger.error('Error responding to friend request:', error);
+    logger.error('Error responding to friend request:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to respond to friend request'
     return NextResponse.json(
-      { error: 'Failed to respond to friend request' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: 400 }
     )
   }
 }
