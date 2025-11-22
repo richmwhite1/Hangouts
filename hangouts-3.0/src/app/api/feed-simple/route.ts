@@ -260,6 +260,19 @@ export async function GET(request: NextRequest) {
     try {
       logger.info('User authenticated, fetching personalized feed for user:', userId)
       
+      // Validate userId before building query
+      if (!userId || userId.trim() === '') {
+        logger.warn('No userId provided for authenticated feed, falling back to empty result')
+        return NextResponse.json({
+          success: true,
+          data: {
+            content: [],
+            total: 0,
+            hasMore: false
+          }
+        })
+      }
+      
       // Build where clause based on feed type
       let whereClause: any = {}
 
@@ -277,12 +290,12 @@ export async function GET(request: NextRequest) {
           // Public content (everyone can see)
           { privacyLevel: 'PUBLIC' },
           // Friends-only content from user's friends (if authenticated)
-          ...(userId ? [{
+          {
             AND: [
               { privacyLevel: 'FRIENDS_ONLY' },
               { creatorId: userId }
             ]
-          }] : [])
+          }
         ]
       } else if (feedType === 'home') {
         // HOME PAGE: Show user's own content + content they're invited to + content they've RSVPed to + PUBLIC content
@@ -502,16 +515,18 @@ export async function GET(request: NextRequest) {
       })
 
     } catch (error) {
-      logger.error('Error fetching personalized feed:', error)
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Failed to fetch feed',
-          message: 'An error occurred while loading content',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        },
-        { status: 500 }
-      )
+      logger.error('Error fetching personalized feed:', error, { userId, feedType, contentType })
+      
+      // Return empty result instead of 500 error to prevent homepage from breaking
+      // This allows the UI to show an empty state instead of an error
+      return NextResponse.json({
+        success: true,
+        data: {
+          content: [],
+          total: 0,
+          hasMore: false
+        }
+      })
     }
 
   } catch (outerError) {
