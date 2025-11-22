@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { StackedHangoutTile } from './stacked-hangout-tile'
 import { logger } from '@/lib/logger'
 import { SharedHangout, SharedEvent } from '@/lib/services/friend-relationship-service'
@@ -257,6 +258,11 @@ export function SharedActivitiesFeed({ friendId, currentUserId }: SharedActiviti
         <p className="text-gray-400 mb-6">
           Start planning your first hangout or event together!
         </p>
+        <Link href={`/create?with=${friendId}`}>
+          <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            Plan Your First Hangout
+          </button>
+        </Link>
       </div>
     )
   }

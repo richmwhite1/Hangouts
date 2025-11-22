@@ -1,13 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Calendar, Users, Clock, User, ArrowRight, AlertCircle } from 'lucide-react'
-import { FriendFrequencySelector, HangoutFrequency } from './friend-frequency-selector'
+import { Calendar, Users, Clock } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import Link from 'next/link'
 
@@ -32,29 +29,36 @@ interface Friendship {
   friend: Friend
   status: string
   createdAt: string
-  desiredHangoutFrequency: HangoutFrequency
+  desiredHangoutFrequency?: 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'ANNUALLY' | 'SOMETIMES' | null
   stats: FriendStats
 }
 
-interface ProfileFriendsListProps {
-  currentUserId: string | null
+interface FriendProfileFriendsListProps {
+  userId: string
 }
 
-export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
-  const router = useRouter()
+const frequencyLabels: Record<string, string> = {
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly',
+  SEMI_ANNUAL: 'Semi-Annual',
+  ANNUALLY: 'Annually',
+  SOMETIMES: 'Sometimes',
+}
+
+export function FriendProfileFriendsList({ userId }: FriendProfileFriendsListProps) {
   const [friends, setFriends] = useState<Friendship[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFriends()
-  }, [])
+  }, [userId])
 
   const fetchFriends = async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('/api/friends')
+      const response = await fetch(`/api/users/${userId}/friends`)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -69,18 +73,9 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
         throw new Error(data.error || data.message || 'Failed to fetch friends')
       }
     } catch (err) {
-      logger.error('Error fetching friends:', err)
+      logger.error('Error fetching user friends:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to load friends'
       setError(errorMessage)
-      
-      // Log additional details in development
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Friends fetch error details:', {
-          error: err,
-          currentUserId,
-          url: '/api/friends'
-        })
-      }
     } finally {
       setLoading(false)
     }
@@ -105,14 +100,6 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
       const years = Math.floor(diffDays / 365)
       return `${years} year${years !== 1 ? 's' : ''} ago`
     }
-  }
-
-  const handleFrequencyUpdate = (friendshipId: string, newFrequency: HangoutFrequency) => {
-    setFriends(prev => prev.map(f => 
-      f.id === friendshipId 
-        ? { ...f, desiredHangoutFrequency: newFrequency }
-        : f
-    ))
   }
 
   if (loading) {
@@ -142,14 +129,12 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
           <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="text-lg font-semibold text-white mb-2">Error Loading Friends</h3>
           <p className="text-red-400 mb-4">{error}</p>
-          <div className="flex gap-2 justify-center">
-            <Button onClick={fetchFriends} variant="outline">
-              Try Again
-            </Button>
-            <Button onClick={() => window.location.reload()} variant="ghost">
-              Refresh Page
-            </Button>
-          </div>
+          <button 
+            onClick={fetchFriends} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
         </CardContent>
       </Card>
     )
@@ -161,12 +146,9 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
         <CardContent className="p-8 text-center">
           <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="text-lg font-semibold text-white mb-2">No friends yet</h3>
-          <p className="text-gray-400 mb-4">
-            Start connecting with people to see them here
+          <p className="text-gray-400">
+            This user hasn't added any friends yet
           </p>
-          <Link href="/friends">
-            <Button>Find Friends</Button>
-          </Link>
         </CardContent>
       </Card>
     )
@@ -216,86 +198,11 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
                     ) : (
                       <span className="text-gray-500">No hangouts together yet</span>
                     )}
-                    {/* Hangout Goal Frequency - Show prominently */}
-                    {friendship.desiredHangoutFrequency && (
-                      <div className="flex items-center gap-1 ml-auto">
-                        <Badge variant="outline" className="text-xs border-blue-600/50 text-blue-300">
-                          {friendship.desiredHangoutFrequency === 'MONTHLY' && '🎯 Monthly goal'}
-                          {friendship.desiredHangoutFrequency === 'QUARTERLY' && '🎯 Quarterly goal'}
-                          {friendship.desiredHangoutFrequency === 'SEMI_ANNUAL' && '🎯 Semi-annual goal'}
-                          {friendship.desiredHangoutFrequency === 'ANNUALLY' && '🎯 Annual goal'}
-                          {friendship.desiredHangoutFrequency === 'SOMETIMES' && '🎯 Occasional goal'}
-                        </Badge>
-                      </div>
-                    )}
                   </div>
-
-                  {/* Reconnect Prompt */}
-                  {(() => {
-                    if (!friendship.stats.lastHangoutDate) {
-                      return (
-                        <div className="mt-2 p-2 bg-blue-600/20 border border-blue-600/30 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 text-blue-400" />
-                            <span className="text-xs text-blue-300">Never hung out - plan your first hangout!</span>
-                          </div>
-                        </div>
-                      )
-                    }
-                    const lastHangoutDate = new Date(friendship.stats.lastHangoutDate)
-                    const daysSince = Math.floor((new Date().getTime() - lastHangoutDate.getTime()) / (1000 * 60 * 60 * 24))
-                    
-                    if (daysSince >= 60) {
-                      return (
-                        <div className="mt-2 p-2 bg-orange-600/20 border border-orange-600/30 rounded-lg">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <AlertCircle className="w-4 h-4 text-orange-400" />
-                              <span className="text-xs text-orange-300">
-                                It's been {daysSince} days since you last hung out
-                              </span>
-                            </div>
-                            <Link href={`/create?with=${friendship.friend.id}`}>
-                              <Button size="sm" variant="outline" className="h-6 px-2 text-xs border-orange-600/50 text-orange-300 hover:bg-orange-600/30">
-                                Plan Hangout
-                                <ArrowRight className="w-3 h-3 ml-1" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
-                <Link href={`/create?with=${friendship.friend.id}`}>
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    Create Hangout
-                  </Button>
-                </Link>
-                {/* Hangout Goal Frequency - Prominently displayed */}
-                <div className="flex flex-col items-end gap-1">
-                  <FriendFrequencySelector
-                    friendshipId={friendship.id}
-                    friendId={friendship.friend.id}
-                    currentFrequency={friendship.desiredHangoutFrequency}
-                    onUpdate={(frequency) => handleFrequencyUpdate(friendship.id, frequency)}
-                  />
-                  {friendship.desiredHangoutFrequency && (
-                    <Badge variant="outline" className="text-xs border-blue-600/50 text-blue-300 bg-blue-600/10">
-                      {friendship.desiredHangoutFrequency === 'MONTHLY' && '🎯 Monthly goal'}
-                      {friendship.desiredHangoutFrequency === 'QUARTERLY' && '🎯 Quarterly goal'}
-                      {friendship.desiredHangoutFrequency === 'SEMI_ANNUAL' && '🎯 Semi-annual goal'}
-                      {friendship.desiredHangoutFrequency === 'ANNUALLY' && '🎯 Annual goal'}
-                      {friendship.desiredHangoutFrequency === 'SOMETIMES' && '🎯 Occasional goal'}
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              {/* Hangout goal frequency is private - not shown when viewing someone else's friends */}
             </div>
           </CardContent>
         </Card>

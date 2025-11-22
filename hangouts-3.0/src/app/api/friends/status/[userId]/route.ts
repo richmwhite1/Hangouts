@@ -4,21 +4,24 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (false) {
+    const { userId: clerkUserId } = await auth()
+    if (!clerkUserId) {
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 })
+
+    const user = await getClerkApiUser()
+    if (!user) {
+      return NextResponse.json(createErrorResponse('User not found', 'User not found in database'), { status: 401 })
     }
+
+    const { userId: targetUserId } = await params
     const currentUserId = user.id
-    const targetUserId = params.userId
     // Check if users are friends
     const friendship = await db.friendship.findFirst({
       where: {
@@ -42,11 +45,14 @@ export async function GET(
     const isFriend = !!friendship
     const friendRequestSent = friendRequest?.senderId === currentUserId
     const friendRequestReceived = friendRequest?.receiverId === currentUserId
-    return NextResponse.json(createSuccessResponse({
+    
+    // Return in format expected by frontend
+    return NextResponse.json({
+      success: true,
       isFriend,
       friendRequestSent,
       friendRequestReceived
-    }, 'Friendship status retrieved successfully'))
+    })
   } catch (error: any) {
     logger.error('Error fetching friendship status:', error);
     return NextResponse.json(createErrorResponse('Failed to fetch friendship status', error.message), { status: 500 })

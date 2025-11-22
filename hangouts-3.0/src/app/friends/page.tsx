@@ -547,26 +547,25 @@ export default function FriendsPage() {
                 </Card>
               ) : (
                 friends.map((friendship) => (
-                  <Card key={friendship.id}>
+                  <Card key={friendship.id} className="hover:border-blue-500/50 transition-colors">
                     <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center space-x-3">
-                        <Link href={`/profile/${friendship.friend.username}`}>
-                          <Avatar className="w-12 h-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
-                            <AvatarImage src={friendship.friend.avatar} />
-                            <AvatarFallback>
-                              {friendship.friend.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        </Link>
-                        <div className="flex-1">
-                          <Link href={`/profile/${friendship.friend.username}`}>
-                            <h3 className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-                              {friendship.friend.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-                              @{friendship.friend.username}
-                            </p>
-                          </Link>
+                      <Link 
+                        href={`/profile/${friendship.friend.username}`}
+                        className="flex items-center space-x-3 flex-1 min-w-0 group"
+                      >
+                        <Avatar className="w-12 h-12 cursor-pointer group-hover:ring-2 group-hover:ring-blue-500 transition-all flex-shrink-0">
+                          <AvatarImage src={friendship.friend.avatar} />
+                          <AvatarFallback>
+                            {friendship.friend.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+                            {friendship.friend.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+                            @{friendship.friend.username}
+                          </p>
                           {friendship.friend.bio && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {friendship.friend.bio}
@@ -597,8 +596,8 @@ export default function FriendsPage() {
                             </div>
                           )}
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-3">
+                      </Link>
+                      <div className="flex flex-col items-end gap-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col items-end gap-2">
                           <label className="text-xs font-medium text-muted-foreground">Hangout Goal</label>
                           <FriendFrequencySelector
@@ -619,16 +618,10 @@ export default function FriendsPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => window.location.href = `/profile/${friendship.friend.username}`}
-                            className="px-3"
-                            title="View Activity"
-                          >
-                            View Activity
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => startConversation(friendship.friend.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              startConversation(friendship.friend.id)
+                            }}
                             className="px-3"
                             title="Message"
                           >
@@ -637,7 +630,10 @@ export default function FriendsPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => removeFriend(friendship.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeFriend(friendship.id)
+                            }}
                             className="px-3"
                             title="Remove Friend"
                           >
