@@ -8,6 +8,14 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { 
   Users, 
   UserPlus, 
@@ -67,6 +75,9 @@ export default function FriendsPage() {
   const [searching, setSearching] = useState(false)
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [unfriendDialogOpen, setUnfriendDialogOpen] = useState(false)
+  const [friendToUnfriend, setFriendToUnfriend] = useState<{ id: string; name: string } | null>(null)
+  const [unfriending, setUnfriending] = useState(false)
 
   useEffect(() => {
     if (isSignedIn && isLoaded) {
@@ -428,26 +439,37 @@ export default function FriendsPage() {
     }
   }
 
-  const removeFriend = async (friendshipId: string) => {
+  const handleUnfriendClick = (friendship: Friendship) => {
+    setFriendToUnfriend({
+      id: friendship.id,
+      name: friendship.friend.name
+    })
+    setUnfriendDialogOpen(true)
+  }
+
+  const removeFriend = async () => {
+    if (!friendToUnfriend) return
+
     try {
-      const token = await getToken()
-      const response = await fetch(`/api/friends/${friendshipId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      setUnfriending(true)
+      const response = await fetch(`/api/friends/${friendToUnfriend.id}`, {
+        method: 'DELETE'
       })
 
       if (response.ok) {
-        toast.success('Friend removed')
+        toast.success(`${friendToUnfriend.name} has been removed from your friends`)
+        setUnfriendDialogOpen(false)
+        setFriendToUnfriend(null)
         loadFriends()
       } else {
         const error = await response.json()
-        toast.error(error.message || 'Failed to remove friend')
+        toast.error(error.error || error.message || 'Failed to remove friend')
       }
     } catch (error) {
-      logger.error('Error removing friend:', error);
+      logger.error('Error removing friend:', error)
       toast.error('Failed to remove friend')
+    } finally {
+      setUnfriending(false)
     }
   }
 
@@ -632,7 +654,7 @@ export default function FriendsPage() {
                           size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              removeFriend(friendship.id)
+                              handleUnfriendClick(friendship)
                             }}
                           className="px-3"
                             title="Remove Friend"
@@ -851,6 +873,39 @@ export default function FriendsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Unfriend Confirmation Dialog */}
+      <Dialog open={unfriendDialogOpen} onOpenChange={setUnfriendDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Unfriend {friendToUnfriend?.name}?</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to unfriend {friendToUnfriend?.name}? This will remove them from your friends list and you'll need to send a new friend request to reconnect.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUnfriendDialogOpen(false)
+                setFriendToUnfriend(null)
+              }}
+              disabled={unfriending}
+              className="border-gray-600 text-white hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={removeFriend}
+              disabled={unfriending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {unfriending ? 'Removing...' : 'Unfriend'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
