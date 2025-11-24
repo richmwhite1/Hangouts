@@ -22,27 +22,48 @@ export async function getClerkApiUser() {
       }
     })
     
-    // If user not found, sync from Clerk
+    // If user not found, sync from Clerk and attempt to link legacy accounts
     if (!user) {
       logger.info('getClerkApiUser - User not found, syncing from Clerk...')
       const clerkUser = await currentUser()
       
       if (clerkUser) {
-        const email = clerkUser.emailAddresses[0]?.emailAddress || ''
-        const username = clerkUser.username || email.split('@')[0] || 'user'
-        const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || email.split('@')[0]
-        
-        // Check if user exists by email
-        const existingUser = await db.user.findUnique({
-          where: { email: email.toLowerCase() }
-        })
+        const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress || ''
+        const allEmails = clerkUser.emailAddresses
+          ?.map(addr => addr.emailAddress?.toLowerCase())
+          .filter((email): email is string => Boolean(email)) || []
+        const username = clerkUser.username || primaryEmail.split('@')[0] || 'user'
+        const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || primaryEmail.split('@')[0]
+
+        // Attempt to find an existing user by ANY known identifier (email aliases or username)
+        const identifiers = [
+          ...allEmails.map(email => ({ email })),
+          ...(username ? [{ username }] : [])
+        ]
+
+        let existingUser = null
+        if (identifiers.length > 0) {
+          existingUser = await db.user.findFirst({
+            where: {
+              OR: identifiers
+            }
+          })
+        }
         
         if (existingUser) {
-          // Update existing user with Clerk ID
+          const normalizedPrimaryEmail = primaryEmail?.toLowerCase()
+          const emailUpdate =
+            normalizedPrimaryEmail && existingUser.email !== normalizedPrimaryEmail
+              ? { email: normalizedPrimaryEmail }
+              : {}
+
+          // Update existing user with Clerk ID and latest profile info
           user = await db.user.update({
             where: { id: existingUser.id },
             data: { 
               clerkId: userId,
+              // Only update email if we discovered a new verified address
+              ...emailUpdate,
               name: name || existingUser.name,
               avatar: clerkUser.imageUrl || existingUser.avatar,
               isVerified: true
@@ -57,10 +78,9 @@ export async function getClerkApiUser() {
               isActive: true
             }
           })
-          logger.info('getClerkApiUser - Updated existing user with Clerk ID', { userId: existingUser.id })
+          logger.info('getClerkApiUser - Linked Clerk user to existing account', { userId: existingUser.id, username: existingUser.username })
         } else {
           // Create new user
-          // Ensure username is unique
           let uniqueUsername = username
           let counter = 1
           while (await db.user.findUnique({ where: { username: uniqueUsername } })) {
@@ -68,12 +88,14 @@ export async function getClerkApiUser() {
             counter++
           }
           
+          const emailForInsert = primaryEmail ? primaryEmail.toLowerCase() : `${uniqueUsername}@example.com`
+          
           user = await db.user.create({
             data: {
               clerkId: userId,
-              email: email.toLowerCase(),
+              email: emailForInsert,
               username: uniqueUsername,
-              name: name,
+              name,
               avatar: clerkUser.imageUrl,
               isVerified: true,
               isActive: true,
@@ -89,7 +111,7 @@ export async function getClerkApiUser() {
               isActive: true
             }
           })
-          logger.info('getClerkApiUser - Created new user', { username: user.username })
+          logger.info('getClerkApiUser - Created new user from Clerk profile', { username: user.username })
         }
       }
     }

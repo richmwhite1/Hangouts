@@ -613,8 +613,8 @@ export default function FriendsPage() {
                               ))
                             }}
                           />
-                        </div>
-                        <div className="flex space-x-2">
+                      </div>
+                      <div className="flex space-x-2">
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -622,23 +622,23 @@ export default function FriendsPage() {
                               e.stopPropagation()
                               startConversation(friendship.friend.id)
                             }}
-                            className="px-3"
+                          className="px-3"
                             title="Message"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
                               removeFriend(friendship.id)
                             }}
-                            className="px-3"
+                          className="px-3"
                             title="Remove Friend"
-                          >
-                            <UserX className="w-4 h-4" />
-                          </Button>
+                        >
+                          <UserX className="w-4 h-4" />
+                        </Button>
                         </div>
                       </div>
                     </CardContent>

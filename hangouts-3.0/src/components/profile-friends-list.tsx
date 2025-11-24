@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar, Users, Clock, User, ArrowRight, AlertCircle } from 'lucide-react'
-import { FriendFrequencySelector, HangoutFrequency } from './friend-frequency-selector'
-import { logger } from '@/lib/logger'
+import { Badge } from '@/components/ui/badge'
+import { Calendar, MessageCircle, UserX, Clock } from 'lucide-react'
 import Link from 'next/link'
+import { FriendFrequencySelector, HangoutFrequency } from '@/components/friend-frequency-selector'
+import { logger } from '@/lib/logger'
+import { useState } from 'react'
 
-interface Friend {
+interface FriendUser {
   id: string
   username: string
   name: string
@@ -27,92 +26,66 @@ interface FriendStats {
   wasInvitedCount: number
 }
 
-interface Friendship {
+export interface Friendship {
   id: string
-  friend: Friend
+  friend: FriendUser
   status: string
   createdAt: string
-  desiredHangoutFrequency: HangoutFrequency
+  desiredHangoutFrequency?: HangoutFrequency
   stats: FriendStats
 }
 
 interface ProfileFriendsListProps {
-  currentUserId: string | null
+  friends: Friendship[]
+  loading: boolean
+  error?: string | null
+  onRefresh?: () => void
+  onFrequencyChange?: (friendshipId: string, frequency: HangoutFrequency | null) => void
 }
 
-export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
-  const router = useRouter()
-  const [friends, setFriends] = useState<Friendship[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+const frequencyLabels: Record<Exclude<HangoutFrequency, null>, string> = {
+  MONTHLY: 'Monthly reminders',
+  QUARTERLY: 'Quarterly reminders',
+  SEMI_ANNUAL: 'Semi-annual reminders',
+  ANNUALLY: 'Annual reminders',
+  SOMETIMES: 'Occasional reminders'
+}
 
-  useEffect(() => {
-    fetchFriends()
-  }, [])
-
-  const fetchFriends = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await fetch('/api/friends')
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch friends'}`)
-      }
-      
-      const data = await response.json()
-
-      if (data.success) {
-        setFriends(data.friends || [])
-      } else {
-        throw new Error(data.error || data.message || 'Failed to fetch friends')
-      }
-    } catch (err) {
-      logger.error('Error fetching friends:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load friends'
-      setError(errorMessage)
-      
-      // Log additional details in development
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Friends fetch error details:', {
-          error: err,
-          currentUserId,
-          url: '/api/friends'
-        })
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+export function ProfileFriendsList({
+  friends,
+  loading,
+  error,
+  onRefresh,
+  onFrequencyChange
+}: ProfileFriendsListProps) {
+  const [removingFriendId, setRemovingFriendId] = useState<string | null>(null)
 
   const formatLastHangout = (dateString?: string) => {
     if (!dateString) return 'Never'
     const date = new Date(dateString)
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays < 7) {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
-    } else if (diffDays < 30) {
-      const weeks = Math.floor(diffDays / 7)
-      return `${weeks} week${weeks !== 1 ? 's' : ''} ago`
-    } else if (diffDays < 365) {
-      const months = Math.floor(diffDays / 30)
-      return `${months} month${months !== 1 ? 's' : ''} ago`
-    } else {
-      const years = Math.floor(diffDays / 365)
-      return `${years} year${years !== 1 ? 's' : ''} ago`
-    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  const handleFrequencyUpdate = (friendshipId: string, newFrequency: HangoutFrequency) => {
-    setFriends(prev => prev.map(f => 
-      f.id === friendshipId 
-        ? { ...f, desiredHangoutFrequency: newFrequency }
-        : f
-    ))
+  const handleRemoveFriend = async (friendshipId: string) => {
+    try {
+      setRemovingFriendId(friendshipId)
+      const response = await fetch(`/api/friends/${friendshipId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to remove friend')
+      }
+
+      if (onRefresh) {
+        onRefresh()
+      }
+    } catch (err) {
+      logger.error('Error removing friend:', err)
+    } finally {
+      setRemovingFriendId(null)
+    }
   }
 
   if (loading) {
@@ -126,6 +99,7 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-gray-700 rounded w-1/3" />
                   <div className="h-3 bg-gray-700 rounded w-1/2" />
+                  <div className="h-3 bg-gray-700 rounded w-2/3" />
                 </div>
               </div>
             </CardContent>
@@ -139,17 +113,10 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
     return (
       <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-8 text-center">
-          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Friends</h3>
           <p className="text-red-400 mb-4">{error}</p>
-          <div className="flex gap-2 justify-center">
-            <Button onClick={fetchFriends} variant="outline">
-              Try Again
-            </Button>
-            <Button onClick={() => window.location.reload()} variant="ghost">
-              Refresh Page
-            </Button>
-          </div>
+          <Button onClick={onRefresh} variant="outline">
+            Try Again
+          </Button>
         </CardContent>
       </Card>
     )
@@ -159,14 +126,13 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
     return (
       <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-8 text-center">
-          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="text-lg font-semibold text-white mb-2">No friends yet</h3>
           <p className="text-gray-400 mb-4">
-            Start connecting with people to see them here
+            You haven't added any friends yet. Visit the friends page to get started.
           </p>
-          <Link href="/friends">
-            <Button>Find Friends</Button>
-          </Link>
+          <Button onClick={() => (window.location.href = '/friends')}>
+            Find Friends
+          </Button>
         </CardContent>
       </Card>
     )
@@ -176,125 +142,88 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
     <div className="space-y-4">
       {friends.map((friendship) => (
         <Card key={friendship.id} className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4 flex-1">
-                <Link href={`/profile/${friendship.friend.username}`}>
-                  <Avatar className="w-12 h-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
-                    <AvatarImage src={friendship.friend.avatar} />
-                    <AvatarFallback>
-                      {friendship.friend.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <Link href={`/profile/${friendship.friend.username}`}>
-                    <h3 className="font-semibold text-white hover:text-blue-400 transition-colors cursor-pointer">
-                      {friendship.friend.name}
-                    </h3>
-                  </Link>
-                  <p className="text-sm text-gray-400">@{friendship.friend.username}</p>
-                  
-                  {friendship.friend.bio && (
-                    <p className="text-sm text-gray-300 mt-1 line-clamp-2">
-                      {friendship.friend.bio}
-                    </p>
+          <CardContent className="flex items-start justify-between p-4 gap-4">
+            <Link 
+              href={`/profile/${friendship.friend.username}`}
+              className="flex items-start gap-4 flex-1 min-w-0 group"
+            >
+              <Avatar className="w-12 h-12 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
+                <AvatarImage src={friendship.friend.avatar} />
+                <AvatarFallback>
+                  {friendship.friend.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                  {friendship.friend.name}
+                </h3>
+                <p className="text-sm text-gray-400">@{friendship.friend.username}</p>
+
+                {friendship.friend.bio && (
+                  <p className="text-sm text-gray-300 mt-2 line-clamp-2">
+                    {friendship.friend.bio}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-400 flex-wrap">
+                  {friendship.stats.totalHangouts > 0 ? (
+                    <>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Last: {formatLastHangout(friendship.stats.lastHangoutDate)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No hangouts together yet</span>
                   )}
-
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                    {friendship.stats.totalHangouts > 0 ? (
-                      <>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>Last: {formatLastHangout(friendship.stats.lastHangoutDate)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <span className="text-gray-500">No hangouts together yet</span>
-                    )}
-                    {/* Hangout Goal Frequency - Show prominently */}
-                    {friendship.desiredHangoutFrequency && (
-                      <div className="flex items-center gap-1 ml-auto">
-                        <Badge variant="outline" className="text-xs border-blue-600/50 text-blue-300">
-                          {friendship.desiredHangoutFrequency === 'MONTHLY' && '🎯 Monthly goal'}
-                          {friendship.desiredHangoutFrequency === 'QUARTERLY' && '🎯 Quarterly goal'}
-                          {friendship.desiredHangoutFrequency === 'SEMI_ANNUAL' && '🎯 Semi-annual goal'}
-                          {friendship.desiredHangoutFrequency === 'ANNUALLY' && '🎯 Annual goal'}
-                          {friendship.desiredHangoutFrequency === 'SOMETIMES' && '🎯 Occasional goal'}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Reconnect Prompt */}
-                  {(() => {
-                    if (!friendship.stats.lastHangoutDate) {
-                      return (
-                        <div className="mt-2 p-2 bg-blue-600/20 border border-blue-600/30 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 text-blue-400" />
-                            <span className="text-xs text-blue-300">Never hung out - plan your first hangout!</span>
-                          </div>
-                        </div>
-                      )
-                    }
-                    const lastHangoutDate = new Date(friendship.stats.lastHangoutDate)
-                    const daysSince = Math.floor((new Date().getTime() - lastHangoutDate.getTime()) / (1000 * 60 * 60 * 24))
-                    
-                    if (daysSince >= 60) {
-                      return (
-                        <div className="mt-2 p-2 bg-orange-600/20 border border-orange-600/30 rounded-lg">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <AlertCircle className="w-4 h-4 text-orange-400" />
-                              <span className="text-xs text-orange-300">
-                                It's been {daysSince} days since you last hung out
-                              </span>
-                            </div>
-                            <Link href={`/create?with=${friendship.friend.id}`}>
-                              <Button size="sm" variant="outline" className="h-6 px-2 text-xs border-orange-600/50 text-orange-300 hover:bg-orange-600/30">
-                                Plan Hangout
-                                <ArrowRight className="w-3 h-3 ml-1" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
                 </div>
               </div>
+            </Link>
 
+            <div className="flex flex-col items-end gap-3 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
               <div className="flex flex-col items-end gap-2">
-                <Link href={`/create?with=${friendship.friend.id}`}>
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    Create Hangout
-                  </Button>
-                </Link>
-                {/* Hangout Goal Frequency - Prominently displayed */}
-                <div className="flex flex-col items-end gap-1">
-                  <FriendFrequencySelector
-                    friendshipId={friendship.id}
-                    friendId={friendship.friend.id}
-                    currentFrequency={friendship.desiredHangoutFrequency}
-                    onUpdate={(frequency) => handleFrequencyUpdate(friendship.id, frequency)}
-                  />
-                  {friendship.desiredHangoutFrequency && (
-                    <Badge variant="outline" className="text-xs border-blue-600/50 text-blue-300 bg-blue-600/10">
-                      {friendship.desiredHangoutFrequency === 'MONTHLY' && '🎯 Monthly goal'}
-                      {friendship.desiredHangoutFrequency === 'QUARTERLY' && '🎯 Quarterly goal'}
-                      {friendship.desiredHangoutFrequency === 'SEMI_ANNUAL' && '🎯 Semi-annual goal'}
-                      {friendship.desiredHangoutFrequency === 'ANNUALLY' && '🎯 Annual goal'}
-                      {friendship.desiredHangoutFrequency === 'SOMETIMES' && '🎯 Occasional goal'}
-                    </Badge>
-                  )}
-                </div>
+                <label className="text-xs font-medium text-gray-400">Hangout Goal</label>
+                <FriendFrequencySelector
+                  friendshipId={friendship.id}
+                  friendId={friendship.friend.id}
+                  currentFrequency={friendship.desiredHangoutFrequency || null}
+                  onUpdate={(frequency) => {
+                    if (onFrequencyChange) {
+                      onFrequencyChange(friendship.id, frequency)
+                    }
+                  }}
+                />
+                {friendship.desiredHangoutFrequency && (
+                  <Badge variant="outline" className="text-xs bg-gray-900/50 border-gray-600 text-gray-200">
+                    {frequencyLabels[friendship.desiredHangoutFrequency] || 'Custom'}
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => (window.location.href = `/messages/new?user=${friendship.friend.username}`)}
+                  className="px-3"
+                >
+                  <MessageCircle className="w-4 h-4 mr-1" />
+                  Chat
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemoveFriend(friendship.id)}
+                  className="px-3"
+                  disabled={removingFriendId === friendship.id}
+                >
+                  <UserX className="w-4 h-4 mr-1" />
+                  Remove
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -303,4 +232,5 @@ export function ProfileFriendsList({ currentUserId }: ProfileFriendsListProps) {
     </div>
   )
 }
+
 
