@@ -23,15 +23,41 @@ export async function GET(
     const { userId: targetUserId } = await params
     const currentUserId = user.id
     // Check if users are friends
-    const friendship = await db.friendship.findFirst({
-      where: {
-        OR: [
-          { userId: currentUserId, friendId: targetUserId },
-          { userId: targetUserId, friendId: currentUserId }
-        ],
-        status: 'ACTIVE'
+    let friendship
+    try {
+      friendship = await db.friendship.findFirst({
+        where: {
+          OR: [
+            { userId: currentUserId, friendId: targetUserId },
+            { userId: targetUserId, friendId: currentUserId }
+          ],
+          status: 'ACTIVE'
+        },
+        select: {
+          id: true,
+          desiredHangoutFrequency: true
+        }
+      })
+    } catch (dbError: any) {
+      // If error is about missing column, try without desiredHangoutFrequency
+      if (dbError?.code === 'P2022' && dbError?.meta?.column?.includes('desiredHangoutFrequency')) {
+        logger.warn('desiredHangoutFrequency column not found, querying without it')
+        friendship = await db.friendship.findFirst({
+          where: {
+            OR: [
+              { userId: currentUserId, friendId: targetUserId },
+              { userId: targetUserId, friendId: currentUserId }
+            ],
+            status: 'ACTIVE'
+          },
+          select: {
+            id: true
+          }
+        })
+      } else {
+        throw dbError
       }
-    })
+    }
     // Check if there's a pending friend request
     const friendRequest = await db.friendRequest.findFirst({
       where: {
@@ -53,7 +79,7 @@ export async function GET(
         isFriend,
         friendRequestSent,
         friendRequestReceived,
-        desiredHangoutFrequency: friendship?.desiredHangoutFrequency || null
+        desiredHangoutFrequency: (friendship as any)?.desiredHangoutFrequency || null
       }
     })
   } catch (error: any) {

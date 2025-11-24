@@ -230,7 +230,28 @@ export default function ProfilePage() {
       const statsResponse = await fetch(`/api/users/${profile.id}/stats`)
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
-        setStats(statsData.stats)
+        // Handle both response formats: { stats: {...} } and { data: { stats: {...} } }
+        const stats = statsData.stats || statsData.data?.stats || {
+          friendsCount: 0,
+          hostedHangoutsCount: 0,
+          attendedHangoutsCount: 0,
+          hostedEventsCount: 0,
+          attendedEventsCount: 0,
+          totalLikes: 0,
+          totalComments: 0
+        }
+        setStats(stats)
+      } else {
+        // If stats fetch fails, set default values
+        setStats({
+          friendsCount: 0,
+          hostedHangoutsCount: 0,
+          attendedHangoutsCount: 0,
+          hostedEventsCount: 0,
+          attendedEventsCount: 0,
+          totalLikes: 0,
+          totalComments: 0
+        })
       }
 
       const [hangoutsResponse, eventsResponse, attendedHangoutsResponse, attendedEventsResponse] = await Promise.all([
