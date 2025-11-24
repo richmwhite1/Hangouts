@@ -30,7 +30,7 @@ export function getFrequencyThresholdDays(frequency: HangoutFrequency | null): n
 /**
  * Calculate days since last hangout
  */
-function getDaysSinceLastHangout(lastHangoutDate: Date | null | undefined): number | null {
+export function getDaysSinceLastHangout(lastHangoutDate: Date | string | null | undefined): number | null {
   if (!lastHangoutDate) return null
 
   const now = new Date()

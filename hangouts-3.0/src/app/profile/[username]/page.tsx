@@ -25,7 +25,10 @@ import {
 import { SharedActivitiesFeed } from '@/components/shared-activities-feed'
 import { ProfileFriendsList } from '@/components/profile-friends-list'
 import { FriendProfileFriendsList } from '@/components/friend-profile-friends-list'
+import { TimeElapsedIndicator } from '@/components/time-elapsed-indicator'
+import { getTimeElapsedInfo, getStatusColorClasses, getStatusLabel } from '@/lib/friend-relationship-utils'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import { logger } from '@/lib/logger'
 
@@ -63,6 +66,7 @@ interface Event {
 
 export default function ProfilePage() {
   const params = useParams()
+  const router = useRouter()
   const { isSignedIn, isLoaded, userId: currentClerkUserId } = useAuth()
   const [profileUser, setProfileUser] = useState<User | null>(null)
   const [stats, setStats] = useState<ProfileStats>({
@@ -89,6 +93,7 @@ export default function ProfilePage() {
     invitedCount: number
     wasInvitedCount: number
   } | null>(null)
+  const [friendshipFrequency, setFriendshipFrequency] = useState<string | null>(null)
   const [sharedHangouts, setSharedHangouts] = useState<any[]>([])
   const [sharedEvents, setSharedEvents] = useState<any[]>([])
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -150,6 +155,7 @@ export default function ProfilePage() {
         const isFriendFlag = !!friendshipData?.isFriend
         setIsFriend(isFriendFlag)
         setFriendRequestSent(!!friendshipData?.friendRequestSent)
+        setFriendshipFrequency(friendshipData?.desiredHangoutFrequency || null)
 
         if (isFriendFlag) {
           try {
@@ -364,7 +370,21 @@ export default function ProfilePage() {
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h1 className="text-3xl font-bold text-white">{profileUser.name}</h1>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-3xl font-bold text-white">{profileUser.name}</h1>
+                      {isFriend && friendStats && friendshipFrequency && (
+                        <Badge 
+                          variant="outline" 
+                          className={getStatusColorClasses(
+                            getTimeElapsedInfo(friendStats.lastHangoutDate, friendshipFrequency as any).status
+                          )}
+                        >
+                          {getStatusLabel(
+                            getTimeElapsedInfo(friendStats.lastHangoutDate, friendshipFrequency as any).status
+                          )}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-gray-400">@{profileUser.username}</p>
                     {profileUser.bio && (
                       <p className="text-gray-300 mt-2">{profileUser.bio}</p>
@@ -521,16 +541,24 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {friendStats.lastHangoutDate && (
-                <p className="text-sm text-gray-400 text-center">
-                  Last hung out {new Date(friendStats.lastHangoutDate).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              )}
+              <div className="mt-4 pt-4 border-t border-gray-700 space-y-4">
+                <TimeElapsedIndicator
+                  lastHangoutDate={friendStats.lastHangoutDate}
+                  frequency={friendshipFrequency as any}
+                  showProgress={true}
+                  showBadge={true}
+                  size="md"
+                />
+                {currentUserId && (
+                  <Button
+                    onClick={() => router.push(`/create?friendId=${profileUser.id}`)}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Plan Next Hangout with {profileUser.name}
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}

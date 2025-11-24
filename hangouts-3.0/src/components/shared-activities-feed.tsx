@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { History } from 'lucide-react'
+import { History, Calendar } from 'lucide-react'
 import { StackedHangoutTile } from '@/components/stacked-hangout-tile'
 import { logger } from '@/lib/logger'
 import type { SharedHangout, SharedEvent } from '@/lib/services/friend-relationship-service'
@@ -208,8 +208,15 @@ export function SharedActivitiesFeed({ friendId }: SharedActivitiesFeedProps) {
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">No shared activities yet</h3>
           <p className="text-gray-400 mb-6">
-            You haven't attended any hangouts or events together.
+            You haven't attended any hangouts or events together. Plan your first hangout!
           </p>
+          <Button
+            onClick={() => window.location.href = `/create?friendId=${friendId}`}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Plan First Hangout
+          </Button>
         </CardContent>
       </Card>
     )

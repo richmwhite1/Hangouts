@@ -13,7 +13,7 @@ export async function GET(
     const events = await db.content.findMany({
       where: {
         type: 'EVENT',
-        userId: userId
+        creatorId: userId
       },
       include: {
         users: {

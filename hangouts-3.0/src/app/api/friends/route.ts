@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     // Query from both directions to ensure we find all friendships
     let friendships
     try {
+      // Use select instead of include to avoid issues with missing columns
       friendships = await db.friendship.findMany({
       where: {
         OR: [
@@ -34,7 +35,15 @@ export async function GET(request: NextRequest) {
         ],
         status: 'ACTIVE'
       },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        friendId: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        // Only select desiredHangoutFrequency if it exists (will be null if column doesn't exist)
+        desiredHangoutFrequency: true,
         user: {
           select: {
             id: true,
@@ -60,9 +69,54 @@ export async function GET(request: NextRequest) {
       }
       })
       logger.info('Found friendships', { count: friendships.length, userId: user.id })
-    } catch (dbError) {
-      logger.error('Database error fetching friendships:', dbError)
-      throw dbError
+    } catch (dbError: any) {
+      // If error is about missing column, try without desiredHangoutFrequency
+      if (dbError?.code === 'P2022' && dbError?.meta?.column?.includes('desiredHangoutFrequency')) {
+        logger.warn('desiredHangoutFrequency column not found, querying without it')
+        friendships = await db.friendship.findMany({
+          where: {
+            OR: [
+              { userId: user.id },
+              { friendId: user.id }
+            ],
+            status: 'ACTIVE'
+          },
+          select: {
+            id: true,
+            userId: true,
+            friendId: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                avatar: true,
+                bio: true,
+                location: true
+              }
+            },
+            friend: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                avatar: true,
+                bio: true,
+                location: true
+              }
+            }
+          }
+        })
+        logger.info('Found friendships (without frequency)', { count: friendships.length, userId: user.id })
+      } else {
+        logger.error('Database error fetching friendships:', dbError)
+        throw dbError
+      }
     }
 
     // If no friendships, return empty array
@@ -112,7 +166,7 @@ export async function GET(request: NextRequest) {
             friend: friendUser,
             status: friendship.status,
             createdAt: friendship.createdAt,
-            desiredHangoutFrequency: friendship.desiredHangoutFrequency,
+            desiredHangoutFrequency: (friendship as any).desiredHangoutFrequency || null,
             stats: {
               lastHangoutDate: stats.lastHangoutDate,
               totalHangouts: stats.totalHangouts,
@@ -136,7 +190,7 @@ export async function GET(request: NextRequest) {
             friend: friendUser,
             status: friendship.status,
             createdAt: friendship.createdAt,
-            desiredHangoutFrequency: friendship.desiredHangoutFrequency,
+            desiredHangoutFrequency: (friendship as any).desiredHangoutFrequency || null,
             stats: {
               lastHangoutDate: null,
               totalHangouts: 0,

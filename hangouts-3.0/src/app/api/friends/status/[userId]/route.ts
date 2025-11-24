@@ -49,9 +49,12 @@ export async function GET(
     // Return in format expected by frontend
     return NextResponse.json({
       success: true,
-      isFriend,
-      friendRequestSent,
-      friendRequestReceived
+      data: {
+        isFriend,
+        friendRequestSent,
+        friendRequestReceived,
+        desiredHangoutFrequency: friendship?.desiredHangoutFrequency || null
+      }
     })
   } catch (error: any) {
     logger.error('Error fetching friendship status:', error);

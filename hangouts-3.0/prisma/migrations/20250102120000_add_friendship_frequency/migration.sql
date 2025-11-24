@@ -11,3 +11,5 @@ CREATE INDEX "friendships_desiredHangoutFrequency_idx" ON "friendships"("desired
 ALTER TYPE "NotificationType" ADD VALUE 'RELATIONSHIP_REMINDER';
 
 
+
+

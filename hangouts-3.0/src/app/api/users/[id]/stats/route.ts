@@ -13,7 +13,7 @@ export async function GET(
     const hostedHangoutsCount = await db.content.count({
       where: {
         type: 'HANGOUT',
-        userId: userId
+        creatorId: userId
       }
     })
 
@@ -21,7 +21,7 @@ export async function GET(
     const hostedEventsCount = await db.content.count({
       where: {
         type: 'EVENT',
-        userId: userId
+        creatorId: userId
       }
     })
 
@@ -60,7 +60,7 @@ export async function GET(
     const totalLikes = await db.content_likes.count({
       where: {
         content: {
-          userId: userId
+          creatorId: userId
         }
       }
     })
@@ -69,7 +69,7 @@ export async function GET(
     const totalComments = await db.comments.count({
       where: {
         content: {
-          userId: userId
+          creatorId: userId
         }
       }
     })

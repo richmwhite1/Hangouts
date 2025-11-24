@@ -350,7 +350,6 @@ export async function GET(request: NextRequest) {
             privacyLevel: true,
             createdAt: true,
             updatedAt: true,
-            lastActivityAt: true,
             creatorId: true,
             // Creator info
             users: {
@@ -464,7 +463,7 @@ export async function GET(request: NextRequest) {
             location: item.location,
             startTime: item.startTime?.toISOString(),
             endTime: item.endTime?.toISOString(),
-            lastActivityAt: item.lastActivityAt?.toISOString(),
+            lastActivityAt: item.updatedAt?.toISOString(),
             privacyLevel: item.privacyLevel,
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),
