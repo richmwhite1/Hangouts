@@ -463,7 +463,7 @@ export async function GET(request: NextRequest) {
             location: item.location,
             startTime: item.startTime?.toISOString(),
             endTime: item.endTime?.toISOString(),
-            lastActivityAt: item.updatedAt?.toISOString(),
+            lastActivityAt: item.updatedAt?.toISOString(), // Using updatedAt as fallback since lastActivityAt doesn't exist in production DB
             privacyLevel: item.privacyLevel,
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),
