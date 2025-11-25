@@ -77,8 +77,8 @@ export default function EventsPage() {
     const fetchEvents = async () => {
       try {
         setIsLoading(true)
-        // Use public API for non-authenticated users, authenticated API for signed-in users
-        const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content?type=EVENT'
+        // Use public API for all users to ensure events are shown
+        const apiEndpoint = '/api/public/content?type=EVENT'
         
         const response = await fetch(apiEndpoint)
         
@@ -101,22 +101,12 @@ export default function EventsPage() {
           return
         }
         
-        if (isSignedIn) {
-          // Authenticated API returns { success: true, events: [...] }
-          if (data.success && Array.isArray(data.events)) {
-            setEvents(data.events || [])
-              // Events loaded successfully
-          } else {
-              // Invalid response format from /api/events
-            setEvents([])
-          }
-        } else {
-          // Public API returns { success: true, events: [...] }
-          if (data.success && Array.isArray(data.events)) {
-            // Normalize the data from public API
-            const normalizedEvents = (data.events || []).map((event: any) => ({
-              ...event,
-              startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : undefined,
+        // Public API returns { success: true, events: [...] }
+        if (data.success && Array.isArray(data.events)) {
+          // Normalize the data from public API
+          const normalizedEvents = (data.events || []).map((event: any) => ({
+            ...event,
+            startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : undefined,
               endDate: event.endTime ? new Date(event.endTime).toISOString().split('T')[0] : undefined,
               coverImage: event.image || event.coverImage,
               venue: event.venue || event.location || '',
@@ -139,7 +129,6 @@ export default function EventsPage() {
               // Invalid response format from /api/public/content
             setEvents([])
           }
-        }
       } catch (error) {
         // Error fetching events - will show empty state
         // Don't show error to user, just log it

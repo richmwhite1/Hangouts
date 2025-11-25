@@ -1,27 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Calendar, MessageCircle, UserX, Clock, MoreVertical, History, CheckCircle, AlertCircle } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { Calendar, Users, Clock, MessageCircle, UserX } from 'lucide-react'
 import { FriendFrequencySelector, HangoutFrequency } from '@/components/friend-frequency-selector'
-import { TimeElapsedIndicator } from '@/components/time-elapsed-indicator'
-import { UpcomingRemindersWidget } from '@/components/upcoming-reminders-widget'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { getTimeElapsedInfo, getStatusColorClasses, getStatusLabel } from '@/lib/friend-relationship-utils'
-import { logger } from '@/lib/logger'
-import { useState, useMemo } from 'react'
+import Link from 'next/link'
 
-interface FriendUser {
+interface Friend {
   id: string
   username: string
   name: string
@@ -37,67 +25,66 @@ interface FriendStats {
   wasInvitedCount: number
 }
 
-export interface Friendship {
+interface Friendship {
   id: string
-  friend: FriendUser
+  friend: Friend
   status: string
   createdAt: string
   desiredHangoutFrequency?: HangoutFrequency
-  stats: FriendStats
+  stats?: FriendStats
 }
 
 interface ProfileFriendsListProps {
   friends: Friendship[]
   loading: boolean
-  error?: string | null
-  onRefresh?: () => void
-  onFrequencyChange?: (friendshipId: string, frequency: HangoutFrequency | null) => void
+  error: string | null
+  onRefresh: () => void
+  onFrequencyChange: (friendshipId: string, frequency: HangoutFrequency) => void
 }
 
-const frequencyLabels: Record<Exclude<HangoutFrequency, null>, string> = {
-  MONTHLY: 'Monthly reminders',
-  QUARTERLY: 'Quarterly reminders',
-  SEMI_ANNUAL: 'Semi-annual reminders',
-  ANNUALLY: 'Annual reminders',
-  SOMETIMES: 'Occasional reminders'
-}
-
-export function ProfileFriendsList({
-  friends,
-  loading,
-  error,
-  onRefresh,
-  onFrequencyChange
+export function ProfileFriendsList({ 
+  friends, 
+  loading, 
+  error, 
+  onRefresh, 
+  onFrequencyChange 
 }: ProfileFriendsListProps) {
-  const router = useRouter()
-  const [removingFriendId, setRemovingFriendId] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'name' | 'last-hangout' | 'status'>('status')
-
-  const formatLastHangout = (dateString?: string) => {
-    if (!dateString) return 'Never'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
+  const [removingFriend, setRemovingFriend] = useState<string | null>(null)
 
   const handleRemoveFriend = async (friendshipId: string) => {
     try {
-      setRemovingFriendId(friendshipId)
+      setRemovingFriend(friendshipId)
       const response = await fetch(`/api/friends/${friendshipId}`, {
         method: 'DELETE'
       })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to remove friend')
-      }
-
-      if (onRefresh) {
+      
+      if (response.ok) {
         onRefresh()
       }
-    } catch (err) {
-      logger.error('Error removing friend:', err)
+    } catch (error) {
+      console.error('Error removing friend:', error)
     } finally {
-      setRemovingFriendId(null)
+      setRemovingFriend(null)
+    }
+  }
+
+  const startConversation = async (friendId: string) => {
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'DIRECT',
+          participantIds: [friendId]
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        window.location.href = `/messages/${data.conversation.id}`
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error)
     }
   }
 
@@ -112,7 +99,6 @@ export function ProfileFriendsList({
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-gray-700 rounded w-1/3" />
                   <div className="h-3 bg-gray-700 rounded w-1/2" />
-                  <div className="h-3 bg-gray-700 rounded w-2/3" />
                 </div>
               </div>
             </CardContent>
@@ -126,10 +112,10 @@ export function ProfileFriendsList({
     return (
       <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-8 text-center">
+          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Friends</h3>
           <p className="text-red-400 mb-4">{error}</p>
-          <Button onClick={onRefresh} variant="outline">
-            Try Again
-          </Button>
+          <Button onClick={onRefresh}>Try Again</Button>
         </CardContent>
       </Card>
     )
@@ -139,208 +125,105 @@ export function ProfileFriendsList({
     return (
       <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-8 text-center">
+          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="text-lg font-semibold text-white mb-2">No friends yet</h3>
-          <p className="text-gray-400 mb-4">
-            You haven't added any friends yet. Visit the friends page to get started.
+          <p className="text-gray-400">
+            Start by searching for people to connect with
           </p>
-          <Button onClick={() => (window.location.href = '/friends')}>
-            Find Friends
-          </Button>
         </CardContent>
       </Card>
     )
   }
 
-  // Calculate summary stats
-  const friendsWithGoals = friends.filter(f => f.desiredHangoutFrequency).length
-  const statusCounts = friends.reduce((acc, f) => {
-    const info = getTimeElapsedInfo(f.stats.lastHangoutDate, f.desiredHangoutFrequency || null)
-    acc[info.status] = (acc[info.status] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-  const onTrackCount = statusCounts['on-track'] || 0
-  const needsAttentionCount = (statusCounts['approaching'] || 0) + (statusCounts['overdue'] || 0)
-
-  // Sort friends based on selected sort option
-  const sortedFriends = useMemo(() => {
-    const sorted = [...friends]
-    switch (sortBy) {
-      case 'status':
-        sorted.sort((a, b) => {
-          const aInfo = getTimeElapsedInfo(a.stats.lastHangoutDate, a.desiredHangoutFrequency || null)
-          const bInfo = getTimeElapsedInfo(b.stats.lastHangoutDate, b.desiredHangoutFrequency || null)
-          const statusOrder = { 'overdue': 0, 'approaching': 1, 'on-track': 2, 'no-goal': 3 }
-          return (statusOrder[aInfo.status as keyof typeof statusOrder] || 3) - (statusOrder[bInfo.status as keyof typeof statusOrder] || 3)
-        })
-        break
-      case 'last-hangout':
-        sorted.sort((a, b) => {
-          if (!a.stats.lastHangoutDate && !b.stats.lastHangoutDate) return 0
-          if (!a.stats.lastHangoutDate) return 1
-          if (!b.stats.lastHangoutDate) return -1
-          return new Date(b.stats.lastHangoutDate).getTime() - new Date(a.stats.lastHangoutDate).getTime()
-        })
-        break
-      case 'name':
-        sorted.sort((a, b) => a.friend.name.localeCompare(b.friend.name))
-        break
-    }
-    return sorted
-  }, [friends, sortBy])
-
   return (
     <div className="space-y-4">
-      <UpcomingRemindersWidget />
-      
-      {friends.length > 0 && (
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-gray-300">
-                    <span className="font-semibold text-white">{onTrackCount}</span> on track
-                  </span>
-                </div>
-                {needsAttentionCount > 0 && (
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-400" />
-                    <span className="text-gray-300">
-                      <span className="font-semibold text-white">{needsAttentionCount}</span> need attention
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-400">
-                    {friendsWithGoals} of {friends.length} with goals
-                  </span>
-                </div>
-              </div>
-              <Select value={sortBy} onValueChange={(value: 'name' | 'last-hangout' | 'status') => setSortBy(value)}>
-                <SelectTrigger className="w-40 bg-gray-700 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="status">By Status</SelectItem>
-                  <SelectItem value="last-hangout">Last Hangout</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {sortedFriends.map((friendship) => (
-        <Card key={friendship.id} className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors">
-          <CardContent className="flex items-start justify-between p-4 gap-4">
+      {friends.map((friendship) => (
+        <Card key={friendship.id} className="bg-gray-800 border-gray-700 hover:border-blue-500/50 transition-colors">
+          <CardContent className="flex items-center justify-between p-4">
             <Link 
               href={`/profile/${friendship.friend.username}`}
-              className="flex items-start gap-4 flex-1 min-w-0 group"
+              className="flex items-center space-x-3 flex-1 min-w-0 group"
             >
-              <Avatar className="w-12 h-12 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
+              <Avatar className="w-12 h-12 cursor-pointer group-hover:ring-2 group-hover:ring-blue-500 transition-all flex-shrink-0">
                 <AvatarImage src={friendship.friend.avatar} />
                 <AvatarFallback>
                   {friendship.friend.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                <h3 className="font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
                   {friendship.friend.name}
                 </h3>
-                <p className="text-sm text-gray-400">@{friendship.friend.username}</p>
-
+                <p className="text-sm text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+                  @{friendship.friend.username}
+                </p>
                 {friendship.friend.bio && (
-                  <p className="text-sm text-gray-300 mt-2 line-clamp-2">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {friendship.friend.bio}
                   </p>
                 )}
-
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+                {friendship.friend.location && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📍 {friendship.friend.location}
+                  </p>
+                )}
+                {friendship.stats && (
+                  <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                     {friendship.stats.totalHangouts > 0 ? (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}
-                      </span>
+                      <>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}
+                        </span>
+                        {friendship.stats.lastHangoutDate && (
+                          <span>
+                            Last: {new Date(friendship.stats.lastHangoutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
+                      </>
                     ) : (
-                      <span className="text-gray-500">No hangouts together yet</span>
+                      <span className="text-muted-foreground/70">No hangouts together yet</span>
                     )}
                   </div>
-                  <TimeElapsedIndicator
-                    lastHangoutDate={friendship.stats.lastHangoutDate}
-                    frequency={friendship.desiredHangoutFrequency || null}
-                    showProgress={false}
-                    showBadge={true}
-                    size="sm"
-                  />
-                </div>
+                )}
               </div>
             </Link>
-
-            <div className="flex flex-col items-end gap-3 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-end gap-3" onClick={(e) => e.stopPropagation()}>
               <div className="flex flex-col items-end gap-2">
-                <label className="text-xs font-medium text-gray-400">Hangout Goal</label>
+                <label className="text-xs font-medium text-muted-foreground">Hangout Goal</label>
                 <FriendFrequencySelector
                   friendshipId={friendship.id}
                   friendId={friendship.friend.id}
                   currentFrequency={friendship.desiredHangoutFrequency || null}
-                  onUpdate={(frequency) => {
-                    if (onFrequencyChange) {
-                      onFrequencyChange(friendship.id, frequency)
-                    }
-                  }}
+                  onUpdate={(frequency) => onFrequencyChange(friendship.id, frequency)}
                 />
-                {friendship.desiredHangoutFrequency && (
-                  <Badge variant="outline" className="text-xs bg-gray-900/50 border-gray-600 text-gray-200">
-                    {frequencyLabels[friendship.desiredHangoutFrequency] || 'Custom'}
-                  </Badge>
-                )}
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
                   size="sm"
-                  onClick={() => router.push(`/create?friendId=${friendship.friend.id}`)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    startConversation(friendship.friend.id)
+                  }}
                   className="px-3"
+                  title="Message"
                 >
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Plan
+                  <MessageCircle className="w-4 h-4" />
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="px-3">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-                    <DropdownMenuItem
-                      onClick={() => router.push(`/messages/new?user=${friendship.friend.username}`)}
-                      className="text-white hover:bg-gray-700"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Send Message
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => router.push(`/profile/${friendship.friend.username}?tab=together`)}
-                      className="text-white hover:bg-gray-700"
-                    >
-                      <History className="w-4 h-4 mr-2" />
-                      View Together
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleRemoveFriend(friendship.id)}
-                      className="text-red-400 hover:bg-red-500/20"
-                      disabled={removingFriendId === friendship.id}
-                    >
-                      <UserX className="w-4 h-4 mr-2" />
-                      Remove Friend
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemoveFriend(friendship.id)
+                  }}
+                  className="px-3"
+                  title="Remove Friend"
+                  disabled={removingFriend === friendship.id}
+                >
+                  <UserX className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -349,5 +232,3 @@ export function ProfileFriendsList({
     </div>
   )
 }
-
-

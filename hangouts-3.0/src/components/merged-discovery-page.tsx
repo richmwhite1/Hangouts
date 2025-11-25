@@ -247,20 +247,37 @@ export function MergedDiscoveryPage() {
     return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`
   }
   // Get user's current location
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          })
-        },
-        (error) => {
-          logger.error('Geolocation error:', error);
-        }
-      )
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      return
     }
+
+    // Check if geolocation is allowed by permissions policy
+    try {
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'geolocation' })
+        if (permission.state === 'denied') {
+          logger.info('Geolocation permission denied by policy')
+          return
+        }
+      }
+    } catch (error) {
+      // Permissions API not supported or blocked, try anyway
+      logger.info('Permissions API not available, attempting geolocation anyway')
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        })
+      },
+      (error) => {
+        logger.error('Geolocation error:', error);
+      },
+      { timeout: 10000, enableHighAccuracy: false }
+    )
   }
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
