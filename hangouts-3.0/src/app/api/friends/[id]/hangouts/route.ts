@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ friendUserId: string }> }
 ) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    const { id: friendId } = await params
+    const { friendUserId: friendId } = await params
 
     // Verify friendship exists
     const friendship = await db.friendship.findFirst({

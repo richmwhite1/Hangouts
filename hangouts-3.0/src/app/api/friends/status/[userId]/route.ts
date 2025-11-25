@@ -23,41 +23,15 @@ export async function GET(
     const { userId: targetUserId } = await params
     const currentUserId = user.id
     // Check if users are friends
-    let friendship
-    try {
-      friendship = await db.friendship.findFirst({
-        where: {
-          OR: [
-            { userId: currentUserId, friendId: targetUserId },
-            { userId: targetUserId, friendId: currentUserId }
-          ],
-          status: 'ACTIVE'
-        },
-        select: {
-          id: true,
-          desiredHangoutFrequency: true
-        }
-      })
-    } catch (dbError: any) {
-      // If error is about missing column, try without desiredHangoutFrequency
-      if (dbError?.code === 'P2022' && dbError?.meta?.column?.includes('desiredHangoutFrequency')) {
-        logger.warn('desiredHangoutFrequency column not found, querying without it')
-        friendship = await db.friendship.findFirst({
-          where: {
-            OR: [
-              { userId: currentUserId, friendId: targetUserId },
-              { userId: targetUserId, friendId: currentUserId }
-            ],
-            status: 'ACTIVE'
-          },
-          select: {
-            id: true
-          }
-        })
-      } else {
-        throw dbError
+    const friendship = await db.friendship.findFirst({
+      where: {
+        OR: [
+          { userId: currentUserId, friendId: targetUserId },
+          { userId: targetUserId, friendId: currentUserId }
+        ],
+        status: 'ACTIVE'
       }
-    }
+    })
     // Check if there's a pending friend request
     const friendRequest = await db.friendRequest.findFirst({
       where: {
@@ -75,12 +49,9 @@ export async function GET(
     // Return in format expected by frontend
     return NextResponse.json({
       success: true,
-      data: {
-        isFriend,
-        friendRequestSent,
-        friendRequestReceived,
-        desiredHangoutFrequency: (friendship as any)?.desiredHangoutFrequency || null
-      }
+      isFriend,
+      friendRequestSent,
+      friendRequestReceived
     })
   } catch (error: any) {
     logger.error('Error fetching friendship status:', error);

@@ -107,7 +107,7 @@ export function FriendProfileFriendsList({ userId }: FriendProfileFriendsListPro
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="bg-gray-800 border-gray-700 animate-pulse">
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-gray-700" />
                 <div className="flex-1 space-y-2">
@@ -158,11 +158,11 @@ export function FriendProfileFriendsList({ userId }: FriendProfileFriendsListPro
     <div className="space-y-4">
       {friends.map((friendship) => (
         <Card key={friendship.id} className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-start justify-between gap-2 sm:gap-4">
-              <div className="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
-                <Link href={`/profile/${friendship.friend.username}`} className="flex-shrink-0">
-                  <Avatar className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1">
+                <Link href={`/profile/${friendship.friend.username}`}>
+                  <Avatar className="w-12 h-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
                     <AvatarImage src={friendship.friend.avatar} />
                     <AvatarFallback>
                       {friendship.friend.name.charAt(0).toUpperCase()}
@@ -171,28 +171,28 @@ export function FriendProfileFriendsList({ userId }: FriendProfileFriendsListPro
                 </Link>
                 <div className="flex-1 min-w-0">
                   <Link href={`/profile/${friendship.friend.username}`}>
-                    <h3 className="font-semibold text-white hover:text-blue-400 transition-colors cursor-pointer text-sm sm:text-base break-words">
+                    <h3 className="font-semibold text-white hover:text-blue-400 transition-colors cursor-pointer">
                       {friendship.friend.name}
                     </h3>
                   </Link>
-                  <p className="text-xs sm:text-sm text-gray-400 break-words">@{friendship.friend.username}</p>
+                  <p className="text-sm text-gray-400">@{friendship.friend.username}</p>
                   
                   {friendship.friend.bio && (
-                    <p className="text-xs sm:text-sm text-gray-300 mt-1 line-clamp-2 break-words">
+                    <p className="text-sm text-gray-300 mt-1 line-clamp-2">
                       {friendship.friend.bio}
                     </p>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
                     {friendship.stats.totalHangouts > 0 ? (
                       <>
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span className="whitespace-nowrap">{friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}</span>
+                          <Calendar className="w-3 h-3" />
+                          <span>{friendship.stats.totalHangouts} hangout{friendship.stats.totalHangouts !== 1 ? 's' : ''}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 flex-shrink-0" />
-                          <span className="whitespace-nowrap">Last: {formatLastHangout(friendship.stats.lastHangoutDate)}</span>
+                          <Clock className="w-3 h-3" />
+                          <span>Last: {formatLastHangout(friendship.stats.lastHangoutDate)}</span>
                         </div>
                       </>
                     ) : (
