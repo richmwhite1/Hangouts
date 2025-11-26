@@ -223,22 +223,22 @@ export class FriendQueries {
     const friendships = await db.friendship.findMany({
       where: {
         OR: [
-          { user1Id: userId },
-          { user2Id: userId }
+          { userId: userId },
+          { friendId: userId }
         ]
       },
       include: {
-        user1: {
+        user: {
           select: userSelect
         },
-        user2: {
+        friend: {
           select: userSelect
         }
       }
     })
 
     const friends = friendships.map(friendship => {
-      const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
+      const friend = friendship.userId === userId ? friendship.friend : friendship.user
       return {
         ...friend,
         friendshipId: friendship.id,
@@ -277,8 +277,8 @@ export class FriendQueries {
     const friendship = await db.friendship.findFirst({
       where: {
         OR: [
-          { user1Id, user2Id },
-          { user1Id: user2Id, user2Id: user1Id }
+          { userId: user1Id, friendId: user2Id },
+          { userId: user2Id, friendId: user1Id }
         ]
       }
     })

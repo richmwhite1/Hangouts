@@ -16,13 +16,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    // Get user's friends using the correct schema (userId/friendId)
+    // Get user's friends using bidirectional query (userId/friendId can be in either direction)
     const friendships = await db.friendship.findMany({
       where: {
-        userId: user.id,
-        status: 'ACTIVE'
+        OR: [
+          { userId: user.id, status: 'ACTIVE' },
+          { friendId: user.id, status: 'ACTIVE' }
+        ]
       },
       include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            email: true,
+            avatar: true,
+            bio: true,
+            location: true
+          }
+        },
         friend: {
           select: {
             id: true,
@@ -38,12 +51,17 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform friendships to match expected format
-    const friends = friendships.map(friendship => ({
-      id: friendship.id,
-      friend: friendship.friend,
-      status: friendship.status,
-      createdAt: friendship.createdAt
-    }))
+    const friends = friendships.map(friendship => {
+      // Determine which user is the friend (not the current user)
+      const friendUser = friendship.userId === user.id ? friendship.friend : friendship.user
+      
+      return {
+        id: friendship.id,
+        friend: friendUser,
+        status: friendship.status,
+        createdAt: friendship.createdAt
+      }
+    })
 
     return NextResponse.json({
       success: true,

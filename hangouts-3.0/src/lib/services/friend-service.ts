@@ -209,8 +209,8 @@ export class FriendService extends BaseService {
       const existingFriendship = await this.db.friendship.findFirst({
         where: {
           OR: [
-            { user1Id: this.context.userId, user2Id: validatedData.receiverId },
-            { user1Id: validatedData.receiverId, user2Id: this.context.userId }
+            { userId: this.context.userId, friendId: validatedData.receiverId },
+            { userId: validatedData.receiverId, friendId: this.context.userId }
           ]
         }
       })
