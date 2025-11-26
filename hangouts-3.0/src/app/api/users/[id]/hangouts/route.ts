@@ -13,7 +13,7 @@ export async function GET(
     const hangouts = await db.content.findMany({
       where: {
         type: 'HANGOUT',
-        creatorId: userId
+        userId: userId
       },
       include: {
         users: {
@@ -26,7 +26,7 @@ export async function GET(
         },
         content_participants: {
           include: {
-            users: {
+            user: {
               select: {
                 id: true,
                 username: true,
@@ -56,10 +56,10 @@ export async function GET(
       }) || '',
       image: hangout.image,
       participants: hangout.content_participants.map(p => ({
-        id: p.users?.id || '',
-        name: p.users?.name || '',
-        username: p.users?.username || '',
-        avatar: p.users?.avatar || ''
+        id: p.user.id,
+        name: p.user.name,
+        username: p.user.username,
+        avatar: p.user.avatar
       })),
       photos: [], // Will be fetched separately if needed
       polls: [], // Will be fetched separately if needed

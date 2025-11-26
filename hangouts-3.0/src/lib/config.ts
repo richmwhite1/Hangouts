@@ -6,7 +6,7 @@ export const config = {
     name: 'Hangouts 3.0',
     version: '1.0.0',
     description: 'Plan amazing hangouts with friends',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     supportEmail: 'support@hangouts.app'
   },
 
@@ -47,7 +47,7 @@ export const config = {
 
   // Real-time Configuration
   realtime: {
-    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || 'ws://localhost:3001',
+    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || 'ws://localhost:3000',
     reconnectAttempts: 5,
     reconnectDelay: 1000,
     heartbeatInterval: 30000
@@ -96,7 +96,7 @@ export const config = {
     enableCSRF: true,
     enableXSSProtection: true,
     enableContentSecurityPolicy: true,
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001'],
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
     trustedProxies: process.env.TRUSTED_PROXIES?.split(',') || []
   },
 

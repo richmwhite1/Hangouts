@@ -74,41 +74,10 @@ export async function GET(
       )
     }
     
-    // Now fetch the full hangout data (using select to avoid schema mismatch with lastActivityAt)
+    // Now fetch the full hangout data
     const hangout = await db.content.findUnique({
       where: { id: hangoutId },
-      select: {
-        // Core content fields (excluding lastActivityAt which doesn't exist in production DB)
-        id: true,
-        type: true,
-        title: true,
-        description: true,
-        image: true,
-        location: true,
-        latitude: true,
-        longitude: true,
-        startTime: true,
-        endTime: true,
-        status: true,
-        privacyLevel: true,
-        creatorId: true,
-        createdAt: true,
-        updatedAt: true,
-        venue: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        priceMin: true,
-        priceMax: true,
-        currency: true,
-        ticketUrl: true,
-        attendeeCount: true,
-        externalEventId: true,
-        source: true,
-        maxParticipants: true,
-        weatherEnabled: true,
-        // Relations
+      include: {
         users: {
           select: {
             id: true,
@@ -120,15 +89,7 @@ export async function GET(
           }
         },
         content_participants: {
-          select: {
-            id: true,
-            userId: true,
-            role: true,
-            canEdit: true,
-            isMandatory: true,
-            isCoHost: true,
-            invitedAt: true,
-            joinedAt: true,
+          include: {
             users: {
               select: {
                 id: true,
@@ -142,21 +103,9 @@ export async function GET(
           }
         },
         polls: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            options: true,
-            allowMultiple: true,
-            isAnonymous: true,
-            endTime: true,
-            status: true,
-            createdAt: true,
+          include: {
             votes: {
-              select: {
-                id: true,
-                option: true,
-                createdAt: true,
+              include: {
                 user: {
                   select: {
                     id: true,
@@ -169,10 +118,7 @@ export async function GET(
           }
         },
         rsvps: {
-          select: {
-            id: true,
-            status: true,
-            createdAt: true,
+          include: {
             users: {
               select: {
                 id: true,

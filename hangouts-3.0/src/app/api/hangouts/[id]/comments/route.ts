@@ -101,18 +101,18 @@ export async function POST(
       }
     })
 
-    // Update hangout's updatedAt when new comment is added
-    // Note: lastActivityAt field doesn't exist in production DB, so only updating updatedAt
+    // Update hangout's lastActivityAt when new comment is added
     try {
       await db.content.update({
         where: { id: hangoutId },
         data: {
+          lastActivityAt: new Date(),
           updatedAt: new Date()
         }
       })
     } catch (error) {
       // Log but don't fail the comment creation if hangout update fails
-      logger.error('Error updating hangout updatedAt:', error)
+      logger.error('Error updating hangout lastActivityAt:', error)
     }
 
     return NextResponse.json({

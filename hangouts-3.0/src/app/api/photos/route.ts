@@ -310,19 +310,19 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Update hangout's updatedAt if photo is associated with a hangout
-    // Note: lastActivityAt field doesn't exist in production DB, so only updating updatedAt
+    // Update hangout's lastActivityAt if photo is associated with a hangout
     if (contentId) {
       try {
         await db.content.update({
           where: { id: contentId },
           data: {
+            lastActivityAt: new Date(),
             updatedAt: new Date()
           }
         })
       } catch (error) {
         // Log but don't fail the photo upload if hangout update fails
-        logger.error('Error updating hangout updatedAt:', error)
+        logger.error('Error updating hangout lastActivityAt:', error)
       }
     }
 

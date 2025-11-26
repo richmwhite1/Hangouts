@@ -260,19 +260,6 @@ export async function GET(request: NextRequest) {
     try {
       logger.info('User authenticated, fetching personalized feed for user:', userId)
       
-      // Validate userId before building query
-      if (!userId || userId.trim() === '') {
-        logger.warn('No userId provided for authenticated feed, falling back to empty result')
-        return NextResponse.json({
-          success: true,
-          data: {
-            content: [],
-            total: 0,
-            hasMore: false
-          }
-        })
-      }
-      
       // Build where clause based on feed type
       let whereClause: any = {}
 
@@ -290,12 +277,12 @@ export async function GET(request: NextRequest) {
           // Public content (everyone can see)
           { privacyLevel: 'PUBLIC' },
           // Friends-only content from user's friends (if authenticated)
-          {
+          ...(userId ? [{
             AND: [
               { privacyLevel: 'FRIENDS_ONLY' },
               { creatorId: userId }
             ]
-          }
+          }] : [])
         ]
       } else if (feedType === 'home') {
         // HOME PAGE: Show user's own content + content they're invited to + content they've RSVPed to + PUBLIC content
@@ -350,6 +337,7 @@ export async function GET(request: NextRequest) {
             privacyLevel: true,
             createdAt: true,
             updatedAt: true,
+            lastActivityAt: true,
             creatorId: true,
             // Creator info
             users: {
@@ -408,10 +396,15 @@ export async function GET(request: NextRequest) {
             }
           },
         // Prioritize hangouts with recent activity, then sort by creation/start time
-        // For home feed: sort by createdAt DESC (simplified - can't easily handle nulls in lastActivityAt)
+        // For home feed: sort by lastActivityAt DESC (nulls last), then createdAt DESC
         // For discover feed: sort by startTime ASC (upcoming events first)
+        // Note: Prisma orderBy with nulls handling - we'll sort by lastActivityAt first
+        // Items without lastActivityAt will appear after those with it
         orderBy: feedType === 'home' 
-          ? { createdAt: 'desc' }
+          ? [
+              { lastActivityAt: 'desc' },
+              { createdAt: 'desc' }
+            ]
           : { startTime: 'asc' },
         take: limit,
         skip: offset
@@ -463,7 +456,7 @@ export async function GET(request: NextRequest) {
             location: item.location,
             startTime: item.startTime?.toISOString(),
             endTime: item.endTime?.toISOString(),
-            lastActivityAt: item.updatedAt?.toISOString(), // Using updatedAt as fallback since lastActivityAt doesn't exist in production DB
+            lastActivityAt: item.lastActivityAt?.toISOString(),
             privacyLevel: item.privacyLevel,
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),
@@ -514,30 +507,28 @@ export async function GET(request: NextRequest) {
       })
 
     } catch (error) {
-      logger.error('Error fetching personalized feed:', error, { userId, feedType, contentType })
-      
-      // Return empty result instead of 500 error to prevent homepage from breaking
-      // This allows the UI to show an empty state instead of an error
-      return NextResponse.json({
-        success: true,
-        data: {
-          content: [],
-          total: 0,
-          hasMore: false
-        }
-      })
+      logger.error('Error fetching personalized feed:', error)
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to fetch feed',
+          message: 'An error occurred while loading content',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        },
+        { status: 500 }
+      )
     }
 
   } catch (outerError) {
     logger.error('Outer error in feed API:', outerError)
-    // Return empty result instead of 500 error to prevent homepage from breaking
-    return NextResponse.json({
-      success: true,
-      data: {
-        content: [],
-        total: 0,
-        hasMore: false
-      }
-    })
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Internal server error',
+        message: 'An unexpected error occurred',
+        details: outerError instanceof Error ? outerError.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
   }
 }
