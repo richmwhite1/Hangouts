@@ -224,7 +224,9 @@ export default function ProfilePage() {
       const statsResponse = await fetch(`/api/users/${profile.id}/stats`)
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
-        setStats(statsData.stats)
+        if (statsData.success && statsData.data?.stats) {
+          setStats(statsData.data.stats)
+        }
       }
 
       const [hangoutsResponse, eventsResponse, attendedHangoutsResponse, attendedEventsResponse] = await Promise.all([
@@ -236,22 +238,22 @@ export default function ProfilePage() {
 
       if (hangoutsResponse.ok) {
         const hangoutsData = await hangoutsResponse.json()
-        setUserHangouts(hangoutsData.hangouts || [])
+        setUserHangouts(hangoutsData.success ? hangoutsData.data?.hangouts || [] : [])
       }
 
       if (eventsResponse.ok) {
         const eventsData = await eventsResponse.json()
-        setUserEvents(eventsData.events || [])
+        setUserEvents(eventsData.success ? eventsData.data?.events || [] : [])
       }
 
       if (attendedHangoutsResponse.ok) {
         const attendedHangoutsData = await attendedHangoutsResponse.json()
-        setAttendedHangouts(attendedHangoutsData.hangouts || [])
+        setAttendedHangouts(attendedHangoutsData.success ? attendedHangoutsData.data?.hangouts || [] : [])
       }
 
       if (attendedEventsResponse.ok) {
         const attendedEventsData = await attendedEventsResponse.json()
-        setAttendedEvents(attendedEventsData.events || [])
+        setAttendedEvents(attendedEventsData.success ? attendedEventsData.data?.events || [] : [])
       }
 
       if (profileIsOwn) {
@@ -418,19 +420,19 @@ export default function ProfilePage() {
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{stats.friendsCount}</div>
+                    <div className="text-2xl font-bold text-white">{stats?.friendsCount || 0}</div>
                     <div className="text-sm text-gray-400">Friends</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{stats.hostedHangoutsCount}</div>
+                    <div className="text-2xl font-bold text-white">{stats?.hostedHangoutsCount || 0}</div>
                     <div className="text-sm text-gray-400">Hosted</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{stats.attendedHangoutsCount}</div>
+                    <div className="text-2xl font-bold text-white">{stats?.attendedHangoutsCount || 0}</div>
                     <div className="text-sm text-gray-400">Attended</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{stats.totalLikes}</div>
+                    <div className="text-2xl font-bold text-white">{stats?.totalLikes || 0}</div>
                     <div className="text-sm text-gray-400">Likes</div>
                   </div>
                 </div>
@@ -452,19 +454,19 @@ export default function ProfilePage() {
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{stats.hostedHangoutsCount + stats.hostedEventsCount}</div>
+                  <div className="text-2xl font-bold text-white">{(stats?.hostedHangoutsCount || 0) + (stats?.hostedEventsCount || 0)}</div>
                   <div className="text-sm text-gray-400">Created</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{stats.attendedHangoutsCount + stats.attendedEventsCount}</div>
+                  <div className="text-2xl font-bold text-white">{(stats?.attendedHangoutsCount || 0) + (stats?.attendedEventsCount || 0)}</div>
                   <div className="text-sm text-gray-400">Attended</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{stats.friendsCount}</div>
+                  <div className="text-2xl font-bold text-white">{stats?.friendsCount || 0}</div>
                   <div className="text-sm text-gray-400">Friends</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{stats.totalLikes}</div>
+                  <div className="text-2xl font-bold text-white">{stats?.totalLikes || 0}</div>
                   <div className="text-sm text-gray-400">Likes Received</div>
                 </div>
               </div>

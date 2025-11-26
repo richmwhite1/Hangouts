@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { FriendRequest, FriendRequestStatus, Prisma } from '@prisma/client'
 import { logger } from '@/lib/logger'
+import { checkFriendship, createFriendship } from '@/lib/universal-friendship-queries'
 
 export interface FriendRequestWithDetails extends FriendRequest {
   sender: {
@@ -88,17 +89,10 @@ export class FriendRequestService {
       }
     }
 
-    // Check if already friends (bidirectional query)
-    const existingFriendship = await db.friendship.findFirst({
-      where: {
-        OR: [
-          { userId: senderId, friendId: receiverId, status: 'ACTIVE' },
-          { userId: receiverId, friendId: senderId, status: 'ACTIVE' }
-        ]
-      }
-    })
+    // Check if already friends using universal query
+    const friendshipCheck = await checkFriendship(senderId, receiverId)
 
-    if (existingFriendship) {
+    if (friendshipCheck.areFriends) {
       return {
         canSend: false,
         reason: 'Already friends'
@@ -249,36 +243,77 @@ export class FriendRequestService {
         include: friendRequestInclude
       })
 
-      // Check if friendship already exists (prevent duplicates)
-      const existingFriendship = await tx.friendship.findFirst({
-        where: {
-          OR: [
-            { userId: request.senderId, friendId: request.receiverId },
-            { userId: request.receiverId, friendId: request.senderId }
-          ]
+      // Check if friendship already exists (prevent duplicates) using universal method
+      let existingFriendship = null
+      
+      try {
+        // Try development schema first
+        existingFriendship = await tx.friendship.findFirst({
+          where: {
+            OR: [
+              { userId: request.senderId, friendId: request.receiverId },
+              { userId: request.receiverId, friendId: request.senderId }
+            ]
+          }
+        })
+      } catch (devError) {
+        // Try production schema
+        try {
+          existingFriendship = await tx.friendship.findFirst({
+            where: {
+              OR: [
+                { user1Id: request.senderId, user2Id: request.receiverId },
+                { user1Id: request.receiverId, user2Id: request.senderId }
+              ]
+            }
+          })
+        } catch (prodError) {
+          logger.warn('Could not check existing friendships with either schema')
         }
-      })
+      }
 
       let friendshipsCreated = 0
 
       if (!existingFriendship) {
-        // Create bidirectional friendships
-        const createResult = await tx.friendship.createMany({
-          data: [
-            {
-              userId: request.senderId,
-              friendId: request.receiverId,
-              status: 'ACTIVE'
-            },
-            {
-              userId: request.receiverId,
-              friendId: request.senderId,
-              status: 'ACTIVE'
-            }
-          ],
-          skipDuplicates: true
-        })
-        friendshipsCreated = createResult.count
+        // Create friendships using universal method (handles both schemas)
+        try {
+          // Try development schema first (userId/friendId with bidirectional entries)
+          const createResult = await tx.friendship.createMany({
+            data: [
+              {
+                userId: request.senderId,
+                friendId: request.receiverId,
+                status: 'ACTIVE'
+              },
+              {
+                userId: request.receiverId,
+                friendId: request.senderId,
+                status: 'ACTIVE'
+              }
+            ],
+            skipDuplicates: true
+          })
+          friendshipsCreated = createResult.count
+          logger.info(`Created ${createResult.count} friendships using userId/friendId schema`)
+        } catch (devError) {
+          logger.warn('Development schema failed, trying production schema:', devError.message)
+          
+          try {
+            // Try production schema (user1Id/user2Id with single entry)
+            const [user1Id, user2Id] = [request.senderId, request.receiverId].sort()
+            const friendship = await tx.friendship.create({
+              data: {
+                user1Id,
+                user2Id
+              }
+            })
+            friendshipsCreated = 1
+            logger.info('Created friendship using user1Id/user2Id schema')
+          } catch (prodError) {
+            logger.error('Both friendship creation methods failed:', { devError: devError.message, prodError: prodError.message })
+            throw new Error('Unable to create friendship with either schema')
+          }
+        }
       }
 
       // If there was a reverse request (receiver sent to sender), accept it too

@@ -88,6 +88,11 @@ export async function performSignOut(
   redirectUrl: string = '/'
 ): Promise<void> {
   try {
+    // Cancel any ongoing requests first
+    if (typeof window !== 'undefined') {
+      window.stop?.()
+    }
+    
     // Clear local auth data first
     clearAllAuthData()
 

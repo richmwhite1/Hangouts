@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
-import { db } from '@/lib/db'
-
+import { getUserFriends } from '@/lib/universal-friendship-queries'
 import { logger } from '@/lib/logger'
+
+export async function POST(request: NextRequest) {
+  // Handle POST requests - redirect to appropriate endpoint or return method not allowed
+  return NextResponse.json(
+    { error: 'Method not allowed. Use /api/friends/request for sending friend requests.' },
+    { status: 405 }
+  )
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -16,52 +24,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    // Get user's friends using bidirectional query (userId/friendId can be in either direction)
-    const friendships = await db.friendship.findMany({
-      where: {
-        OR: [
-          { userId: user.id, status: 'ACTIVE' },
-          { friendId: user.id, status: 'ACTIVE' }
-        ]
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true,
-            bio: true,
-            location: true
-          }
-        },
-        friend: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true,
-            bio: true,
-            location: true
-          }
-        }
-      }
-    })
-
-    // Transform friendships to match expected format
-    const friends = friendships.map(friendship => {
-      // Determine which user is the friend (not the current user)
-      const friendUser = friendship.userId === user.id ? friendship.friend : friendship.user
-      
-      return {
-        id: friendship.id,
-        friend: friendUser,
-        status: friendship.status,
-        createdAt: friendship.createdAt
-      }
-    })
+    // Use universal friendship queries that handle both schemas
+    const friends = await getUserFriends(user.id)
 
     return NextResponse.json({
       success: true,

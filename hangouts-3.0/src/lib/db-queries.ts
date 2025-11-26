@@ -218,35 +218,19 @@ export class HangoutQueries {
 
 // Optimized friend queries
 export class FriendQueries {
-  // Get user's friends
+  // Get user's friends (updated to use universal queries)
   static async getUserFriends(userId: string) {
-    const friendships = await db.friendship.findMany({
-      where: {
-        OR: [
-          { userId: userId },
-          { friendId: userId }
-        ]
-      },
-      include: {
-        user: {
-          select: userSelect
-        },
-        friend: {
-          select: userSelect
-        }
-      }
-    })
-
-    const friends = friendships.map(friendship => {
-      const friend = friendship.userId === userId ? friendship.friend : friendship.user
-      return {
-        ...friend,
-        friendshipId: friendship.id,
-        friendsSince: friendship.createdAt}
-    })
-
-    // Sort by lastSeen (most recent first)
-    return friends.sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime())
+    // Import the universal function dynamically to avoid circular imports
+    const { getUserFriends: getUniversalFriends } = await import('@/lib/universal-friendship-queries')
+    
+    const friends = await getUniversalFriends(userId)
+    
+    // Transform to match the expected format and sort by lastSeen
+    return friends.map(friendship => ({
+      ...friendship.friend,
+      friendshipId: friendship.id,
+      friendsSince: friendship.createdAt
+    })).sort((a, b) => new Date(b.lastSeen || 0).getTime() - new Date(a.lastSeen || 0).getTime())
   }
 
   // Get friend requests
@@ -272,17 +256,13 @@ export class FriendQueries {
     })
   }
 
-  // Check if users are friends
+  // Check if users are friends (updated to use universal queries)
   static async areFriends(user1Id: string, user2Id: string) {
-    const friendship = await db.friendship.findFirst({
-      where: {
-        OR: [
-          { userId: user1Id, friendId: user2Id },
-          { userId: user2Id, friendId: user1Id }
-        ]
-      }
-    })
-    return !!friendship
+    // Import the universal function dynamically to avoid circular imports
+    const { checkFriendship } = await import('@/lib/universal-friendship-queries')
+    
+    const result = await checkFriendship(user1Id, user2Id)
+    return result.areFriends
   }
 }
 

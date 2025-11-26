@@ -142,6 +142,12 @@ export function Navigation() {
                             setShowUserMenu(false)
                             
                             try {
+                              // Clear any pending requests first
+                              if (typeof window !== 'undefined') {
+                                // Cancel any ongoing fetch requests
+                                window.stop?.()
+                              }
+                              
                               // Use Clerk's signOut with redirectUrl - let Clerk handle everything
                               await clerk.signOut({ redirectUrl: '/' })
                             } catch (error) {
@@ -150,6 +156,11 @@ export function Navigation() {
                               if (typeof window !== 'undefined') {
                                 window.location.href = '/'
                               }
+                            } finally {
+                              // Reset state if still on page
+                              setTimeout(() => {
+                                setIsSigningOut(false)
+                              }, 1000)
                             }
                           }}
                         >
