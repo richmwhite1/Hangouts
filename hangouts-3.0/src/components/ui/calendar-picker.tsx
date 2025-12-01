@@ -25,6 +25,27 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
 
+  // Initialize selected date and time from value prop
+  useEffect(() => {
+    if (value) {
+      const date = new Date(value)
+      const dateString = date.toISOString().split('T')[0]
+      setSelectedDate(dateString)
+      
+      // Convert to 12-hour format
+      let hours = date.getHours()
+      const minutes = date.getMinutes()
+      const period = hours >= 12 ? 'PM' : 'AM'
+      hours = hours % 12 || 12
+      const timeString = `${hours}:${minutes.toString().padStart(2, '0')} ${period}`
+      setSelectedTime(timeString)
+      
+      // Set display month/year to match the selected date
+      setDisplayMonth(date.getMonth())
+      setDisplayYear(date.getFullYear())
+    }
+  }, [value])
+
   // Generate calendar days for displayed month
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate()
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay()
@@ -48,8 +69,8 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
     const dateString = date.toISOString().split('T')[0]
     setSelectedDate(dateString)
     
-    // Auto-select a default time if none is selected
-    if (!selectedTime) {
+    // Only auto-select a default time if none is selected AND there's no existing value
+    if (!selectedTime && !value) {
       setSelectedTime('7:00 PM')
     }
   }
