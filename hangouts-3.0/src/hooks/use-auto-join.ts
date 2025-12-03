@@ -15,6 +15,7 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const searchParams = useSearchParams()
   const [hasAttemptedJoin, setHasAttemptedJoin] = useState(false)
+  const [joinStatus, setJoinStatus] = useState<'idle' | 'joining' | 'success' | 'error'>('idle')
 
   useEffect(() => {
     // Only attempt auto-join if:
@@ -40,7 +41,8 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       currentPath,
       isOnPublicHangoutPage,
       cameFromSignIn,
-      currentUserId
+      currentUserId,
+      joinStatus
     })
     
     if (
@@ -49,11 +51,13 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       hangout && 
       !hasAttemptedJoin &&
       hangout.privacyLevel === 'PUBLIC' &&
-      (isOnPublicHangoutPage || cameFromSignIn)
+      (isOnPublicHangoutPage || cameFromSignIn) &&
+      joinStatus === 'idle'
     ) {
       const attemptAutoJoin = async (retryCount = 0) => {
         try {
           setHasAttemptedJoin(true)
+          setJoinStatus('joining')
           
           // Check if user is already a participant (only if we have currentUserId)
           if (currentUserId) {
@@ -63,27 +67,45 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
             
             if (isAlreadyParticipant) {
               logger.info('User is already a participant, redirecting to authenticated page')
-              // Still redirect to authenticated page for better experience
+              setJoinStatus('success')
+              
+              // Show success message
+              toast.success('Welcome back!', {
+                description: 'You\'re already part of this hangout.',
+                duration: 3000,
+              })
+              
+              // Redirect to authenticated page for better experience
               if (isOnPublicHangoutPage) {
                 const hangoutDetailUrl = `/hangout/${hangoutId}`
-                window.location.href = hangoutDetailUrl
+                setTimeout(() => {
+                  window.location.href = hangoutDetailUrl
+                }, 1500)
               }
-              return // User is already a participant, no need to join
+              return
             }
           }
 
-          // Get auth token
-          const token = await getToken()
+          // Get auth token with exponential backoff
+          let token = await getToken()
+          if (!token && retryCount < 3) {
+            logger.warn(`No auth token available, retrying... (attempt ${retryCount + 1})`)
+            // Exponential backoff: 500ms, 1000ms, 2000ms
+            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retryCount)))
+            token = await getToken()
+          }
+
           if (!token) {
-            logger.error('No auth token available for auto-join')
-            // Retry once after a short delay
-            if (retryCount < 1) {
-              setTimeout(() => attemptAutoJoin(retryCount + 1), 500)
-            }
+            logger.error('No auth token available for auto-join after retries')
+            setJoinStatus('error')
+            toast.error('Authentication issue. Please try refreshing the page.', {
+              duration: 5000,
+            })
             return
           }
 
           // Attempt to join the hangout
+          logger.info('Attempting to join hangout', { hangoutId, retryCount })
           const response = await fetch(`/api/hangouts/${hangoutId}/join`, {
             method: 'POST',
             headers: {
@@ -95,9 +117,15 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
           if (response.ok) {
             const data = await response.json()
             logger.info('Auto-join successful', { hangoutId, data })
+            setJoinStatus('success')
             
-            toast.success('Welcome! You\'ve been automatically added to this hangout.', {
-              description: 'You can now RSVP, vote, and chat with other participants.',
+            // Call success callback if provided
+            if (onJoinSuccess) {
+              onJoinSuccess()
+            }
+            
+            toast.success('🎉 You\'ve joined the hangout!', {
+              description: 'Redirecting you to the full experience...',
               duration: 4000,
             })
             
@@ -105,10 +133,10 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
             // This provides the full experience (RSVP, voting, chat, etc.)
             const hangoutDetailUrl = `/hangout/${hangoutId}`
             
-            // Small delay to let user see the success message
+            // Delay to let user see the success message
             setTimeout(() => {
               window.location.href = hangoutDetailUrl
-            }, 1500)
+            }, 2000)
           } else {
             const errorData = await response.json()
             logger.error('Auto-join failed:', { status: response.status, error: errorData })
@@ -116,24 +144,47 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
             // If user is already a participant (400 error), just redirect
             if (response.status === 400 && errorData.error?.includes('already')) {
               logger.info('User already a participant, redirecting')
+              setJoinStatus('success')
+              
+              toast.success('Welcome back!', {
+                description: 'You\'re already part of this hangout.',
+                duration: 3000,
+              })
+              
               const hangoutDetailUrl = `/hangout/${hangoutId}`
-              window.location.href = hangoutDetailUrl
+              setTimeout(() => {
+                window.location.href = hangoutDetailUrl
+              }, 1500)
+            } else if (retryCount < 2) {
+              // Retry with exponential backoff for server errors
+              logger.warn(`Auto-join failed, retrying... (attempt ${retryCount + 1})`)
+              setJoinStatus('idle')
+              setHasAttemptedJoin(false)
+              setTimeout(() => attemptAutoJoin(retryCount + 1), 1000 * Math.pow(2, retryCount))
             } else {
-              // For other errors, show a subtle message and let user manually join
-              toast.info('You can join this hangout by clicking the "Join Hangout" button.', {
-                duration: 5000,
+              // After all retries failed
+              setJoinStatus('error')
+              toast.error('Couldn\'t join automatically', {
+                description: 'Click "Join Hangout" to try again.',
+                duration: 6000,
               })
             }
           }
         } catch (error) {
           logger.error('Error during auto-join:', error)
-          // Retry once on network errors
-          if (retryCount < 1) {
-            setTimeout(() => attemptAutoJoin(retryCount + 1), 1000)
+          
+          // Retry on network errors with exponential backoff
+          if (retryCount < 2) {
+            logger.warn(`Network error during auto-join, retrying... (attempt ${retryCount + 1})`)
+            setJoinStatus('idle')
+            setHasAttemptedJoin(false)
+            setTimeout(() => attemptAutoJoin(retryCount + 1), 1000 * Math.pow(2, retryCount))
           } else {
-            // After retries, show a subtle message
-            toast.info('You can join this hangout by clicking the "Join Hangout" button.', {
-              duration: 5000,
+            // After all retries, show error message
+            setJoinStatus('error')
+            toast.error('Connection issue', {
+              description: 'Please check your internet and try joining manually.',
+              duration: 6000,
             })
           }
         }
@@ -143,7 +194,7 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       const timeoutId = setTimeout(() => attemptAutoJoin(0), 1000)
       return () => clearTimeout(timeoutId)
     }
-  }, [isSignedIn, isLoaded, hangout, hasAttemptedJoin, hangoutId, searchParams, getToken, onJoinSuccess, currentUserId])
+  }, [isSignedIn, isLoaded, hangout, hasAttemptedJoin, hangoutId, searchParams, getToken, onJoinSuccess, currentUserId, joinStatus])
 
-  return { hasAttemptedJoin }
+  return { hasAttemptedJoin, joinStatus }
 }

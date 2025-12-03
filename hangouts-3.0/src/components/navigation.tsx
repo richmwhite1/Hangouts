@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth, useClerk } from "@clerk/nextjs"
 import { useProfile } from "@/hooks/use-profile"
 import { useUnreadCounts } from "@/hooks/use-unread-counts"
+import { useNotifications } from '@/contexts/notification-context'
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { NotificationSettings } from "@/components/notifications/notification-settings"
 import { NotificationHistory } from "@/components/notifications/notification-history"
@@ -26,6 +27,7 @@ export function Navigation() {
   const clerk = useClerk()
   const { profile, isLoading: profileLoading } = useProfile()
   const { totalUnreadCount } = useUnreadCounts()
+  const { unreadCount: notificationCount } = useNotifications()
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -74,6 +76,14 @@ export function Navigation() {
                     onClick={() => setShowNotifications(!showNotifications)}
                   >
                     <Bell className="w-5 h-5" />
+                    {notificationCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center text-xs"
+                      >
+                        {notificationCount > 99 ? '99+' : notificationCount}
+                      </Badge>
+                    )}
                   </Button>
                 </div>
                 <div className="relative">

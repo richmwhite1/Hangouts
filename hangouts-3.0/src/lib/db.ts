@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
 import { logger } from '@/lib/logger'
+import { emitNotificationEvent } from '@/lib/server/notification-emitter'
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
@@ -49,6 +50,20 @@ const createPrismaClient = () => {
 export const db = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+
+// Emit real-time events when notifications are created anywhere in the system
+db.$use(async (params, next) => {
+  const result = await next(params)
+
+  if (params.model === 'Notification' && params.action === 'create' && result) {
+    emitNotificationEvent(result.userId, {
+      type: 'created',
+      notification: result
+    })
+  }
+
+  return result
+})
 
 // Graceful shutdown
 process.on('beforeExit', async () => {

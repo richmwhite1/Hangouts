@@ -22,6 +22,16 @@ export type NotificationType =
   | 'LIKE'
   | 'COMMENT'
   | 'SHARE'
+  | 'POLL_VOTE_CAST'
+  | 'POLL_CONSENSUS_REACHED'
+  | 'HANGOUT_CONFIRMED'
+  | 'HANGOUT_CANCELLED'
+  | 'HANGOUT_REMINDER'
+  | 'HANGOUT_STARTING_SOON'
+  | 'EVENT_REMINDER'
+  | 'EVENT_STARTING_SOON'
+  | 'PHOTO_SHARED'
+  | 'RELATIONSHIP_REMINDER'
 export type FriendRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'BLOCKED'
 export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED'
 
@@ -153,10 +163,12 @@ export interface Notification {
   message: string
   data?: Record<string, unknown> | null
   isRead: boolean
+  isDismissed: boolean
   isEmailSent: boolean
   isPushSent: boolean
   createdAt: Date
   readAt?: Date | null
+  dismissedAt?: Date | null
   user?: User
 }
 

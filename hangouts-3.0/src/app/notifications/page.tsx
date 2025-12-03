@@ -1,174 +1,136 @@
 'use client'
 
-import { useState } from 'react'
-import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { Check, CheckCheck, Loader2, Trash2 } from 'lucide-react'
+
 import { PushNotificationSettings } from '@/components/notifications/push-notification-settings'
+import { useNotifications } from '@/contexts/notification-context'
+import {
+  formatNotificationTimestamp,
+  getNotificationColor,
+  getNotificationIcon
+} from '@/lib/notification-visuals'
 
-import { logger } from '@/lib/logger'
 export default function NotificationsPage() {
-  // Real implementation - no mock data
-  const notifications: any[] = []
-  const unreadCount = 0
-  const markAsRead = async (ids: string[]) => {
-    // console.log('Mark as read:', ids); // Removed for production
-  }
-  const markAllAsRead = async () => {
-    // console.log('Mark all as read'); // Removed for production
-  }
-  const isLoading = false
-  const [isMarkingAll, setIsMarkingAll] = useState(false)
-
-  const handleMarkAllAsRead = async () => {
-    setIsMarkingAll(true)
-    try {
-      await markAllAsRead()
-    } catch (error) {
-      logger.error('Failed to mark all as read:', error);
-    } finally {
-      setIsMarkingAll(false)
-    }
-  }
-
-  const handleMarkAsRead = async (notificationId: string) => {
-    try {
-      await markAsRead([notificationId])
-    } catch (error) {
-      logger.error('Failed to mark as read:', error);
-    }
-  }
-
-  const formatNotificationTime = (createdAt: string) => {
-    const date = new Date(createdAt)
-    const now = new Date()
-    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
-
-    if (diffInMinutes < 1) {
-      return 'Just now'
-    } else if (diffInMinutes < 60) {
-      return `${Math.floor(diffInMinutes)}m ago`
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)}h ago`
-    } else {
-      return date.toLocaleDateString()
-    }
-  }
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'FRIEND_REQUEST':
-        return '👥'
-      case 'FRIEND_ACCEPTED':
-        return '✅'
-      case 'HANGOUT_INVITATION':
-        return '🎉'
-      case 'HANGOUT_RSVP':
-        return '📅'
-      case 'HANGOUT_REMINDER':
-        return '⏰'
-      case 'HANGOUT_UPDATE':
-        return '📝'
-      case 'TASK_ASSIGNED':
-        return '📋'
-      case 'TASK_DUE':
-        return '⚠️'
-      case 'MESSAGE_RECEIVED':
-        return '💬'
-      case 'WEATHER_ALERT':
-        return '🌤️'
-      case 'ETA_UPDATE':
-        return '🚗'
-      default:
-        return '🔔'
-    }
-  }
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    hasMore,
+    isFetchingMore,
+    fetchMoreNotifications,
+    markAsRead,
+    markAllAsRead,
+    dismissNotification
+  } = useNotifications()
 
   return (
-    <div className="mobile-container space-y-6">
-      {/* Push Notification Settings */}
+    <div className="space-y-8">
       <PushNotificationSettings />
-      
-      {/* Notifications List */}
-      <div className="flex items-center justify-between py-6">
-        <div>
-          <h1 className="text-2xl font-bold text-dark-900 dark:text-white">
-            Notifications
-          </h1>
-          {unreadCount > 0 && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-        {unreadCount > 0 && (
-          <button 
-            onClick={handleMarkAllAsRead}
-            disabled={isMarkingAll}
-            className="btn btn-ghost btn-sm"
-          >
-            {isMarkingAll ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCheck className="h-4 w-4" />
+
+      <div className="rounded-lg border bg-card">
+        <div className="flex flex-col gap-4 border-b p-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Notification Center</p>
+            <h1 className="text-2xl font-semibold">
+              Stay on top of hangouts, friends, and reminders
+            </h1>
+            {unreadCount > 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+              </p>
             )}
-            Mark All Read
-          </button>
-        )}
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading notifications...</p>
-        </div>
-      ) : notifications.length > 0 ? (
-        <div className="space-y-3">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`card ${!notification.isRead ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800' : ''}`}
+          </div>
+          <div className="flex gap-3">
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                <CheckCheck className="h-4 w-4" />
+                Mark all read
+              </button>
+            )}
+            <Link
+              href="/settings/notifications"
+              className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
             >
-              <div className="flex items-start space-x-3">
-                <div className="text-2xl">
-                  {getNotificationIcon(notification.type)}
-                </div>
-                
-                <div className="flex-1">
-                  <h3 className="font-semibold text-dark-900 dark:text-white">
-                    {notification.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                    {formatNotificationTime(notification.createdAt)}
-                  </p>
-                </div>
-
-                {!notification.isRead && (
-                  <button
-                    onClick={() => handleMarkAsRead(notification.id)}
-                    className="p-1 hover:bg-dark-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
-                  >
-                    <Check className="h-4 w-4 text-gray-400" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="card">
-          <div className="text-center py-8">
-            <Bell className="h-12 w-12 text-dark-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              No notifications yet
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              You&apos;ll see notifications about hangouts and friends here
-            </p>
+              Manage preferences
+            </Link>
           </div>
         </div>
-      )}
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground">
+            No notifications yet. Activity about your hangouts, polls, and friends will show up here.
+          </div>
+        ) : (
+          <div className="divide-y">
+            {notifications.map(notification => (
+              <div
+                key={notification.id}
+                className={`flex items-start gap-4 px-6 py-4 ${!notification.isRead ? 'bg-muted/40' : ''}`}
+              >
+                <div className={`mt-1 ${getNotificationColor(notification.type)}`}>
+                  {getNotificationIcon(notification.type)}
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                    <h3 className="font-medium">{notification.title}</h3>
+                    <span className="text-xs text-muted-foreground">
+                      {formatNotificationTimestamp(notification.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                  {notification.data?.link && (
+                    <Link
+                      href={notification.data.link}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      View details
+                    </Link>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {!notification.isRead && (
+                    <button
+                      onClick={() => markAsRead(notification.id)}
+                      className="rounded-md border p-2 text-muted-foreground hover:bg-muted"
+                      aria-label="Mark as read"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => dismissNotification(notification.id)}
+                    className="rounded-md border p-2 text-muted-foreground hover:bg-muted"
+                    aria-label="Dismiss notification"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {hasMore && (
+              <div className="p-4 text-center">
+                <button
+                  onClick={fetchMoreNotifications}
+                  disabled={isFetchingMore}
+                  className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                >
+                  {isFetchingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Load more
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

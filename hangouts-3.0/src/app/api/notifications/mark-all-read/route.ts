@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
+import { emitNotificationEvent } from '@/lib/server/notification-emitter'
 // POST /api/notifications/mark-all-read - Mark all notifications as read
 export async function POST(request: NextRequest) {
   try {
@@ -16,18 +17,38 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(createErrorResponse('User not found', 'Authentication failed'), { status: 401 })
     }
-    const now = new Date()
-    const result = await db.notification.updateMany({
+    const unreadNotifications = await db.notification.findMany({
       where: {
         userId: user.id,
         isRead: false,
         isDismissed: false
+      },
+      select: {
+        id: true
+      }
+    })
+
+    const now = new Date()
+
+    const result = await db.notification.updateMany({
+      where: {
+        userId: user.id,
+        id: {
+          in: unreadNotifications.map(n => n.id)
+        }
       },
       data: {
         isRead: true,
         readAt: now
       }
     })
+
+    if (unreadNotifications.length > 0) {
+      emitNotificationEvent(user.id, {
+        type: 'bulk-read',
+        notificationIds: unreadNotifications.map(n => n.id)
+      })
+    }
     return NextResponse.json(createSuccessResponse({
       updatedCount: result.count
     }, 'All notifications marked as read'))

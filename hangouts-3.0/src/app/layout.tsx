@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { WebSocketProvider } from '@/contexts/websocket-context'
+import { NotificationProvider } from '@/contexts/notification-context'
 import { BottomNavigation } from '@/components/bottom-navigation'
 import { Navigation } from '@/components/navigation'
 import { GlobalErrorBoundary } from '@/components/global-error-boundary'
@@ -118,19 +119,21 @@ export default function RootLayout({
           <GlobalErrorBoundary>
             <RealtimeProvider>
               <WebSocketProvider>
-                <div className="min-h-screen bg-background text-foreground dark pb-20">
-                  <Navigation />
-                  <main className="container mx-auto px-4 py-6 max-w-4xl">
-                    {children}
-                  </main>
-                  <div suppressHydrationWarning>
-                    <BottomNavigation />
+                <NotificationProvider>
+                  <div className="min-h-screen bg-background text-foreground dark pb-20">
+                    <Navigation />
+                    <main className="container mx-auto px-4 py-6 max-w-4xl">
+                      {children}
+                    </main>
+                    <div suppressHydrationWarning>
+                      <BottomNavigation />
+                    </div>
                   </div>
-                </div>
-                <Toaster position="top-right" richColors />
-                <PWASetup />
-                <NetworkStatus />
-                <InstallPrompt showForAllUsers={true} />
+                  <Toaster position="top-right" richColors />
+                  <PWASetup />
+                  <NetworkStatus />
+                  <InstallPrompt showForAllUsers={true} />
+                </NotificationProvider>
               </WebSocketProvider>
             </RealtimeProvider>
           </GlobalErrorBoundary>

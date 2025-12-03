@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
+import { emitNotificationEvent } from '@/lib/server/notification-emitter'
 // PATCH /api/notifications/[id] - Update notification (mark as read/dismissed)
 export async function PATCH(
   request: NextRequest,
@@ -49,6 +50,13 @@ export async function PATCH(
       where: { id },
       data: updateData
     })
+
+    emitNotificationEvent(user.id, {
+      type: 'updated',
+      notificationId: id,
+      changes: updatedNotification
+    })
+
     return NextResponse.json(createSuccessResponse(updatedNotification, 'Notification updated successfully'))
   } catch (error) {
     logger.error('Error updating notification:', error);
@@ -83,6 +91,11 @@ export async function DELETE(
     }
     await db.notification.delete({
       where: { id }
+    })
+
+    emitNotificationEvent(user.id, {
+      type: 'deleted',
+      notificationId: id
     })
     return NextResponse.json(createSuccessResponse(null, 'Notification deleted successfully'))
   } catch (error) {

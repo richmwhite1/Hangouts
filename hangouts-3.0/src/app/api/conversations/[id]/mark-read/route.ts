@@ -4,6 +4,7 @@ import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
+import { emitNotificationEvent } from '@/lib/server/notification-emitter'
 // POST /api/conversations/[id]/mark-read - Mark conversation as read
 export async function POST(
   request: NextRequest,
@@ -160,6 +161,11 @@ export async function POST(
           isRead: true,
           readAt: new Date()
         }
+      })
+
+      emitNotificationEvent(user.id, {
+        type: 'bulk-read',
+        notificationIds: notificationIdsToMark
       })
     }
 

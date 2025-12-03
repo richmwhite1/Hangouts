@@ -246,3 +246,6 @@ if (require.main === module) {
 
 module.exports = { analyzeCurrentSchema, migrateFriendshipSchema, validateMigration };
 
+
+
+

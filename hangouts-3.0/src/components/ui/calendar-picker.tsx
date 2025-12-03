@@ -19,7 +19,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth())
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear())
   const [isMobile, setIsMobile] = useState(false)
-  
+
   // Detect mobile device (client-side only)
   useEffect(() => {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
@@ -31,7 +31,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
       const date = new Date(value)
       const dateString = date.toISOString().split('T')[0]
       setSelectedDate(dateString)
-      
+
       // Convert to 12-hour format
       let hours = date.getHours()
       const minutes = date.getMinutes()
@@ -39,7 +39,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
       hours = hours % 12 || 12
       const timeString = `${hours}:${minutes.toString().padStart(2, '0')} ${period}`
       setSelectedTime(timeString)
-      
+
       // Set display month/year to match the selected date
       setDisplayMonth(date.getMonth())
       setDisplayYear(date.getFullYear())
@@ -49,7 +49,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
   // Generate calendar days for displayed month
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate()
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay()
-  
+
   const days = []
   for (let i = 0; i < firstDayOfMonth; i++) {
     days.push(null)
@@ -68,24 +68,19 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
     const date = new Date(displayYear, displayMonth, day, 12, 0, 0) // Use noon to avoid DST issues
     const dateString = date.toISOString().split('T')[0]
     setSelectedDate(dateString)
-    
-    // Only auto-select a default time if none is selected AND there's no existing value
-    if (!selectedTime && !value) {
-      setSelectedTime('7:00 PM')
-    }
   }
 
   const convertTo24Hour = (time12: string) => {
     const [time, period] = time12.split(' ')
     let [hours, minutes] = time.split(':')
     hours = parseInt(hours)
-    
+
     if (period === 'PM' && hours !== 12) {
       hours += 12
     } else if (period === 'AM' && hours === 12) {
       hours = 0
     }
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes}`
   }
 
@@ -148,7 +143,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
   // Use native date/time inputs on mobile for better UX
   if (isMobile) {
     const dateValue = value ? new Date(value).toISOString().slice(0, 16) : ''
-    
+
     return (
       <div className={`relative ${className}`}>
         <input
@@ -187,7 +182,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                 <Calendar className="mr-2 h-4 w-4" />
                 Select Date
               </h3>
-              
+
               {/* Month Navigation */}
               <div className="flex items-center justify-between mb-4">
                 <button
@@ -208,28 +203,27 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                   ›
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-7 gap-1 text-center text-sm">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="p-2 text-gray-400 font-semibold text-xs">{day}</div>
                 ))}
                 {days.map((day, index) => {
-                  const isToday = day === new Date().getDate() && 
-                                 displayMonth === new Date().getMonth() && 
-                                 displayYear === new Date().getFullYear()
+                  const isToday = day === new Date().getDate() &&
+                    displayMonth === new Date().getMonth() &&
+                    displayYear === new Date().getFullYear()
                   const isSelected = selectedDate && day === new Date(selectedDate + 'T12:00:00').getDate() &&
-                                   displayMonth === new Date(selectedDate + 'T12:00:00').getMonth() &&
-                                   displayYear === new Date(selectedDate + 'T12:00:00').getFullYear()
-                  
+                    displayMonth === new Date(selectedDate + 'T12:00:00').getMonth() &&
+                    displayYear === new Date(selectedDate + 'T12:00:00').getFullYear()
+
                   return (
                     <button
                       key={index}
                       onClick={() => day && handleDateSelect(day)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] ${
-                        isSelected ? 'bg-blue-600 text-white shadow-lg' : 
-                        isToday ? 'bg-gray-600 text-white border-2 border-gray-400' :
-                        'text-white hover:bg-gray-700 hover:text-white'
-                      }`}
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] ${isSelected ? 'bg-blue-600 text-white shadow-lg' :
+                          isToday ? 'bg-gray-600 text-white border-2 border-gray-400' :
+                            'text-white hover:bg-gray-700 hover:text-white'
+                        }`}
                       disabled={!day}
                     >
                       {day}
@@ -250,17 +244,16 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                   <button
                     key={time}
                     onClick={() => handleTimeSelect(time)}
-                    className={`p-3 text-sm rounded-lg border-2 font-medium transition-all duration-200 active:scale-95 min-h-[44px] ${
-                      selectedTime === time 
-                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg' 
+                    className={`p-3 text-sm rounded-lg border-2 font-medium transition-all duration-200 active:scale-95 min-h-[44px] ${selectedTime === time
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg'
                         : 'border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500'
-                    }`}
+                      }`}
                   >
                     {time}
                   </button>
                 ))}
               </div>
-              
+
               {/* Custom Time Input */}
               <div className="space-y-2">
                 <button
@@ -270,7 +263,7 @@ export function CalendarPicker({ value, onChange, placeholder = "Select date and
                 >
                   {showCustomTime ? 'Hide' : 'Custom Time'}
                 </button>
-                
+
                 {showCustomTime && (
                   <div className="space-y-2">
                     <div className="flex gap-2">

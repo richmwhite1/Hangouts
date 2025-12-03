@@ -7,17 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Bell,
   X,
-  Calendar,
-  MessageSquare,
-  Users,
-  AlertCircle,
-  Clock,
-  Star,
   TrendingUp,
   BarChart3
 } from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { logger } from '@/lib/logger'
+import {
+  eventNotificationTypes,
+  formatNotificationTimestamp,
+  getNotificationColor,
+  getNotificationIcon,
+  hangoutNotificationTypes,
+  messageNotificationTypes
+} from '@/lib/notification-visuals'
 interface Notification {
   id: string
   type: string
@@ -93,51 +95,12 @@ export function NotificationHistory({ isOpen, onClose }: NotificationHistoryProp
       logger.error('Error fetching stats:', error);
     }
   }
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'MESSAGE':
-        return <MessageSquare className="w-4 h-4" />
-      case 'HANGOUT_VOTE_NEEDED':
-      case 'HANGOUT_RSVP_NEEDED':
-      case 'HANGOUT_MANDATORY_RSVP':
-        return <Users className="w-4 h-4" />
-      case 'HANGOUT_REMINDER':
-      case 'EVENT_REMINDER':
-        return <Clock className="w-4 h-4" />
-      case 'HANGOUT_STARTING_SOON':
-      case 'EVENT_STARTING_SOON':
-        return <AlertCircle className="w-4 h-4" />
-      case 'FRIEND_REQUEST':
-      case 'FRIEND_ACCEPTED':
-        return <Star className="w-4 h-4" />
-      default:
-        return <Bell className="w-4 h-4" />
-    }
-  }
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case 'HANGOUT_MANDATORY_RSVP':
-      case 'HANGOUT_STARTING_SOON':
-      case 'EVENT_STARTING_SOON':
-        return 'text-red-500'
-      case 'HANGOUT_VOTE_NEEDED':
-      case 'HANGOUT_RSVP_NEEDED':
-        return 'text-orange-500'
-      case 'MESSAGE':
-        return 'text-blue-500'
-      case 'HANGOUT_REMINDER':
-      case 'EVENT_REMINDER':
-        return 'text-green-500'
-      default:
-        return 'text-gray-500'
-    }
-  }
   const filteredNotifications = notifications.filter(notification => {
     if (activeTab === 'all') return true
     if (activeTab === 'unread') return !notification.isRead
-    if (activeTab === 'messages') return notification.type === 'MESSAGE'
-    if (activeTab === 'hangouts') return notification.type.includes('HANGOUT')
-    if (activeTab === 'events') return notification.type.includes('EVENT')
+    if (activeTab === 'messages') return messageNotificationTypes.has(notification.type)
+    if (activeTab === 'hangouts') return hangoutNotificationTypes.has(notification.type)
+    if (activeTab === 'events') return eventNotificationTypes.has(notification.type)
     return true
   })
   if (!isOpen) return null
@@ -251,7 +214,7 @@ export function NotificationHistory({ isOpen, onClose }: NotificationHistoryProp
                               </p>
                               <div className="flex items-center space-x-2 mt-1">
                                 <p className="text-xs text-gray-400">
-                                  {new Date(notification.createdAt).toLocaleString()}
+                                  {formatNotificationTimestamp(notification.createdAt)}
                                 </p>
                                 {notification.isRead && (
                                   <Badge variant="secondary" className="text-xs">

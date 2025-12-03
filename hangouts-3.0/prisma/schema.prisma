@@ -53,6 +53,7 @@ model User {
   typingIndicators              TypingIndicator[]
   notificationPreferences       NotificationPreference[]
   notifications                 Notification[]
+  pushSubscriptions             PushSubscription[]
   reminders                     Reminder[]
   passwordResetTokens           PasswordResetToken?
   photo_comments                photo_comments[]
@@ -133,6 +134,8 @@ model Notification {
   @@index([isRead])
   @@index([isDismissed])
   @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, isRead, createdAt])
   @@map("notifications")
 }
 
@@ -151,6 +154,21 @@ model NotificationPreference {
   @@index([userId])
   @@index([type])
   @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model PollVote {
@@ -811,6 +829,15 @@ enum NotificationType {
   LIKE
   COMMENT
   SHARE
+  POLL_VOTE_CAST
+  POLL_CONSENSUS_REACHED
+  HANGOUT_CONFIRMED
+  HANGOUT_CANCELLED
+  HANGOUT_REMINDER
+  HANGOUT_STARTING_SOON
+  EVENT_REMINDER
+  EVENT_STARTING_SOON
+  PHOTO_SHARED
   RELATIONSHIP_REMINDER
 }
 
