@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { ActionFeed } from "@/components/home/action-feed"
 import { GuestLanding } from "@/components/guest-landing"
 import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
+import { ViewToggle } from "@/components/planner/view-toggle"
+import { TodayView } from "@/components/planner/today-view"
+import { MonthCalendarView } from "@/components/planner/month-calendar-view"
 
 // Re-using the interface (should be shared)
 interface FeedItem {
@@ -46,6 +48,7 @@ export default function HomePage() {
   const [hangouts, setHangouts] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [isClient, setIsClient] = useState(false)
+  const [view, setView] = useState<'today' | 'month'>('today')
 
   // Swipe gestures for mobile navigation
   const swipeGestures = useSwipeGestures({
@@ -102,16 +105,24 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen pb-20" {...swipeGestures}>
+    <div className="min-h-screen bg-planner-cream pb-20" {...swipeGestures}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pt-2 px-4">
-        <h1 className="text-2xl font-bold text-white">My Plans</h1>
-        {/* Profile/Settings button could go here */}
+      <div className="sticky top-0 z-10 bg-planner-cream/95 backdrop-blur-sm border-b border-planner-border px-4 py-4">
+        <h1 className="text-2xl font-bold text-planner-text-primary text-center mb-4">
+          {view === 'today' ? 'Today' : 'Calendar'}
+        </h1>
+
+        {/* View Toggle */}
+        <ViewToggle value={view} onChange={setView} />
       </div>
 
-      {/* Main Feed */}
-      <div className="px-4">
-        <ActionFeed items={hangouts} loading={loading} />
+      {/* Main Content */}
+      <div className="px-4 pt-6">
+        {view === 'today' ? (
+          <TodayView items={hangouts} loading={loading} />
+        ) : (
+          <MonthCalendarView items={hangouts} loading={loading} />
+        )}
       </div>
     </div>
   )

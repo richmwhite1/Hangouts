@@ -78,5 +78,22 @@ export const createWinstonLogger = (context: string) => {
   return logger
 }
 
+// Higher-order function for API route logging
+export const withLogger = (handler: any) => {
+  return async (req: any, res: any) => {
+    const start = Date.now()
+    try {
+      const result = await handler(req, res)
+      const duration = Date.now() - start
+      logger.info(`API ${req.method} ${req.url} completed in ${duration}ms`)
+      return result
+    } catch (error) {
+      const duration = Date.now() - start
+      logger.error(`API ${req.method} ${req.url} failed after ${duration}ms`, error)
+      throw error
+    }
+  }
+}
+
 // Export default logger
 export default logger

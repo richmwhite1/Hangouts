@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
-import { QuickCreateForm } from '@/components/create/quick-create-form'
-import { GuestLanding } from '@/components/guest-landing'
+// import { QuickCreateForm } from '@/components/create/quick-create-form'
+// import { GuestLanding } from '@/components/guest-landing'
 
 export default function CreatePage() {
   const router = useRouter()
@@ -27,12 +27,11 @@ export default function CreatePage() {
   }
 
   if (!isSignedIn) {
-    return <GuestLanding onSignIn={() => router.push('/sign-in')} onSignUp={() => router.push('/sign-up')} />
+    router.push('/signin')
+    return null
   }
 
-  return (
-    <div className="min-h-screen bg-black pt-20 pb-20">
-      <QuickCreateForm />
-    </div>
-  )
+  // Redirect to new create page
+  router.push('/create/new')
+  return null
 }

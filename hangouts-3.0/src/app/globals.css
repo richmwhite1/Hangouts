@@ -4,76 +4,181 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Professional Dark Theme Color Palette - Masculine, Utilitarian */
-  --background: #000000; /* True black background */
-  --foreground: #FAFAFA; /* Brighter white text */
-  --card: #121212; /* Very dark gray card */
-  --card-foreground: #FAFAFA; /* White text on cards */
-  --popover: #121212; /* Dark popover background */
-  --popover-foreground: #FAFAFA; /* White text on popovers */
-  --primary: #2563EB; /* Deep slate blue - Professional, utilitarian */
-  --primary-foreground: #FFFFFF; /* White text on primary */
-  --secondary: #262626; /* Instagram border gray */
-  --secondary-foreground: #FAFAFA; /* White text on secondary */
-  --muted: #262626; /* Muted dark gray */
-  --muted-foreground: #A8A8A8; /* Refined gray text */
-  --accent: #34D399; /* Green for success states */
-  --accent-foreground: #FFFFFF; /* White text on accent */
-  --destructive: #ED4956; /* Instagram red for destructive */
-  --destructive-foreground: #FFFFFF; /* White text on destructive */
-  --border: #262626; /* Instagram border color */
-  --input: #121212; /* Dark input background */
-  --ring: #2563EB; /* Deep slate blue ring */
-  --chart-1: #2563EB; /* Deep slate blue chart */
-  --chart-2: #34D399; /* Green chart */
-  --chart-3: #F59E0B; /* Yellow chart */
-  --chart-4: #ED4956; /* Instagram red chart */
-  --chart-5: #2563EB; /* Deep slate blue chart */
-  --radius: 0.25rem; /* 4px - Sharp, masculine corners */
-  --sidebar: #000000; /* Black sidebar background */
-  --sidebar-foreground: #FAFAFA; /* White sidebar text */
-  --sidebar-primary: #2563EB; /* Deep slate blue sidebar primary */
-  --sidebar-primary-foreground: #FFFFFF; /* White text on sidebar primary */
-  --sidebar-accent: #121212; /* Dark sidebar accent */
-  --sidebar-accent-foreground: #FAFAFA; /* White text on sidebar accent */
-  --sidebar-border: #262626; /* Instagram border gray */
-  --sidebar-ring: #2563EB; /* Deep slate blue sidebar ring */
+  /* Professional Planner Theme - Warm, Trustworthy, Enterprise */
+  --background: #FAFAFA;
+  /* Creamy off-white background */
+  --foreground: #1F2937;
+  /* Dark gray text for readability */
+  --card: #FFFFFF;
+  /* Pure white cards */
+  --card-foreground: #1F2937;
+  /* Dark text on cards */
+  --popover: #FFFFFF;
+  /* White popover background */
+  --popover-foreground: #1F2937;
+  /* Dark text on popovers */
+  --primary: #1E3A8A;
+  /* Rich navy blue - Professional, trustworthy */
+  --primary-foreground: #FFFFFF;
+  /* White text on primary */
+  --secondary: #E5E7EB;
+  /* Light gray for secondary elements */
+  --secondary-foreground: #1F2937;
+  /* Dark text on secondary */
+  --muted: #F3F4F6;
+  /* Very light gray for muted backgrounds */
+  --muted-foreground: #6B7280;
+  /* Medium gray text */
+  --accent: #34D399;
+  /* Green for success states */
+  --accent-foreground: #FFFFFF;
+  /* White text on accent */
+  --destructive: #EF4444;
+  /* Red for destructive actions */
+  --destructive-foreground: #FFFFFF;
+  /* White text on destructive */
+  --border: #E5E7EB;
+  /* Light gray borders */
+  --input: #FFFFFF;
+  /* White input background */
+  --ring: #1E3A8A;
+  /* Navy blue focus ring */
+  --chart-1: #1E3A8A;
+  /* Navy blue chart */
+  --chart-2: #34D399;
+  /* Green chart */
+  --chart-3: #F59E0B;
+  /* Amber chart */
+  --chart-4: #EF4444;
+  /* Red chart */
+  --chart-5: #8B5CF6;
+  /* Purple chart */
+  --radius: 0.5rem;
+  /* 8px - Softer, more professional corners */
+  --sidebar: #FAFAFA;
+  /* Creamy sidebar background */
+  --sidebar-foreground: #1F2937;
+  /* Dark sidebar text */
+  --sidebar-primary: #1E3A8A;
+  /* Navy blue sidebar primary */
+  --sidebar-primary-foreground: #FFFFFF;
+  /* White text on sidebar primary */
+  --sidebar-accent: #F3F4F6;
+  /* Light gray sidebar accent */
+  --sidebar-accent-foreground: #1F2937;
+  /* Dark text on sidebar accent */
+  --sidebar-border: #E5E7EB;
+  /* Light gray sidebar border */
+  --sidebar-ring: #1E3A8A;
+  /* Navy blue sidebar ring */
+
+  /* Planner-specific tokens */
+  --planner-cream: #FAFAFA;
+  /* Main background cream */
+  --planner-cream-dark: #F5F7FA;
+  /* Slightly darker cream for depth */
+  --planner-navy: #1E3A8A;
+  /* Primary navy */
+  --planner-navy-light: #2563EB;
+  /* Lighter navy for hover */
+  --planner-navy-dark: #1E40AF;
+  /* Darker navy for active */
+  --planner-shadow: rgba(30, 58, 138, 0.08);
+  /* Soft navy shadow */
+  --planner-shadow-md: rgba(30, 58, 138, 0.12);
+  /* Medium shadow */
+  --planner-shadow-lg: rgba(30, 58, 138, 0.16);
+  /* Large shadow */
+  --planner-border: #E5E7EB;
+  /* Soft border color */
+  --planner-text-primary: #1F2937;
+  /* Primary text */
+  --planner-text-secondary: #6B7280;
+  /* Secondary text */
+  --planner-text-muted: #9CA3AF;
+  /* Muted text */
 }
 
 .dark {
-  /* Instagram-like Dark Theme - Same as root for consistency */
-  --background: #000000; /* True black background */
-  --foreground: #FAFAFA; /* Brighter white text */
-  --card: #121212; /* Very dark gray card */
-  --card-foreground: #FAFAFA; /* White text on cards */
-  --popover: #121212; /* Dark popover background */
-  --popover-foreground: #FAFAFA; /* White text on popovers */
-  --primary: #2563EB; /* Deep slate blue - Professional, utilitarian */
-  --primary-foreground: #FFFFFF; /* White text on primary */
-  --secondary: #262626; /* Instagram border gray */
-  --secondary-foreground: #FAFAFA; /* White text on secondary */
-  --muted: #262626; /* Muted dark gray */
-  --muted-foreground: #A8A8A8; /* Refined gray text */
-  --accent: #34D399; /* Green for success states */
-  --accent-foreground: #FFFFFF; /* White text on accent */
-  --destructive: #ED4956; /* Instagram red for destructive */
-  --destructive-foreground: #FFFFFF; /* White text on destructive */
-  --border: #262626; /* Instagram border color */
-  --input: #121212; /* Dark input background */
-  --ring: #2563EB; /* Deep slate blue ring */
-  --chart-1: #2563EB; /* Deep slate blue chart */
-  --chart-2: #34D399; /* Green chart */
-  --chart-3: #F59E0B; /* Yellow chart */
-  --chart-4: #ED4956; /* Instagram red chart */
-  --chart-5: #2563EB; /* Deep slate blue chart */
-  --sidebar: #000000; /* Black sidebar background */
-  --sidebar-foreground: #FAFAFA; /* White sidebar text */
-  --sidebar-primary: #2563EB; /* Deep slate blue sidebar primary */
-  --sidebar-primary-foreground: #FFFFFF; /* White text on sidebar primary */
-  --sidebar-accent: #121212; /* Dark sidebar accent */
-  --sidebar-accent-foreground: #FAFAFA; /* White text on sidebar accent */
-  --sidebar-border: #262626; /* Instagram border gray */
-  --sidebar-ring: #2563EB; /* Deep slate blue sidebar ring */
+  /* Dark mode planner theme - maintaining warmth */
+  --background: #111827;
+  /* Dark blue-gray background */
+  --foreground: #F9FAFB;
+  /* Off-white text */
+  --card: #1F2937;
+  /* Dark gray cards */
+  --card-foreground: #F9FAFB;
+  /* Off-white text on cards */
+  --popover: #1F2937;
+  /* Dark popover background */
+  --popover-foreground: #F9FAFB;
+  /* Off-white text on popovers */
+  --primary: #2563EB;
+  /* Lighter navy for dark mode */
+  --primary-foreground: #FFFFFF;
+  /* White text on primary */
+  --secondary: #374151;
+  /* Medium gray for secondary */
+  --secondary-foreground: #F9FAFB;
+  /* Off-white text on secondary */
+  --muted: #374151;
+  /* Medium gray muted */
+  --muted-foreground: #9CA3AF;
+  /* Light gray text */
+  --accent: #34D399;
+  /* Green for success */
+  --accent-foreground: #FFFFFF;
+  /* White text on accent */
+  --destructive: #EF4444;
+  /* Red for destructive */
+  --destructive-foreground: #FFFFFF;
+  /* White text on destructive */
+  --border: #374151;
+  /* Medium gray borders */
+  --input: #1F2937;
+  /* Dark input background */
+  --ring: #2563EB;
+  /* Blue focus ring */
+  --chart-1: #2563EB;
+  /* Blue chart */
+  --chart-2: #34D399;
+  /* Green chart */
+  --chart-3: #F59E0B;
+  /* Amber chart */
+  --chart-4: #EF4444;
+  /* Red chart */
+  --chart-5: #8B5CF6;
+  /* Purple chart */
+  --sidebar: #111827;
+  /* Dark sidebar */
+  --sidebar-foreground: #F9FAFB;
+  /* Off-white sidebar text */
+  --sidebar-primary: #2563EB;
+  /* Blue sidebar primary */
+  --sidebar-primary-foreground: #FFFFFF;
+  /* White text */
+  --sidebar-accent: #374151;
+  /* Medium gray accent */
+  --sidebar-accent-foreground: #F9FAFB;
+  /* Off-white text */
+  --sidebar-border: #374151;
+  /* Medium gray border */
+  --sidebar-ring: #2563EB;
+  /* Blue ring */
+
+  /* Dark mode planner tokens */
+  --planner-cream: #111827;
+  --planner-cream-dark: #1F2937;
+  --planner-navy: #2563EB;
+  --planner-navy-light: #3B82F6;
+  --planner-navy-dark: #1D4ED8;
+  --planner-shadow: rgba(0, 0, 0, 0.3);
+  --planner-shadow-md: rgba(0, 0, 0, 0.4);
+  --planner-shadow-lg: rgba(0, 0, 0, 0.5);
+  --planner-border: #374151;
+  --planner-text-primary: #F9FAFB;
+  --planner-text-secondary: #D1D5DB;
+  --planner-text-muted: #9CA3AF;
 }
 
 @theme inline {
@@ -122,11 +227,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
   }
-  
+
   /* Typography Hierarchy - Masculine, Clean, Sharp */
   /* Headers use Oswald - Bold, Masculine, Sharp */
   h1 {
@@ -137,7 +243,7 @@
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
-  
+
   h2 {
     @apply text-xl font-semibold text-foreground;
     font-family: var(--font-oswald), 'Oswald', sans-serif;
@@ -146,7 +252,7 @@
     letter-spacing: -0.01em;
     line-height: 1.3;
   }
-  
+
   h3 {
     @apply text-lg font-medium text-foreground;
     font-family: var(--font-oswald), 'Oswald', sans-serif;
@@ -155,7 +261,7 @@
     letter-spacing: -0.01em;
     line-height: 1.4;
   }
-  
+
   h4 {
     @apply text-base font-medium text-foreground;
     font-family: var(--font-oswald), 'Oswald', sans-serif;
@@ -164,9 +270,10 @@
     letter-spacing: -0.005em;
     line-height: 1.5;
   }
-  
+
   /* Body text uses Roboto - Clean, Readable */
-  p, .message-text {
+  p,
+  .message-text {
     @apply text-base text-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
     font-size: 16px;
@@ -174,8 +281,9 @@
     letter-spacing: -0.01em;
     line-height: 1.5;
   }
-  
-  .label, label {
+
+  .label,
+  label {
     @apply text-sm text-muted-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
     font-size: 14px;
@@ -183,8 +291,9 @@
     letter-spacing: -0.005em;
     line-height: 1.4;
   }
-  
-  .small-text, .caption {
+
+  .small-text,
+  .caption {
     @apply text-xs text-muted-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
     font-size: 12px;
@@ -192,67 +301,67 @@
     letter-spacing: 0;
     line-height: 1.4;
   }
-  
+
   /* Text rendering optimizations */
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
-  
+
   /* Text truncation */
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   /* Layout and Spacing - Instagram-like */
   .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 16px;
   }
-  
+
   .message-bubble {
     @apply p-3 mb-2 rounded-sm max-w-[70%];
     padding: 12px;
     margin-bottom: 8px;
     border-radius: 4px;
   }
-  
+
   .message-sent {
     @apply bg-primary text-primary-foreground ml-auto;
     background: #60A5FA;
     color: #F9FAFB;
   }
-  
+
   .message-received {
     @apply bg-secondary text-secondary-foreground mr-auto;
     background: #374151;
     color: #F9FAFB;
   }
-  
+
   .chat-area {
     @apply flex flex-col space-y-2;
     display: flex;
     flex-direction: column;
   }
-  
+
   /* UI Components - Masculine, Clean, Sharp */
   .btn-primary {
     @apply bg-primary text-primary-foreground px-4 py-2 rounded-sm font-semibold;
@@ -263,18 +372,18 @@
     transition: all 0.2s ease;
     user-select: none;
   }
-  
+
   .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
     background: #1D4ED8;
   }
-  
+
   .btn-primary:active {
     transform: translateY(0) scale(0.98);
     box-shadow: none;
   }
-  
+
   .btn-secondary {
     @apply bg-transparent border border-border text-foreground px-4 py-2 rounded-sm font-medium;
     background: transparent;
@@ -285,16 +394,16 @@
     transition: all 0.2s ease;
     user-select: none;
   }
-  
+
   .btn-secondary:hover {
     background: #121212;
     border-color: #3d3d3d;
   }
-  
+
   .btn-secondary:active {
     transform: scale(0.98);
   }
-  
+
   .btn-ghost {
     @apply text-foreground px-4 py-2 rounded-sm font-medium;
     color: #FAFAFA;
@@ -304,15 +413,15 @@
     transition: all 0.2s ease;
     user-select: none;
   }
-  
+
   .btn-ghost:hover {
     background: #121212;
   }
-  
+
   .btn-ghost:active {
     transform: scale(0.95);
   }
-  
+
   .input-field {
     @apply bg-input text-foreground border border-border rounded-sm px-3 py-2;
     background: #121212;
@@ -323,17 +432,17 @@
     transition: all 0.2s ease;
     font-size: 16px;
   }
-  
+
   .input-field:focus {
     outline: none;
     border-color: #2563EB;
     background: #1a1a1a;
   }
-  
+
   .input-field::placeholder {
     color: #8E8E8E;
   }
-  
+
   .card {
     @apply bg-card text-card-foreground rounded-sm border border-border;
     background: #121212;
@@ -342,15 +451,15 @@
     border-radius: 4px;
     box-shadow: none;
   }
-  
+
   .card-hover {
     transition: all 0.2s ease;
   }
-  
+
   .card-hover:hover {
     background: #1a1a1a;
   }
-  
+
   /* Masculine, clean feed card */
   .feed-card {
     background: #121212;
@@ -358,107 +467,115 @@
     border-radius: 4px;
     overflow: hidden;
   }
-  
+
   .success-indicator {
     @apply text-accent;
     color: #34D399;
   }
-  
+
   .error-indicator {
     @apply text-destructive;
     color: #EF4444;
   }
-  
+
   /* Animations - Instagram-like Refined */
   @keyframes fadeIn {
     from {
       opacity: 0;
       transform: translateY(10px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
+
   @keyframes slideIn {
     from {
       opacity: 0;
       transform: translateX(-20px);
     }
+
     to {
       opacity: 1;
       transform: translateX(0);
     }
   }
-  
+
   @keyframes slideUp {
     from {
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
+
   @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.5;
     }
   }
-  
+
   @keyframes skeleton {
     0% {
       background-position: -468px 0;
     }
+
     100% {
       background-position: 468px 0;
     }
   }
-  
+
   @keyframes scaleIn {
     from {
       opacity: 0;
       transform: scale(0.95);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
     }
   }
-  
+
   .fade-in {
     animation: fadeIn 0.3s ease-out;
   }
-  
+
   .slide-in {
     animation: slideIn 0.25s ease-out;
   }
-  
+
   .slide-up {
     animation: slideUp 0.3s ease-out;
   }
-  
+
   .pulse {
     animation: pulse 2s infinite;
   }
-  
+
   .scale-in {
     animation: scaleIn 0.2s ease-out;
   }
-  
+
   /* Skeleton loader for images */
   .skeleton {
     background: linear-gradient(90deg, #121212 0%, #1a1a1a 50%, #121212 100%);
     background-size: 200% 100%;
     animation: skeleton 1.5s ease-in-out infinite;
   }
-  
+
   .online-dot {
     @apply w-3 h-3 bg-accent rounded-full;
     width: 12px;
@@ -466,7 +583,7 @@
     background: #34D399;
     border-radius: 50%;
   }
-  
+
   .offline-dot {
     @apply w-3 h-3 bg-muted-foreground rounded-full;
     width: 12px;
@@ -474,98 +591,102 @@
     background: #9CA3AF;
     border-radius: 50%;
   }
-  
+
   /* Mobile Responsiveness - Instagram-like */
   @media (max-width: 768px) {
     .container {
       padding: 8px;
       max-width: 100%;
     }
-    
+
     h1 {
       font-size: 20px;
       font-weight: 600;
     }
-    
+
     h2 {
       font-size: 18px;
       font-weight: 600;
     }
-    
+
     h3 {
       font-size: 16px;
       font-weight: 500;
     }
-    
-    p, .message-text {
+
+    p,
+    .message-text {
       font-size: 14px;
     }
-    
-    .label, label {
+
+    .label,
+    label {
       font-size: 12px;
     }
-    
-    .btn-primary, .btn-secondary {
+
+    .btn-primary,
+    .btn-secondary {
       font-size: 14px;
       padding: 6px 12px;
     }
-    
+
     .input-field {
       font-size: 14px;
       padding: 6px;
     }
-    
+
     .message-bubble {
       max-width: 90%;
       padding: 10px;
     }
-    
+
     .card {
       padding: 12px;
       border-radius: 4px;
     }
   }
-  
+
   @media (max-width: 480px) {
     .container {
       padding: 4px;
     }
-    
+
     h1 {
       font-size: 18px;
     }
-    
+
     .message-bubble {
       max-width: 95%;
       padding: 8px;
     }
-    
-    .btn-primary, .btn-secondary {
+
+    .btn-primary,
+    .btn-secondary {
       font-size: 12px;
       padding: 4px 8px;
     }
   }
-  
+
   /* Additional Utility Classes */
   .instagram-gradient {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
-  
+
   .glass-effect {
     background: rgba(31, 41, 55, 0.8);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(55, 65, 81, 0.3);
   }
-  
+
   .hover-lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  
+
   .hover-lift:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-  
+
   .text-gradient {
     background: linear-gradient(135deg, #60A5FA, #34D399);
     -webkit-background-clip: text;
@@ -589,13 +710,13 @@
   .gradient-icon-light {
     background: linear-gradient(135deg, rgba(96, 165, 250, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
   }
-  
+
   /* Professional Avatar Enhancements */
   .avatar-container {
     position: relative;
     display: inline-block;
   }
-  
+
   .avatar-status-dot {
     position: absolute;
     bottom: -2px;
@@ -608,40 +729,40 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .avatar-status-dot::after {
     content: '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
   }
-  
+
   .avatar-status-online .avatar-status-dot::after {
     background-color: #34D399;
   }
-  
+
   .avatar-status-offline .avatar-status-dot::after {
     background-color: #9CA3AF;
   }
-  
+
   .avatar-status-away .avatar-status-dot::after {
     background-color: #F59E0B;
   }
-  
+
   .avatar-status-busy .avatar-status-dot::after {
     background-color: #EF4444;
   }
-  
+
   /* Enhanced Card Styling */
   .card-hover {
     transition: all 0.2s ease;
   }
-  
+
   .card-hover:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-  
+
   /* Touch-friendly buttons for mobile */
   .btn-touch {
     min-height: 44px;
@@ -650,53 +771,183 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   /* Enhanced Typography */
   .text-professional {
     font-family: var(--font-roboto), 'Roboto', sans-serif;
     letter-spacing: -0.01em;
     line-height: 1.5;
   }
-  
+
   .heading-professional {
     font-family: var(--font-oswald), 'Oswald', sans-serif;
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
-  
+
+
   /* Safe Area Insets for iPhone */
   @supports (padding: max(0px)) {
     .safe-area-bottom {
       padding-bottom: max(8px, env(safe-area-inset-bottom));
     }
-    
+
     .safe-area-top {
       padding-top: max(8px, env(safe-area-inset-top));
     }
-    
+
     .safe-area-left {
       padding-left: max(8px, env(safe-area-inset-left));
     }
-    
+
     .safe-area-right {
       padding-right: max(8px, env(safe-area-inset-right));
     }
-    
+
     .pb-safe {
       padding-bottom: env(safe-area-inset-bottom);
     }
-    
+
     .pt-safe {
       padding-top: env(safe-area-inset-top);
     }
-    
+
     .pl-safe {
       padding-left: env(safe-area-inset-left);
     }
-    
+
     .pr-safe {
       padding-right: env(safe-area-inset-right);
     }
+  }
+
+  /* Planner-Specific Utility Classes */
+
+  /* Paper texture for warmth */
+  .paper-texture {
+    background-image:
+      repeating-linear-gradient(0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.01) 2px,
+        rgba(0, 0, 0, 0.01) 4px);
+  }
+
+  /* Elevated card with soft shadow */
+  .card-elevated {
+    background: var(--card);
+    border: 1px solid var(--planner-border);
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 3px var(--planner-shadow),
+      0 1px 2px var(--planner-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .card-elevated:hover {
+    box-shadow:
+      0 4px 6px var(--planner-shadow-md),
+      0 2px 4px var(--planner-shadow);
+    transform: translateY(-1px);
+  }
+
+  /* Rolodex-style tab for navigation */
+  .tab-planner {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--planner-border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+  }
+
+  .tab-planner::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--card);
+  }
+
+  .tab-planner.active {
+    background: var(--background);
+    box-shadow:
+      0 -2px 4px var(--planner-shadow),
+      inset 0 -1px 0 var(--background);
+    transform: translateY(-2px);
+    z-index: 10;
+  }
+
+  /* Planner navy gradient */
+  .gradient-planner-navy {
+    background: linear-gradient(135deg, var(--planner-navy) 0%, var(--planner-navy-dark) 100%);
+  }
+
+  /* Soft professional shadow */
+  .shadow-planner {
+    box-shadow: 0 2px 8px var(--planner-shadow);
+  }
+
+  .shadow-planner-md {
+    box-shadow: 0 4px 12px var(--planner-shadow-md);
+  }
+
+  .shadow-planner-lg {
+    box-shadow: 0 8px 24px var(--planner-shadow-lg);
+  }
+
+  /* Time block styling for Today view */
+  .time-block {
+    position: relative;
+    padding-left: 80px;
+    min-height: 60px;
+  }
+
+  .time-block::before {
+    content: attr(data-time);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 70px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--planner-text-secondary);
+  }
+
+  /* Segmented control styling */
+  .segmented-control {
+    display: inline-flex;
+    background: var(--muted);
+    border-radius: calc(var(--radius) - 2px);
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .segmented-control-item {
+    position: relative;
+    padding: 8px 20px;
+    border-radius: calc(var(--radius) - 4px);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--planner-text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 1;
+  }
+
+  .segmented-control-item.active {
+    color: var(--primary-foreground);
+    background: var(--planner-navy);
+    box-shadow: 0 1px 3px var(--planner-shadow);
+  }
+
+  .segmented-control-item:hover:not(.active) {
+    color: var(--planner-text-primary);
   }
 }

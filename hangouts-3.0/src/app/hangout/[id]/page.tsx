@@ -15,7 +15,7 @@ import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
 import { logger } from '@/lib/logger'
 import { useAutoJoin } from '@/hooks/use-auto-join'
-import { ShareModal } from '@/components/share/share-modal'
+// import { ShareModal } from '@/components/share/share-modal'
 interface Hangout {
   id: string
   title: string
@@ -147,7 +147,7 @@ export default function HangoutDetailPage() {
   const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
   const [showPrimaryPhotoModal, setShowPrimaryPhotoModal] = useState(false)
   const [availablePhotos, setAvailablePhotos] = useState<any[]>([])
-  const [showShareModal, setShowShareModal] = useState(false)
+  // const [showShareModal, setShowShareModal] = useState(false)
 
   // Haptic feedback for mobile devices
   const { hapticSuccess } = useHapticFeedback({ enabled: true })
@@ -260,7 +260,8 @@ export default function HangoutDetailPage() {
   }
   const handleShare = async () => {
     if (!hangout) return
-    setShowShareModal(true)
+    // setShowShareModal(true)
+    await sharingService.shareHangout(hangout.id, hangout.title, hangout.description || '')
   }
   const handleCopyLink = async () => {
     if (!hangout) return
