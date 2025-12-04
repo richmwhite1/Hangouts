@@ -1363,17 +1363,10 @@ export default function HangoutDetailPage() {
         )}
 
         {/* Share Modal */}
-        {showShareModal && hangout && (
+        {/* {showShareModal && hangout && (
           <ShareModal
             isOpen={showShareModal}
             onClose={() => setShowShareModal(false)}
-            hangout={{
-              id: hangout.id,
-              title: hangout.title,
-              startTime: hangout.startTime,
-              ...(hangout.location && { location: hangout.location }),
-              ...(hangout.image && { image: hangout.image }),
-              creator: {
                 name: hangout.creator.name
               },
               _count: {
