@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Home, Compass, Plus, Calendar, User } from "lucide-react"
+import { Home, Compass, Calendar, Plus, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useHapticFeedback } from "@/hooks/use-haptic-feedback"
@@ -13,7 +13,7 @@ export function BottomNavigation() {
   const tabs = [
     { id: "home", label: "Home", icon: Home, href: "/" },
     { id: "discover", label: "Discover", icon: Compass, href: "/discover" },
-    { id: "create", label: "Hangout", icon: Plus, href: "/create" },
+    { id: "create", label: "Create", icon: Plus, href: "/create" },
     { id: "events", label: "Events", icon: Calendar, href: "/events" },
     { id: "profile", label: "Profile", icon: User, href: "/profile" },
   ]
@@ -21,9 +21,9 @@ export function BottomNavigation() {
   const getActiveTab = () => {
     if (pathname === "/") return "home"
     if (pathname === "/discover") return "discover"
-    if (pathname === "/create") return "create"
-    if (pathname === "/events") return "events"
-    if (pathname === "/profile") return "profile"
+    if (pathname.startsWith("/events")) return "events"
+    if (pathname === "/create" || pathname.startsWith("/create")) return "create"
+    if (pathname === "/profile" || pathname.startsWith("/profile")) return "profile"
     return "home"
   }
 
@@ -37,8 +37,8 @@ export function BottomNavigation() {
           const isActive = activeTab === tab.id
 
           return (
-            <Link 
-              key={tab.id} 
+            <Link
+              key={tab.id}
               href={tab.href}
               className="flex-1 flex justify-center min-w-0"
             >

@@ -12,17 +12,18 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
+
 // import { ConsoleErrorHandler } from '@/components/console-error-handler' // Removed - causes webpack bundling issues
 // import { PWANavigationFix } from '@/components/pwa-navigation-fix'
 
-const oswald = Oswald({ 
+const oswald = Oswald({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-oswald'
 })
 
-const roboto = Roboto({ 
+const roboto = Roboto({
   subsets: ['latin'],
   weight: ['300', '400', '500', '700'],
   display: 'swap',
@@ -64,7 +65,7 @@ export default function RootLayout({
 }) {
   // Suppress Clerk warnings in production, log in development
   const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-  
+
   if (!clerkKey && process.env.NODE_ENV === 'development') {
     // Clerk publishable key not found - this is expected in some environments
   }
@@ -80,7 +81,7 @@ export default function RootLayout({
         <head>
           {/* Viewport for iPhone safe areas */}
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-          
+
           {/* PWA Meta Tags */}
           <meta name="theme-color" content="#2563EB" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -89,15 +90,15 @@ export default function RootLayout({
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="msapplication-TileColor" content="#2563EB" />
           <meta name="msapplication-tap-highlight" content="no" />
-          
+
           {/* Apple Touch Icons */}
           <link rel="apple-touch-icon" href="/icon-192x192.png" />
           <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
           <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png" />
-          
+
           {/* Windows Tiles */}
           <meta name="msapplication-TileImage" content="/icon-192x192.png" />
-          
+
           {/* Unregister service worker in development */}
           {process.env.NODE_ENV === 'development' && (
             <script
@@ -112,7 +113,7 @@ export default function RootLayout({
               }}
             />
           )}
-          
+
           {/* Heroicons are imported as React components, not as scripts */}
         </head>
         <body className={roboto.className}>
@@ -133,6 +134,7 @@ export default function RootLayout({
                   <PWASetup />
                   <NetworkStatus />
                   <InstallPrompt showForAllUsers={true} />
+
                 </NotificationProvider>
               </WebSocketProvider>
             </RealtimeProvider>

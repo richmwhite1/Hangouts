@@ -4,27 +4,20 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Users, 
-  Calendar, 
-  MapPin, 
-  Heart, 
-  Share2, 
-  Star,
+import {
+  Users,
+  Calendar,
+  MapPin,
+  Heart,
+  Share2,
   ArrowRight,
   CheckCircle,
-  Sparkles,
-  Clock,
-  TrendingUp,
-  Bell,
-  Zap,
-  Wifi,
-  Download,
-  Smartphone
+  TrendingUp
 } from 'lucide-react'
-import Link from 'next/link'
 import { format } from 'date-fns'
 import { PWAInstallBanner } from '@/components/pwa-install-banner'
+import { SocialProofCounter } from '@/components/social-proof-counter'
+import { BeforeAfterComparison } from '@/components/before-after-comparison'
 
 interface GuestLandingProps {
   onSignIn: () => void
@@ -84,7 +77,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
         setIsLoadingContent(true)
         const response = await fetch('/api/public/content?limit=6')
         const data = await response.json()
-        
+
         if (data.success) {
           setPublicContent({
             hangouts: data.hangouts || [],
@@ -113,17 +106,6 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
     }
   }
 
-  const formatTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) {
-        return 'Time TBD'
-      }
-      return format(date, 'h:mm a')
-    } catch (error) {
-      return 'Time TBD'
-    }
-  }
 
   const formatPrice = (price?: number) => {
     if (!price) return 'Free'
@@ -172,35 +154,31 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       <div className="relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-6">
-              <Badge variant="outline" className="border-gray-600 text-gray-300">
-                Beta
-              </Badge>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
-              Plan Perfect Hangouts
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
+              Stop Planning in Group Chats
             </h1>
-            <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-3xl mx-auto">
-              Coordinate with friends, discover events, and make plans that actually happen.
+            <p className="text-xl md:text-2xl text-gray-400 mb-6 max-w-3xl mx-auto">
+              Plans makes decisions for you. Just say what you want to do.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button 
-                size="lg" 
-                className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 text-lg border border-gray-600"
+
+            {/* Social Proof Counter */}
+            <SocialProofCounter className="mb-8" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-4 text-lg font-semibold shadow-lg shadow-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/60"
                 onClick={onSignUp}
               >
-                Get Started Free
+                Create Your First Plan
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-gray-600 text-gray-300 hover:bg-gray-800 px-8 py-3 text-lg"
-                onClick={onSignIn}
-              >
-                Sign In
-              </Button>
             </div>
+            <p className="text-sm text-gray-500 mb-8">
+              Already have an account?{' '}
+              <button onClick={onSignIn} className="text-blue-400 hover:text-blue-300 underline">
+                Sign in
+              </button>
+            </p>
 
             {/* PWA Install Prompt */}
             <PWAInstallBanner variant="hero" showForAllUsers={true} />
@@ -208,15 +186,18 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
         </div>
       </div>
 
+      {/* Visual Comparison Section */}
+      <BeforeAfterComparison />
+
       {/* Features Section */}
       <div className="py-20 bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              Everything you need to plan great hangouts
+              Why Plans Works Better
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              From casual meetups to big events, we make coordination effortless
+              No more endless back-and-forth. Just decisions that stick.
             </p>
           </div>
 
@@ -224,15 +205,14 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
-                <Card 
+                <Card
                   key={index}
                   className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-all duration-300 cursor-pointer"
                   onClick={() => setCurrentFeature(index)}
                 >
                   <CardHeader className="text-center">
-                    <div className={`mx-auto w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 border border-gray-700 ${
-                      currentFeature === index ? 'bg-gray-700 border-gray-600' : ''
-                    }`}>
+                    <div className={`mx-auto w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 border border-gray-700 ${currentFeature === index ? 'bg-gray-700 border-gray-600' : ''
+                      }`}>
                       <Icon className="h-8 w-8 text-gray-300" />
                     </div>
                     <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
@@ -285,7 +265,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                       </div>
                     </div>
                   )}
-                  
+
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -312,7 +292,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     {hangout.description && (
                       <p className="text-gray-300 text-sm mb-4 line-clamp-2">{hangout.description}</p>
                     )}
-                    
+
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-4 text-sm text-gray-400">
                         <div className="flex items-center gap-1">
@@ -326,16 +306,16 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="flex-1 bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
                         onClick={onSignIn}
                       >
                         <Heart className="w-4 h-4 mr-2" />
                         Join Hangout
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         onClick={() => window.open(`/hangouts/public/${hangout.id}`, '_blank')}
@@ -365,7 +345,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                       </div>
                     </div>
                   )}
-                  
+
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -392,7 +372,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     {event.description && (
                       <p className="text-gray-300 text-sm mb-4 line-clamp-2">{event.description}</p>
                     )}
-                    
+
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-4 text-sm text-gray-400">
                         <div className="flex items-center gap-1">
@@ -409,16 +389,16 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="flex-1 bg-green-600 hover:bg-green-700"
                         onClick={onSignIn}
                       >
                         <Heart className="w-4 h-4 mr-2" />
                         RSVP
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         onClick={() => window.open(`/events/public/${event.id}`, '_blank')}
@@ -444,8 +424,8 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
           )}
 
           <div className="text-center mt-12">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="border-gray-600 text-white hover:bg-gray-700"
               onClick={() => window.location.href = '/public-discover'}
             >
@@ -461,7 +441,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why choose Hangouts 3.0?
+              Why choose Plans?
             </h2>
             <p className="text-xl text-gray-300">
               Join thousands of users who make better plans together
@@ -482,8 +462,8 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
               <p className="text-gray-300 mb-6">
                 Sign up now and start planning your first hangout. It's completely free and takes less than a minute.
               </p>
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 onClick={onSignUp}
               >

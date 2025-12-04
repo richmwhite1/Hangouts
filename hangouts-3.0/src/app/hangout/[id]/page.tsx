@@ -15,6 +15,7 @@ import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
 import { logger } from '@/lib/logger'
 import { useAutoJoin } from '@/hooks/use-auto-join'
+import { ShareModal } from '@/components/share/share-modal'
 interface Hangout {
   id: string
   title: string
@@ -112,9 +113,9 @@ export default function HangoutDetailPage() {
   const [hangout, setHangout] = useState<Hangout | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   console.log('Hangout detail page - Component initialized with hangoutId:', hangoutId)
-  
+
   // Fetch hangout data when component mounts or authentication state changes
   useEffect(() => {
     console.log('Hangout detail page - useEffect triggered, hangoutId:', hangoutId, 'isSignedIn:', isSignedIn, 'isLoaded:', isLoaded)
@@ -131,7 +132,7 @@ export default function HangoutDetailPage() {
       console.log('🔍 Skipping fetchHangout because conditions not met:', { hangoutId: !!hangoutId, isLoaded })
     }
   }, [hangoutId, isSignedIn, isLoaded])
-  
+
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false)
   const [isVoting, setIsVoting] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
@@ -146,6 +147,7 @@ export default function HangoutDetailPage() {
   const [databaseUserId, setDatabaseUserId] = useState<string | null>(null)
   const [showPrimaryPhotoModal, setShowPrimaryPhotoModal] = useState(false)
   const [availablePhotos, setAvailablePhotos] = useState<any[]>([])
+  const [showShareModal, setShowShareModal] = useState(false)
 
   // Haptic feedback for mobile devices
   const { hapticSuccess } = useHapticFeedback({ enabled: true })
@@ -164,31 +166,31 @@ export default function HangoutDetailPage() {
   // Fetch database user ID
   const fetchDatabaseUserId = async () => {
     console.log('🔍 fetchDatabaseUserId - Called with isSignedIn:', isSignedIn, 'isLoaded:', isLoaded)
-    
+
     if (!isSignedIn || !isLoaded) {
       console.log('🔍 fetchDatabaseUserId - Not signed in or not loaded, skipping')
       return
     }
-    
+
     try {
       console.log('🔍 fetchDatabaseUserId - Starting fetch')
       const token = await getToken()
       console.log('🔍 fetchDatabaseUserId - Got token:', token ? 'YES' : 'NO')
       console.log('🔍 fetchDatabaseUserId - Token preview:', token ? token.substring(0, 20) + '...' : 'null')
-      
+
       if (!token) {
         console.error('🔍 fetchDatabaseUserId - No token available')
         return
       }
-      
+
       const response = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       console.log('🔍 fetchDatabaseUserId - Response status:', response.status)
-      
+
       if (response.ok) {
         const data = await response.json()
         console.log('🔍 fetchDatabaseUserId - Response data:', data)
@@ -258,26 +260,7 @@ export default function HangoutDetailPage() {
   }
   const handleShare = async () => {
     if (!hangout) return
-    // Use public URL for sharing so link previews work correctly
-    const shareUrl = hangout.privacyLevel === 'PUBLIC' 
-      ? `${window.location.origin}/hangouts/public/${hangoutId}`
-      : `${window.location.origin}/hangout/${hangoutId}`
-    const shareData = {
-      title: hangout.title,
-      description: hangout.description || '',
-      image: hangout.image || '',
-      url: shareUrl,
-      type: 'hangout' as const,
-      privacyLevel: hangout.privacyLevel
-    }
-    try {
-      await sharingService.shareContent(shareData, {
-        includeImage: false, // Rich previews handled by meta tags
-        includeDescription: true
-      })
-    } catch (error) {
-      logger.error('Share failed:', error);
-    }
+    setShowShareModal(true)
   }
   const handleCopyLink = async () => {
     if (!hangout) return
@@ -286,7 +269,7 @@ export default function HangoutDetailPage() {
 
   const handleInviteFriends = async (friendIds: string[]) => {
     if (!hangoutId) return
-    
+
     try {
       setIsInviting(true)
       const token = await getToken()
@@ -325,7 +308,7 @@ export default function HangoutDetailPage() {
 
   const handleJoinHangout = async () => {
     if (!userId || !hangout) return
-    
+
     try {
       const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangout.id}/join`, {
@@ -358,12 +341,12 @@ export default function HangoutDetailPage() {
       console.log('Hangout detail - Headers:', headers)
       const response = await fetch(`/api/hangouts/${hangoutId}`, { headers })
       console.log('Hangout detail - Response status:', response.status)
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.message || errorData.error || 'Failed to fetch hangout'
         console.error('Hangout detail - API error:', errorData)
-        
+
         // Handle specific error types
         if (response.status === 404) {
           setError('Hangout not found. It may have been deleted or you may not have permission to view it.')
@@ -376,16 +359,16 @@ export default function HangoutDetailPage() {
         }
         throw new Error(errorMessage)
       }
-      
+
       const data = await response.json()
       console.log('Hangout detail - API response:', data)
-      
+
       if (!data.success || !data.data) {
         console.error('Hangout detail - Invalid response format:', data)
         setError('Invalid response from server')
         throw new Error('Invalid response format')
       }
-      
+
       console.log('Hangout detail - Setting hangout to:', data.data)
       console.log('🔍 Vote data in API response:', {
         votes: data.data?.votes,
@@ -432,10 +415,10 @@ export default function HangoutDetailPage() {
   }
   const handleVote = async (optionId: string, action: 'add' | 'remove' | 'preferred' | 'toggle' = 'add') => {
     if (!hangout) return
-    
+
     // Haptic feedback on vote action
     hapticSuccess()
-    
+
     try {
       setIsVoting(true)
       setSelectedOption(optionId)
@@ -477,7 +460,7 @@ export default function HangoutDetailPage() {
       const token = await getToken()
       const response = await fetch(`/api/hangouts/${hangoutId}/vote`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -521,10 +504,10 @@ export default function HangoutDetailPage() {
       })
       return
     }
-    
+
     // Haptic feedback on RSVP action
     hapticSuccess()
-    
+
     try {
       setIsUpdatingRSVP(true)
       // Optimistic UI update
@@ -573,11 +556,11 @@ export default function HangoutDetailPage() {
       if (response.ok) {
         await fetchHangout() // Refresh hangout data to get server state
         toast.success(`RSVP set to ${status}!`, {
-          description: status === 'YES' 
-            ? 'You\'re going! Others will see your RSVP.' 
-            : status === 'MAYBE' 
-            ? 'You marked yourself as maybe. You can change this anytime.'
-            : 'You marked yourself as not going.',
+          description: status === 'YES'
+            ? 'You\'re going! Others will see your RSVP.'
+            : status === 'MAYBE'
+              ? 'You marked yourself as maybe. You can change this anytime.'
+              : 'You marked yourself as not going.',
           duration: 3000,
         })
       } else {
@@ -616,7 +599,7 @@ export default function HangoutDetailPage() {
     const description = encodeURIComponent(hangout.description || '')
     const location = encodeURIComponent(hangout.location || '')
     const url = encodeURIComponent(window.location.href)
-    
+
     if (type === 'google') {
       const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${description}&location=${location}`
       window.open(googleUrl, '_blank')
@@ -736,7 +719,7 @@ export default function HangoutDetailPage() {
   const currentState = hangout.state || HANGOUT_STATES.POLLING
   const isCreator = databaseUserId === hangout.creatorId
   const isHost = isCreator || hangout.participants?.some(p => p.user.id === databaseUserId && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
-  
+
   // Basic debug logging for hangout structure
   console.log('🔍 Basic Hangout Debug:', {
     hangoutId: hangout.id,
@@ -750,7 +733,7 @@ export default function HangoutDetailPage() {
     hasParticipants: !!hangout.participants,
     participantsCount: hangout.participants?.length || 0
   })
-  
+
   // Debug logging for host recognition
   console.log('🔍 Host Recognition Debug:', {
     clerkUserId: userId,
@@ -763,7 +746,7 @@ export default function HangoutDetailPage() {
     isHost,
     currentState
   })
-  
+
   // Debug logging for authentication state
   console.log('🔍 Auth State Debug:', {
     isSignedIn,
@@ -771,7 +754,7 @@ export default function HangoutDetailPage() {
     userId,
     databaseUserId
   })
-  
+
   // Debug logging for vote data structure
   console.log('🔍 Vote Data Debug:', {
     hangoutState: hangout.state,
@@ -786,15 +769,15 @@ export default function HangoutDetailPage() {
   const userRSVP = hangout.rsvps?.find(r => r.user.id === databaseUserId)?.status || 'PENDING'
   // Check mandatory participant requirements
   const mandatoryCheck = checkMandatoryRSVP(hangout)
-      // Debug logging
-      // console.log('Hangout data:', {
-      //   id: hangout.id,
-      //   state: hangout.state,
-      //   currentState,
-      //   options: hangout.options,
-      //   requiresVoting: hangout.requiresVoting,
-      //   type: hangout.type
-      // }); // Removed for production
+  // Debug logging
+  // console.log('Hangout data:', {
+  //   id: hangout.id,
+  //   state: hangout.state,
+  //   currentState,
+  //   options: hangout.options,
+  //   requiresVoting: hangout.requiresVoting,
+  //   type: hangout.type
+  // }); // Removed for production
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <div className="max-w-md mx-auto pb-20">
@@ -823,14 +806,14 @@ export default function HangoutDetailPage() {
               />
             </div>
           </div>
-          
+
           {/* Privacy Level Indicator */}
           <div className="flex items-center justify-center gap-2 mb-2">
             <Lock className="w-4 h-4 text-gray-400" />
             <span className="text-gray-300 text-sm">
-              {hangout.privacyLevel === 'PUBLIC' ? 'Public' : 
-               hangout.privacyLevel === 'FRIENDS_ONLY' ? 'Friends Only' : 
-               'Private'}
+              {hangout.privacyLevel === 'PUBLIC' ? 'Public' :
+                hangout.privacyLevel === 'FRIENDS_ONLY' ? 'Friends Only' :
+                  'Private'}
             </span>
           </div>
         </div>
@@ -927,7 +910,7 @@ export default function HangoutDetailPage() {
                         })
                         if (photosResponse.ok) {
                           const photosData = await photosResponse.json()
-                          const primaryPhoto = photosData.data?.photos?.find((p: any) => 
+                          const primaryPhoto = photosData.data?.photos?.find((p: any) =>
                             hangout.image === p.originalUrl ||
                             hangout.image === p.thumbnailUrl ||
                             hangout.image === p.smallUrl ||
@@ -1007,8 +990,8 @@ export default function HangoutDetailPage() {
           </div>
         )}
         {/* Additional Photos Section - Show below primary photo */}
-        <PhotosSection 
-          hangout={hangout} 
+        <PhotosSection
+          hangout={hangout}
           isHost={isHost}
           onHangoutUpdate={fetchHangout}
         />
@@ -1039,26 +1022,26 @@ export default function HangoutDetailPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Plan Details Header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-gray-400 text-sm">
                 <div className={`w-2 h-2 rounded-full ${currentState === HANGOUT_STATES.CONFIRMED ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                 <span>{currentState === HANGOUT_STATES.CONFIRMED ? 'Plan Confirmed' : 'Plan Details'}</span>
               </div>
-                  {/* Edit button for hosts/co-hosts */}
-                  {(hangout.creatorId === databaseUserId || hangout.participants?.some(p =>
-                    p.user.id === databaseUserId &&
-                    (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
-                  )) && (
-                <button
-                  onClick={() => setShowEditModal(true)}
-                  className="text-gray-400 hover:text-white transition-colors p-1 rounded"
-                  title="Edit plan details"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-              )}
+              {/* Edit button for hosts/co-hosts */}
+              {(hangout.creatorId === databaseUserId || hangout.participants?.some(p =>
+                p.user.id === databaseUserId &&
+                (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit)
+              )) && (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+                    title="Edit plan details"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
             </div>
             <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 space-y-3">
               {/* Show finalized option if confirmed, otherwise show basic hangout details */}
@@ -1066,88 +1049,88 @@ export default function HangoutDetailPage() {
                 <>
                   {/* Finalized Option Text */}
                   {(hangout.finalizedOption.optionText || hangout.finalizedOption.title) && (
-                <div>
-                  <h3 className="text-lg font-medium text-white mb-2">{hangout.finalizedOption.optionText || hangout.finalizedOption.title}</h3>
-                  {(hangout.finalizedOption.optionDescription || hangout.finalizedOption.description) && (
-                    <p className="text-gray-300 text-sm">{hangout.finalizedOption.optionDescription || hangout.finalizedOption.description}</p>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">{hangout.finalizedOption.optionText || hangout.finalizedOption.title}</h3>
+                      {(hangout.finalizedOption.optionDescription || hangout.finalizedOption.description) && (
+                        <p className="text-gray-300 text-sm">{hangout.finalizedOption.optionDescription || hangout.finalizedOption.description}</p>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-              {/* Option-specific Date & Time */}
-              {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-300 text-sm">
-                    {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'EEEE, MMMM d, yyyy')}
-                  </span>
-                </div>
-              )}
-              {/* Option-specific Time */}
-              {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-300 text-sm">
-                    {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'h:mm a')}
-                  </span>
-                </div>
-              )}
-              {/* Option-specific Location with Map Icon */}
-              {(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location) && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-300 text-sm flex-1">{hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location}</span>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 p-1 rounded"
-                    title="Open in Google Maps"
-                  >
-                    <MapPin className="w-4 h-4" />
-                  </a>
-                </div>
-              )}
-              {/* Option-specific Price */}
-              {((hangout.finalizedOption.metadata?.price !== undefined && hangout.finalizedOption.metadata.price > 0) || (hangout.finalizedOption.price !== undefined && hangout.finalizedOption.price > 0)) && (
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-300 text-sm">
-                    ${(hangout.finalizedOption.metadata?.price || hangout.finalizedOption.price).toFixed(2)}
-                  </span>
-                </div>
-              )}
-              {/* Option-specific Event Image */}
-              {hangout.finalizedOption.metadata?.eventImage && (
-                <div className="mt-3">
-                  <img
-                    src={hangout.finalizedOption.metadata.eventImage}
-                    alt={hangout.finalizedOption.optionText || 'Plan option'}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                </div>
-              )}
-              {/* Option-specific Hangout URL */}
-              {hangout.finalizedOption.metadata?.hangoutUrl && (
-                <div className="mt-3">
-                  <a
-                    href={hangout.finalizedOption.metadata.hangoutUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                  >
-                    🔗 Open Hangout Link
-                  </a>
-                </div>
-              )}
-              {/* Consensus Info for voted options */}
-              {hangout.finalizedOption.consensusLevel && (
-                <div className="mt-3 p-2 bg-green-900/20 border border-green-700/30 rounded-lg">
-                  <p className="text-green-400 text-xs">
-                    Consensus reached: {hangout.finalizedOption.consensusLevel.toFixed(1)}%
-                    ({hangout.finalizedOption.totalVotes} votes)
-                  </p>
-                </div>
-              )}
+                  {/* Option-specific Date & Time */}
+                  {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm">
+                        {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'EEEE, MMMM d, yyyy')}
+                      </span>
+                    </div>
+                  )}
+                  {/* Option-specific Time */}
+                  {(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime) && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm">
+                        {format(new Date(hangout.finalizedOption.metadata?.dateTime || hangout.finalizedOption.dateTime), 'h:mm a')}
+                      </span>
+                    </div>
+                  )}
+                  {/* Option-specific Location with Map Icon */}
+                  {(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location) && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm flex-1">{hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location}</span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.finalizedOption.metadata?.location || hangout.finalizedOption.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 p-1 rounded"
+                        title="Open in Google Maps"
+                      >
+                        <MapPin className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+                  {/* Option-specific Price */}
+                  {((hangout.finalizedOption.metadata?.price !== undefined && hangout.finalizedOption.metadata.price > 0) || (hangout.finalizedOption.price !== undefined && hangout.finalizedOption.price > 0)) && (
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300 text-sm">
+                        ${(hangout.finalizedOption.metadata?.price || hangout.finalizedOption.price).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {/* Option-specific Event Image */}
+                  {hangout.finalizedOption.metadata?.eventImage && (
+                    <div className="mt-3">
+                      <img
+                        src={hangout.finalizedOption.metadata.eventImage}
+                        alt={hangout.finalizedOption.optionText || 'Plan option'}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                  {/* Option-specific Hangout URL */}
+                  {hangout.finalizedOption.metadata?.hangoutUrl && (
+                    <div className="mt-3">
+                      <a
+                        href={hangout.finalizedOption.metadata.hangoutUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                      >
+                        🔗 Open Hangout Link
+                      </a>
+                    </div>
+                  )}
+                  {/* Consensus Info for voted options */}
+                  {hangout.finalizedOption.consensusLevel && (
+                    <div className="mt-3 p-2 bg-green-900/20 border border-green-700/30 rounded-lg">
+                      <p className="text-green-400 text-xs">
+                        Consensus reached: {hangout.finalizedOption.consensusLevel.toFixed(1)}%
+                        ({hangout.finalizedOption.totalVotes} votes)
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -1196,9 +1179,9 @@ export default function HangoutDetailPage() {
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-300 text-sm">
-                      {hangout.privacyLevel === 'PUBLIC' ? 'Public' : 
-                       hangout.privacyLevel === 'FRIENDS_ONLY' ? 'Friends Only' : 
-                       'Private'}
+                      {hangout.privacyLevel === 'PUBLIC' ? 'Public' :
+                        hangout.privacyLevel === 'FRIENDS_ONLY' ? 'Friends Only' :
+                          'Private'}
                     </span>
                   </div>
                 </>
@@ -1378,6 +1361,27 @@ export default function HangoutDetailPage() {
           />
         )}
 
+        {/* Share Modal */}
+        {showShareModal && hangout && (
+          <ShareModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            hangout={{
+              id: hangout.id,
+              title: hangout.title,
+              startTime: hangout.startTime,
+              ...(hangout.location && { location: hangout.location }),
+              ...(hangout.image && { image: hangout.image }),
+              creator: {
+                name: hangout.creator.name
+              },
+              _count: {
+                participants: hangout.participants?.length || 0
+              }
+            }}
+          />
+        )}
+
         {/* Primary Photo Selection Modal */}
         {showPrimaryPhotoModal && (
           <PrimaryPhotoModal
@@ -1459,7 +1463,7 @@ export default function HangoutDetailPage() {
 // Status Header Component - Sophisticated Design
 function HangoutStatusHeader({ hangout, state }: { hangout: Hangout, state: string }) {
   const getStatusConfig = () => {
-    switch(state) {
+    switch (state) {
       case HANGOUT_STATES.POLLING:
         const votedCount = Object.keys(hangout.votes || {}).length
         const totalParticipants = hangout.participants?.length || 0
@@ -1528,7 +1532,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
     participantsCount: hangout.participants?.length || 0,
     currentUser: currentUser?.id
   })
-  
+
   const votedCount = Object.keys(hangout.votes || {}).length
   const totalParticipants = hangout.participants?.length || 0
   const userVotes = hangout.currentUserVotes || []
@@ -1572,7 +1576,7 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
         const hasUserVoted = userVotes.includes(option.id)
         const isPreferred = userPreferred === option.id
         const votePercentage = totalParticipants > 0 ? (voteCount / totalParticipants * 100) : 0
-        
+
         // Debug logging for vote counts
         console.log(`🔍 Vote Count Debug for ${option.title}:`, {
           optionId: option.id,
@@ -1587,9 +1591,8 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
         return (
           <div
             key={option.id}
-            className={`bg-black border-2 rounded-xl mb-4 overflow-hidden ${
-              isPreferred ? 'border-yellow-500' : hasUserVoted ? 'border-pink-500' : 'border-gray-600'
-            }`}
+            className={`bg-black border-2 rounded-xl mb-4 overflow-hidden ${isPreferred ? 'border-yellow-500' : hasUserVoted ? 'border-pink-500' : 'border-gray-600'
+              }`}
           >
             {/* Option Image */}
             {(option.hangoutUrl || option.eventImage) && (
@@ -1665,11 +1668,10 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
                   <button
                     onClick={() => onVote(option.id, 'toggle')}
                     disabled={isVoting}
-                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
-                      hasUserVoted
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-black border text-blue-400'
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${hasUserVoted
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-black border text-blue-400'
+                      }`}
                     style={!hasUserVoted ? { borderColor: '#2563EB' } : {}}
                   >
                     {hasUserVoted ? '✓ Voted' : 'Tap to Vote'}
@@ -1678,11 +1680,10 @@ function VotingSection({ hangout, currentUser, onVote, isVoting, onRefresh }: {
                     <button
                       onClick={() => onVote(option.id, 'preferred')}
                       disabled={isVoting}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${
-                        isPreferred
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-gray-600 text-white hover:bg-yellow-600'
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:opacity-50 ${isPreferred
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-600 text-white hover:bg-yellow-600'
+                        }`}
                     >
                       {isPreferred ? '⭐ Preferred' : 'Mark Preferred'}
                     </button>
@@ -1705,40 +1706,40 @@ function VotingProgressSummary({ hangout }: { hangout: Hangout }) {
   const remainingVotes = totalParticipants - votedCount
   const hoursLeft = hangout.votingDeadline ?
     Math.max(0, Math.ceil((new Date(hangout.votingDeadline).getTime() - Date.now()) / (1000 * 60 * 60))) : 0
-  
+
   // Calculate consensus progress
   const consensusThreshold = 70 // Default threshold, should come from API in future
   let leadingOptionVotes = 0
   let leadingOptionTitle = ''
   let consensusProgress = 0
   let votesNeededForConsensus = 0
-  
+
   if (hangout.options && hangout.options.length > 0 && totalParticipants > 0) {
     // Find the leading option by vote count
     const optionVoteCounts = hangout.options.map(option => {
       const voteCount = getVoteCount(hangout.userVotes || hangout.votes, option.id)
       return { option, voteCount }
     })
-    
-    const leading = optionVoteCounts.reduce((max, current) => 
+
+    const leading = optionVoteCounts.reduce((max, current) =>
       current.voteCount > max.voteCount ? current : max
     )
-    
+
     leadingOptionVotes = leading.voteCount
     leadingOptionTitle = leading.option.title
     consensusProgress = totalParticipants > 0 ? (leadingOptionVotes / totalParticipants) * 100 : 0
-    
+
     // Calculate votes needed to reach consensus threshold
     const votesNeeded = Math.ceil((consensusThreshold / 100) * totalParticipants)
     votesNeededForConsensus = Math.max(0, votesNeeded - leadingOptionVotes)
   }
-  
+
   const isConsensusReached = consensusProgress >= consensusThreshold
-  
+
   return (
     <div className="bg-black border border-gray-600 rounded-lg p-4 mt-4">
       <h3 className="text-white font-bold mb-3">Voting Progress</h3>
-      
+
       {/* Consensus Progress Indicator */}
       {hangout.options && hangout.options.length > 1 && (
         <div className="mb-4">
@@ -1748,31 +1749,30 @@ function VotingProgressSummary({ hangout }: { hangout: Hangout }) {
               {Math.round(consensusProgress)}% / {consensusThreshold}%
             </span>
           </div>
-          
+
           {/* Progress Bar */}
           <div className="w-full bg-gray-700 rounded-full h-3 mb-2 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                isConsensusReached ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
+              className={`h-full rounded-full transition-all duration-500 ${isConsensusReached ? 'bg-green-500' : 'bg-yellow-500'
+                }`}
               style={{ width: `${Math.min(100, (consensusProgress / consensusThreshold) * 100)}%` }}
             />
           </div>
-          
+
           {/* Leading Option Info */}
           {leadingOptionTitle && (
             <p className="text-gray-400 text-xs mb-1">
               Leading: <span className="text-white font-medium">{leadingOptionTitle}</span> ({leadingOptionVotes} votes)
             </p>
           )}
-          
+
           {/* Votes Needed */}
           {!isConsensusReached && votesNeededForConsensus > 0 && (
             <p className="text-yellow-400 text-xs font-medium">
               {votesNeededForConsensus} more vote{votesNeededForConsensus !== 1 ? 's' : ''} needed to reach consensus
             </p>
           )}
-          
+
           {isConsensusReached && (
             <p className="text-green-400 text-xs font-medium">
               ✓ Consensus reached! The plan will be finalized soon.
@@ -1780,7 +1780,7 @@ function VotingProgressSummary({ hangout }: { hangout: Hangout }) {
           )}
         </div>
       )}
-      
+
       {/* General Voting Stats */}
       <div className="border-t border-gray-700 pt-3">
         <p className="text-gray-400 text-sm mb-2">
@@ -1814,18 +1814,18 @@ function RSVPSection({ onRSVP, isUpdating, userRSVP, hangout }: {
     else if (rsvp.status === 'NO') acc.no++
     return acc
   }, { yes: 0, maybe: 0, no: 0 }) || { yes: 0, maybe: 0, no: 0 }
-  
+
   // Get friend avatars for "Going" and "Maybe"
   const goingAvatars = hangout?.rsvps
     ?.filter(r => r.status === 'YES')
     .slice(0, 5)
     .map(r => r.user?.avatar) || []
-  
+
   const maybeAvatars = hangout?.rsvps
     ?.filter(r => r.status === 'MAYBE')
     .slice(0, 3)
     .map(r => r.user?.avatar) || []
-  
+
   return (
     <div className="px-4 py-3">
       {/* Social Proof Section */}
@@ -1869,22 +1869,21 @@ function RSVPSection({ onRSVP, isUpdating, userRSVP, hangout }: {
           </div>
         </div>
       )}
-      
+
       {/* Show "Be the first" message when no one has RSVP'd */}
       {rsvpCounts.yes === 0 && rsvpCounts.maybe === 0 && (
         <div className="mb-4 pb-3 border-b border-gray-700">
           <p className="text-gray-400 text-xs text-center">Be the first to RSVP!</p>
         </div>
       )}
-      
+
       {/* RSVP Buttons */}
       <div className="flex gap-1">
         <button
-          className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${
-            userRSVP === 'YES'
-              ? 'bg-green-600/20 border-green-500/50 text-green-400'
-              : 'bg-gray-800/30 border-gray-600/50 text-gray-300 hover:border-green-400/50 hover:bg-green-900/10'
-          }`}
+          className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${userRSVP === 'YES'
+            ? 'bg-green-600/20 border-green-500/50 text-green-400'
+            : 'bg-gray-800/30 border-gray-600/50 text-gray-300 hover:border-green-400/50 hover:bg-green-900/10'
+            }`}
           onClick={() => onRSVP('YES')}
           disabled={isUpdating}
         >
@@ -1893,11 +1892,10 @@ function RSVPSection({ onRSVP, isUpdating, userRSVP, hangout }: {
           </div>
         </button>
         <button
-          className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${
-            userRSVP === 'MAYBE'
-              ? 'bg-yellow-600/20 border-yellow-500/50 text-yellow-400'
-              : 'bg-gray-800/30 border-gray-600/50 text-gray-300 hover:border-yellow-400/50 hover:bg-yellow-900/10'
-          }`}
+          className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${userRSVP === 'MAYBE'
+            ? 'bg-yellow-600/20 border-yellow-500/50 text-yellow-400'
+            : 'bg-gray-800/30 border-gray-600/50 text-gray-300 hover:border-yellow-400/50 hover:bg-yellow-900/10'
+            }`}
           onClick={() => onRSVP('MAYBE')}
           disabled={isUpdating}
         >
@@ -1906,11 +1904,10 @@ function RSVPSection({ onRSVP, isUpdating, userRSVP, hangout }: {
           </div>
         </button>
         <button
-          className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${
-            userRSVP === 'NO'
-              ? 'bg-red-600/20 border-red-500/50 text-red-400'
-              : 'bg-gray-800/30 border-gray-600/50 text-gray-300 hover:border-red-400/50 hover:bg-red-900/10'
-          }`}
+          className={`flex-1 py-2 px-3 rounded border transition-all duration-200 ${userRSVP === 'NO'
+            ? 'bg-red-600/20 border-red-500/50 text-red-400'
+            : 'bg-gray-800/30 border-gray-600/50 text-gray-300 hover:border-red-400/50 hover:bg-red-900/10'
+            }`}
           onClick={() => onRSVP('NO')}
           disabled={isUpdating}
         >
@@ -1946,7 +1943,7 @@ function ParticipantStatusSection({
   const participants = hangout.participants || []
   const isCreator = currentUser?.id === hangout.creatorId
   const isHost = isCreator || participants?.some(p => p.user.id === currentUser?.id && (p.role === 'CREATOR' || p.role === 'CO_HOST' || p.canEdit))
-  
+
   // Always show participants section, even if empty
   return (
     <div className="px-4 py-3">
@@ -1969,7 +1966,7 @@ function ParticipantStatusSection({
                 <UserPlus className="w-4 h-4 text-gray-400 group-hover:text-blue-400" />
               </button>
             )}
-            
+
             {/* Join Icon - Only for non-participants on public hangouts */}
             {!participants?.some(p => p.user.id === currentUser?.id) && !isHost && hangout.privacyLevel === 'PUBLIC' && currentUser && (
               <button
@@ -1981,7 +1978,7 @@ function ParticipantStatusSection({
               </button>
             )}
           </div>
-          
+
           {/* Edit Button - Only for hosts/co-hosts */}
           {isHost && (
             <button
@@ -1992,7 +1989,7 @@ function ParticipantStatusSection({
               <Edit className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" />
             </button>
           )}
-          
+
           <TileActions
             itemId={hangout.id}
             itemType="hangout"
@@ -2005,7 +2002,7 @@ function ParticipantStatusSection({
         </div>
       </div>
 
-      
+
       {/* Show empty state if no participants */}
       {participants.length === 0 ? (
         <div className="text-center py-6">
@@ -2025,70 +2022,69 @@ function ParticipantStatusSection({
       ) : (
         /* Large Square Profile Icons Grid with Names and Status */
         <div className="grid grid-cols-4 gap-3">
-        {participants.slice(0, 8).map((participant) => {
-          const userVotes = hangout.userVotes?.[participant.user.id] || []
-          const hasVoted = userVotes.length > 0
-          const isVotingPhase = currentState === HANGOUT_STATES.POLLING
-          // Get RSVP status from hangout.rsvps array
-          const userRSVP = hangout.rsvps?.find(rsvp => rsvp.user.id === participant.user.id)
-          const rsvpStatus = userRSVP?.status || 'PENDING'
-          const canRemove = isHost && participant.user.id !== currentUser?.id
-          return (
-            <div key={participant.id} className="flex flex-col items-center text-center group relative">
-              {/* Large Square Profile Picture */}
-              <div className="relative mb-2">
-                <img
-                  src={participant.user.avatar || '/placeholder-avatar.png'}
-                  alt={participant.user.name}
-                  className="w-16 h-16 rounded-md border border-gray-600 object-cover group-hover:scale-105 transition-transform"
-                />
-                {/* Status Indicator */}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded border border-gray-900 flex items-center justify-center">
-                  <div className={`w-2 h-2 rounded-full ${
-                    isVotingPhase ? (hasVoted ? 'bg-green-500' : 'bg-gray-500') :
-                    rsvpStatus === 'YES' ? 'bg-green-500' :
-                    rsvpStatus === 'MAYBE' ? 'bg-yellow-500' :
-                    rsvpStatus === 'NO' ? 'bg-red-500' :
-                    'bg-gray-500'
-                  }`}></div>
+          {participants.slice(0, 8).map((participant) => {
+            const userVotes = hangout.userVotes?.[participant.user.id] || []
+            const hasVoted = userVotes.length > 0
+            const isVotingPhase = currentState === HANGOUT_STATES.POLLING
+            // Get RSVP status from hangout.rsvps array
+            const userRSVP = hangout.rsvps?.find(rsvp => rsvp.user.id === participant.user.id)
+            const rsvpStatus = userRSVP?.status || 'PENDING'
+            const canRemove = isHost && participant.user.id !== currentUser?.id
+            return (
+              <div key={participant.id} className="flex flex-col items-center text-center group relative">
+                {/* Large Square Profile Picture */}
+                <div className="relative mb-2">
+                  <img
+                    src={participant.user.avatar || '/placeholder-avatar.png'}
+                    alt={participant.user.name}
+                    className="w-16 h-16 rounded-md border border-gray-600 object-cover group-hover:scale-105 transition-transform"
+                  />
+                  {/* Status Indicator */}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded border border-gray-900 flex items-center justify-center">
+                    <div className={`w-2 h-2 rounded-full ${isVotingPhase ? (hasVoted ? 'bg-green-500' : 'bg-gray-500') :
+                      rsvpStatus === 'YES' ? 'bg-green-500' :
+                        rsvpStatus === 'MAYBE' ? 'bg-yellow-500' :
+                          rsvpStatus === 'NO' ? 'bg-red-500' :
+                            'bg-gray-500'
+                      }`}></div>
+                  </div>
+                  {/* Remove Button */}
+                  {canRemove && (
+                    <button
+                      onClick={() => onRemoveUser(participant.id)}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove user"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  )}
                 </div>
-                {/* Remove Button */}
-                {canRemove && (
-                  <button
-                    onClick={() => onRemoveUser(participant.id)}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove user"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                )}
+                {/* Name */}
+                <p className="text-white font-medium text-xs mb-1 truncate w-full">{participant.user.name}</p>
+                {/* Status */}
+                <div className="text-xs">
+                  {isVotingPhase ? (
+                    <span className={hasVoted ? 'text-green-400' : 'text-gray-400'}>
+                      {hasVoted ? 'Voted' : 'Pending'}
+                    </span>
+                  ) : (
+                    <span className={
+                      rsvpStatus === 'YES' ? 'text-green-400' :
+                        rsvpStatus === 'MAYBE' ? 'text-yellow-400' :
+                          rsvpStatus === 'NO' ? 'text-red-400' :
+                            'text-gray-400'
+                    }>
+                      {rsvpStatus === 'YES' ? 'Going' :
+                        rsvpStatus === 'MAYBE' ? 'Maybe' :
+                          rsvpStatus === 'NO' ? 'Not Going' :
+                            'Pending'}
+                    </span>
+                  )}
+                </div>
               </div>
-              {/* Name */}
-              <p className="text-white font-medium text-xs mb-1 truncate w-full">{participant.user.name}</p>
-              {/* Status */}
-              <div className="text-xs">
-                {isVotingPhase ? (
-                  <span className={hasVoted ? 'text-green-400' : 'text-gray-400'}>
-                    {hasVoted ? 'Voted' : 'Pending'}
-                  </span>
-                ) : (
-                  <span className={
-                    rsvpStatus === 'YES' ? 'text-green-400' :
-                    rsvpStatus === 'MAYBE' ? 'text-yellow-400' :
-                    rsvpStatus === 'NO' ? 'text-red-400' :
-                    'text-gray-400'
-                  }>
-                    {rsvpStatus === 'YES' ? 'Going' :
-                     rsvpStatus === 'MAYBE' ? 'Maybe' :
-                     rsvpStatus === 'NO' ? 'Not Going' :
-                     'Pending'}
-                  </span>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
@@ -2192,9 +2188,8 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
       </button>
       {/* Professional Chat Messages Area */}
-      <div className={`bg-gray-900/30 border border-gray-700 rounded-lg transition-all duration-300 overflow-hidden ${
-        isExpanded ? 'max-h-80' : 'max-h-40'
-      }`}>
+      <div className={`bg-gray-900/30 border border-gray-700 rounded-lg transition-all duration-300 overflow-hidden ${isExpanded ? 'max-h-80' : 'max-h-40'
+        }`}>
         <div
           className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
           style={{
@@ -2254,11 +2249,10 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
           <button
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              newMessage.trim()
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-            }`}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${newMessage.trim()
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+              }`}
             onClick={handleSendMessage}
             disabled={!newMessage.trim()}
           >
@@ -2274,11 +2268,11 @@ function ChatSection({ hangout, newMessage, setNewMessage, isExpanded, setIsExpa
   )
 }
 // Photos Section - REDESIGNED
-function PhotosSection({ 
-  hangout, 
-  isHost, 
-  onHangoutUpdate 
-}: { 
+function PhotosSection({
+  hangout,
+  isHost,
+  onHangoutUpdate
+}: {
   hangout: Hangout
   isHost: boolean
   onHangoutUpdate: () => Promise<void>
@@ -2290,14 +2284,14 @@ function PhotosSection({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null)
   const [settingPrimaryPhotoId, setSettingPrimaryPhotoId] = useState<string | null>(null)
-  
+
   // Fetch photos when component mounts
   useEffect(() => {
     if (hangout?.id) {
       fetchPhotos()
     }
   }, [hangout?.id])
-  
+
   const fetchPhotos = async () => {
     if (!hangout?.id) return
     setIsLoadingPhotos(true)
@@ -2318,7 +2312,7 @@ function PhotosSection({
       setIsLoadingPhotos(false)
     }
   }
-  
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
@@ -2349,12 +2343,12 @@ function PhotosSection({
       setIsUploading(false)
     }
   }
-  
+
   const handleDeletePhoto = async (photoId: string) => {
     if (!confirm('Are you sure you want to delete this photo?')) {
       return
     }
-    
+
     setDeletingPhotoId(photoId)
     try {
       const token = await getToken()
@@ -2364,7 +2358,7 @@ function PhotosSection({
           'Authorization': `Bearer ${token}`
         } : {}
       })
-      
+
       if (response.ok) {
         toast.success('Photo deleted successfully!')
         await fetchPhotos() // Refresh photos
@@ -2384,7 +2378,7 @@ function PhotosSection({
       setDeletingPhotoId(null)
     }
   }
-  
+
   const handleSetAsPrimary = async (photoId: string) => {
     setSettingPrimaryPhotoId(photoId)
     try {
@@ -2397,7 +2391,7 @@ function PhotosSection({
         },
         body: JSON.stringify({ setAsPrimary: true })
       })
-      
+
       if (response.ok) {
         toast.success('Primary photo updated!')
         await onHangoutUpdate() // Refresh hangout to show new primary photo
@@ -2412,15 +2406,15 @@ function PhotosSection({
       setSettingPrimaryPhotoId(null)
     }
   }
-  
+
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % photos.length)
   }
   const prevPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length)
   }
-  
-  
+
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
@@ -2435,11 +2429,10 @@ function PhotosSection({
             disabled={isUploading}
           />
           <button
-            className={`px-3 py-1 rounded-lg font-bold text-sm ${
-              isUploading
-                ? 'bg-gray-600 text-gray-400'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+            className={`px-3 py-1 rounded-lg font-bold text-sm ${isUploading
+              ? 'bg-gray-600 text-gray-400'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             disabled={isUploading}
           >
             {isUploading ? 'Uploading...' : '+ Add Photos'}
@@ -2466,10 +2459,10 @@ function PhotosSection({
                     hangout.image === photo.smallUrl ||
                     hangout.image === photo.mediumUrl ||
                     hangout.image === photo.largeUrl
-                  
+
                   // Use the best available image URL
                   const imageUrl = photo.mediumUrl || photo.largeUrl || photo.originalUrl || photo.smallUrl || photo.thumbnailUrl
-                  
+
                   return (
                     <div key={photo.id} className="w-full flex-shrink-0 relative group">
                       <img
@@ -2550,9 +2543,8 @@ function PhotosSection({
                   <button
                     key={index}
                     onClick={() => setCurrentPhotoIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentPhotoIndex ? 'bg-blue-500' : 'bg-gray-500'
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-colors ${index === currentPhotoIndex ? 'bg-blue-500' : 'bg-gray-500'
+                      }`}
                   />
                 ))}
               </div>
@@ -2586,7 +2578,7 @@ function PrimaryPhotoModal({
 }) {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const currentPrimaryPhotoId = availablePhotos.find((p: any) => 
+  const currentPrimaryPhotoId = availablePhotos.find((p: any) =>
     hangout.image === p.originalUrl ||
     hangout.image === p.thumbnailUrl ||
     hangout.image === p.smallUrl ||
@@ -2641,11 +2633,10 @@ function PrimaryPhotoModal({
               disabled={isUploading}
             />
             <button
-              className={`w-full px-4 py-3 rounded-lg font-medium text-sm ${
-                isUploading
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
+              className={`w-full px-4 py-3 rounded-lg font-medium text-sm ${isUploading
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -2664,9 +2655,8 @@ function PrimaryPhotoModal({
                 return (
                   <div
                     key={photo.id}
-                    className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 ${
-                      isCurrentPrimary ? 'border-yellow-500' : 'border-gray-600 hover:border-blue-500'
-                    }`}
+                    className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 ${isCurrentPrimary ? 'border-yellow-500' : 'border-gray-600 hover:border-blue-500'
+                      }`}
                     onClick={() => {
                       if (!isCurrentPrimary) {
                         onPhotoSelected(photo.id)

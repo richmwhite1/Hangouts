@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown'
     const authorization = request.headers.get('authorization') || 'none'
     const origin = request.headers.get('origin') || 'none'
-    
-    logger.info('Feed API called:', { 
-      feedType, 
-      contentType, 
-      limit, 
+
+    logger.info('Feed API called:', {
+      feedType,
+      contentType,
+      limit,
       offset,
       userAgent: userAgent.substring(0, 50),
       hasAuth: authorization !== 'none',
@@ -37,14 +37,14 @@ export async function GET(request: NextRequest) {
       const { userId: clerkUserId } = await auth()
       console.log('🔑 Feed API - Clerk auth result:', { clerkUserId })
       logger.info('Clerk auth result:', { clerkUserId })
-      
+
       if (clerkUserId) {
         try {
           const clerkUser = await getClerkApiUser()
-          console.log('👤 Feed API - Database user:', { 
-            userId: clerkUser?.id, 
+          console.log('👤 Feed API - Database user:', {
+            userId: clerkUser?.id,
             username: clerkUser?.username,
-            email: clerkUser?.email 
+            email: clerkUser?.email
           })
           logger.info('Clerk user result:', { userId: clerkUser?.id, username: clerkUser?.username })
           if (clerkUser) {
@@ -66,11 +66,11 @@ export async function GET(request: NextRequest) {
       console.error('❌ Feed API - Auth error:', error)
       logger.error('Auth error in feed:', error)
     }
-    
-        // console.log('🎯 Feed API - Final userId for query:', userId)
-        
-        // For unauthenticated users, return public content only
-        if (!userId) {
+
+    // console.log('🎯 Feed API - Final userId for query:', userId)
+
+    // For unauthenticated users, return public content only
+    if (!userId) {
       try {
         logger.info('No user ID, returning public content')
         const publicWhere: any = {
@@ -237,29 +237,29 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        return NextResponse.json({ 
+        return NextResponse.json({
           success: true,
-          data: { 
-            content: transformedPublicContent, 
+          data: {
+            content: transformedPublicContent,
             total,
             hasMore: offset + publicContent.length < total
-          } 
+          }
         })
       } catch (error) {
         logger.error('Error fetching public feed:', error)
-        return NextResponse.json({ 
+        return NextResponse.json({
           success: true,
-          data: { 
-            content: [], 
-            total: 0 
-          } 
+          data: {
+            content: [],
+            total: 0
+          }
         })
       }
     }
 
     try {
       logger.info('User authenticated, fetching personalized feed for user:', userId)
-      
+
       // Build where clause based on feed type
       let whereClause: any = {}
 
@@ -298,7 +298,7 @@ export async function GET(request: NextRequest) {
           // Content where user has RSVPed (interested/attending)
           {
             rsvps: {
-              some: { 
+              some: {
                 userId: userId,
                 status: { in: ['YES', 'MAYBE', 'NO'] }
               }
@@ -320,7 +320,7 @@ export async function GET(request: NextRequest) {
 
       // Simple query with minimal fields
       // console.log('🔍 Feed API - Querying with whereClause:', JSON.stringify(whereClause, null, 2))
-      
+
       let content;
       try {
         content = await db.content.findMany({
@@ -395,24 +395,106 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-        // Prioritize hangouts with recent activity, then sort by creation/start time
-        // For home feed: sort by lastActivityAt DESC (nulls last), then createdAt DESC
-        // For discover feed: sort by startTime ASC (upcoming events first)
-        // Note: Prisma orderBy with nulls handling - we'll sort by lastActivityAt first
-        // Items without lastActivityAt will appear after those with it
-        orderBy: feedType === 'home' 
-          ? [
+          // Prioritize hangouts with recent activity, then sort by creation/start time
+          // For home feed: sort by lastActivityAt DESC (nulls last), then createdAt DESC
+          // For discover feed: sort by startTime ASC (upcoming events first)
+          orderBy: feedType === 'home'
+            ? [
               { lastActivityAt: 'desc' },
               { createdAt: 'desc' }
             ]
-          : { startTime: 'asc' },
-        take: limit,
-        skip: offset
+            : { startTime: 'asc' },
+          take: limit,
+          skip: offset
         })
       } catch (queryError) {
-        console.error('❌ Database query error:', queryError)
-        logger.error('Database query error:', queryError)
-        throw queryError
+        console.error('❌ Database query error (primary strategy):', queryError)
+        logger.error('Database query error (primary strategy):', queryError)
+
+        // Fallback strategy: Try without lastActivityAt sort if it failed
+        if (feedType === 'home') {
+          console.log('🔄 Attempting fallback query strategy (sorting by createdAt only)...')
+          try {
+            content = await db.content.findMany({
+              where: whereClause,
+              select: {
+                id: true,
+                type: true,
+                title: true,
+                description: true,
+                image: true,
+                location: true,
+                startTime: true,
+                endTime: true,
+                privacyLevel: true,
+                createdAt: true,
+                updatedAt: true,
+                lastActivityAt: true,
+                creatorId: true,
+                users: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatar: true
+                  }
+                },
+                ...(userId ? {
+                  rsvps: {
+                    where: { userId: userId },
+                    select: {
+                      id: true,
+                      userId: true,
+                      status: true,
+                      respondedAt: true
+                    }
+                  }
+                } : {}),
+                content_participants: {
+                  select: {
+                    id: true,
+                    userId: true,
+                    role: true,
+                    canEdit: true,
+                    isMandatory: true,
+                    isCoHost: true,
+                    invitedAt: true,
+                    joinedAt: true,
+                    users: {
+                      select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatar: true
+                      }
+                    }
+                  }
+                },
+                _count: {
+                  select: {
+                    content_participants: true,
+                    comments: true,
+                    content_likes: true,
+                    content_shares: true,
+                    messages: true,
+                    photos: true,
+                    rsvps: true,
+                    eventSaves: true
+                  }
+                }
+              },
+              orderBy: { createdAt: 'desc' },
+              take: limit,
+              skip: offset
+            })
+            console.log('✅ Fallback query successful')
+          } catch (fallbackError) {
+            console.error('❌ Fallback query failed:', fallbackError)
+            throw fallbackError
+          }
+        } else {
+          throw queryError
+        }
       }
 
       // Get total count for pagination
@@ -462,29 +544,29 @@ export async function GET(request: NextRequest) {
             updatedAt: item.updatedAt.toISOString(),
             creator: item.users, // This should match what StackedHangoutTile expects
             users: item.users, // Also include users field for compatibility
-              myRsvpStatus: myRsvpStatus,
-              votingStatus: 'closed', // Default to closed, can be updated based on poll status
-              participants: participants,
-              _count: {
-                participants: item._count?.content_participants || 0,
-                comments: item._count?.comments || 0,
-                content_likes: item._count?.content_likes || 0,
-                content_shares: item._count?.content_shares || 0,
-                messages: item._count?.messages || 0,
-                photos: item._count?.photos || 0,
-                rsvps: item._count?.rsvps || 0,
-                eventSaves: item._count?.eventSaves || 0
-              },
-              counts: {
-                participants: item._count?.content_participants || 0,
-                comments: item._count?.comments || 0,
-                likes: item._count?.content_likes || 0,
-                shares: item._count?.content_shares || 0,
-                messages: item._count?.messages || 0,
-                photos: item._count?.photos || 0,
-                rsvps: item._count?.rsvps || 0,
-                saves: item._count?.eventSaves || 0
-              }
+            myRsvpStatus: myRsvpStatus,
+            votingStatus: 'closed', // Default to closed, can be updated based on poll status
+            participants: participants,
+            _count: {
+              participants: item._count?.content_participants || 0,
+              comments: item._count?.comments || 0,
+              content_likes: item._count?.content_likes || 0,
+              content_shares: item._count?.content_shares || 0,
+              messages: item._count?.messages || 0,
+              photos: item._count?.photos || 0,
+              rsvps: item._count?.rsvps || 0,
+              eventSaves: item._count?.eventSaves || 0
+            },
+            counts: {
+              participants: item._count?.content_participants || 0,
+              comments: item._count?.comments || 0,
+              likes: item._count?.content_likes || 0,
+              shares: item._count?.content_shares || 0,
+              messages: item._count?.messages || 0,
+              photos: item._count?.photos || 0,
+              rsvps: item._count?.rsvps || 0,
+              saves: item._count?.eventSaves || 0
+            }
           }
         } catch (error) {
           console.error('Error transforming feed item:', error);
@@ -509,7 +591,7 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       logger.error('Error fetching personalized feed:', error)
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Failed to fetch feed',
           message: 'An error occurred while loading content',
@@ -522,7 +604,7 @@ export async function GET(request: NextRequest) {
   } catch (outerError) {
     logger.error('Outer error in feed API:', outerError)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Internal server error',
         message: 'An unexpected error occurred',

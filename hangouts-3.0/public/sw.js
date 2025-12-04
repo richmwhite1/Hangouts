@@ -1,5 +1,5 @@
 // Enhanced Service Worker for Hangouts 3.0 PWA
-const CACHE_NAME = 'hangouts-3.0-v3'
+const CACHE_NAME = 'hangouts-3.0-v4'
 const OFFLINE_CACHE = 'hangouts-offline-v1'
 
 // Critical assets to cache on install
@@ -14,7 +14,7 @@ const urlsToCache = [
 // Routes that exist and should be cached (but only after successful navigation)
 const ROUTES_TO_CACHE = [
   '/discover',
-  '/create', 
+  '/create',
   '/friends',
   '/messages',
   '/profile',
@@ -36,7 +36,7 @@ const API_CACHE_PATTERNS = [
 // Install event - cache critical assets
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...')
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -57,7 +57,7 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...')
-  
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -119,7 +119,11 @@ self.addEventListener('fetch', (event) => {
           if (response.ok) {
             const responseClone = response.clone()
             caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseClone)
+              try {
+                cache.put(request, responseClone)
+              } catch (err) {
+                console.warn('Failed to cache response:', err)
+              }
             })
           }
           return response
@@ -136,29 +140,33 @@ self.addEventListener('fetch', (event) => {
 async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request)
-    
+
     if (networkResponse.ok) {
       // Cache successful responses
       const cache = await caches.open(CACHE_NAME)
-      cache.put(request, networkResponse.clone())
+      try {
+        cache.put(request, networkResponse.clone())
+      } catch (err) {
+        console.warn('Failed to cache API response:', err)
+      }
     }
-    
+
     return networkResponse
   } catch (error) {
     console.log('Network failed, trying cache:', request.url)
-    
+
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       return cachedResponse
     }
-    
+
     // Return offline response for API calls
     return new Response(
-      JSON.stringify({ 
-        error: 'Offline', 
-        message: 'You are offline. Please check your connection.' 
+      JSON.stringify({
+        error: 'Offline',
+        message: 'You are offline. Please check your connection.'
       }),
-      { 
+      {
         status: 503,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -175,14 +183,14 @@ async function cacheFirstStrategy(request) {
   }
 
   const cachedResponse = await caches.match(request)
-  
+
   if (cachedResponse) {
     return cachedResponse
   }
-  
+
   try {
     const networkResponse = await fetch(request)
-    
+
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME)
       // Only cache HTTP(S) requests
@@ -190,7 +198,7 @@ async function cacheFirstStrategy(request) {
         cache.put(request, networkResponse.clone())
       }
     }
-    
+
     return networkResponse
   } catch (error) {
     console.log('Failed to fetch:', request.url)
@@ -201,27 +209,27 @@ async function cacheFirstStrategy(request) {
 // Navigation strategy for page requests
 async function navigationStrategy(request) {
   const url = new URL(request.url)
-  
+
   // Handle known problematic routes by redirecting to root
   if (url.pathname === '/dashboard' || url.pathname === '/home') {
     console.log('Redirecting problematic route to root:', url.pathname)
     return Response.redirect('/', 302)
   }
-  
+
   // Always try to serve the root page for any navigation request that might fail
   // This prevents 404s when the PWA opens
   if (url.pathname !== '/' && !url.pathname.startsWith('/api/')) {
     // For non-root paths, first try the actual request
     try {
       const networkResponse = await fetch(request)
-      
+
       // If successful and not a 404, cache and return it
       if (networkResponse.ok && networkResponse.status !== 404) {
         const cache = await caches.open(CACHE_NAME)
         cache.put(request, networkResponse.clone())
         return networkResponse
       }
-      
+
       // If it's a 404, fall back to root page
       if (networkResponse.status === 404) {
         console.log('404 detected, serving root page instead:', request.url)
@@ -240,28 +248,28 @@ async function navigationStrategy(request) {
       }
     }
   }
-  
+
   // For root path or if above failed, try normal flow
   try {
     const networkResponse = await fetch(request)
-    
+
     // If the response is successful, cache it for future use
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME)
       cache.put(request, networkResponse.clone())
     }
-    
+
     return networkResponse
   } catch (error) {
     console.log('Navigation failed, trying cache:', request.url)
-    
+
     // Check if we have a cached version
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       console.log('Serving cached version:', request.url)
       return cachedResponse
     }
-    
+
     // Try to serve root page as fallback
     try {
       const rootResponse = await fetch('/')
@@ -271,13 +279,13 @@ async function navigationStrategy(request) {
     } catch (e) {
       console.log('Failed to fetch root path')
     }
-    
+
     // Serve offline page as last resort
     const offlineResponse = await caches.match('/offline')
     if (offlineResponse) {
       return offlineResponse
     }
-    
+
     // Final fallback
     return new Response(`
       <!DOCTYPE html>
@@ -296,7 +304,7 @@ async function navigationStrategy(request) {
           <button onclick="window.location.reload()">Retry</button>
         </body>
       </html>
-    `, { 
+    `, {
       status: 503,
       headers: { 'Content-Type': 'text/html' }
     })
@@ -306,16 +314,16 @@ async function navigationStrategy(request) {
 // Push event - handle incoming push notifications
 self.addEventListener('push', (event) => {
   console.log('Push event received:', event)
-  
+
   if (!event.data) {
     console.log('Push event has no data')
     return
   }
-  
+
   try {
     const data = event.data.json()
     console.log('Push data:', data)
-    
+
     const options = {
       body: data.message || 'You have a new notification',
       icon: '/icon-192x192.png',
@@ -336,13 +344,13 @@ self.addEventListener('push', (event) => {
       requireInteraction: data.requireInteraction || false,
       silent: data.silent || false
     }
-    
+
     event.waitUntil(
       self.registration.showNotification(data.title || 'Hangouts 3.0', options)
     )
   } catch (error) {
     console.error('Error handling push event:', error)
-    
+
     // Fallback notification
     event.waitUntil(
       self.registration.showNotification('Hangouts 3.0', {
@@ -357,16 +365,16 @@ self.addEventListener('push', (event) => {
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
   console.log('Notification clicked:', event)
-  
+
   event.notification.close()
-  
+
   if (event.action === 'dismiss') {
     return
   }
-  
+
   const data = event.notification.data || {}
   let urlToOpen = '/dashboard'
-  
+
   // Navigate to specific page based on notification data
   if (data.hangoutId) {
     urlToOpen = `/hangout/${data.hangoutId}`
@@ -379,7 +387,7 @@ self.addEventListener('notificationclick', (event) => {
   } else if (data.type === 'HANGOUT_INVITE') {
     urlToOpen = '/hangouts'
   }
-  
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
@@ -391,7 +399,7 @@ self.addEventListener('notificationclick', (event) => {
             return
           }
         }
-        
+
         // Open new window if app is not open
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen)
@@ -403,7 +411,7 @@ self.addEventListener('notificationclick', (event) => {
 // Background sync for failed requests
 self.addEventListener('sync', (event) => {
   console.log('Background sync event:', event.tag)
-  
+
   if (event.tag === 'background-sync') {
     event.waitUntil(doBackgroundSync())
   }
@@ -422,11 +430,11 @@ async function doBackgroundSync() {
 // Message event for communication with main thread
 self.addEventListener('message', (event) => {
   console.log('Service Worker received message:', event.data)
-  
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
   }
-  
+
   if (event.data && event.data.type === 'CACHE_URLS') {
     event.waitUntil(
       caches.open(CACHE_NAME)
