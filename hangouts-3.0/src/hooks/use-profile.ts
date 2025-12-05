@@ -80,7 +80,7 @@ export function useProfile() {
     }
   }
 
-  const { isSignedIn, isLoaded, getToken, userId } = clerkAuth
+  const { isSignedIn, isLoaded, getToken } = clerkAuth
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userHangouts, setUserHangouts] = useState<UserHangout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -97,32 +97,32 @@ export function useProfile() {
       try {
         setIsLoading(true)
         setError(null)
-        
+
         // Get current user to get username
-        const userResponse = await fetch('/api/auth/me')
+        const userResponse = await fetch('/api/auth/me', { cache: 'no-store' })
         if (!userResponse.ok) {
           throw new Error('Failed to get current user')
         }
         const { data: userData } = await userResponse.json()
         console.log('🔍 use-profile - userData:', userData)
         const user = userData
-        
+
         // Handle case where user exists but profile is incomplete
         if (!user) {
           throw new Error('User not found')
         }
-        
+
         // If username is missing, try to force sync by calling /api/auth/me again
         // This will trigger getClerkApiUser which should sync the user
         if (!user.username) {
-          console.log('🔍 use-profile - Username missing, attempting to force sync...')
+          console.warn('🔍 use-profile - Username missing, attempting to force sync...')
           try {
             // Force a refresh of the auth endpoint which should trigger sync
             const refreshResponse = await fetch('/api/auth/me', {
               method: 'GET',
               cache: 'no-store'
             })
-            
+
             if (refreshResponse.ok) {
               const { data: refreshedUser } = await refreshResponse.json()
               if (refreshedUser?.username) {
@@ -134,21 +134,21 @@ export function useProfile() {
                     // Parse favorite activities and places
                     let favoriteActivities: string[] = []
                     let favoritePlaces: string[] = []
-                    
+
                     try {
                       if (data.data.profile.favoriteActivities) {
-                        favoriteActivities = typeof data.data.profile.favoriteActivities === 'string' 
-                          ? JSON.parse(data.data.profile.favoriteActivities) 
+                        favoriteActivities = typeof data.data.profile.favoriteActivities === 'string'
+                          ? JSON.parse(data.data.profile.favoriteActivities)
                           : data.data.profile.favoriteActivities
                       }
                     } catch (e) {
                       logger.warn('Failed to parse favoriteActivities:', e);
                     }
-                    
+
                     try {
                       if (data.data.profile.favoritePlaces) {
-                        favoritePlaces = typeof data.data.profile.favoritePlaces === 'string' 
-                          ? JSON.parse(data.data.profile.favoritePlaces) 
+                        favoritePlaces = typeof data.data.profile.favoritePlaces === 'string'
+                          ? JSON.parse(data.data.profile.favoritePlaces)
                           : data.data.profile.favoritePlaces
                       }
                     } catch (e) {
@@ -182,42 +182,42 @@ export function useProfile() {
           } catch (syncError) {
             logger.warn('Failed to sync user:', syncError)
           }
-          
+
           // If sync failed or username still missing, set error but don't crash
           setError('Profile setup required - missing username. Please refresh the page or contact support.')
           setIsLoading(false)
           return
         }
-        
+
         // Fetch full profile data using the profile API
-        const profileResponse = await fetch(`/api/profile?username=${user.username}`)
+        const profileResponse = await fetch(`/api/profile?username=${user.username}`, { cache: 'no-store' })
         if (!profileResponse.ok) {
           throw new Error('Failed to fetch profile')
         }
-        
+
         const data = await profileResponse.json()
         if (!data.success) {
           throw new Error(data.error || 'Failed to fetch profile')
         }
-        
+
         // Parse favorite activities and places from JSON strings
         let favoriteActivities: string[] = []
         let favoritePlaces: string[] = []
-        
+
         try {
           if (data.data.profile.favoriteActivities) {
-            favoriteActivities = typeof data.data.profile.favoriteActivities === 'string' 
-              ? JSON.parse(data.data.profile.favoriteActivities) 
+            favoriteActivities = typeof data.data.profile.favoriteActivities === 'string'
+              ? JSON.parse(data.data.profile.favoriteActivities)
               : data.data.profile.favoriteActivities
           }
         } catch (e) {
           logger.warn('Failed to parse favoriteActivities:', e);
         }
-        
+
         try {
           if (data.data.profile.favoritePlaces) {
-            favoritePlaces = typeof data.data.profile.favoritePlaces === 'string' 
-              ? JSON.parse(data.data.profile.favoritePlaces) 
+            favoritePlaces = typeof data.data.profile.favoritePlaces === 'string'
+              ? JSON.parse(data.data.profile.favoritePlaces)
               : data.data.profile.favoritePlaces
           }
         } catch (e) {
@@ -242,10 +242,10 @@ export function useProfile() {
           joinDate: data.data.profile.joinDate,
           stats: data.data.profile.stats
         }
-        
+
         setProfile(userProfile)
         setUserHangouts(data.data.hangouts || [])
-        
+
       } catch (error) {
         logger.error('Profile fetch error:', error);
         setError('Failed to load profile')
@@ -253,7 +253,7 @@ export function useProfile() {
         setIsLoading(false)
       }
     }
-    
+
     fetchProfile()
   }, [isSignedIn, isLoaded])
 
@@ -266,52 +266,52 @@ export function useProfile() {
     try {
       setIsLoading(true)
       setError(null)
-      
+
       // Get current user to get username
-      const userResponse = await fetch('/api/auth/me')
+      const userResponse = await fetch('/api/auth/me', { cache: 'no-store' })
       if (!userResponse.ok) {
         throw new Error('Failed to get current user')
       }
       const { data: userData } = await userResponse.json()
       const user = userData
-      
+
       // Check if user and username exist
       if (!user || !user.username) {
         console.error('🔍 refetch - Invalid user data:', user)
         throw new Error('User data is incomplete - missing username')
       }
-      
+
       console.log('🔍 refetch - Fetching profile for username:', user.username)
-      
+
       // Fetch full profile data using the profile API
-      const profileResponse = await fetch(`/api/profile?username=${user.username}`)
+      const profileResponse = await fetch(`/api/profile?username=${user.username}`, { cache: 'no-store' })
       if (!profileResponse.ok) {
         throw new Error('Failed to fetch profile')
       }
-      
+
       const data = await profileResponse.json()
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch profile')
       }
-      
+
       // Parse favorite activities and places from JSON strings
       let favoriteActivities: string[] = []
       let favoritePlaces: string[] = []
-      
+
       try {
         if (data.data.profile.favoriteActivities) {
-          favoriteActivities = typeof data.data.profile.favoriteActivities === 'string' 
-            ? JSON.parse(data.data.profile.favoriteActivities) 
+          favoriteActivities = typeof data.data.profile.favoriteActivities === 'string'
+            ? JSON.parse(data.data.profile.favoriteActivities)
             : data.data.profile.favoriteActivities
         }
       } catch (e) {
         logger.warn('Failed to parse favoriteActivities:', e);
       }
-      
+
       try {
         if (data.data.profile.favoritePlaces) {
-          favoritePlaces = typeof data.data.profile.favoritePlaces === 'string' 
-            ? JSON.parse(data.data.profile.favoritePlaces) 
+          favoritePlaces = typeof data.data.profile.favoritePlaces === 'string'
+            ? JSON.parse(data.data.profile.favoritePlaces)
             : data.data.profile.favoritePlaces
         }
       } catch (e) {
@@ -336,10 +336,10 @@ export function useProfile() {
         joinDate: data.data.profile.joinDate,
         stats: data.data.profile.stats
       }
-      
+
       setProfile(userProfile)
       setUserHangouts(data.data.hangouts || [])
-      
+
     } catch (error) {
       logger.error('Profile refetch error:', error);
       setError('Failed to load profile')

@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Users } from "lucide-react"
 import { GuestLanding } from "@/components/guest-landing"
-import { useSwipeGestures } from "@/hooks/use-swipe-gestures"
 import { ViewToggle } from "@/components/planner/view-toggle"
 import { TodayView } from "@/components/planner/today-view"
 import { MonthCalendarView } from "@/components/planner/month-calendar-view"
+import { QuickPlanModal } from "@/components/create/QuickPlanModal"
+import { UserStatusWidget } from "@/components/home/UserStatusWidget"
+import { Zap } from "lucide-react"
 
 // Re-using the interface (should be shared)
 interface FeedItem {
@@ -49,13 +53,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [isClient, setIsClient] = useState(false)
   const [view, setView] = useState<'today' | 'month'>('today')
-
-  // Swipe gestures for mobile navigation
-  const swipeGestures = useSwipeGestures({
-    onSwipeLeft: () => router.push('/discover'),
-    onSwipeRight: () => router.push('/profile'),
-    threshold: 100
-  })
+  const [isQuickPlanOpen, setIsQuickPlanOpen] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -105,25 +103,41 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-planner-cream pb-20" {...swipeGestures}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-planner-cream/95 backdrop-blur-sm border-b border-planner-border px-4 py-4">
-        <h1 className="text-2xl font-bold text-planner-text-primary text-center mb-4">
-          {view === 'today' ? 'Today' : 'Calendar'}
-        </h1>
-
-        {/* View Toggle */}
-        <ViewToggle value={view} onChange={setView} />
+    <div className="min-h-screen bg-planner-cream pb-20">
+      {/* Header - Minimal & Clean */}
+      <div className="sticky top-0 z-20 bg-planner-cream/95 backdrop-blur-md border-b border-planner-border/50 pt-safe">
+        <div className="px-4 py-3 relative flex items-center justify-center">
+          <ViewToggle value={view} onChange={setView} />
+          <Link href="/friends" className="absolute right-4 p-2 text-planner-navy hover:bg-black/5 rounded-full transition-colors">
+            <Users className="w-6 h-6" />
+          </Link>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 pt-6">
+      <div className="px-4 pt-2">
+        <UserStatusWidget />
         {view === 'today' ? (
-          <TodayView items={hangouts} loading={loading} />
+          <TodayView items={Array.isArray(hangouts) ? hangouts : []} loading={loading} />
         ) : (
-          <MonthCalendarView items={hangouts} loading={loading} />
+          <MonthCalendarView items={Array.isArray(hangouts) ? hangouts : []} loading={loading} />
         )}
       </div>
+
+      {/* Quick Plan FAB */}
+      <div className="fixed bottom-24 right-4 z-40">
+        <button
+          onClick={() => setIsQuickPlanOpen(true)}
+          className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center hover:scale-105 transition-transform active:scale-95"
+        >
+          <Zap className="w-7 h-7 fill-white" />
+        </button>
+      </div>
+
+      <QuickPlanModal
+        isOpen={isQuickPlanOpen}
+        onClose={() => setIsQuickPlanOpen(false)}
+      />
     </div>
   )
 }

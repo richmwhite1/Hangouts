@@ -1,20 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Plus, X, Camera, Users } from 'lucide-react'
+import { Plus, X, Camera, Users, Sparkles } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { EventSelectionModal } from '@/components/ui/event-selection-modal'
+import { InviteFriendsBar } from '@/components/create/InviteFriendsBar'
+import { ConsensusBanner } from '@/components/create/ConsensusBanner'
+import { OptionCard } from '@/components/create/OptionCard'
+import { SmartSuggestions } from '@/components/create/SmartSuggestions'
+import { SmartPasteModal } from '@/components/create/SmartPasteModal'
 import { toast } from 'sonner'
 import { HANGOUT_STATES } from '@/lib/hangout-flow'
 import { logger } from '@/lib/logger'
+import confetti from 'canvas-confetti'
 interface NewHangoutFormProps {
   onSubmit: (data: NewHangoutFormData) => void
   isLoading?: boolean
@@ -38,6 +45,8 @@ interface NewHangoutFormProps {
   hangoutState?: string
 }
 
+import { Ticket } from 'lucide-react'
+
 export interface NewHangoutFormData {
   title: string
   description: string
@@ -50,6 +59,9 @@ export interface NewHangoutFormData {
   consensusPercentage: number
   allowMultipleVotes: boolean
   type: 'quick_plan' | 'multi_option'
+  isAllDay: boolean
+  isRecurring: boolean
+  recurrenceFrequency: 'DAILY' | 'WEEKLY' | 'MONTHLY'
   options: Array<{
     id: string
     title: string
@@ -75,6 +87,9 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
     consensusPercentage: 70,
     allowMultipleVotes: true,
     type: 'quick_plan',
+    isAllDay: false,
+    isRecurring: false,
+    recurrenceFrequency: 'WEEKLY',
     options: [
       { id: `option_${Date.now()}_1`, title: '', description: '', location: '', dateTime: '', price: 0, hangoutUrl: '' }
     ]
@@ -85,6 +100,26 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
   const [isLoadingFriends, setIsLoadingFriends] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
+  const [isSmartPasteOpen, setIsSmartPasteOpen] = useState(false)
+
+  const handleSmartPaste = (data: { title?: string; location?: string; dateTime?: string; description?: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      title: data.title || prev.title,
+      description: data.description || prev.description,
+      options: prev.options.map((opt, idx) => idx === 0 ? {
+        ...opt,
+        title: data.title || opt.title,
+        location: data.location || opt.location || '',
+        dateTime: data.dateTime || opt.dateTime || '' // Note: This might need ISO conversion in real app
+      } : opt)
+    }))
+  }
+
+  // Vote preview state (simulated for UI preview)
+  const [votePreview, setVotePreview] = useState<{ [optionId: string]: number }>({})
+  const [lockedOptionId, setLockedOptionId] = useState<string | null>(null)
 
   // Calculate form completion progress
   const calculateProgress = () => {
@@ -107,7 +142,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
         // Each option also needs dateTime
         total++
-        if (validOptions[i].dateTime && validOptions[i].dateTime.trim() !== '') {
+        if (validOptions[i]?.dateTime && validOptions[i]?.dateTime?.trim() !== '') {
           completed++
         }
       }
@@ -131,7 +166,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
       const getLocation = async () => {
         if (navigator.geolocation) {
           try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            const _position = await new Promise<GeolocationPosition>((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
             })
 
@@ -314,6 +349,13 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         return
       }
     }
+
+    // Trigger confetti
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    })
 
     onSubmit(formData)
   }
@@ -499,9 +541,46 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
     })
   }
 
+  // Friend Selection Modal State is declared at the top with other state variables
+
+
+  const getLeadingOption = () => {
+    if (formData.type !== 'multi_option' || formData.participants.length === 0) return null
+    const options = formData.options.filter(opt => opt.title.trim() !== '')
+    if (options.length === 0) return null
+    let maxVotes = 0, leadingOption = null
+    options.forEach(option => {
+      const votes = votePreview[option.id] || 0
+      if (votes > maxVotes) { maxVotes = votes; leadingOption = option }
+    })
+    if (!leadingOption) return null
+    const totalVoters = Math.max(formData.participants.length, 1)
+    return {
+      id: leadingOption.id,
+      title: leadingOption.title,
+      voteCount: maxVotes,
+      votePercentage: Math.round((maxVotes / totalVoters) * 100)
+    }
+  }
+
+  const handleLockOption = (optionId: string) => {
+    const option = formData.options.find(opt => opt.id === optionId)
+    if (!option) return
+    setLockedOptionId(optionId)
+    handleInputChange('type', 'quick_plan')
+    handleInputChange('options', [option])
+    toast.success('🎉 Poll locked!')
+    confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } })
+  }
+
+  const invitedFriendsWithDetails = useMemo(
+    () => formData.participants.map(id => allFriends.find(f => f.id === id)).filter(Boolean) as any[],
+    [formData.participants, allFriends]
+  )
+
   return (
-    <div className="max-h-screen overflow-y-auto">
-      <form onSubmit={handleSubmit} className="space-y-6 pb-20">
+    <div className="max-h-screen overflow-y-auto relative">
+      <form onSubmit={handleSubmit} className="px-6 pt-6 pb-12 space-y-8">
         {/* Photo Upload */}
         <div className="flex justify-end">
           <input
@@ -570,9 +649,48 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           <CardHeader>
             <CardTitle className="text-white">Hangout Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title" className="text-white">Title</Label>
+          <CardContent className="space-y-5">
+            {/* Event Attachment Button */}
+            <div className="flex justify-center mb-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEventModalOpen(true)}
+                className="w-full border-dashed border-gray-600 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-900/10 h-12"
+              >
+                <Ticket className="w-4 h-4 mr-2" />
+                Attach an Event (Ticketmaster, Meetup, etc.)
+              </Button>
+            </div>
+
+            <EventSelectionModal
+              isOpen={isEventModalOpen}
+              onClose={() => setIsEventModalOpen(false)}
+              onSelectEvent={(event) => {
+                // Auto-fill form with event details
+                setFormData(prev => ({
+                  ...prev,
+                  title: event.title,
+                  description: event.description || prev.description,
+                  location: [event.venue, event.address, event.city].filter(Boolean).join(', ') || prev.location,
+                  options: prev.options.map((opt, idx) =>
+                    idx === 0 ? {
+                      ...opt,
+                      title: event.title,
+                      description: event.description || '',
+                      location: [event.venue, event.address, event.city].filter(Boolean).join(', '),
+                      dateTime: event.startDate ? new Date(event.startDate + (event.startTime ? 'T' + event.startTime : '')).toISOString() : (opt.dateTime || ''),
+                      hangoutUrl: (event as any).ticketUrl || ''
+                    } : opt
+                  )
+                }))
+                toast.success('Event attached successfully!')
+              }}
+              currentOptions={formData.options}
+            />
+
+            <div className="mb-4">
+              <Label htmlFor="title" className="text-white mb-2">Title</Label>
               <Input
                 id="title"
                 placeholder="e.g., Board Game Night"
@@ -583,8 +701,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-white">Description (optional)</Label>
+            <div className="mb-4">
+              <Label htmlFor="description" className="text-white mb-2">Description (optional)</Label>
               <Textarea
                 id="description"
                 placeholder="Tell more about your hangout..."
@@ -595,8 +713,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
             </div>
 
 
-            <div className="space-y-2">
-              <Label className="text-white">Privacy Level</Label>
+            <div className="mb-4">
+              <Label className="text-white mb-2">Privacy Level</Label>
               <div className="flex gap-2">
                 {(['PUBLIC', 'FRIENDS_ONLY', 'PRIVATE'] as const).map((level) => (
                   <Button
@@ -614,12 +732,39 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           </CardContent>
         </Card>
 
+        {/* Smart Suggestions - AI-powered recommendations */}
+        <SmartSuggestions
+          invitedFriends={invitedFriendsWithDetails}
+          currentDateTime={formData.options[0]?.dateTime}
+          currentLocation={formData.options[0]?.location}
+          hangoutTitle={formData.title}
+          onSelectTime={(dateTime) => {
+            if (formData.options.length > 0) {
+              handleOptionChange(0, 'dateTime', dateTime)
+              // Delay toast to ensure state update is visible
+              setTimeout(() => {
+                toast.success('✨ Time suggestion applied to Option 1!')
+              }, 100)
+            }
+          }}
+          onSelectLocation={(location) => {
+            if (formData.options.length > 0) {
+              handleOptionChange(0, 'location', location)
+              // Delay toast to ensure state update is visible
+              setTimeout(() => {
+                toast.success('📍 Location suggestion applied to Option 1!')
+              }, 100)
+            }
+          }}
+        />
+
+
         {/* Flow Type Selection - Simplified */}
         <Card className="bg-black border-gray-600">
           <CardHeader>
             <CardTitle className="text-white">How do you want to plan?</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             <div className="grid grid-cols-1 gap-3">
               <button
                 type="button"
@@ -627,8 +772,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 aria-label="Select Simple Plan option"
                 aria-pressed={formData.type === 'quick_plan'}
                 className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-black ${formData.type === 'quick_plan'
-                    ? 'border-[#2563EB] bg-[#2563EB]/10'
-                    : 'border-gray-600 hover:border-gray-500'
+                  ? 'border-[#2563EB] bg-[#2563EB]/10'
+                  : 'border-gray-600 hover:border-gray-500'
                   }`}
               >
                 <div className="flex items-start gap-3">
@@ -653,8 +798,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 aria-label="Select Let Friends Vote option"
                 aria-pressed={formData.type === 'multi_option'}
                 className={`p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-black ${formData.type === 'multi_option'
-                    ? 'border-[#2563EB] bg-[#2563EB]/10'
-                    : 'border-gray-600 hover:border-gray-500'
+                  ? 'border-[#2563EB] bg-[#2563EB]/10'
+                  : 'border-gray-600 hover:border-gray-500'
                   }`}
               >
                 <div className="flex items-start gap-3">
@@ -676,6 +821,18 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           </CardContent>
         </Card>
 
+        {/* Consensus Banner - Shows leading option */}
+        {formData.type === 'multi_option' && getLeadingOption() && (
+          <ConsensusBanner
+            leadingOption={getLeadingOption()}
+            consensusThreshold={formData.consensusPercentage}
+            totalVoters={formData.participants.length}
+            onLockOption={handleLockOption}
+            isLocked={lockedOptionId !== null}
+          />
+        )}
+
+
         {/* Consensus Settings - Only for multi_option, hidden by default */}
         {formData.type === 'multi_option' && (
           <Card className="bg-black border-gray-600">
@@ -694,7 +851,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               </div>
             </CardHeader>
             {showAdvancedOptions && (
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5">
                 <div>
                   <Label className="text-white text-sm mb-2 block">
                     Consensus Required: {formData.consensusPercentage}%
@@ -749,7 +906,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               {formData.type === 'quick_plan' ? 'Plan Details' : 'Poll Options'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             {formData.options.map((option, index) => (
               <div key={option.id} className="p-4 border border-gray-600 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
@@ -790,12 +947,63 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                     placeholder="Search for a location..."
                     className="w-full"
                   />
-                  <CalendarPicker
-                    value={option.dateTime || ''}
-                    onChange={(value) => handleOptionChange(index, 'dateTime', value)}
-                    placeholder="Select date and time"
-                    className="w-full"
-                  />
+
+                  {/* Advanced Date/Time Controls */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs text-gray-400">Date & Time</Label>
+                      {index === 0 && (
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="all-day" className="text-xs text-gray-400">All Day</Label>
+                            <Switch
+                              id="all-day"
+                              checked={formData.isAllDay}
+                              onCheckedChange={(checked) => handleInputChange('isAllDay', checked)}
+                              className="scale-75"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="recurring" className="text-xs text-gray-400">Recurring</Label>
+                            <Switch
+                              id="recurring"
+                              checked={formData.isRecurring}
+                              onCheckedChange={(checked) => handleInputChange('isRecurring', checked)}
+                              className="scale-75"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <CalendarPicker
+                      value={option.dateTime || ''}
+                      onChange={(value) => handleOptionChange(index, 'dateTime', value)}
+                      placeholder={formData.isAllDay ? "Select date" : "Select date and time"}
+                      className="w-full"
+                    />
+
+                    {/* Recurrence Frequency Selector */}
+                    {index === 0 && formData.isRecurring && (
+                      <div className="mt-2 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                        <Label className="text-xs text-gray-400 mb-2 block">Repeat</Label>
+                        <div className="flex gap-2">
+                          {(['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((freq) => (
+                            <Button
+                              key={freq}
+                              type="button"
+                              variant={formData.recurrenceFrequency === freq ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleInputChange('recurrenceFrequency', freq)}
+                              className={`flex-1 text-xs ${formData.recurrenceFrequency === freq ? 'bg-blue-600 text-white' : 'border-gray-600 text-gray-300'}`}
+                            >
+                              {freq.charAt(0) + freq.slice(1).toLowerCase()}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -846,7 +1054,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           <CardHeader>
             <CardTitle className="text-white">Invite Friends</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             {/* Search Friends - Moved to Top */}
             <div className="flex gap-2">
               <Input
@@ -880,8 +1088,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                           type="button"
                           onClick={() => addParticipant(friend.id)}
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isSelected
-                              ? 'bg-blue-600 border-blue-500'
-                              : 'bg-gray-800 border-gray-600 hover:bg-gray-700'
+                            ? 'bg-blue-600 border-blue-500'
+                            : 'bg-gray-800 border-gray-600 hover:bg-gray-700'
                             } border`}
                         >
                           <img
@@ -901,8 +1109,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                                 toggleMandatory(friend.id)
                               }}
                               className={`px-2 py-1 text-xs rounded font-medium transition-colors ${isMandatory
-                                  ? 'bg-red-600 text-white border border-red-500'
-                                  : 'bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white border border-gray-600'
+                                ? 'bg-red-600 text-white border border-red-500'
+                                : 'bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white border border-gray-600'
                                 }`}
                               title={isMandatory ? 'Required to attend' : 'Mark as required'}
                             >
@@ -915,8 +1123,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                                 toggleCoHost(friend.id)
                               }}
                               className={`px-2 py-1 text-xs rounded font-medium transition-colors ${isCoHost
-                                  ? 'bg-yellow-600 text-white border border-yellow-500'
-                                  : 'bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white border border-gray-600'
+                                ? 'bg-yellow-600 text-white border border-yellow-500'
+                                : 'bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white border border-gray-600'
                                 }`}
                               title={isCoHost ? 'Co-host can edit hangout' : 'Make co-host'}
                             >
@@ -996,7 +1204,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
           <Button
             type="submit"
-            className="w-full text-white font-bold py-3"
+            className="w-full h-12 text-white font-bold mt-6"
             style={{ backgroundColor: '#792ADB' }}
             disabled={isLoading || progress.completed < progress.total}
           >
@@ -1005,12 +1213,96 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </div>
       </form>
 
+
+      {/* Floating Invite Friends Bar */}
+      <InviteFriendsBar
+        invitedFriends={invitedFriendsWithDetails}
+        onOpenModal={() => setIsFriendModalOpen(true)}
+        onRemoveFriend={removeParticipant}
+        mandatoryParticipants={formData.mandatoryParticipants}
+        coHosts={formData.coHosts}
+      />
+
       {/* Event Selection Modal */}
       <EventSelectionModal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
         onSelectEvent={handleSelectEvent}
         currentOptions={formData.options}
+      />
+
+      {/* Friend Selection Modal (Simplified for now) */}
+      {isFriendModalOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 w-full max-w-md rounded-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Invite Friends</h3>
+              <Button variant="ghost" size="sm" onClick={() => setIsFriendModalOpen(false)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="p-4 border-b border-gray-800">
+              <Input
+                placeholder="Search friends..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-black border-gray-700 text-white"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
+              {isLoadingFriends ? (
+                <div className="text-center py-8 text-gray-500">Loading friends...</div>
+              ) : filteredFriends.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No friends found</div>
+              ) : (
+                <div className="space-y-1">
+                  {filteredFriends.map(friend => {
+                    const isSelected = formData.participants.includes(friend.id)
+                    return (
+                      <button
+                        key={friend.id}
+                        type="button"
+                        onClick={() => isSelected ? removeParticipant(friend.id) : addParticipant(friend.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isSelected ? 'bg-blue-900/20 border border-blue-900/50' : 'hover:bg-gray-800'}`}
+                      >
+                        <div className="relative">
+                          <img
+                            src={friend.avatar || '/placeholder-avatar.png'}
+                            alt={friend.name}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          {isSelected && (
+                            <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-gray-900">
+                              <Plus className="w-3 h-3" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-left flex-1">
+                          <div className={`font-medium ${isSelected ? 'text-blue-400' : 'text-white'}`}>{friend.name}</div>
+                          <div className="text-xs text-gray-500">@{friend.username}</div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-800">
+              <Button className="w-full bg-white text-black hover:bg-gray-200" onClick={() => setIsFriendModalOpen(false)}>
+                Done ({formData.participants.length} selected)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      <SmartPasteModal
+        isOpen={isSmartPasteOpen}
+        onClose={() => setIsSmartPasteOpen(false)}
+        onParsed={handleSmartPaste}
       />
     </div>
   )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Content as Hangout } from '@/types/api'
-
+import { apiClient } from '@/lib/api-client'
 import { logger } from '@/lib/logger'
 interface UseHangoutsParams {
   status?: string
@@ -28,7 +28,7 @@ export const useHangouts = (params?: UseHangoutsParams): UseHangoutsReturn => {
       // console.log('🚀 Starting to fetch hangouts...'); // Removed for production
       setIsLoading(true)
       setError(null)
-      
+
       const data = await apiClient.getHangouts(params)
       // console.log('✅ Fetched hangouts:', data.hangouts.length); // Removed for production
       setHangouts(data.hangouts)
@@ -55,7 +55,8 @@ export const useHangouts = (params?: UseHangoutsParams): UseHangoutsReturn => {
     hangouts,
     isLoading,
     error,
-    refetch: fetchHangouts}
+    refetch: fetchHangouts
+  }
 }
 
 export const useHangout = (id: string) => {
@@ -88,5 +89,6 @@ export const useHangout = (id: string) => {
     hangout,
     isLoading,
     error,
-    refetch: fetchHangout}
+    refetch: fetchHangout
+  }
 }

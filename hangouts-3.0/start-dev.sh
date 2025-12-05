@@ -12,6 +12,7 @@ export NODE_ENV="development"
 export NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_Z2FtZS1wYW5nb2xpbi03Mi5jbGVyay5hY2NvdW50cy5kZXYk"
 export CLERK_SECRET_KEY="sk_test_dTCC06GobHynWAAINGoIR8hFpm7vNwuaaYzcin0BOH"
 export NEXT_PUBLIC_APP_URL="http://localhost:3000"
+export NEXT_PUBLIC_API_URL="http://localhost:3000"
 export PORT=3000
 
 echo "📊 Database URL: $DATABASE_URL"

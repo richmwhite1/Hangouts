@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Check, 
-  X, 
+import { useAuth, useUser } from '@clerk/nextjs'
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Check,
+  X,
   HelpCircle,
   ArrowLeft,
   Settings,
@@ -31,7 +31,8 @@ import {
   BarChart3,
   CheckCircle2,
   AlertCircle,
-  Info
+  Info,
+  Plus
 } from 'lucide-react'
 // Removed api-client import - using direct fetch calls
 import { Button } from '@/components/ui/button'
@@ -52,17 +53,21 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle} from '@/components/ui/alert-dialog'
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import { Confetti } from '@/components/celebrations/confetti'
+import { ShareModal } from '@/components/share/share-modal'
 
 interface Hangout {
   id: string
   title: string
+  type: 'quick_plan' | 'multi_option'
   description?: string
   location?: string
   startTime: string
   endTime: string
   creatorId: string
-  creator: { 
+  creator: {
     name: string
     username: string
     avatar?: string
@@ -148,17 +153,19 @@ export default function HangoutDetailModern({
   showEventDetails = true
 }: HangoutDetailModernProps) {
   const { userId } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('overview')
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
   const [friendSearchTerm, setFriendSearchTerm] = useState('')
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -168,10 +175,10 @@ export default function HangoutDetailModern({
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     })
   }
 
@@ -234,7 +241,7 @@ export default function HangoutDetailModern({
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            
+
             {/* Header Overlay */}
             <div className="absolute top-0 left-0 right-0 p-4">
               <div className="flex items-center justify-between">
@@ -328,7 +335,10 @@ export default function HangoutDetailModern({
                     <BarChart3 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   </button>
                   <button
-                    onClick={onShare}
+                    onClick={() => {
+                      setIsShareModalOpen(true)
+                      onShare?.()
+                    }}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     title="Share"
                   >
@@ -348,27 +358,142 @@ export default function HangoutDetailModern({
         </div>
       </div>
 
+      {/* Confetti Celebration */}
+      {hangout.consensusReached && <Confetti duration={4000} particleCount={200} />}
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        hangout={hangout}
+      />
+
       {/* Main Content */}
-      <div className="pt-8 px-4 pb-20">
+      <div className="px-6 pt-6 pb-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="participants">People</TabsTrigger>
-            <TabsTrigger value="photos">Photos</TabsTrigger>
-            <TabsTrigger value="chat">Chat</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsTrigger value="overview" className="px-5 py-3">Overview</TabsTrigger>
+            <TabsTrigger value="polls" className="px-5 py-3">Polls</TabsTrigger>
+            <TabsTrigger value="participants" className="px-5 py-3">People</TabsTrigger>
+            <TabsTrigger value="photos" className="px-5 py-3">Photos</TabsTrigger>
+            <TabsTrigger value="chat" className="px-5 py-3">Chat</TabsTrigger>
           </TabsList>
 
+          {/* Polls Tab */}
+          <TabsContent value="polls" className="space-y-8">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">
+                    Vote for the Plan
+                  </h3>
+                  {hangout.consensusReached && (
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Decided
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {hangout.pollOptions && hangout.pollOptions.length > 0 ? (
+                  <div className="space-y-3">
+                    {hangout.pollOptions.map((option) => {
+                      const totalVotes = hangout.pollOptions?.reduce((acc, opt) => acc + opt.votes, 0) || 0
+                      const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0
+                      const isVotedByUser = option.voters.includes(userId || '')
+                      const isWinning = hangout.consensusReached && option.votes === Math.max(...(hangout.pollOptions?.map(o => o.votes) || [0]))
+
+                      return (
+                        <div
+                          key={option.id}
+                          className={`py-3 px-5 rounded-lg border-2 transition-all cursor-pointer relative overflow-hidden ${isVotedByUser
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
+                            } ${isWinning ? 'ring-2 ring-green-500 border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
+                          onClick={() => !hangout.consensusReached && onVote?.(option.id)}
+                        >
+                          {/* Progress Bar Background */}
+                          <div
+                            className="absolute left-0 top-0 bottom-0 bg-blue-100 dark:bg-blue-900/30 transition-all duration-500 ease-out"
+                            style={{ width: `${percentage}%`, opacity: 0.5, zIndex: 0 }}
+                          />
+
+                          <div className="relative z-10 flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="font-medium text-lg text-gray-900 dark:text-white flex items-center">
+                                {option.text}
+                                {isWinning && <CheckCircle2 className="w-5 h-5 text-green-600 ml-2" />}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {option.votes} votes ({percentage.toFixed(0)}%)
+                              </div>
+                            </div>
+
+                            <div className="flex items-center">
+                              {isVotedByUser ? (
+                                <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                  <Check className="w-5 h-5" />
+                                </div>
+                              ) : (
+                                !hangout.consensusReached && (
+                                  <div className="h-8 w-8 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-300">
+                                    <Plus className="w-4 h-4" />
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Voters Avatars (Mini) */}
+                          {option.voters.length > 0 && (
+                            <div className="relative z-10 mt-3 flex gap-3 overflow-hidden pt-1">
+                              {option.voters.slice(0, 5).map((voterId, idx) => {
+                                const participant = hangout.participants.find(p => p.userId.id === voterId)
+                                if (!participant) return null
+                                return (
+                                  <Avatar key={voterId} className="inline-block h-6 w-6 ring-2 ring-white dark:ring-gray-900">
+                                    <AvatarImage src={participant.userId.avatar} />
+                                    <AvatarFallback className="text-[10px]">{participant.userId.name.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                )
+                              })}
+                              {option.voters.length > 5 && (
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900 bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-500">
+                                  +{option.voters.length - 5}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      No polls yet
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      This hangout doesn't have any voting options.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-8">
             {/* Event Details Card - Only show if showEventDetails is true */}
             {showEventDetails && (
               <Card>
                 <CardHeader>
-                  <h3 className="text-lg font-semibold">Event Details</h3>
+                  <h3 className="text-lg font-semibold mb-4">Event Details</h3>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
+                <CardContent className="space-y-5">
+                  <div className="flex items-start space-x-4 mb-3">
+                    <Calendar className="h-5 w-5 text-blue-500 mt-1" />
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
                         {formatDate(hangout.startTime)}
@@ -380,8 +505,8 @@ export default function HangoutDetailModern({
                   </div>
 
                   {hangout.location && (
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="h-5 w-5 text-red-500 mt-0.5" />
+                    <div className="flex items-start space-x-4 mb-3">
+                      <MapPin className="h-5 w-5 text-red-500 mt-1" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
                           {hangout.location}
@@ -390,8 +515,8 @@ export default function HangoutDetailModern({
                     </div>
                   )}
 
-                  <div className="flex items-start space-x-3">
-                    <Users className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div className="flex items-start space-x-4">
+                    <Users className="h-5 w-5 text-green-500 mt-1" />
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
                         {hangout._count.participants} participant{hangout._count.participants !== 1 ? 's' : ''}
@@ -446,7 +571,7 @@ export default function HangoutDetailModern({
                   </div>
 
                   {/* Floating Participant Avatars */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {hangout.participants.map((participant) => {
                       const getRSVPColor = (status: string) => {
                         switch (status) {
@@ -479,13 +604,13 @@ export default function HangoutDetailModern({
                                 {participant.userId.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            
+
                             {/* RSVP Status Badge */}
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
                               {getRSVPIcon(participant.rsvpStatus)}
                             </div>
                           </div>
-                          
+
                           {/* Tooltip on hover */}
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                             {participant.userId.name}
@@ -504,8 +629,30 @@ export default function HangoutDetailModern({
               </CardContent>
             </Card>
 
-            {/* Simple RSVP System */}
-            {showRSVP && userIdRSVP && (
+            {/* Voting Call to Action - Show when voting is active but no consensus yet */}
+            {showRSVP && !hangout.consensusReached && hangout.type !== 'quick_plan' && (
+              <Card className="bg-blue-900/20 border-blue-500/50">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-blue-100 mb-2">
+                      Voting in Progress
+                    </h3>
+                    <p className="text-blue-200/80 mb-4">
+                      Cast your vote to help decide the plan!
+                    </p>
+                    <Button
+                      onClick={() => setActiveTab('polls')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                    >
+                      Go to Polls
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Simple RSVP System - Only show for Quick Plans or when Consensus is Reached */}
+            {showRSVP && userIdRSVP && (hangout.type === 'quick_plan' || hangout.consensusReached) && (
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <h3 className="text-lg font-semibold text-white">RSVP</h3>
@@ -519,11 +666,10 @@ export default function HangoutDetailModern({
                       <Button
                         onClick={() => onRSVP('YES')}
                         disabled={isUpdatingRSVP}
-                        className={`flex-1 ${
-                          userIdRSVP.rsvpStatus === 'YES'
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-gray-700 hover:bg-gray-600'
-                        }`}
+                        className={`flex-1 ${userIdRSVP.rsvpStatus === 'YES'
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-gray-700 hover:bg-gray-600'
+                          }`}
                       >
                         {isUpdatingRSVP ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -534,22 +680,20 @@ export default function HangoutDetailModern({
                       <Button
                         onClick={() => onRSVP('MAYBE')}
                         disabled={isUpdatingRSVP}
-                        className={`flex-1 ${
-                          userIdRSVP.rsvpStatus === 'MAYBE'
-                            ? 'bg-yellow-600 hover:bg-yellow-700'
-                            : 'bg-gray-700 hover:bg-gray-600'
-                        }`}
+                        className={`flex-1 ${userIdRSVP.rsvpStatus === 'MAYBE'
+                          ? 'bg-yellow-600 hover:bg-yellow-700'
+                          : 'bg-gray-700 hover:bg-gray-600'
+                          }`}
                       >
                         Maybe
                       </Button>
                       <Button
                         onClick={() => onRSVP('NO')}
                         disabled={isUpdatingRSVP}
-                        className={`flex-1 ${
-                          userIdRSVP.rsvpStatus === 'NO'
-                            ? 'bg-red-600 hover:bg-red-700'
-                            : 'bg-gray-700 hover:bg-gray-600'
-                        }`}
+                        className={`flex-1 ${userIdRSVP.rsvpStatus === 'NO'
+                          ? 'bg-red-600 hover:bg-red-700'
+                          : 'bg-gray-700 hover:bg-gray-600'
+                          }`}
                       >
                         No
                       </Button>
@@ -577,7 +721,7 @@ export default function HangoutDetailModern({
                       {hangout.creator.name}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      @{hangout.creator.userIdname}
+                      @{hangout.creator.username}
                     </p>
                   </div>
                 </div>
@@ -586,7 +730,7 @@ export default function HangoutDetailModern({
           </TabsContent>
 
           {/* Participants Tab */}
-          <TabsContent value="participants" className="space-y-6">
+          <TabsContent value="participants" className="space-y-8">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -604,8 +748,8 @@ export default function HangoutDetailModern({
               <CardContent>
                 <div className="space-y-3">
                   {hangout.participants.map((participant) => (
-                    <div key={participant.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <Avatar className="h-10 w-10">
+                    <div key={participant.id} className="flex items-center gap-3 py-3 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <Avatar className="h-11 w-11">
                         <AvatarImage src={participant.userId.avatar} alt={participant.userId.name} />
                         <AvatarFallback className="bg-blue-100 text-blue-600">
                           {participant.userId.name.charAt(0).toUpperCase()}
@@ -623,18 +767,17 @@ export default function HangoutDetailModern({
                           )}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          @{participant.userId.userIdname}
+                          @{participant.userId.username}
                         </p>
                       </div>
-                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        participant.rsvpStatus === 'YES' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : participant.rsvpStatus === 'MAYBE'
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ml-2 ${participant.rsvpStatus === 'YES'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : participant.rsvpStatus === 'MAYBE'
                           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                           : participant.rsvpStatus === 'NO'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                      }`}>
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        }`}>
                         {participant.rsvpStatus.toLowerCase()}
                       </div>
                     </div>
@@ -645,7 +788,7 @@ export default function HangoutDetailModern({
           </TabsContent>
 
           {/* Photos Tab */}
-          <TabsContent value="photos" className="space-y-6">
+          <TabsContent value="photos" className="space-y-8">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -669,7 +812,7 @@ export default function HangoutDetailModern({
               </CardHeader>
               <CardContent>
                 {hangout.photos && hangout.photos.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-5 mb-6">
                     {hangout.photos.map((photo, index) => (
                       <div
                         key={index}
@@ -685,17 +828,19 @@ export default function HangoutDetailModern({
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      No photos yet
+                  <div className="text-center py-16 px-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <ImageIcon className="h-8 w-8" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      Capture the Memories
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      Be the first to share a photo from this hangout!
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                      No photos have been shared yet. Be the first to snap a picture and keep the memory alive!
                     </p>
                     {userId && (
-                      <label className="btn btn-primary cursor-pointer">
-                        <Camera className="h-4 w-4 mr-2" />
+                      <label className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all transform hover:scale-105 cursor-pointer shadow-lg shadow-blue-600/20">
+                        <Camera className="h-5 w-5 mr-2" />
                         Add First Photo
                         <input
                           type="file"
@@ -713,53 +858,67 @@ export default function HangoutDetailModern({
           </TabsContent>
 
           {/* Chat Tab */}
-          <TabsContent value="chat" className="space-y-6">
+          <TabsContent value="chat" className="space-y-8 mt-8 border-t border-neutral-800 pt-8">
             <Card>
               <CardHeader>
                 <h3 className="text-lg font-semibold">Discussion</h3>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={comment.userId.avatar} alt={comment.userId.name} />
-                        <AvatarFallback className="text-xs">
-                          {comment.userId.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-medium text-sm text-gray-900 dark:text-white">
-                            {comment.userId.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(comment.createdAt).toLocaleString()}
+                {comments.length > 0 ? (
+                  <div className="space-y-3">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="flex space-x-3 mb-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={comment.userId.avatar} alt={comment.userId.name} />
+                          <AvatarFallback className="text-xs">
+                            {comment.userId.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <p className="font-medium text-sm text-gray-900 dark:text-white">
+                              {comment.userId.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(comment.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 py-2.5 px-4 rounded-2xl max-w-[78%] bg-neutral-900/70">
+                            {comment.content}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          {comment.content}
-                        </p>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 px-6">
+                    <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="h-8 w-8" />
                     </div>
-                  ))}
-                </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      Start the Conversation
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                      Have a question or just want to say hi? Break the ice and get the chat going!
+                    </p>
+                  </div>
+                )}
 
-                {userId && (
-                  <div className="mt-6 pt-4 border-t">
-                    <div className="flex space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={userId.avatar} alt={userId.name} />
+                {user && (
+                  <div className="mt-4 pt-4 border-t border-neutral-800">
+                    <div className="flex items-center gap-3 bg-neutral-900/70 border border-neutral-800 rounded-2xl px-4 py-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user.imageUrl} alt={user.fullName || user.username || ''} />
                         <AvatarFallback className="text-xs">
-                          {userId.name.charAt(0).toUpperCase()}
+                          {(user.fullName || user.username || '?').charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 flex space-x-2">
+                      <div className="flex-1 flex gap-3">
                         <Input
                           value={newComment}
                           onChange={(e) => setNewComment?.(e.target.value)}
                           placeholder="Add a comment..."
-                          className="flex-1"
+                          className="flex-1 bg-transparent border-0 focus-visible:ring-0"
                         />
                         <Button
                           onClick={() => onAddComment?.()}
@@ -796,7 +955,7 @@ export default function HangoutDetailModern({
             <X className="h-6 w-6" />
           </button>
           <img
-            src={selectedPhoto}
+            src={selectedPhoto || ''}
             alt="Hangout photo"
             className="max-w-full max-h-full object-contain rounded-lg"
           />
@@ -812,7 +971,7 @@ export default function HangoutDetailModern({
               Select friends to invite to this hangout. You can search by name or select from groups.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="space-y-4">
             {/* Search Input */}
             <Input
@@ -821,7 +980,7 @@ export default function HangoutDetailModern({
               onChange={(e) => setFriendSearchTerm(e.target.value)}
               className="w-full"
             />
-            
+
             {/* Friends List */}
             <div className="max-h-64 overflow-y-auto space-y-2">
               {/* Mock friends data - replace with actual friends from API */}
@@ -831,7 +990,7 @@ export default function HangoutDetailModern({
                 { id: '3', name: 'Mike Johnson', userIdname: 'mikej', avatar: '/placeholder-userId.jpg' },
                 { id: '4', name: 'Sarah Wilson', userIdname: 'sarahw', avatar: '/placeholder-userId.jpg' },
               ]
-                .filter(friend => 
+                .filter(friend =>
                   friend.name.toLowerCase().includes(friendSearchTerm.toLowerCase()) ||
                   friend.userIdname.toLowerCase().includes(friendSearchTerm.toLowerCase())
                 )
@@ -861,7 +1020,7 @@ export default function HangoutDetailModern({
                   </div>
                 ))}
             </div>
-            
+
             {/* Selected Count */}
             {selectedFriends.length > 0 && (
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -869,7 +1028,7 @@ export default function HangoutDetailModern({
               </p>
             )}
           </div>
-          
+
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setIsInviteModalOpen(false)
@@ -878,7 +1037,7 @@ export default function HangoutDetailModern({
             }}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => {
                 // TODO: Implement actual invite functionality
                 // console.log('Inviting friends:', selectedFriends); // Removed for production
@@ -893,6 +1052,6 @@ export default function HangoutDetailModern({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   )
 }

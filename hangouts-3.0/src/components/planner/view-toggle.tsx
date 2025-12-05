@@ -1,7 +1,6 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useHapticFeedback } from '@/hooks/use-haptic-feedback'
+import { useHapticFeedback } from "@/hooks/use-haptic-feedback"
 
 interface ViewToggleProps {
     value: 'today' | 'month'
@@ -20,16 +19,28 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
 
     return (
         <div className="flex justify-center mb-6">
-            <div className="segmented-control">
+            <div className="relative bg-planner-tab rounded-lg p-1 flex items-center shadow-inner">
+                {/* Sliding Background Indicator */}
+                <div
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-md shadow-sm transition-all duration-300 ease-out ${value === 'today' ? 'left-1' : 'left-[calc(50%+0px)]'
+                        }`}
+                />
+
                 <button
-                    className={`segmented-control-item ${value === 'today' ? 'active' : ''}`}
+                    className={`
+                        relative z-10 px-6 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 w-24
+                        ${value === 'today' ? 'text-planner-navy' : 'text-planner-text-secondary hover:text-planner-text-primary'}
+                    `}
                     onClick={() => handleChange('today')}
                     type="button"
                 >
                     Today
                 </button>
                 <button
-                    className={`segmented-control-item ${value === 'month' ? 'active' : ''}`}
+                    className={`
+                        relative z-10 px-6 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 w-24
+                        ${value === 'month' ? 'text-planner-navy' : 'text-planner-text-secondary hover:text-planner-text-primary'}
+                    `}
                     onClick={() => handleChange('month')}
                     type="button"
                 >

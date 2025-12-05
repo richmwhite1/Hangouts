@@ -353,60 +353,60 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-6 pt-6 pb-12 max-w-4xl">
         {/* Profile Header */}
-        <Card className="bg-gray-800 border-gray-700 mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-start space-x-6">
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardContent className="px-6 py-6">
+            <div className="flex items-start gap-6">
               <Avatar className="w-24 h-24">
                 <AvatarImage src={profileUser.avatar || "/placeholder-avatar.png"} alt={profileUser.name} />
                 <AvatarFallback className="text-2xl">{profileUser.name?.charAt(0)}</AvatarFallback>
               </Avatar>
               
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h1 className="text-3xl font-bold text-white">{profileUser.name}</h1>
-                    <p className="text-gray-400">@{profileUser.username}</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">{profileUser.name}</h1>
+                    <p className="text-gray-400 mb-3">@{profileUser.username}</p>
                     {profileUser.bio && (
-                      <p className="text-gray-300 mt-2">{profileUser.bio}</p>
+                      <p className="text-gray-300 mb-3">{profileUser.bio}</p>
                     )}
                     {profileUser.location && (
-                      <div className="flex items-center mt-2 text-gray-400">
+                      <div className="flex items-center text-gray-400">
                         <MapPin className="w-4 h-4 mr-1" />
                         <span>{profileUser.location}</span>
                       </div>
                     )}
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-3">
                     {isOwnProfile ? (
                       <Link href="/profile">
-                        <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-700">
+                        <Button variant="outline" className="h-12 border-gray-600 text-white hover:bg-gray-700">
                           <Settings className="w-4 h-4 mr-2" />
                           Edit Profile
                         </Button>
                       </Link>
                     ) : (
-                      <div className="flex space-x-2">
+                      <div className="flex gap-3">
                         {isFriend ? (
                           <Button 
                             onClick={handleUnfriend}
                             variant="outline" 
-                            className="border-gray-600 text-white hover:bg-gray-700"
+                            className="h-12 border-gray-600 text-white hover:bg-gray-700"
                           >
                             <UserMinus className="w-4 h-4 mr-2" />
                             Unfriend
                           </Button>
                         ) : friendRequestSent ? (
-                          <Button disabled variant="outline" className="border-gray-600 text-gray-400">
+                          <Button disabled variant="outline" className="h-12 border-gray-600 text-gray-400">
                             <Check className="w-4 h-4 mr-2" />
                             Request Sent
                           </Button>
                         ) : (
                           <Button 
                             onClick={handleFriendRequest}
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className="h-12 bg-blue-600 hover:bg-blue-700"
                           >
                             <UserPlus className="w-4 h-4 mr-2" />
                             Add Friend
@@ -443,8 +443,8 @@ export default function ProfilePage() {
 
         {/* Activity Summary Section - Show for own profile */}
         {isOwnProfile && (
-          <Card className="bg-gray-800 border-gray-700 mb-6">
-            <CardContent className="p-6">
+          <Card className="bg-gray-800 border-gray-700 mb-8">
+            <CardContent className="px-6 py-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                   <History className="w-5 h-5" />
@@ -491,8 +491,8 @@ export default function ProfilePage() {
 
         {/* Activities Together Section - Only show for friends */}
         {isFriend && friendStats && !isOwnProfile && (
-          <Card className="bg-gray-800 border-gray-700 mb-6">
-            <CardContent className="p-6">
+          <Card className="bg-gray-800 border-gray-700 mb-8">
+            <CardContent className="px-6 py-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                   <History className="w-5 h-5" />
@@ -544,7 +544,7 @@ export default function ProfilePage() {
               ? "friends" 
               : (isFriend ? "together" : "hangouts")
           } 
-          className="space-y-6"
+          className="space-y-8"
         >
           <TabsList className="bg-gray-800 border-gray-700">
             {isOwnProfile && (

@@ -16,7 +16,7 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {})
@@ -84,6 +84,28 @@ export class ApiClient {
 
   async searchUsers(query: string, limit: number = 20, offset: number = 0) {
     return this.get<{ users: any[] }>(`/api/users/search?q=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`)
+  }
+
+  // Hangout API methods
+  async createHangout(data: any) {
+    return this.post<{ success: boolean; data: any; error?: string }>('/api/hangouts', data)
+  }
+
+  async getHangout(id: string) {
+    const response = await this.get<{ success: boolean; data: any }>(`/api/hangouts/${id}`)
+    return { hangout: response.data }
+  }
+
+  async getHangouts(params?: { status?: string, privacy?: string, limit?: number, offset?: number }) {
+    const queryParams = new URLSearchParams()
+    if (params?.status) queryParams.append('status', params.status)
+    if (params?.privacy) queryParams.append('privacy', params.privacy)
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.offset) queryParams.append('offset', params.offset.toString())
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : ''
+    const response = await this.get<{ success: boolean; data: any[] }>(`/api/hangouts${queryString}`)
+    return { hangouts: response.data }
   }
 
   // Legacy methods for backward compatibility

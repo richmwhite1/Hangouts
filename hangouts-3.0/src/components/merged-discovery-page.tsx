@@ -2,32 +2,22 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { TouchButton } from '@/components/ui/touch-button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
 import { useVisualFeedback } from '@/hooks/use-visual-feedback'
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
-import { isPastDate } from '@/lib/date-utils'
 import {
   Search,
-  Filter,
   MapPin,
   Calendar,
   Users,
   Music,
   Coffee,
-  Utensils,
-  Mountain,
-  Dumbbell,
-  Palette,
-  Building2,
-  GraduationCap,
+  Sun,
   Heart as HealthIcon,
-  Home,
   TrendingUp,
   DollarSign
 } from 'lucide-react'
@@ -90,219 +80,66 @@ interface Hangout {
 }
 const categories = [
   { id: 'all', label: 'All', icon: TrendingUp },
-  { id: 'MUSIC', label: 'Music', icon: Music },
-  { id: 'SPORTS', label: 'Sports', icon: Dumbbell },
-  { id: 'FOOD', label: 'Food', icon: Utensils },
-  { id: 'NIGHTLIFE', label: 'Nightlife', icon: Coffee },
-  { id: 'ARTS', label: 'Arts', icon: Palette },
-  { id: 'OUTDOORS', label: 'Outdoors', icon: Mountain },
-  { id: 'TECHNOLOGY', label: 'Technology', icon: Building2 },
-  { id: 'BUSINESS', label: 'Business', icon: Building2 },
-  { id: 'EDUCATION', label: 'Education', icon: GraduationCap },
-  { id: 'HEALTH', label: 'Health', icon: HealthIcon },
-  { id: 'FAMILY', label: 'Family', icon: Home },
-]
-const timeFilters = [
-  { id: 'all', label: 'All Time' },
-  { id: 'today', label: 'Today' },
-  { id: 'tomorrow', label: 'Tomorrow' },
-  { id: 'this-week', label: 'This Week' },
-  { id: 'this-month', label: 'This Month' },
-]
-const sortOptions = [
-  { id: 'closest', label: 'Closest to me' },
-  { id: 'coming-up', label: 'Coming up next' },
-  { id: 'newest', label: 'Newest First' },
-  { id: 'popular', label: 'Most Popular' },
-  { id: 'distance', label: 'Distance: Closest First' },
-  { id: 'date-asc', label: 'Date: Soonest First' },
-  { id: 'date-desc', label: 'Date: Latest First' },
-  { id: 'price-low', label: 'Price: Low to High' },
-  { id: 'price-high', label: 'Price: High to Low' },
-]
-const distanceOptions = [
-  { id: '5', label: '5 miles' },
-  { id: '10', label: '10 miles' },
-  { id: '25', label: '25 miles' },
-  { id: '50', label: '50 miles' },
-  { id: '100', label: '100 miles' },
-  { id: 'unlimited', label: 'No limit' },
+  { id: 'social', label: 'Social', icon: Users },
+  { id: 'food', label: 'Food & Drink', icon: Coffee },
+  { id: 'entertainment', label: 'Entertainment', icon: Music },
+  { id: 'outdoor', label: 'Outdoor', icon: Sun },
+  { id: 'wellness', label: 'Wellness', icon: HealthIcon },
 ]
 export function MergedDiscoveryPage() {
   const { isSignedIn, isLoaded } = useAuth()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('coming-up')
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [mergedContent, setMergedContent] = useState<any[]>([])
   const [showPastContent, setShowPastContent] = useState(false)
-  // Comprehensive filtering state
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' })
+
   // Location filtering state
-  const [zipCode, setZipCode] = useState('')
-  const [maxDistance, setMaxDistance] = useState('50')
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  // Filter modal state
+
   // Visual feedback
   const { showSuccess, showError, showLoading } = useVisualFeedback()
-  const commonTags = [
-    'concert', 'festival', 'workshop', 'networking', 'charity', 'fundraiser',
-    'conference', 'seminar', 'exhibition', 'tournament', 'competition', 'show',
-    'party', 'gala', 'dinner', 'lunch', 'brunch', 'meetup', 'social',
-    'fitness', 'yoga', 'dance', 'art', 'music', 'theater', 'comedy'
-  ]
-  // Geocoding function to convert zip code to coordinates
-  const geocodeZipCode = async (zip: string): Promise<{ lat: number; lng: number } | null> => {
-    try {
-      // Mock geocoding for common US zip codes (for demo purposes)
-      const mockZipCodes: { [key: string]: { lat: number; lng: number } } = {
-        '10001': { lat: 40.7505, lng: -73.9934 }, // NYC
-        '90210': { lat: 34.0901, lng: -118.4065 }, // Beverly Hills
-        '60601': { lat: 41.8781, lng: -87.6298 }, // Chicago
-        '33101': { lat: 25.7617, lng: -80.1918 }, // Miami
-        '98101': { lat: 47.6062, lng: -122.3321 }, // Seattle
-        '94102': { lat: 37.7749, lng: -122.4194 }, // San Francisco
-        '02101': { lat: 42.3601, lng: -71.0589 }, // Boston
-        '75201': { lat: 32.7767, lng: -96.7970 }, // Dallas
-        '30309': { lat: 33.7490, lng: -84.3880 }, // Atlanta
-        '85001': { lat: 33.4484, lng: -112.0740 }, // Phoenix
-      }
-      if (mockZipCodes[zip]) {
-        return mockZipCodes[zip]
-      }
-      // For other zip codes, use a simple approximation based on first 3 digits
-      const region = zip.substring(0, 3)
-      const baseLat = 39.8283 + (parseInt(region) - 100) * 0.1
-      const baseLng = -98.5795 + (parseInt(region) - 100) * 0.1
-      return {
-        lat: baseLat + (Math.random() - 0.5) * 2, // Add some randomness
-        lng: baseLng + (Math.random() - 0.5) * 2
-      }
-    } catch (error) {
-      logger.error('Geocoding error:', error);
-      return null
-    }
-  }
+
   // Calculate distance between two coordinates using Haversine formula
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 3959 // Earth's radius in miles
     const dLat = (lat2 - lat1) * Math.PI / 180
     const dLng = (lng2 - lng1) * Math.PI / 180
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
   }
-  // Convert coordinates to city name
-  const getCityName = (lat: number, lng: number): string => {
-    // Simple approximation based on coordinates
-    // San Francisco area
-    if (lat >= 37.7 && lat <= 37.8 && lng >= -122.5 && lng <= -122.3) {
-      return 'San Francisco, CA'
+  // Get user's location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          })
+        },
+        (error) => {
+          console.error('Error getting location:', error)
+        },
+        { timeout: 10000, enableHighAccuracy: false }
+      )
     }
-    // New York area
-    if (lat >= 40.6 && lat <= 40.8 && lng >= -74.1 && lng <= -73.9) {
-      return 'New York, NY'
-    }
-    // Los Angeles area
-    if (lat >= 34.0 && lat <= 34.1 && lng >= -118.3 && lng <= -118.2) {
-      return 'Los Angeles, CA'
-    }
-    // Chicago area
-    if (lat >= 41.8 && lat <= 41.9 && lng >= -87.7 && lng <= -87.6) {
-      return 'Chicago, IL'
-    }
-    // Boston area
-    if (lat >= 42.3 && lat <= 42.4 && lng >= -71.1 && lng <= -71.0) {
-      return 'Boston, MA'
-    }
-    // Seattle area
-    if (lat >= 47.6 && lat <= 47.7 && lng >= -122.4 && lng <= -122.2) {
-      return 'Seattle, WA'
-    }
-    // Miami area
-    if (lat >= 25.7 && lat <= 25.8 && lng >= -80.3 && lng <= -80.1) {
-      return 'Miami, FL'
-    }
-    // Denver area
-    if (lat >= 39.7 && lat <= 39.8 && lng >= -105.1 && lng <= -104.9) {
-      return 'Denver, CO'
-    }
-    // Austin area
-    if (lat >= 30.2 && lat <= 30.3 && lng >= -97.8 && lng <= -97.7) {
-      return 'Austin, TX'
-    }
-    // Portland area
-    if (lat >= 45.5 && lat <= 45.6 && lng >= -122.7 && lng <= -122.6) {
-      return 'Portland, OR'
-    }
-    // Default fallback
-    return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`
-  }
-  // Get user's current location
-  const getCurrentLocation = async () => {
-    if (!navigator.geolocation) {
-      return
-    }
+  }, [])
 
-    // Check if geolocation is allowed by permissions policy
-    try {
-      if ('permissions' in navigator) {
-        const permission = await navigator.permissions.query({ name: 'geolocation' })
-        if (permission.state === 'denied') {
-          logger.info('Geolocation permission denied by policy')
-          return
-        }
-      }
-    } catch (error) {
-      // Permissions API not supported or blocked, try anyway
-      logger.info('Permissions API not available, attempting geolocation anyway')
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        })
-      },
-      (error) => {
-        logger.error('Geolocation error:', error);
-      },
-      { timeout: 10000, enableHighAccuracy: false }
-    )
-  }
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    )
-  }
-  const clearAllFilters = () => {
-    setSearchQuery('')
-    setSelectedCategory('all')
-    setSelectedTags([])
-    setPriceRange({ min: '', max: '' })
-    setZipCode('')
-    setMaxDistance('unlimited')
-    setUserLocation(null)
-  }
   // Fetch events
   const fetchEvents = async () => {
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
-      if (selectedCategory !== 'all') params.append('category', selectedCategory)
       params.append('includePast', showPastContent ? 'true' : 'false')
-      
+
       // Use public API for non-authenticated users
       const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content'
       params.append('includePast', showPastContent ? 'true' : 'false')
@@ -311,7 +148,7 @@ export function MergedDiscoveryPage() {
         params.append('type', 'EVENT')
         params.append('privacyLevel', 'PUBLIC')
       }
-      
+
       const response = await fetch(`${apiEndpoint}?${params}`)
       if (response.ok) {
         const data = await response.json()
@@ -375,19 +212,7 @@ export function MergedDiscoveryPage() {
     }
   }
   // Handle ZIP code submission
-  const handleZipCodeSubmit = async () => {
-    if (zipCode && zipCode.length === 5 && /^\d{5}$/.test(zipCode)) {
-      const coords = await geocodeZipCode(zipCode)
-      if (coords) {
-        setUserLocation(coords)
-        showSuccess(`Location updated to ${getCityName(coords.lat, coords.lng)}`)
-      } else {
-        showError('Invalid ZIP code')
-      }
-    } else {
-      showError('Please enter a valid 5-digit ZIP code')
-    }
-  }
+
   // Fetch hangouts
   const fetchHangouts = async () => {
     try {
@@ -400,19 +225,19 @@ export function MergedDiscoveryPage() {
         params.append('type', 'HANGOUT')
         params.append('privacyLevel', 'PUBLIC')
       }
-      
+
       const response = await fetch(`${apiEndpoint}?${params}`)
       if (response.ok) {
         const data = await response.json()
         let hangoutsData = []
-        
+
         if (isSignedIn) {
           hangoutsData = data.data?.hangouts || data.hangouts || []
         } else {
           // For non-authenticated users, use the hangouts array from public API
           hangoutsData = data.hangouts || []
         }
-        
+
         // Map the API data to our interface
         const mappedHangouts = hangoutsData.map((hangout: any) => ({
           id: hangout.id,
@@ -448,43 +273,22 @@ export function MergedDiscoveryPage() {
   // Filter content based on all filter criteria
   const filterContent = useCallback((content: any[]) => {
     return content.filter(item => {
-      // Search filter
-      const matchesSearch = !searchQuery ||
-        (item.title && item.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.venue && item.venue.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.tags && item.tags.some((tag: string) => tag && tag.toLowerCase().includes(searchQuery.toLowerCase())))
-      // Category filter
-      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory
-      // Tags filter
-      const matchesTags = selectedTags.length === 0 ||
-        (item.tags && selectedTags.some(tag => item.tags.some((itemTag: string) =>
-          itemTag.toLowerCase().includes(tag.toLowerCase())
-        )))
-      // Price filter
-      const matchesPrice = (!priceRange.min || (item.price && item.price.min >= parseInt(priceRange.min))) &&
-                          (!priceRange.max || (item.price && item.price.min <= parseInt(priceRange.max)))
-      // Location filter
-      let matchesLocation = true
-      if (userLocation && maxDistance !== 'unlimited') {
-        const itemLat = item.latitude || item.lat
-        const itemLng = item.longitude || item.lng
-        if (itemLat && itemLng) {
-          const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            itemLat,
-            itemLng
-          )
-          matchesLocation = distance <= parseInt(maxDistance)
-        } else {
-          matchesLocation = false // Hide items without coordinates when location filtering is active
+      // Search query filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        const matchesTitle = item.title?.toLowerCase().includes(query)
+        const matchesDesc = item.description?.toLowerCase().includes(query)
+        const matchesVenue = item.venue?.toLowerCase().includes(query)
+
+        if (!matchesTitle && !matchesDesc && !matchesVenue) {
+          return false
         }
       }
-      return matchesSearch && matchesCategory && matchesTags && matchesPrice && matchesLocation
+
+      // Filter by category
+      return true
     })
-  }, [searchQuery, selectedCategory, selectedTags, priceRange, userLocation, maxDistance])
+  }, [searchQuery])
   // Merge and sort content (memoized)
   const mergeAndSortContent = useMemo(() => {
     const now = Date.now()
@@ -493,10 +297,10 @@ export function MergedDiscoveryPage() {
         const startDate = new Date(event.startDate)
         const endDate = event.endDate ? new Date(event.endDate) : null
         // An event is past only if it has ended (endTime < now, or if no endTime, startTime < now)
-        const isPast = endDate 
-          ? endDate.getTime() < now 
+        const isPast = endDate
+          ? endDate.getTime() < now
           : startDate.getTime() < now
-        
+
         return {
           ...event,
           type: 'event',
@@ -513,10 +317,10 @@ export function MergedDiscoveryPage() {
         // For hangouts, check if there's an endTime in the original data
         // If hangout has endTime, use it; otherwise use startTime
         const hangoutEndTime = (hangout as any).endTime ? new Date((hangout as any).endTime) : null
-        const isPast = hangoutEndTime 
-          ? hangoutEndTime.getTime() < now 
+        const isPast = hangoutEndTime
+          ? hangoutEndTime.getTime() < now
           : hangoutDate.getTime() < now
-        
+
         return {
           ...hangout,
           type: 'hangout',
@@ -584,11 +388,11 @@ export function MergedDiscoveryPage() {
   useEffect(() => {
     // Wait for authentication to load before fetching data
     if (!isLoaded) return
-    
+
     // Always fetch data, but for non-authenticated users, only fetch public content
     setIsLoading(true)
     Promise.all([
-      fetchEvents(), 
+      fetchEvents(),
       fetchHangouts()
     ]).finally(() => {
       setIsLoading(false)
@@ -597,23 +401,12 @@ export function MergedDiscoveryPage() {
   useEffect(() => {
     // Wait for authentication to load before refetching data
     if (!isLoaded) return
-    
+
     // Refetch both events and hangouts when filters change
     Promise.all([fetchEvents(), fetchHangouts()])
-  }, [searchQuery, selectedCategory, showPastContent, isLoaded])
+  }, [searchQuery, showPastContent, isLoaded])
   // Handle zip code geocoding
-  useEffect(() => {
-    const handleZipCodeGeocoding = async () => {
-      if (zipCode && zipCode.length === 5 && /^\d{5}$/.test(zipCode)) {
-        const coords = await geocodeZipCode(zipCode)
-        if (coords) {
-          setUserLocation(coords)
-        }
-      }
-    }
-    const timeoutId = setTimeout(handleZipCodeGeocoding, 1000) // Debounce
-    return () => clearTimeout(timeoutId)
-  }, [zipCode])
+
   const formatPrice = (price: Event['price']) => {
     if (price.min === 0) return 'Free'
     if (price.max && price.max !== price.min) {
@@ -865,7 +658,7 @@ export function MergedDiscoveryPage() {
             <h2 className="text-2xl font-bold text-white mb-4">Public Events & Hangouts</h2>
             <p className="text-gray-400">Discover what's happening in your community</p>
           </div>
-          
+
           {/* Show loading state */}
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -884,104 +677,104 @@ export function MergedDiscoveryPage() {
                 const filteredEvents = filterContent(events)
                 const filteredHangouts = filterContent(hangouts)
                 return filteredEvents.length === 0 && filteredHangouts.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No public events found</h3>
-                  <p className="text-gray-400 mb-4">Check back later for new events and hangouts!</p>
-                </div>
-              ) : (
-                <>
-                  {/* Public Events */}
-                  {filteredEvents.map(event => (
-                    <Link key={event.id} href={`/events/public/${event.id}`}>
-                      <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                        <div className="relative h-48 bg-gray-700">
-                          <img
-                            src={event.coverImage}
-                            alt={event.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
-                              if (nextElement) {
-                                nextElement.style.display = 'flex'
-                              }
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
-                            <Calendar className="w-12 h-12" />
-                          </div>
-                          <div className="absolute top-2 left-2">
-                            <Badge className="bg-green-600/80 text-white text-xs px-2 py-1">
-                              Event
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-white text-lg mb-2 line-clamp-2">
-                            {event.title}
-                          </h3>
-                          <div className="flex items-center text-gray-300 text-sm mb-1">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {formatDate(event.startDate)} at {event.startTime}
-                          </div>
-                          <div className="flex items-center text-gray-300 text-sm mb-1">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {event.venue}, {event.city}
-                          </div>
-                          <div className="flex items-center text-gray-300 text-sm">
-                            <DollarSign className="w-4 h-4 mr-2" />
-                            {event.price.min === 0 ? 'Free' : `$${event.price.min}`}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                  
-                  {/* Public Hangouts */}
-                  {filteredHangouts.map(hangout => (
-                    <Link key={hangout.id} href={`/hangouts/public/${hangout.id}`}>
-                      <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                        <div className="relative h-48 bg-gray-700">
-                          {hangout.image ? (
+                  <div className="col-span-full text-center py-12">
+                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">No public events found</h3>
+                    <p className="text-gray-400 mb-4">Check back later for new events and hangouts!</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Public Events */}
+                    {filteredEvents.map(event => (
+                      <Link key={event.id} href={`/events/public/${event.id}`}>
+                        <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                          <div className="relative h-48 bg-gray-700">
                             <img
-                              src={hangout.image}
-                              alt={hangout.title}
+                              src={event.coverImage}
+                              alt={event.title}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                                const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                                if (nextElement) {
+                                  nextElement.style.display = 'flex'
+                                }
+                              }}
                             />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <Users className="w-12 h-12" />
+                            <div className="absolute inset-0 bg-gray-600 flex items-center justify-center text-gray-400" style={{ display: 'none' }}>
+                              <Calendar className="w-12 h-12" />
                             </div>
-                          )}
-                          <div className="absolute top-2 left-2">
-                            <Badge className="bg-blue-600/80 text-white text-xs px-2 py-1">
-                              Hangout
-                            </Badge>
+                            <div className="absolute top-2 left-2">
+                              <Badge className="bg-green-600/80 text-white text-xs px-2 py-1">
+                                Event
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <h3 className="font-semibold text-white text-lg mb-2 line-clamp-2">
+                              {event.title}
+                            </h3>
+                            <div className="flex items-center text-gray-300 text-sm mb-1">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              {formatDate(event.startDate)} at {event.startTime}
+                            </div>
+                            <div className="flex items-center text-gray-300 text-sm mb-1">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {event.venue}, {event.city}
+                            </div>
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <DollarSign className="w-4 h-4 mr-2" />
+                              {event.price.min === 0 ? 'Free' : `$${event.price.min}`}
+                            </div>
                           </div>
                         </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-white text-lg mb-2 line-clamp-2">
-                            {hangout.title}
-                          </h3>
-                          <div className="flex items-center text-gray-300 text-sm mb-1">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {formatDate(hangout.date)} at {hangout.time}
+                      </Link>
+                    ))}
+
+                    {/* Public Hangouts */}
+                    {filteredHangouts.map(hangout => (
+                      <Link key={hangout.id} href={`/hangouts/public/${hangout.id}`}>
+                        <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                          <div className="relative h-48 bg-gray-700">
+                            {hangout.image ? (
+                              <img
+                                src={hangout.image}
+                                alt={hangout.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                <Users className="w-12 h-12" />
+                              </div>
+                            )}
+                            <div className="absolute top-2 left-2">
+                              <Badge className="bg-blue-600/80 text-white text-xs px-2 py-1">
+                                Hangout
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="flex items-center text-gray-300 text-sm mb-1">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {hangout.location}
-                          </div>
-                          <div className="flex items-center text-gray-300 text-sm">
-                            <Users className="w-4 h-4 mr-2" />
-                            {hangout.participants.length} going
+                          <div className="p-4">
+                            <h3 className="font-semibold text-white text-lg mb-2 line-clamp-2">
+                              {hangout.title}
+                            </h3>
+                            <div className="flex items-center text-gray-300 text-sm mb-1">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              {formatDate(hangout.date)} at {hangout.time}
+                            </div>
+                            <div className="flex items-center text-gray-300 text-sm mb-1">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {hangout.location}
+                            </div>
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <Users className="w-4 h-4 mr-2" />
+                              {hangout.participants.length} going
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </>
-              )
+                      </Link>
+                    ))}
+                  </>
+                )
               })()}
             </div>
           )}
@@ -996,7 +789,7 @@ export function MergedDiscoveryPage() {
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-white">Discover</h1>
         </div>
-        
+
         {/* Search and Filters */}
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
@@ -1008,188 +801,8 @@ export function MergedDiscoveryPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <TouchButton
-            onClick={() => setIsFilterModalOpen(true)}
-            className="bg-gray-800 border-gray-700 text-white relative min-h-[44px] min-w-[44px] px-4 py-2"
-            hapticType="light"
-            rippleEffect={true}
-          >
-            <Filter className="w-5 h-5" />
-          </TouchButton>
         </div>
-        {/* Comprehensive Filters */}
-        {isFilterModalOpen && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Filters</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllFilters}
-                className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              >
-                Clear All
-              </Button>
-            </div>
-            {/* Category Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedCategory('all')}
-                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                >
-                  All
-                </Button>
-                {categories.map(category => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    {category.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            {/* Tags Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {commonTags.map(tag => (
-                  <Button
-                    key={tag}
-                    variant={selectedTags.includes(tag) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleTag(tag)}
-                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    {tag}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            {/* Price Range Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min Price"
-                  value={priceRange.min}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-                <Input
-                  type="number"
-                  placeholder="Max Price"
-                  value={priceRange.max}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-              </div>
-            </div>
-            {/* Location Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter zip code"
-                    value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
-                    className="flex-1 bg-gray-700 border-gray-600 text-white"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={getCurrentLocation}
-                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    <MapPin className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Select value={maxDistance} onValueChange={setMaxDistance}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue placeholder="Max distance" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
-                      {distanceOptions.map(option => (
-                        <SelectItem key={option.id} value={option.id} className="text-white">
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {userLocation && (
-                  <div className="text-xs text-gray-400">
-                    Location: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Sort By */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Sort By</label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  {sortOptions.map(option => (
-                    <SelectItem key={option.id} value={option.id} className="text-white">
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Active Filters Display */}
-            {(selectedCategory !== 'all' || selectedTags.length > 0 || priceRange.min || priceRange.max || zipCode || maxDistance !== 'unlimited') && (
-              <div className="pt-4 border-t border-gray-700">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Active Filters</label>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCategory !== 'all' && (
-                    <Badge className="bg-blue-600 text-white">
-                      Category: {categories.find(c => c.id === selectedCategory)?.label}
-                    </Badge>
-                  )}
-                  {selectedTags.map(tag => (
-                    <Badge key={tag} className="bg-blue-600 text-white">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {priceRange.min && (
-                    <Badge className="bg-green-600 text-white">
-                      Min: ${priceRange.min}
-                    </Badge>
-                  )}
-                  {priceRange.max && (
-                    <Badge className="bg-green-600 text-white">
-                      Max: ${priceRange.max}
-                    </Badge>
-                  )}
-                  {zipCode && (
-                    <Badge className="bg-indigo-600 text-white">
-                      Zip: {zipCode}
-                    </Badge>
-                  )}
-                  {maxDistance !== 'unlimited' && (
-                    <Badge className="bg-indigo-600 text-white">
-                      Within: {distanceOptions.find(d => d.id === maxDistance)?.label}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+
         {/* Content Type Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="grid w-full grid-cols-4 bg-gray-800">
@@ -1211,18 +824,6 @@ export function MergedDiscoveryPage() {
                 <SelectItem value="popular" className="text-white hover:bg-gray-700 text-xs">Popular</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={maxDistance} onValueChange={setMaxDistance}>
-              <SelectTrigger className="h-7 w-14 bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="10" className="text-white hover:bg-gray-700 text-xs">10mi</SelectItem>
-                <SelectItem value="25" className="text-white hover:bg-gray-700 text-xs">25mi</SelectItem>
-                <SelectItem value="50" className="text-white hover:bg-gray-700 text-xs">50mi</SelectItem>
-                <SelectItem value="100" className="text-white hover:bg-gray-700 text-xs">100mi</SelectItem>
-                <SelectItem value="unlimited" className="text-white hover:bg-gray-700 text-xs">All</SelectItem>
-              </SelectContent>
-            </Select>
             <Button
               variant="outline"
               size="sm"
@@ -1233,21 +834,8 @@ export function MergedDiscoveryPage() {
             </Button>
             <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
             <span className="text-gray-400 text-xs truncate max-w-[80px]">
-              {userLocation ? getCityName(userLocation.lat, userLocation.lng) : 'Detecting...'}
+              {userLocation ? 'Current Location' : 'Detecting...'}
             </span>
-            <Input
-              placeholder="ZIP"
-              value={zipCode}
-              onChange={(e) => setZipCode(e.target.value)}
-              className="w-12 h-7 bg-gray-800 border-gray-700 text-white text-xs px-1.5 flex-shrink-0"
-            />
-            <TouchButton
-              onClick={handleZipCodeSubmit}
-              className="h-7 w-7 bg-gray-700 text-white text-xs p-0 flex-shrink-0"
-              hapticType="light"
-            >
-              ✓
-            </TouchButton>
           </div>
         </Tabs>
       </div>
@@ -1266,26 +854,26 @@ export function MergedDiscoveryPage() {
 
             if (displayContent.length === 0) {
               return (
-              <div className="text-center py-16 px-4">
-                <div className="max-w-md mx-auto">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
-                    <TrendingUp className="w-10 h-10 text-[#60A5FA]" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    {searchQuery ? 'No results found' : 'No content yet'}
-                  </h3>
-                  <p className="text-gray-400 mb-6">
-                    {searchQuery 
-                      ? 'Try adjusting your search terms or filters to find what you\'re looking for.' 
-                      : 'Be the first to create an event or hangout and start connecting with friends!'}
-                  </p>
-                  {!searchQuery && (
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <CreateEventModal />
+                <div className="text-center py-16 px-4">
+                  <div className="max-w-md mx-auto">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
+                      <TrendingUp className="w-10 h-10 text-[#60A5FA]" />
                     </div>
-                  )}
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      {searchQuery ? 'No results found' : 'No content yet'}
+                    </h3>
+                    <p className="text-gray-400 mb-6">
+                      {searchQuery
+                        ? 'Try adjusting your search terms or filters to find what you\'re looking for.'
+                        : 'Be the first to create an event or hangout and start connecting with friends!'}
+                    </p>
+                    {!searchQuery && (
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <CreateEventModal />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
               )
             }
 
@@ -1326,127 +914,6 @@ export function MergedDiscoveryPage() {
           })()}
         </div>
       </PullToRefresh>
-      {/* Full Screen Filter Modal */}
-      <MobileFullScreenModal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        title="Filters"
-      >
-        <div className="p-4 space-y-6">
-          {/* Category Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategory('all')}
-                className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              >
-                All
-              </Button>
-              {categories.map(category => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.id ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedCategory(category.id)}
-                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                >
-                  {category.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {/* Tags Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Tags</label>
-            <div className="flex flex-wrap gap-2">
-              {commonTags.map(tag => (
-                <Button
-                  key={tag}
-                  variant={selectedTags.includes(tag) ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => toggleTag(tag)}
-                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                >
-                  {tag}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {/* Price Range Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                placeholder="Min Price"
-                value={priceRange.min}
-                onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-              <Input
-                type="number"
-                placeholder="Max Price"
-                value={priceRange.max}
-                onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-          </div>
-          {/* Location Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Enter zip code"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  className="flex-1 bg-gray-700 border-gray-600 text-white"
-                />
-                <Button
-                  variant="outline"
-                  onClick={getCurrentLocation}
-                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                >
-                  <MapPin className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Select value={maxDistance} onValueChange={setMaxDistance}>
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue placeholder="Max distance" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    {distanceOptions.map(option => (
-                      <SelectItem key={option.id} value={option.id} className="text-white">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {userLocation && (
-                <div className="text-xs text-gray-400">
-                  Location: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
-                </div>
-              )}
-            </div>
-          </div>
-          {/* Clear All Button */}
-          <TouchButton
-            onClick={clearAllFilters}
-            className="w-full bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-            hapticType="medium"
-            rippleEffect={true}
-          >
-            Clear All Filters
-          </TouchButton>
-        </div>
-      </MobileFullScreenModal>
     </div>
   )
 }

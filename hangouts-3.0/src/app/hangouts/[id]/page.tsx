@@ -257,7 +257,7 @@ export default function HangoutDetailPage() {
   }
   return (
     <div className="space-y-0">
-      <div className="px-4 pb-24">
+      <div className="px-6 pt-6 pb-10">
         {/* Primary Photo at Top */}
         <div className="relative w-full h-80 rounded-lg overflow-hidden mb-6">
           <img
@@ -297,7 +297,7 @@ export default function HangoutDetailPage() {
         </div>
         {/* Tab Content */}
         {activeTab === 'plan' && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Final Plan - Show when consensus is reached */}
             {finalPlan && (
               <div className="bg-green-900 border border-green-700 rounded-lg p-6">
@@ -391,7 +391,7 @@ export default function HangoutDetailPage() {
               <>
                 {/* Hangout Details - Always show at top */}
                 {(currentHangout.title || currentHangout.description) && (
-                  <div className="bg-gray-800 rounded-lg p-6">
+                  <div className="bg-gray-800 rounded-lg px-6 py-5">
                     <h3 className="text-xl font-bold text-white mb-4">Hangout Details</h3>
                     {currentHangout.title && (
                       <h4 className="text-lg font-semibold text-white mb-2">{currentHangout.title}</h4>
@@ -403,11 +403,11 @@ export default function HangoutDetailPage() {
                 )}
                 {/* Polls Section - Show all polls */}
                 {polls.length > 0 && (
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {polls.map((poll) => {
                       // console.log('🎯 Rendering poll:', poll.id, 'with options:', poll.pollOptions?.length || 0); // Removed for production
                       return (
-                        <div key={poll.id} className="bg-gray-800 rounded-lg p-6">
+                        <div key={poll.id} className="bg-gray-800 rounded-lg px-6 py-5">
                           <SimplePollDisplay
                             poll={poll}
                             onVote={handleVote}
@@ -443,8 +443,8 @@ export default function HangoutDetailPage() {
           </div>
         )}
         {activeTab === 'photos' && (
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6">
+          <div className="space-y-8">
+            <div className="bg-gray-800 rounded-lg px-6 py-5">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-white">Photos</h3>
               </div>
@@ -473,8 +473,8 @@ export default function HangoutDetailPage() {
           </div>
         )}
         {activeTab === 'people' && (
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6">
+          <div className="space-y-8">
+            <div className="bg-gray-800 rounded-lg px-6 py-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white">People</h3>
                 {currentHangout?.creatorId === user?.id && (

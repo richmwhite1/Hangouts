@@ -8,7 +8,10 @@
   "theme_color": "#2563EB",
   "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["social", "lifestyle"],
+  "categories": [
+    "social",
+    "lifestyle"
+  ],
   "lang": "en",
   "dir": "ltr",
   "icons": [
@@ -35,22 +38,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/placeholder-hangout.jpg",
-      "sizes": "1280x720",
-      "type": "image/jpeg",
-      "form_factor": "wide",
-      "label": "Hangout planning interface"
-    },
-    {
-      "src": "/placeholder-hangout.jpg",
-      "sizes": "750x1334",
-      "type": "image/jpeg",
-      "form_factor": "narrow",
-      "label": "Mobile hangout view"
     }
   ],
   "shortcuts": [

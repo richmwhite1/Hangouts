@@ -2,11 +2,11 @@
 const nextConfig = {
   // Remove standalone output for now - using custom server
   reactStrictMode: true,
-  
+
   // Production optimizations
   compress: true,
   outputFileTracingRoot: '/Users/richardwhite/Hangout 3.0/hangouts-3.0',
-  
+
   // Disable problematic features
   eslint: {
     ignoreDuringBuilds: true,
@@ -14,11 +14,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  
+
   // Production optimizations
   poweredByHeader: false,
   generateEtags: true,
-  
+
   // Security headers
   async headers() {
     return [
@@ -39,7 +39,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(), microphone=(), geolocation=(self)',
           },
           // PWA headers
           {
@@ -82,16 +82,16 @@ const nextConfig = {
       },
     ]
   },
-  
+
   // Server external packages for Railway
   serverExternalPackages: ['@prisma/client', 'bcryptjs'],
-  
+
   // Webpack configuration
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push('ws')
     }
-    
+
     // Exclude Winston from client-side bundles
     if (!isServer) {
       config.resolve.fallback = {
@@ -115,10 +115,10 @@ const nextConfig = {
         child_process: false,
       }
     }
-    
+
     return config
   },
-  
+
   // Images configuration
   images: {
     remotePatterns: [
@@ -146,7 +146,7 @@ const nextConfig = {
     ],
     domains: ['localhost'],
   },
-  
+
   // Environment variables
   env: {
     PORT: process.env.PORT || '8080',

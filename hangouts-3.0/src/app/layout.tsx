@@ -77,7 +77,7 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
     >
-      <html lang="en" className={`dark ${oswald.variable} ${roboto.variable}`}>
+      <html lang="en" className={`dark ${oswald.variable} ${roboto.variable}`} suppressHydrationWarning>
         <head>
           {/* Viewport for iPhone safe areas */}
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />

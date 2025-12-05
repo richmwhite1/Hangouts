@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
-import { CalendarIcon, Clock, MapPin, Users, Plus, Camera, X, UserPlus } from 'lucide-react'
+import { CalendarIcon, Clock, MapPin, Users, Camera, X, UserPlus } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface HangoutFormProps {
@@ -23,8 +23,11 @@ export interface HangoutFormData {
   description: string
   location: string
   startTime: Date
+  endTime: Date
   isPoll: boolean
-  image?: File
+  maxParticipants: number | undefined
+  weatherEnabled: boolean
+  image: File | undefined
   selectedFriends: string[]
 }
 
@@ -34,7 +37,10 @@ export default function HangoutForm({ onSubmit, isLoading = false }: HangoutForm
     description: '',
     location: '',
     startTime: new Date(),
+    endTime: new Date(new Date().setHours(new Date().getHours() + 1)), // Default to 1 hour later
     isPoll: false,
+    maxParticipants: undefined,
+    weatherEnabled: true,
     image: undefined,
     selectedFriends: []
   })

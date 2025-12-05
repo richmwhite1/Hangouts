@@ -103,9 +103,9 @@ export function StackedHangoutTile({
         className="group transition-all duration-300 cursor-pointer overflow-hidden bg-[#121212] border-[#262626] rounded-lg fade-in"
       >
         {/* Header - Creator Info */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#262626]">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#262626]">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-11 w-11">
               <AvatarImage src={(hangout.creator || hangout.users)?.avatar || "/placeholder-avatar.png"} alt={(hangout.creator || hangout.users)?.name || "Creator"} />
               <AvatarFallback>
                 {(hangout.creator || hangout.users)?.name?.charAt(0) || "?"}
@@ -137,7 +137,7 @@ export function StackedHangoutTile({
         </div>
 
         {/* Instagram-style Image */}
-        <div className="relative aspect-square w-full overflow-hidden bg-[#000000]">
+        <div className="relative aspect-square w-full overflow-hidden bg-[#000000] mb-4">
           <img
             src={hangoutImage}
             alt={hangout.title}
@@ -170,19 +170,19 @@ export function StackedHangoutTile({
         </div>
 
         {/* Action Buttons */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="flex items-center space-x-4">
+        <div className="px-6 pt-3 pb-2">
+          <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-10 w-10 text-[#FAFAFA] hover:bg-[#1a1a1a]"
+              className="h-11 w-11 text-[#FAFAFA] hover:bg-[#1a1a1a]"
             >
               <Heart className="h-6 w-6" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-10 w-10 text-[#FAFAFA] hover:bg-[#1a1a1a]"
+              className="h-11 w-11 text-[#FAFAFA] hover:bg-[#1a1a1a]"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -193,7 +193,7 @@ export function StackedHangoutTile({
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-10 w-10 text-[#FAFAFA] hover:bg-[#1a1a1a]"
+              className="h-11 w-11 text-[#FAFAFA] hover:bg-[#1a1a1a]"
             >
               <Share2 className="h-6 w-6" />
             </Button>
@@ -201,7 +201,7 @@ export function StackedHangoutTile({
           
           {/* Participant Count */}
           {totalParticipants > 0 && (
-            <div className="flex items-center space-x-2 mt-2">
+            <div className="flex items-center gap-3 mt-3">
               <Avatar className="h-5 w-5">
                 <AvatarImage src="/placeholder-avatar.png" alt="Participant" />
                 <AvatarFallback className="text-xs">U</AvatarFallback>
@@ -214,9 +214,9 @@ export function StackedHangoutTile({
         </div>
         
         {/* Content Section */}
-        <div className="px-4 pb-4">
+        <div className="px-6 pb-5">
           {/* Title */}
-          <h3 className="text-base font-semibold text-[#FAFAFA] mb-1">
+          <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">
             {hangout.title}
           </h3>
           

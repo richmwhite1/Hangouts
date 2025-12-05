@@ -4,181 +4,152 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Professional Planner Theme - Warm, Trustworthy, Enterprise */
+  /* Plans Theme - Warm, Professional, Daily Planner */
   --background: #FAFAFA;
   /* Creamy off-white background */
   --foreground: #1F2937;
-  /* Dark gray text for readability */
+  /* Dark gray text */
+
   --card: #FFFFFF;
   /* Pure white cards */
   --card-foreground: #1F2937;
-  /* Dark text on cards */
-  --popover: #FFFFFF;
-  /* White popover background */
-  --popover-foreground: #1F2937;
-  /* Dark text on popovers */
-  --primary: #1E3A8A;
-  /* Rich navy blue - Professional, trustworthy */
-  --primary-foreground: #FFFFFF;
-  /* White text on primary */
-  --secondary: #E5E7EB;
-  /* Light gray for secondary elements */
-  --secondary-foreground: #1F2937;
-  /* Dark text on secondary */
-  --muted: #F3F4F6;
-  /* Very light gray for muted backgrounds */
-  --muted-foreground: #6B7280;
-  /* Medium gray text */
-  --accent: #34D399;
-  /* Green for success states */
-  --accent-foreground: #FFFFFF;
-  /* White text on accent */
-  --destructive: #EF4444;
-  /* Red for destructive actions */
-  --destructive-foreground: #FFFFFF;
-  /* White text on destructive */
-  --border: #E5E7EB;
-  /* Light gray borders */
-  --input: #FFFFFF;
-  /* White input background */
-  --ring: #1E3A8A;
-  /* Navy blue focus ring */
-  --chart-1: #1E3A8A;
-  /* Navy blue chart */
-  --chart-2: #34D399;
-  /* Green chart */
-  --chart-3: #F59E0B;
-  /* Amber chart */
-  --chart-4: #EF4444;
-  /* Red chart */
-  --chart-5: #8B5CF6;
-  /* Purple chart */
-  --radius: 0.5rem;
-  /* 8px - Softer, more professional corners */
-  --sidebar: #FAFAFA;
-  /* Creamy sidebar background */
-  --sidebar-foreground: #1F2937;
-  /* Dark sidebar text */
-  --sidebar-primary: #1E3A8A;
-  /* Navy blue sidebar primary */
-  --sidebar-primary-foreground: #FFFFFF;
-  /* White text on sidebar primary */
-  --sidebar-accent: #F3F4F6;
-  /* Light gray sidebar accent */
-  --sidebar-accent-foreground: #1F2937;
-  /* Dark text on sidebar accent */
-  --sidebar-border: #E5E7EB;
-  /* Light gray sidebar border */
-  --sidebar-ring: #1E3A8A;
-  /* Navy blue sidebar ring */
 
-  /* Planner-specific tokens */
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+
+  --primary: #1E3A8A;
+  /* Deep Navy Blue - The core brand color */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F3F4F6;
+  /* Light gray/cream for secondary elements */
+  --secondary-foreground: #1F2937;
+
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+
+  --accent: #2563EB;
+  /* Brighter blue for active states/highlights */
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E5E7EB;
+  /* Soft borders */
+  --input: #FFFFFF;
+  --ring: #1E3A8A;
+
+  --radius: 0.75rem;
+  /* 12px - Slightly more rounded for a friendly feel */
+
+  /* Planner Specific Tokens */
   --planner-cream: #FAFAFA;
-  /* Main background cream */
   --planner-cream-dark: #F5F7FA;
-  /* Slightly darker cream for depth */
   --planner-navy: #1E3A8A;
-  /* Primary navy */
   --planner-navy-light: #2563EB;
-  /* Lighter navy for hover */
   --planner-navy-dark: #1E40AF;
-  /* Darker navy for active */
-  --planner-shadow: rgba(30, 58, 138, 0.08);
-  /* Soft navy shadow */
-  --planner-shadow-md: rgba(30, 58, 138, 0.12);
-  /* Medium shadow */
-  --planner-shadow-lg: rgba(30, 58, 138, 0.16);
-  /* Large shadow */
-  --planner-border: #E5E7EB;
-  /* Soft border color */
+
+  --planner-tab: #F3F4F6;
+  /* Background for inactive tabs */
+  --planner-tab-active: #FAFAFA;
+  /* Background for active tabs (matches body) */
+  --planner-tab-border: #E5E7EB;
+
+  --planner-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.05), 0 2px 4px -1px rgba(30, 58, 138, 0.03);
+  --planner-shadow-md: 0 10px 15px -3px rgba(30, 58, 138, 0.08), 0 4px 6px -2px rgba(30, 58, 138, 0.04);
+  --planner-shadow-lg: 0 20px 25px -5px rgba(30, 58, 138, 0.1), 0 10px 10px -5px rgba(30, 58, 138, 0.04);
+
   --planner-text-primary: #1F2937;
-  /* Primary text */
   --planner-text-secondary: #6B7280;
-  /* Secondary text */
   --planner-text-muted: #9CA3AF;
-  /* Muted text */
+
+  /* Chart colors */
+  --chart-1: #1E3A8A;
+  --chart-2: #2563EB;
+  --chart-3: #3B82F6;
+  --chart-4: #60A5FA;
+  --chart-5: #93C5FD;
+
+  --sidebar: #FAFAFA;
+  --sidebar-foreground: #1F2937;
+  --sidebar-primary: #1E3A8A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F3F4F6;
+  --sidebar-accent-foreground: #1F2937;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #1E3A8A;
 }
 
 .dark {
-  /* Dark mode planner theme - maintaining warmth */
-  --background: #111827;
-  /* Dark blue-gray background */
-  --foreground: #F9FAFB;
-  /* Off-white text */
-  --card: #1F2937;
-  /* Dark gray cards */
-  --card-foreground: #F9FAFB;
-  /* Off-white text on cards */
-  --popover: #1F2937;
-  /* Dark popover background */
-  --popover-foreground: #F9FAFB;
-  /* Off-white text on popovers */
-  --primary: #2563EB;
-  /* Lighter navy for dark mode */
-  --primary-foreground: #FFFFFF;
-  /* White text on primary */
-  --secondary: #374151;
-  /* Medium gray for secondary */
-  --secondary-foreground: #F9FAFB;
-  /* Off-white text on secondary */
-  --muted: #374151;
-  /* Medium gray muted */
-  --muted-foreground: #9CA3AF;
-  /* Light gray text */
-  --accent: #34D399;
-  /* Green for success */
-  --accent-foreground: #FFFFFF;
-  /* White text on accent */
-  --destructive: #EF4444;
-  /* Red for destructive */
-  --destructive-foreground: #FFFFFF;
-  /* White text on destructive */
-  --border: #374151;
-  /* Medium gray borders */
-  --input: #1F2937;
-  /* Dark input background */
-  --ring: #2563EB;
-  /* Blue focus ring */
-  --chart-1: #2563EB;
-  /* Blue chart */
-  --chart-2: #34D399;
-  /* Green chart */
-  --chart-3: #F59E0B;
-  /* Amber chart */
-  --chart-4: #EF4444;
-  /* Red chart */
-  --chart-5: #8B5CF6;
-  /* Purple chart */
-  --sidebar: #111827;
-  /* Dark sidebar */
-  --sidebar-foreground: #F9FAFB;
-  /* Off-white sidebar text */
-  --sidebar-primary: #2563EB;
-  /* Blue sidebar primary */
-  --sidebar-primary-foreground: #FFFFFF;
-  /* White text */
-  --sidebar-accent: #374151;
-  /* Medium gray accent */
-  --sidebar-accent-foreground: #F9FAFB;
-  /* Off-white text */
-  --sidebar-border: #374151;
-  /* Medium gray border */
-  --sidebar-ring: #2563EB;
-  /* Blue ring */
+  /* Dark Mode - Instagram-inspired Pure Black */
+  --background: #000000;
+  /* Pure black background */
+  --foreground: #FFFFFF;
+  /* Primary text white */
 
-  /* Dark mode planner tokens */
-  --planner-cream: #111827;
-  --planner-cream-dark: #1F2937;
-  --planner-navy: #2563EB;
-  --planner-navy-light: #3B82F6;
-  --planner-navy-dark: #1D4ED8;
-  --planner-shadow: rgba(0, 0, 0, 0.3);
-  --planner-shadow-md: rgba(0, 0, 0, 0.4);
-  --planner-shadow-lg: rgba(0, 0, 0, 0.5);
-  --planner-border: #374151;
-  --planner-text-primary: #F9FAFB;
-  --planner-text-secondary: #D1D5DB;
-  --planner-text-muted: #9CA3AF;
+  --card: #121212;
+  /* Very dark gray card */
+  --card-foreground: #FFFFFF;
+
+  --popover: #121212;
+  --popover-foreground: #FFFFFF;
+
+  --primary: #FF1493;
+  /* Magenta accent color */
+  --primary-foreground: #000000;
+
+  --secondary: #121212;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #121212;
+  --muted-foreground: #B3B3B3;
+  /* Secondary text light gray */
+
+  --accent: #FF1493;
+  --accent-foreground: #000000;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #333333;
+  /* Dark gray borders */
+  --input: #121212;
+  --ring: #FF1493;
+
+  /* Planner Specific Tokens - Dark */
+  --planner-cream: #0F172A;
+  --planner-cream-dark: #1E293B;
+  --planner-navy: #3B82F6;
+  --planner-navy-light: #60A5FA;
+  --planner-navy-dark: #2563EB;
+
+  --planner-tab: #1E293B;
+  --planner-tab-active: #0F172A;
+  --planner-tab-border: #334155;
+
+  --planner-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --planner-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --planner-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+
+  --planner-text-primary: #F8FAFC;
+  --planner-text-secondary: #CBD5E1;
+  --planner-text-muted: #94A3B8;
+
+  --chart-1: #3B82F6;
+  --chart-2: #60A5FA;
+  --chart-3: #93C5FD;
+  --chart-4: #BFDBFE;
+  --chart-5: #DBEAFE;
+
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F8FAFC;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3B82F6;
 }
 
 @theme inline {
@@ -231,35 +202,52 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    background-attachment: fixed;
   }
 
-  /* Typography Hierarchy - Masculine, Clean, Sharp */
-  /* Headers use Oswald - Bold, Masculine, Sharp */
-  h1 {
-    @apply text-2xl font-semibold text-foreground;
-    font-family: var(--font-oswald), 'Oswald', sans-serif;
+  /* Typography Hierarchy - Refined Spacing System */
+  /* Display: Page titles */
+  .display,
+  h1.display {
     font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-weight: 700;
     line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #FFFFFF;
   }
 
-  h2 {
-    @apply text-xl font-semibold text-foreground;
+  /* H1: Main headings */
+  h1 {
+    @apply text-2xl font-bold text-foreground;
     font-family: var(--font-oswald), 'Oswald', sans-serif;
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.3;
+    color: #FFFFFF;
   }
 
-  h3 {
-    @apply text-lg font-medium text-foreground;
+  /* H2: Section headings */
+  h2 {
+    @apply text-xl font-bold text-foreground;
     font-family: var(--font-oswald), 'Oswald', sans-serif;
     font-size: 20px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: -0.01em;
+    line-height: 1.35;
+    color: #F5F5F5;
+  }
+
+  /* H3: Subsections */
+  h3 {
+    @apply text-lg font-semibold text-foreground;
+    font-family: var(--font-oswald), 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
     line-height: 1.4;
+    color: #F5F5F5;
   }
 
   h4 {
@@ -277,29 +265,32 @@
     @apply text-base text-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
     font-size: 16px;
-    font-weight: 400;
+    font-weight: 500;
     letter-spacing: -0.01em;
     line-height: 1.5;
+    color: #E5E5E5;
   }
 
   .label,
   label {
-    @apply text-sm text-muted-foreground;
+    @apply text-sm font-semibold;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
     font-size: 14px;
-    font-weight: 400;
+    font-weight: 600;
     letter-spacing: -0.005em;
     line-height: 1.4;
+    color: #F5F5F5;
   }
 
   .small-text,
   .caption {
-    @apply text-xs text-muted-foreground;
+    @apply text-sm text-muted-foreground;
     font-family: var(--font-roboto), 'Roboto', sans-serif;
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 14px;
+    font-weight: 500;
     letter-spacing: 0;
     line-height: 1.4;
+    color: #B3B3B3;
   }
 
   /* Text rendering optimizations */
@@ -423,19 +414,21 @@
   }
 
   .input-field {
-    @apply bg-input text-foreground border border-border rounded-sm px-3 py-2;
+    @apply bg-input text-foreground border border-border rounded-xl;
     background: #121212;
     color: #FAFAFA;
-    border: 1px solid #262626;
-    border-radius: 4px;
+    border: 1px solid #333333;
+    border-radius: 12px;
     padding: 12px 16px;
     transition: all 0.2s ease;
     font-size: 16px;
+    line-height: 24px;
+    min-height: 48px;
   }
 
   .input-field:focus {
     outline: none;
-    border-color: #2563EB;
+    border-color: #FF1493;
     background: #1a1a1a;
   }
 
@@ -444,11 +437,11 @@
   }
 
   .card {
-    @apply bg-card text-card-foreground rounded-sm border border-border;
-    background: #121212;
+    @apply bg-card text-card-foreground rounded-2xl border border-border;
+    background: rgba(0, 0, 0, 0.6);
     color: #FAFAFA;
-    border: 1px solid #262626;
-    border-radius: 4px;
+    border: 1px solid #333333;
+    border-radius: 16px;
     box-shadow: none;
   }
 
@@ -549,6 +542,20 @@
     }
   }
 
+  @keyframes pulseSubtle {
+
+    0%,
+    100% {
+      opacity: 1;
+      border-color: rgb(75 85 99);
+    }
+
+    50% {
+      opacity: 0.9;
+      border-color: rgb(59 130 246);
+    }
+  }
+
   .fade-in {
     animation: fadeIn 0.3s ease-out;
   }
@@ -563,6 +570,10 @@
 
   .pulse {
     animation: pulse 2s infinite;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulseSubtle 3s ease-in-out infinite;
   }
 
   .scale-in {
@@ -765,11 +776,78 @@
 
   /* Touch-friendly buttons for mobile */
   .btn-touch {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Spacing System Utilities */
+  .section-spacing {
+    margin-bottom: 32px;
+  }
+
+  .card-padding {
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  @media (min-width: 768px) {
+    .card-padding {
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .input-spacing {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Button Primary - Magenta accent */
+  .button-primary {
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background-color: #FF1493;
+    color: #000000;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+  }
+
+  .button-primary:hover {
+    background-color: #FF1493;
+    opacity: 0.9;
+  }
+
+  /* Button Secondary - Dark with border */
+  .button-secondary {
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background-color: #121212;
+    border: 1px solid #333333;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+  }
+
+  .button-secondary:hover {
+    background-color: #1a1a1a;
+    border-color: #404040;
   }
 
   /* Enhanced Typography */
@@ -950,4 +1028,8 @@
   .segmented-control-item:hover:not(.active) {
     color: var(--planner-text-primary);
   }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
 }

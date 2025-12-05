@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { logger } from '@/lib/logger'
-// Removed api-client import - using direct fetch calls
+import { apiClient } from '@/lib/api-client'
 
 export function HangoutFeed() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -26,19 +26,19 @@ export function HangoutFeed() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { isSignedIn, isLoaded } = useAuth()
-  
+
   // console.log('🔄 HangoutFeed component mounting...'); // Removed for production
-  
+
   // Use useEffect properly
   useEffect(() => {
     const fetchData = async () => {
       if (!isLoaded) return
-      
+
       if (!isSignedIn) {
         setIsLoading(false)
         return
       }
-      
+
       try {
         // console.log('🚀 useEffect API call starting...'); // Removed for production
         setIsLoading(true)
@@ -52,16 +52,16 @@ export function HangoutFeed() {
         setIsLoading(false)
       }
     }
-    
+
     fetchData()
   }, [isSignedIn, isLoaded])
-  
+
   // console.log('📊 Direct state:', { hangoutsCount: hangouts.length, isLoading, error }); // Removed for production
-  
+
   const { drafts, loadDraft, deleteDraft } = useDraft()
   const router = useRouter()
 
-  const handleEditDraft = (draft: { id: string; [key: string]: unknown }) => {
+  const handleEditDraft = (draft: { id: string;[key: string]: unknown }) => {
     loadDraft(draft.id)
     router.push('/create')
   }
@@ -85,11 +85,11 @@ export function HangoutFeed() {
 
     // Filter by status
     if (activeFilter === "upcoming") {
-      filtered = filtered.filter(hangout => 
+      filtered = filtered.filter(hangout =>
         new Date(hangout.startTime) > new Date() && hangout.status === 'PLANNING'
       )
     } else if (activeFilter === "past") {
-      filtered = filtered.filter(hangout => 
+      filtered = filtered.filter(hangout =>
         new Date(hangout.startTime) < new Date() || hangout.status === 'COMPLETED'
       )
     } else if (activeFilter === "my") {
@@ -125,7 +125,7 @@ export function HangoutFeed() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="px-6 pt-6 pb-10 space-y-8">
       {/* Quick filter buttons */}
       <div className="flex items-center space-x-2 mb-4">
         <Button
@@ -181,15 +181,15 @@ export function HangoutFeed() {
 
       {/* Draft Hangouts Section */}
       {drafts.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+        <div className="space-y-4 mb-8">
+          <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-4">
             📝 Draft Hangouts ({drafts.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {drafts.map((draft) => (
-              <DraftHangoutCard 
-                key={draft.id} 
-                draft={draft} 
+              <DraftHangoutCard
+                key={draft.id}
+                draft={draft}
                 onEdit={handleEditDraft}
                 onDelete={handleDeleteDraft}
               />
@@ -197,16 +197,16 @@ export function HangoutFeed() {
           </div>
         </div>
       )}
-      
+
       {/* Regular Hangouts Section */}
-      <div className="space-y-3">
+      <div className="space-y-5">
         {drafts.length > 0 && (
-          <h3 className="text-sm font-medium text-gray-300">
+          <h3 className="text-sm font-medium text-gray-300 mb-4">
             🎉 Published Hangouts
           </h3>
         )}
         {/* Stacked Editorial Feed */}
-        <div className="space-y-0">
+        <div className="space-y-5">
           {filteredAndSortedHangouts.map((hangout, index) => (
             <StackedHangoutTile 
               key={hangout.id} 

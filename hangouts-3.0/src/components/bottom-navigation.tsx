@@ -1,7 +1,6 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
-import { Calendar as CalendarIcon, Compass, Plus, Users, User } from "lucide-react"
+import { Calendar as CalendarIcon, Plus, User, Compass, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useHapticFeedback } from "@/hooks/use-haptic-feedback"
@@ -11,47 +10,44 @@ export function BottomNavigation() {
   const { hapticLight, hapticSuccess } = useHapticFeedback()
 
   const tabs = [
-    { id: "today", label: "Today", icon: CalendarIcon, href: "/" },
+    { id: "plans", label: "Plans", icon: CalendarIcon, href: "/" },
     { id: "discover", label: "Discover", icon: Compass, href: "/discover" },
-    { id: "create", label: "Create", icon: Plus, href: "/create" },
+    { id: "create", label: "Hangout", icon: Plus, href: "/create" },
     { id: "friends", label: "Friends", icon: Users, href: "/friends" },
     { id: "profile", label: "Profile", icon: User, href: "/profile" },
   ]
 
   const getActiveTab = () => {
-    if (pathname === "/") return "today"
-    if (pathname === "/discover") return "discover"
-    if (pathname.startsWith("/events")) return "events"
+    if (pathname === "/") return "plans"
+    if (pathname === "/discover" || pathname.startsWith("/discover")) return "discover"
+    if (pathname === "/events" || pathname.startsWith("/events")) return "events"
     if (pathname === "/create" || pathname.startsWith("/create")) return "create"
     if (pathname === "/friends" || pathname.startsWith("/friends")) return "friends"
     if (pathname === "/profile" || pathname.startsWith("/profile")) return "profile"
-    return "today"
+    return "plans"
   }
 
   const activeTab = getActiveTab()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-planner-cream border-t border-planner-border z-40 pb-safe shadow-planner">
-      <div className="flex items-end justify-around px-2 pt-1">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
+      {/* Tab Container - mimics the folder/rolodex look */}
+      <div className="relative bg-card border-t border-planner-border shadow-planner-lg rounded-t-2xl mx-2 mb-2 overflow-hidden">
 
-          return (
-            <Link
-              key={tab.id}
-              href={tab.href}
-              className="flex-1 flex justify-center min-w-0"
-            >
-              <button
-                className={`
-                  flex flex-col items-center justify-center gap-1 px-3 py-2 min-h-[56px] w-full max-w-[80px]
-                  transition-all duration-200 ease-out
-                  ${isActive
-                    ? 'tab-planner active text-planner-navy'
-                    : 'text-planner-text-secondary hover:text-planner-text-primary'
-                  }
-                `}
+        {/* Background texture/layer for depth */}
+        <div className="absolute inset-0 bg-planner-cream opacity-50 pointer-events-none" />
+
+        <div className="relative flex items-end justify-around pt-3 pb-2 px-1 min-h-[64px]">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                prefetch={false}
+                className={`flex-1 flex justify-center min-w-0 relative group`}
                 onClick={() => {
                   if (isActive) {
                     hapticLight()
@@ -60,24 +56,39 @@ export function BottomNavigation() {
                   }
                 }}
               >
-                <div className="relative flex items-center justify-center">
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
-                  {tab.id === "friends" && (
-                    <Badge
-                      variant="destructive"
-                      className="absolute -top-1 -right-1 px-1 min-w-0 h-4 text-xs"
-                    >
-                      2
-                    </Badge>
-                  )}
-                </div>
-                <span className={`text-xs font-medium text-center leading-tight ${isActive ? 'font-semibold' : ''}`}>
-                  {tab.label}
-                </span>
-              </button>
-            </Link>
-          )
-        })}
+                {/* Active Tab Indicator / "Card" Shape */}
+                {isActive && (
+                  <div className="absolute inset-x-1 bottom-0 top-0 bg-planner-navy/5 rounded-t-lg -z-10 transform scale-105 transition-transform duration-200" />
+                )}
+
+                <button
+                  className={`
+                    flex flex-col items-center justify-center gap-2 py-3 px-2 w-full min-h-[64px]
+                    transition-all duration-200 ease-out rounded-t-lg
+                    ${isActive
+                      ? 'text-planner-navy transform -translate-y-1'
+                      : 'text-planner-text-muted hover:text-planner-text-secondary hover:bg-planner-tab/50'
+                    }
+                  `}
+                >
+                  <div className={`
+                    relative flex items-center justify-center p-2 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px]
+                    ${isActive ? 'bg-planner-navy text-white shadow-planner-md' : 'bg-transparent'}
+                  `}>
+                    <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                  </div>
+
+                  <span className={`
+                    text-[10px] font-medium uppercase tracking-wider leading-none
+                    ${isActive ? 'text-planner-navy font-bold' : 'text-planner-text-muted'}
+                  `}>
+                    {tab.label}
+                  </span>
+                </button>
+              </Link>
+            )
+          })}
+        </div>
       </div>
     </nav>
   )
