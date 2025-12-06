@@ -12,9 +12,11 @@ async function getFeedHandler(request: NextRequest) {
   const location = searchParams.get('location')
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
-  const limit = parseInt(searchParams.get('limit') || '20')
-  const offset = parseInt(searchParams.get('offset') || '0')
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100) // Max 100
+  const offset = (page - 1) * limit
   const includePast = searchParams.get('includePast') === 'true'
+  const sortBy = searchParams.get('sortBy') || 'recent_activity' // 'recent_activity' or 'chronological'
   const startDateParam = searchParams.get('startDate')
   const endDateParam = searchParams.get('endDate')
 
@@ -149,17 +151,23 @@ async function getFeedHandler(request: NextRequest) {
       }
     }
 
-    logger.debug('Executing content query', { whereClause, userId, feedType }, 'FEED')
+    logger.debug('Executing content query', { whereClause, userId, feedType, page, limit, sortBy }, 'FEED')
     
-    // Debug: Check if hangout exists
-    const debugHangout = userId ? await db.content.findFirst({
-      where: { 
-        creatorId: userId,
-        type: 'HANGOUT'
-      },
-      select: { id: true, title: true, creatorId: true }
-    }) : null
-    logger.debug('Debug hangout found', { hangout: debugHangout }, 'FEED')
+    // Determine sort order based on sortBy parameter
+    let orderBy: any
+    if (sortBy === 'recent_activity') {
+      // Sort by most recently updated first, then by start time
+      orderBy = [
+        { updatedAt: 'desc' as const },
+        { startTime: 'asc' as const }
+      ]
+    } else {
+      // Chronological by start time
+      orderBy = feedType === 'home' 
+        ? { startTime: 'asc' as const }
+        : { startTime: 'asc' as const }
+    }
+
     // Simplified query for debugging
     const content = await db.content.findMany({
       where: whereClause,
@@ -308,11 +316,17 @@ async function getFeedHandler(request: NextRequest) {
           }
         }
       },
-      orderBy: feedType === 'home' ? { createdAt: 'desc' } : { startTime: 'asc' },
+      orderBy,
       take: limit,
-      skip: offset})
+      skip: offset
+    })
 
-    logger.debug('Raw content found', { count: content.length, firstItem: content[0] ? { id: content[0].id, title: content[0].title } : null }, 'FEED')
+    // Get total count for hasMore calculation
+    const totalCount = await db.content.count({
+      where: whereClause
+    })
+
+    logger.debug('Raw content found', { count: content.length, total: totalCount, firstItem: content[0] ? { id: content[0].id, title: content[0].title } : null }, 'FEED')
 
     // Transform the data for frontend consumption
     const transformedContent = content.map(item => {
@@ -430,10 +444,11 @@ async function getFeedHandler(request: NextRequest) {
       data: { 
         content: transformedContent,
         pagination: {
+          page,
           limit,
           offset,
-          total: transformedContent.length,
-          hasMore: transformedContent.length === limit
+          total: totalCount,
+          hasMore: offset + transformedContent.length < totalCount
         }
       }
     })

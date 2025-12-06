@@ -177,6 +177,19 @@ export async function POST(
       })
     }
 
+    // Update content's updatedAt timestamp for recent activity sorting
+    try {
+      await db.content.update({
+        where: { id: hangoutId },
+        data: {
+          updatedAt: new Date()
+        }
+      })
+    } catch (error) {
+      logger.error('Error updating content updatedAt:', error)
+      // Don't fail the request if this update fails
+    }
+
     // Send notification to hangout creator about RSVP response
     if (validatedData.status !== 'PENDING') {
       try {

@@ -11,8 +11,9 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
   const includePast = searchParams.get('includePast') === 'true'
-  const limit = parseInt(searchParams.get('limit') || '20')
-  const offset = parseInt(searchParams.get('offset') || '0')
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Increased default to 50, max 100
+  const offset = (page - 1) * limit
 
   // Get user ID for friend context (optional for discover page)
   let userId: string | null = null
@@ -181,7 +182,16 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
       },
       orderBy: { startTime: 'asc' },
       take: limit,
-      skip: offset})
+      skip: offset
+    })
+
+    // Get total count for pagination
+    const totalCount = await db.content.count({
+      where: {
+        type: 'HANGOUT',
+        ...whereClause
+      }
+    })
 
     // Transform hangouts to use first photo as primary image
     const transformedHangouts = hangouts.map(hangout => ({
@@ -191,7 +201,16 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
         : hangout.image
     }))
 
-    return createSuccessResponse({ hangouts: transformedHangouts })
+    return createSuccessResponse({ 
+      hangouts: transformedHangouts,
+      pagination: {
+        page,
+        limit,
+        offset,
+        total: totalCount,
+        hasMore: offset + transformedHangouts.length < totalCount
+      }
+    })
   } catch (error) {
     logger.error('Database error in getDiscoverHangoutsHandler:', error);
     return createErrorResponse('Database error', 'Failed to fetch discover hangouts', 500)

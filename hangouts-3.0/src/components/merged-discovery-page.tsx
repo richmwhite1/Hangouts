@@ -26,6 +26,7 @@ import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
+import { Loader2 } from 'lucide-react'
 interface Event {
   id: string
   title: string
@@ -97,6 +98,9 @@ export function MergedDiscoveryPage() {
   const [hangouts, setHangouts] = useState<Hangout[]>([])
   const [mergedContent, setMergedContent] = useState<any[]>([])
   const [showPastContent, setShowPastContent] = useState(false)
+  const [hasMoreContent, setHasMoreContent] = useState(true)
+  const [page, setPage] = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   // Location filtering state
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -134,15 +138,16 @@ export function MergedDiscoveryPage() {
   }, [])
 
   // Fetch events
-  const fetchEvents = async () => {
+  const fetchEvents = async (pageNum: number = 1, append: boolean = false) => {
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
       params.append('includePast', showPastContent ? 'true' : 'false')
+      params.append('page', String(pageNum))
+      params.append('limit', '50') // Increased from default
 
       // Use public API for non-authenticated users
       const apiEndpoint = isSignedIn ? '/api/events' : '/api/public/content'
-      params.append('includePast', showPastContent ? 'true' : 'false')
 
       if (!isSignedIn) {
         params.append('type', 'EVENT')
@@ -152,11 +157,8 @@ export function MergedDiscoveryPage() {
       const response = await fetch(`${apiEndpoint}?${params}`)
       if (response.ok) {
         const data = await response.json()
-        if (isSignedIn) {
-          setEvents(data.events || [])
-        } else {
-          // Map public events to event format
-          const publicEvents = (data.events || []).map((item: any) => ({
+        const newEvents = isSignedIn ? (data.events || []) : (
+          (data.events || []).map((item: any) => ({
             id: item.id,
             title: item.title,
             description: item.description || '',
@@ -194,7 +196,12 @@ export function MergedDiscoveryPage() {
             latitude: item.latitude,
             longitude: item.longitude
           }))
-          setEvents(publicEvents)
+        )
+        
+        if (append) {
+          setEvents(prev => [...prev, ...newEvents])
+        } else {
+          setEvents(newEvents)
         }
       }
     } catch (error) {
@@ -205,22 +212,52 @@ export function MergedDiscoveryPage() {
   const handleRefresh = async () => {
     showLoading('Refreshing content...')
     try {
-      await Promise.all([fetchHangouts(), fetchEvents()])
+      setPage(1)
+      await Promise.all([fetchHangouts(1, false), fetchEvents(1, false)])
       showSuccess('Content refreshed!')
     } catch (error) {
       showError('Failed to refresh content')
     }
   }
+  
+  // Load more content for infinite scroll
+  const loadMoreContent = async () => {
+    if (loadingMore || !hasMoreContent) return
+    
+    setLoadingMore(true)
+    const nextPage = page + 1
+    setPage(nextPage)
+    
+    try {
+      await Promise.all([
+        fetchHangouts(nextPage, true),
+        fetchEvents(nextPage, true)
+      ])
+      
+      // Check if we got less than a full page - if so, no more content
+      // This is a simple check - in production you'd get this from API response
+      if (events.length + hangouts.length < nextPage * 50) {
+        setHasMoreContent(false)
+      }
+    } catch (error) {
+      logger.error('Error loading more content:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
   // Handle ZIP code submission
 
   // Fetch hangouts
-  const fetchHangouts = async () => {
+  const fetchHangouts = async (pageNum: number = 1, append: boolean = false) => {
     try {
       // Use public API for non-authenticated users
       const apiEndpoint = isSignedIn ? '/api/discover' : '/api/public/content'
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
       params.append('includePast', showPastContent ? 'true' : 'false')
+      params.append('page', String(pageNum))
+      params.append('limit', '50') // Increased from default
+      
       if (!isSignedIn) {
         params.append('type', 'HANGOUT')
         params.append('privacyLevel', 'PUBLIC')
@@ -262,9 +299,16 @@ export function MergedDiscoveryPage() {
             name: '',
             avatar: ''
           },
-          createdAt: hangout.createdAt
+          createdAt: hangout.createdAt,
+          latitude: hangout.latitude,
+          longitude: hangout.longitude
         }))
-        setHangouts(mappedHangouts)
+        
+        if (append) {
+          setHangouts(prev => [...prev, ...mappedHangouts])
+        } else {
+          setHangouts(mappedHangouts)
+        }
       }
     } catch (error) {
       logger.error('Error fetching hangouts:', error);
@@ -391,19 +435,23 @@ export function MergedDiscoveryPage() {
 
     // Always fetch data, but for non-authenticated users, only fetch public content
     setIsLoading(true)
+    setPage(1)
     Promise.all([
-      fetchEvents(),
-      fetchHangouts()
+      fetchEvents(1, false),
+      fetchHangouts(1, false)
     ]).finally(() => {
       setIsLoading(false)
     })
   }, [isSignedIn, isLoaded, showPastContent])
+  
   useEffect(() => {
     // Wait for authentication to load before refetching data
     if (!isLoaded) return
 
     // Refetch both events and hangouts when filters change
-    Promise.all([fetchEvents(), fetchHangouts()])
+    setPage(1)
+    setHasMoreContent(true)
+    Promise.all([fetchEvents(1, false), fetchHangouts(1, false)])
   }, [searchQuery, showPastContent, isLoaded])
   // Handle zip code geocoding
 
@@ -895,21 +943,49 @@ export function MergedDiscoveryPage() {
             const pastItems = filteredByTab.filter(item => item.isPast)
 
             return (
-              <div className="space-y-3 px-4">
-                {upcomingItems.length > 0 ? renderCards(upcomingItems) : (
-                  <div className="text-center py-8 text-gray-400 text-sm">
-                    No upcoming events match these filters.
+              <>
+                <div className="space-y-3 px-4">
+                  {upcomingItems.length > 0 ? renderCards(upcomingItems) : (
+                    <div className="text-center py-8 text-gray-400 text-sm">
+                      No upcoming events match these filters.
+                    </div>
+                  )}
+                  {showPastContent && pastItems.length > 0 && (
+                    <>
+                      <div className="sticky top-16 z-0 bg-black/80 backdrop-blur py-3 text-center text-xs uppercase tracking-wide text-gray-400 border-t border-gray-800">
+                        Past events and hangouts
+                      </div>
+                      {renderCards(pastItems)}
+                    </>
+                  )}
+                </div>
+                
+                {/* Load More Button */}
+                {hasMoreContent && upcomingItems.length > 0 && (
+                  <div className="flex justify-center py-6 px-4">
+                    <Button
+                      onClick={loadMoreContent}
+                      disabled={loadingMore}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More'
+                      )}
+                    </Button>
                   </div>
                 )}
-                {showPastContent && pastItems.length > 0 && (
-                  <>
-                    <div className="sticky top-16 z-0 bg-black/80 backdrop-blur py-3 text-center text-xs uppercase tracking-wide text-gray-400 border-t border-gray-800">
-                      Past events and hangouts
-                    </div>
-                    {renderCards(pastItems)}
-                  </>
+                
+                {!hasMoreContent && upcomingItems.length > 0 && (
+                  <div className="text-center py-6 text-gray-400 text-sm">
+                    You've seen all available content
+                  </div>
                 )}
-              </div>
+              </>
             )
           })()}
         </div>

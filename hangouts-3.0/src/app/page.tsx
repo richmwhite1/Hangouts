@@ -11,6 +11,8 @@ import { TodayView } from "@/components/planner/today-view"
 import { MonthCalendarView } from "@/components/planner/month-calendar-view"
 import { QuickPlanModal } from "@/components/create/QuickPlanModal"
 import { UserStatusWidget } from "@/components/home/UserStatusWidget"
+import { FeedToggle } from "@/components/home/feed-toggle"
+import { HomeFeedList } from "@/components/home/home-feed-list"
 import { Zap } from "lucide-react"
 
 // Re-using the interface (should be shared)
@@ -54,6 +56,7 @@ export default function HomePage() {
   const [isClient, setIsClient] = useState(false)
   const [view, setView] = useState<'today' | 'month'>('today')
   const [isQuickPlanOpen, setIsQuickPlanOpen] = useState(false)
+  const [feedView, setFeedView] = useState<'upcoming' | 'past'>('upcoming')
 
   useEffect(() => {
     setIsClient(true)
@@ -67,21 +70,21 @@ export default function HomePage() {
         setLoading(true)
         const token = await getToken()
 
-        // Fetch all hangouts - backend handles basic filtering
-        const response = await fetch('/api/hangouts', {
+        // Fetch from unified feed API for both hangouts and events
+        const response = await fetch('/api/feed?type=home&contentType=all&limit=100', {
           headers: {
             Authorization: `Bearer ${token}`
           }
         })
 
         if (!response.ok) {
-          throw new Error('Failed to fetch hangouts')
+          throw new Error('Failed to fetch feed')
         }
 
         const data = await response.json()
-        setHangouts(data)
+        setHangouts(data.data?.content || [])
       } catch (err) {
-        console.error('Error fetching hangouts:', err)
+        console.error('Error fetching feed:', err)
       } finally {
         setLoading(false)
       }
@@ -115,13 +118,23 @@ export default function HomePage() {
       </div>
 
       {/* Main Content */}
-      <div className="px-4 pt-2">
-        <UserStatusWidget />
-        {view === 'today' ? (
-          <TodayView items={Array.isArray(hangouts) ? hangouts : []} loading={loading} />
-        ) : (
-          <MonthCalendarView items={Array.isArray(hangouts) ? hangouts : []} loading={loading} />
-        )}
+      <div className="pt-2">
+        <div className="px-4">
+          <UserStatusWidget />
+        </div>
+        <div className="px-4">
+          {view === 'today' ? (
+            <TodayView items={Array.isArray(hangouts) ? hangouts : []} loading={loading} />
+          ) : (
+            <MonthCalendarView items={Array.isArray(hangouts) ? hangouts : []} loading={loading} />
+          )}
+        </div>
+        
+        {/* Feed Toggle and List */}
+        <div className="mt-6 border-t border-planner-border/30">
+          <FeedToggle value={feedView} onChange={setFeedView} />
+          <HomeFeedList showPast={feedView === 'past'} />
+        </div>
       </div>
 
       {/* Quick Plan FAB */}

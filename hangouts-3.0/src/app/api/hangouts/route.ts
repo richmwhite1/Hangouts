@@ -55,6 +55,9 @@ export async function GET(request: NextRequest) {
     const includePast = searchParams.get('includePast') === 'true'
     const startDateParam = searchParams.get('startDate')
     const endDateParam = searchParams.get('endDate')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100) // Max 100
+    const offset = (page - 1) * limit
 
     // Build where clause based on feed type
     let whereClause: any
@@ -149,12 +152,25 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc'
       },
-      take: 20
+      take: limit,
+      skip: offset
+    })
+
+    // Get total count for pagination
+    const totalCount = await db.content.count({
+      where: baseWhere
     })
 
     return NextResponse.json({
       success: true,
-      data: hangouts
+      data: hangouts,
+      pagination: {
+        page,
+        limit,
+        offset,
+        total: totalCount,
+        hasMore: offset + hangouts.length < totalCount
+      }
     })
 
   } catch (error) {

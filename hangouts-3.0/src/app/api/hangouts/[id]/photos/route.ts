@@ -213,6 +213,19 @@ export async function POST(
       return NextResponse.json(createErrorResponse('Bad Request', 'No valid photos were uploaded'), { status: 400 });
     }
 
+    // Update content's updatedAt timestamp for recent activity sorting
+    try {
+      await db.content.update({
+        where: { id: hangoutId },
+        data: {
+          updatedAt: new Date()
+        }
+      })
+    } catch (error) {
+      logger.error('Error updating content updatedAt:', error)
+      // Don't fail the request if this update fails
+    }
+
     return NextResponse.json(createSuccessResponse({ photos: uploadedPhotos }), { status: 201 });
   } catch (error: any) {
     logger.error('Error uploading photos:', error);

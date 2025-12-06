@@ -29,7 +29,7 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
                 <button
                     className={`
                         relative z-10 px-6 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 w-24
-                        ${value === 'today' ? 'text-planner-navy' : 'text-planner-text-secondary hover:text-planner-text-primary'}
+                        ${value === 'today' ? 'text-black' : 'text-planner-text-secondary hover:text-planner-text-primary'}
                     `}
                     onClick={() => handleChange('today')}
                     type="button"
@@ -39,7 +39,7 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
                 <button
                     className={`
                         relative z-10 px-6 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 w-24
-                        ${value === 'month' ? 'text-planner-navy' : 'text-planner-text-secondary hover:text-planner-text-primary'}
+                        ${value === 'month' ? 'text-black' : 'text-planner-text-secondary hover:text-planner-text-primary'}
                     `}
                     onClick={() => handleChange('month')}
                     type="button"
