@@ -79,14 +79,14 @@ export async function checkFriendship(userId1: string, userId2: string): Promise
  */
 export async function getUserFriends(userId: string): Promise<UniversalFriend[]> {
   try {
-    // Try development schema first (userId/friendId)
-    logger.debug('Attempting to fetch friends using userId/friendId schema')
+    // Use development schema (userId/friendId) - this is what the database uses
+    logger.debug('Fetching friends using userId/friendId schema', { userId })
     
-    const devFriendships = await db.friendship.findMany({
+    const friendships = await db.friendship.findMany({
       where: {
         OR: [
-          { userId: userId, status: 'ACTIVE' },
-          { friendId: userId, status: 'ACTIVE' }
+          { userId: userId, status: 'ACTIVE' as any },
+          { friendId: userId, status: 'ACTIVE' as any }
         ]
       },
       include: {
@@ -115,76 +115,47 @@ export async function getUserFriends(userId: string): Promise<UniversalFriend[]>
       }
     })
 
-    const devFriends = devFriendships.map(friendship => {
-      const friendUser = friendship.userId === userId ? friendship.friend : friendship.user
-      return {
-        id: friendship.id,
-        friend: friendUser,
-        status: friendship.status || 'ACTIVE',
-        createdAt: friendship.createdAt
-      }
-    })
-
-    logger.info(`Successfully fetched ${devFriends.length} friends using userId/friendId schema`)
-    return devFriends
-
-  } catch (devError) {
-    logger.debug('Development schema failed, trying production schema:', devError.message)
-  }
-
-  try {
-    // Try production schema (user1Id/user2Id)
-    logger.debug('Attempting to fetch friends using user1Id/user2Id schema')
-    
-    const prodFriendships = await db.friendship.findMany({
-      where: {
-        OR: [
-          { user1Id: userId },
-          { user2Id: userId }
-        ]
-      },
-      include: {
-        user1: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true,
-            bio: true,
-            location: true
+    const friends = friendships
+      .map(friendship => {
+        try {
+          const friendUser = friendship.userId === userId ? friendship.friend : friendship.user
+          // Handle null friend/user gracefully
+          if (!friendUser) {
+            logger.warn(`Friendship ${friendship.id} has null friend/user, skipping`)
+            return null
           }
-        },
-        user2: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            avatar: true,
-            bio: true,
-            location: true
+          return {
+            id: friendship.id,
+            friend: friendUser,
+            status: friendship.status || 'ACTIVE',
+            createdAt: friendship.createdAt
           }
+        } catch (mapError: any) {
+          logger.warn(`Error mapping friendship ${friendship.id}:`, mapError?.message || String(mapError))
+          return null
         }
-      }
+      })
+      .filter((f): f is UniversalFriend => f !== null)
+
+    logger.info(`Successfully fetched ${friends.length} friends`, { userId, totalFriendships: friendships.length })
+    return friends
+
+  } catch (error: any) {
+    // Log the full error for debugging
+    const errorMessage = error?.message || String(error)
+    const errorStack = error?.stack || ''
+    const errorName = error?.name || 'UnknownError'
+    
+    logger.error('Error fetching friends:', {
+      message: errorMessage,
+      name: errorName,
+      stack: errorStack,
+      error: error,
+      userId
     })
-
-    const prodFriends = prodFriendships.map(friendship => {
-      const friendUser = friendship.user1Id === userId ? friendship.user2 : friendship.user1
-      return {
-        id: friendship.id,
-        friend: friendUser,
-        status: 'ACTIVE', // Default status for production schema
-        createdAt: friendship.createdAt
-      }
-    })
-
-    logger.info(`Successfully fetched ${prodFriends.length} friends using user1Id/user2Id schema`)
-    return prodFriends
-
-  } catch (prodError) {
-    logger.error('Both friendship schemas failed:', { devError: devError?.message, prodError: prodError.message })
-    throw new Error('Unable to fetch friends with either schema')
+    
+    // Re-throw with a clear message
+    throw new Error(`Failed to fetch friends: ${errorMessage}`)
   }
 }
 

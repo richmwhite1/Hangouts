@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Users } from "lucide-react"
 import { GuestLanding } from "@/components/guest-landing"
 import { ViewToggle } from "@/components/planner/view-toggle"
 import { TodayView } from "@/components/planner/today-view"
@@ -111,9 +110,6 @@ export default function HomePage() {
       <div className="sticky top-0 z-20 bg-planner-cream/95 backdrop-blur-md border-b border-planner-border/50 pt-safe">
         <div className="px-4 py-3 relative flex items-center justify-center">
           <ViewToggle value={view} onChange={setView} />
-          <Link href="/friends" className="absolute right-4 p-2 text-planner-navy hover:bg-black/5 rounded-full transition-colors">
-            <Users className="w-6 h-6" />
-          </Link>
         </div>
       </div>
 

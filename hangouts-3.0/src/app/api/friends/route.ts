@@ -31,10 +31,20 @@ export async function GET(request: NextRequest) {
       success: true,
       friends: friends
     })
-  } catch (error) {
-    logger.error('Error fetching friends:', error);
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error)
+    const errorStack = error?.stack || ''
+    logger.error('Error fetching friends:', {
+      message: errorMessage,
+      stack: errorStack,
+      error: error,
+      userId: user?.id
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch friends' },
+      { 
+        error: 'Failed to fetch friends',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
