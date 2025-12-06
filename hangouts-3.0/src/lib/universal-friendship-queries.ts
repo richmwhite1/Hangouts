@@ -89,7 +89,12 @@ export async function getUserFriends(userId: string): Promise<UniversalFriend[]>
           { friendId: userId, status: 'ACTIVE' as any }
         ]
       },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        friendId: true,
+        status: true,
+        createdAt: true,
         user: {
           select: {
             id: true,
