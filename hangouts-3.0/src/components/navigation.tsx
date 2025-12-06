@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Bell, User, Users, LogOut, Settings, MessageSquare } from "lucide-react"
+import { Bell, User, LogOut, Settings, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth, useClerk } from "@clerk/nextjs"
@@ -56,11 +56,6 @@ export function Navigation() {
           <div className="flex items-center space-x-2">
             {isSignedIn ? (
               <>
-                <Link href="/friends">
-                  <Button variant="ghost" size="lg" className="min-h-[44px] min-w-[44px] p-2">
-                    <Users className="w-5 h-5" />
-                  </Button>
-                </Link>
                 <Link href="/messages">
                   <Button variant="ghost" size="lg" className="relative min-h-[44px] min-w-[44px] p-2">
                     <MessageSquare className="w-5 h-5" />
