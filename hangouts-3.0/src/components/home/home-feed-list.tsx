@@ -79,15 +79,15 @@ export function HomeFeedList({ showPast }: HomeFeedListProps) {
 
   if (loading) {
     return (
-      <div className="space-y-3 px-4 pb-24">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-planner-border/50 animate-pulse">
-            <div className="flex gap-4">
-              <div className="w-20 h-20 bg-planner-tab rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <div className="h-5 bg-planner-tab rounded w-3/4" />
-                <div className="h-4 bg-planner-tab rounded w-1/2" />
-                <div className="h-4 bg-planner-tab rounded w-2/3" />
+      <div className="px-4 pb-24 space-y-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="relative w-full h-72 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl overflow-hidden animate-pulse shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-400/50 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3">
+              <div className="h-8 bg-white/30 rounded-lg w-3/4 backdrop-blur-sm" />
+              <div className="flex gap-2">
+                <div className="h-7 bg-white/30 rounded-full w-24 backdrop-blur-sm" />
+                <div className="h-7 bg-white/30 rounded-full w-32 backdrop-blur-sm" />
               </div>
             </div>
           </div>
@@ -98,17 +98,18 @@ export function HomeFeedList({ showPast }: HomeFeedListProps) {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-        <div className="w-20 h-20 bg-planner-tab rounded-full flex items-center justify-center mb-4 shadow-inner">
-          <Calendar className="w-8 h-8 text-planner-text-muted opacity-50" />
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full" />
+          <Calendar className="relative w-20 h-20 text-accent" strokeWidth={1.5} />
         </div>
-        <h3 className="text-xl font-bold text-planner-navy mb-2">
-          {showPast ? 'No past events' : 'No upcoming plans'}
+        <h3 className="text-2xl font-bold text-planner-text-primary mb-3">
+          {showPast ? 'No Past Events Yet' : 'No Upcoming Plans'}
         </h3>
-        <p className="text-planner-text-secondary max-w-xs mx-auto">
+        <p className="text-planner-text-secondary max-w-sm text-lg leading-relaxed">
           {showPast 
-            ? 'You haven\'t attended any events yet. Start planning to create memories!'
-            : 'Your schedule is clear. Create a plan or discover events to get started.'
+            ? 'Your past hangouts and events will appear here once they\'re complete.' 
+            : 'Create your first hangout or discover exciting events to get started!'
           }
         </p>
       </div>

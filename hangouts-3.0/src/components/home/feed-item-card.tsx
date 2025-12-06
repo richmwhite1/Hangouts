@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { Clock, MapPin, Users, Calendar as CalendarIcon, MessageCircle } from 'lucide-react'
+import { Clock, MapPin, Users, Calendar as CalendarIcon, MessageCircle, Sparkles, Music, Coffee, Heart } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { Badge } from '@/components/ui/badge'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 interface FeedItemCardProps {
   item: any
@@ -48,104 +50,140 @@ export function FeedItemCard({ item, showUpdatedBadge = false }: FeedItemCardPro
     }
   }
 
+  // Get participant count
+  const participantCount = item._count?.participants || item.participants?.length || item.counts?.participants || 0
+
+  // Get category icon for visual variety
+  const getCategoryIcon = () => {
+    const activity = (item.activity || item.category || '').toLowerCase()
+    if (activity.includes('music') || activity.includes('concert')) return Music
+    if (activity.includes('food') || activity.includes('drink') || activity.includes('coffee')) return Coffee
+    return Heart
+  }
+  const CategoryIcon = getCategoryIcon()
+
   return (
     <Link href={href}>
-      <div className="group relative bg-white rounded-xl p-4 shadow-planner hover:shadow-planner-md transition-all duration-300 border border-planner-border/50 overflow-hidden mb-3">
-        {/* Left Accent Bar */}
-        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-          isEvent ? 'bg-planner-navy' : 'bg-accent'
-        }`} />
+      <div className="group relative w-full h-72 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden hover:scale-[1.02] transition-transform duration-300 cursor-pointer rounded-2xl shadow-xl mb-4">
+        {/* Background Image with Overlay */}
+        {item.image || item.coverImage ? (
+          <>
+            <OptimizedImage
+              src={item.image || item.coverImage || '/placeholder-event.jpg'}
+              alt={item.title}
+              className="w-full h-full object-cover"
+              placeholder="/placeholder-event.jpg"
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20" />
+          </>
+        ) : (
+          <>
+            {/* Colorful gradient background for items without images */}
+            <div className={`absolute inset-0 ${
+              isEvent 
+                ? 'bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600' 
+                : 'bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600'
+            }`} />
+            <div className="absolute inset-0 bg-black/30" />
+            {/* Decorative icon for items without images */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-20">
+              <CategoryIcon className="w-48 h-48 text-white" strokeWidth={0.5} />
+            </div>
+          </>
+        )}
 
-        {/* Recently Updated Badge */}
+        {/* Recently Updated Pulse Badge - Top Left */}
         {isRecentlyUpdated && updatedAtText && (
-          <div className="absolute top-3 right-3">
-            <span className="inline-flex items-center gap-1 bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
-              <MessageCircle className="w-3 h-3" />
-              Updated {updatedAtText}
-            </span>
+          <div className="absolute top-4 left-4 z-10">
+            <div className="relative">
+              {/* Pulsing animation */}
+              <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping"></span>
+              <Badge className="relative bg-accent text-white text-xs px-3 py-1.5 font-semibold backdrop-blur-md border-2 border-white/30 shadow-lg flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                New Activity
+              </Badge>
+            </div>
           </div>
         )}
 
-        <div className="flex items-start gap-4 pl-2">
-          {/* Image/Icon */}
-          {item.image ? (
-            <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-planner-tab">
-              <img 
-                src={item.image} 
-                alt={item.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className={`flex-shrink-0 w-20 h-20 rounded-lg flex items-center justify-center ${
-              isEvent ? 'bg-planner-navy/10' : 'bg-accent/10'
-            }`}>
-              <CalendarIcon className={`w-8 h-8 ${
-                isEvent ? 'text-planner-navy' : 'text-accent'
-              }`} />
-            </div>
-          )}
+        {/* Type Badge - Top Right */}
+        <div className="absolute top-4 right-4 z-10">
+          <Badge className={`
+            text-white text-xs px-3 py-1.5 font-semibold backdrop-blur-md border-2 border-white/30 shadow-lg
+            ${isEvent 
+              ? 'bg-indigo-600/90 hover:bg-indigo-700/90' 
+              : 'bg-cyan-600/90 hover:bg-cyan-700/90'
+            }
+          `}>
+            <CalendarIcon className="w-3 h-3 mr-1" />
+            {isEvent ? 'Event' : 'Hangout'}
+          </Badge>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <h3 className="font-bold text-planner-text-primary text-lg leading-tight line-clamp-2">
-                {item.title}
-              </h3>
-              {!isRecentlyUpdated && (
-                <span className={`
-                  flex-shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full
-                  ${isEvent
-                    ? 'bg-planner-navy/10 text-planner-navy'
-                    : 'bg-accent/10 text-accent'
-                  }
-                `}>
-                  {isEvent ? 'Event' : 'Hangout'}
-                </span>
-              )}
+        {/* Main Content - Bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3">
+          {/* Title */}
+          <h3 className="font-bold text-white text-2xl line-clamp-2 drop-shadow-2xl leading-tight">
+            {item.title}
+          </h3>
+
+          {/* Meta Info Grid */}
+          <div className="flex flex-wrap gap-3 text-sm">
+            {/* Date & Time */}
+            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20">
+              <Clock className="w-3.5 h-3.5 text-white/90" />
+              <span className="text-white/90 font-medium">{formattedDate}</span>
             </div>
 
-            <div className="space-y-1.5 text-sm text-planner-text-secondary">
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-planner-text-muted flex-shrink-0" />
-                <span className="font-medium">{formattedDate} • {formattedTime}</span>
+            {/* Location */}
+            {item.location && (
+              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 max-w-[200px]">
+                <MapPin className="w-3.5 h-3.5 text-white/90 flex-shrink-0" />
+                <span className="text-white/90 font-medium truncate">{item.location}</span>
               </div>
+            )}
 
-              {item.location && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-planner-text-muted flex-shrink-0" />
-                  <span className="line-clamp-1">{item.location}</span>
-                </div>
-              )}
-
-              {(item._count?.participants || item.participants?.length || item.counts?.participants) && (
-                <div className="flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-planner-text-muted flex-shrink-0" />
-                  <span>
-                    {item._count?.participants || item.participants?.length || item.counts?.participants || 0} attending
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* RSVP Status */}
-            {item.myRsvpStatus && item.myRsvpStatus !== 'PENDING' && (
-              <div className="mt-2">
-                <span className={`
-                  inline-flex text-xs font-medium px-2 py-1 rounded-full
-                  ${item.myRsvpStatus === 'YES' 
-                    ? 'bg-green-100 text-green-700' 
-                    : item.myRsvpStatus === 'MAYBE'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-red-100 text-red-700'
-                  }
-                `}>
-                  You're {item.myRsvpStatus === 'YES' ? 'going' : item.myRsvpStatus === 'MAYBE' ? 'interested' : 'not going'}
-                </span>
+            {/* Participants */}
+            {participantCount > 0 && (
+              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20">
+                <Users className="w-3.5 h-3.5 text-white/90" />
+                <span className="text-white/90 font-medium">{participantCount} going</span>
               </div>
             )}
           </div>
+
+          {/* RSVP Status Bar */}
+          {item.myRsvpStatus && item.myRsvpStatus !== 'PENDING' && (
+            <div className="pt-2">
+              <div className={`
+                inline-flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-full shadow-lg border-2
+                ${item.myRsvpStatus === 'YES' 
+                  ? 'bg-green-500 text-white border-green-300' 
+                  : item.myRsvpStatus === 'MAYBE'
+                  ? 'bg-amber-500 text-white border-amber-300'
+                  : 'bg-red-500 text-white border-red-300'
+                }
+              `}>
+                <div className={`w-2 h-2 rounded-full ${
+                  item.myRsvpStatus === 'YES' ? 'bg-white' : 'bg-white/70'
+                } animate-pulse`}></div>
+                You're {item.myRsvpStatus === 'YES' ? 'Going' : item.myRsvpStatus === 'MAYBE' ? 'Interested' : 'Not Going'}
+              </div>
+            </div>
+          )}
+
+          {/* Updated timestamp - subtle */}
+          {isRecentlyUpdated && updatedAtText && (
+            <div className="text-white/60 text-xs font-medium flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" />
+              Updated {updatedAtText}
+            </div>
+          )}
         </div>
+
+        {/* Hover Effect Overlay */}
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-300 pointer-events-none" />
       </div>
     </Link>
   )

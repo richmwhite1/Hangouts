@@ -123,7 +123,7 @@ export default function RootLayout({
                 <NotificationProvider>
                   <div className="min-h-screen bg-background text-foreground dark pb-20">
                     <Navigation />
-                    <main className="container mx-auto px-4 py-6 max-w-4xl">
+                    <main className="w-full">
                       {children}
                     </main>
                     <div suppressHydrationWarning>

@@ -70,21 +70,19 @@ export default function CreateHangoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-safe">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Create Hangout</h1>
-            <p className="text-muted-foreground">
-              Plan an amazing hangout with your friends
-            </p>
-          </div>
-
-          <NewHangoutForm
-            onSubmit={handleCreateHangout}
-            isLoading={isCreating}
-          />
+    <div className="min-h-screen bg-background pb-40 sm:pb-32 pt-safe overflow-x-hidden">
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Create Hangout</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Plan an amazing hangout with your friends
+          </p>
         </div>
+
+        <NewHangoutForm
+          onSubmit={handleCreateHangout}
+          isLoading={isCreating}
+        />
       </div>
     </div>
   )

@@ -481,7 +481,7 @@ export function MergedDiscoveryPage() {
       : null
     return (
       <Link href={`/event/${event.id}`} key={`event-${event.id}`}>
-        <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:opacity-95 transition-opacity cursor-pointer group rounded-xl">
+        <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:scale-[1.02] transition-transform duration-300 cursor-pointer group rounded-2xl shadow-xl">
           {/* Event Image - full width */}
           <OptimizedImage
             src={event.coverImage}
@@ -491,7 +491,7 @@ export function MergedDiscoveryPage() {
             sizes="100vw"
           />
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
           {/* Distance Indicator - Top Right */}
           {distance && (
             <div className="absolute top-4 right-4">
@@ -570,7 +570,7 @@ export function MergedDiscoveryPage() {
       : null
     return (
       <Link href={`/hangout/${hangout.id}`} key={`hangout-${hangout.id}`}>
-        <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:opacity-95 transition-opacity cursor-pointer group rounded-xl">
+        <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:scale-[1.02] transition-transform duration-300 cursor-pointer group rounded-2xl shadow-xl">
           {/* Hangout Image - full width */}
           <OptimizedImage
             src={hangout.image || '/placeholder-hangout.jpg'}
@@ -580,7 +580,7 @@ export function MergedDiscoveryPage() {
             sizes="100vw"
           />
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
           {/* Distance Indicator - Top Right */}
           {distance && (
             <div className="absolute top-4 right-4">

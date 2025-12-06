@@ -579,8 +579,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
   )
 
   return (
-    <div className="max-h-screen overflow-y-auto relative">
-      <form onSubmit={handleSubmit} className="px-6 pt-6 pb-12 space-y-8">
+    <div className="w-full relative overflow-x-hidden">
+      <form onSubmit={handleSubmit} className="w-full max-w-full px-4 sm:px-6 pt-4 sm:pt-6 pb-40 sm:pb-12 space-y-6 sm:space-y-8">
         {/* Photo Upload */}
         <div className="flex justify-end">
           <input
@@ -636,11 +636,11 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </div>
 
         {formData.image && (
-          <div className="mb-4">
+          <div className="mb-4 w-full overflow-hidden">
             <img
               src={URL.createObjectURL(formData.image)}
               alt="Hangout Preview"
-              className="w-full h-64 object-cover rounded-lg shadow-md"
+              className="w-full h-48 sm:h-64 object-cover rounded-lg shadow-md"
             />
           </div>
         )}
@@ -656,10 +656,10 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 type="button"
                 variant="outline"
                 onClick={() => setIsEventModalOpen(true)}
-                className="w-full border-dashed border-gray-600 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-900/10 h-12"
+                className="w-full border-dashed border-gray-600 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-900/10 h-12 text-sm sm:text-base"
               >
-                <Ticket className="w-4 h-4 mr-2" />
-                Attach an Event (Ticketmaster, Meetup, etc.)
+                <Ticket className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Attach an Event <span className="hidden sm:inline">(Ticketmaster, Meetup, etc.)</span></span>
               </Button>
             </div>
 
@@ -715,14 +715,14 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
             <div className="mb-4">
               <Label className="text-white mb-2">Privacy Level</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {(['PUBLIC', 'FRIENDS_ONLY', 'PRIVATE'] as const).map((level) => (
                   <Button
                     key={level}
                     type="button"
                     variant={formData.privacyLevel === level ? 'default' : 'outline'}
                     onClick={() => handleInputChange('privacyLevel', level)}
-                    className={formData.privacyLevel === level ? 'text-white text-black' : 'border-gray-600 text-white'}
+                    className={`flex-1 min-w-[100px] sm:flex-initial ${formData.privacyLevel === level ? 'text-white text-black' : 'border-gray-600 text-white'}`}
                   >
                     {level.toLowerCase().replace('_', ' ')}
                   </Button>
@@ -908,9 +908,9 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           </CardHeader>
           <CardContent className="space-y-5">
             {formData.options.map((option, index) => (
-              <div key={option.id} className="p-4 border border-gray-600 rounded-lg space-y-3">
-                <div className="flex justify-between items-center">
-                  <Label className="text-white">Option {index + 1}</Label>
+              <div key={option.id} className="p-4 sm:p-5 border border-gray-600 rounded-lg space-y-3 w-full overflow-hidden">
+                <div className="flex justify-between items-center gap-2">
+                  <Label className="text-white text-sm sm:text-base">Option {index + 1}</Label>
                   {((formData.type === 'multi_option' && formData.options.length > 2) ||
                     (formData.type === 'quick_plan' && formData.options.length > 1)) && (
                       <Button
@@ -918,7 +918,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                         variant="outline"
                         size="sm"
                         onClick={() => removeOption(index)}
-                        className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                        className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white flex-shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -950,10 +950,10 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
                   {/* Advanced Date/Time Controls */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                       <Label className="text-xs text-gray-400">Date & Time</Label>
                       {index === 0 && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                           <div className="flex items-center gap-2">
                             <Label htmlFor="all-day" className="text-xs text-gray-400">All Day</Label>
                             <Switch
@@ -987,7 +987,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                     {index === 0 && formData.isRecurring && (
                       <div className="mt-2 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
                         <Label className="text-xs text-gray-400 mb-2 block">Repeat</Label>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {(['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((freq) => (
                             <Button
                               key={freq}
@@ -995,7 +995,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                               variant={formData.recurrenceFrequency === freq ? 'default' : 'outline'}
                               size="sm"
                               onClick={() => handleInputChange('recurrenceFrequency', freq)}
-                              className={`flex-1 text-xs ${formData.recurrenceFrequency === freq ? 'bg-blue-600 text-white' : 'border-gray-600 text-gray-300'}`}
+                              className={`flex-1 min-w-[80px] text-xs ${formData.recurrenceFrequency === freq ? 'bg-blue-600 text-white' : 'border-gray-600 text-gray-300'}`}
                             >
                               {freq.charAt(0) + freq.slice(1).toLowerCase()}
                             </Button>
@@ -1006,7 +1006,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Input
                     type="number"
                     placeholder="Price (optional)"
@@ -1024,13 +1024,13 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
               </div>
             ))}
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               {formData.type === 'multi_option' && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={addOption}
-                  className="flex-1 border-blue-500 text-white hover:bg-blue-500 hover:text-white"
+                  className="w-full sm:flex-1 border-blue-500 text-white hover:bg-blue-500 hover:text-white h-12"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Option
@@ -1040,7 +1040,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 type="button"
                 variant="outline"
                 onClick={() => setIsEventModalOpen(true)}
-                className="flex-1 border-blue-500 text-white hover:bg-blue-500 hover:text-white"
+                className="w-full sm:flex-1 border-blue-500 text-white hover:bg-blue-500 hover:text-white h-12"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Event
@@ -1076,7 +1076,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 <Label className="text-white text-sm mb-2 block">
                   {searchQuery ? 'Search Results' : 'All Friends'} ({filteredFriends.length})
                 </Label>
-                <div className="flex flex-wrap gap-2 mb-4 max-h-40 overflow-y-auto bg-gray-900 p-3 rounded-lg">
+                <div className="flex flex-wrap gap-2 mb-4 max-h-40 overflow-y-auto bg-gray-900 p-3 rounded-lg w-full">
                   {filteredFriends.map((friend) => {
                     const isSelected = formData.participants.includes(friend.id)
                     const isMandatory = formData.mandatoryParticipants.includes(friend.id)
@@ -1146,9 +1146,9 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
             )}
 
             {formData.participants.length > 0 && (
-              <div>
+              <div className="w-full">
                 <Label className="text-white text-sm mb-2 block">Selected Friends</Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 w-full">
                   {formData.participants.map((participantId) => {
                     const friend = allFriends.find(f => f.id === participantId)
                     const isMandatory = formData.mandatoryParticipants.includes(participantId)
@@ -1187,7 +1187,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </Card>
 
         {/* Sticky Submit Button with Progress */}
-        <div className="sticky bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 -mx-4 -mb-4 z-10">
+        <div className="fixed bottom-16 sm:bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-50 shadow-lg sm:sticky sm:relative sm:shadow-none sm:pb-4 sm:mt-6" style={{ paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' }}>
           {/* Progress Indicator */}
           <div className="mb-2">
             <div className="flex items-center justify-between mb-1">
@@ -1204,7 +1204,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
           <Button
             type="submit"
-            className="w-full h-12 text-white font-bold mt-6"
+            className="w-full h-12 text-white font-bold mt-4"
             style={{ backgroundColor: '#792ADB' }}
             disabled={isLoading || progress.completed < progress.total}
           >

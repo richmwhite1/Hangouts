@@ -39,18 +39,19 @@ export function InviteFriendsBar({
     // We'll show the bar even with 0 friends to make it discoverable
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-700 z-40 safe-area-inset-bottom">
-            <div className="max-w-2xl mx-auto px-4 py-3">
-                <div className="flex items-center gap-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-700 z-40 pb-safe" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     {/* Invite Button */}
                     <Button
                         type="button"
                         onClick={onOpenModal}
-                        className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-auto"
+                        className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 h-10 sm:h-auto text-sm"
                         size="sm"
                     >
-                        <Users className="w-4 h-4 mr-2" />
-                        Invite Friends
+                        <Users className="w-4 h-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Invite Friends</span>
+                        <span className="sm:hidden">Invite</span>
                     </Button>
 
                     {/* Friend Avatars */}
