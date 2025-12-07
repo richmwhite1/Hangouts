@@ -68,6 +68,7 @@ model User {
   securityLogs                  SecurityLog[]
   hangoutTasks                  hangout_tasks[]
   hangoutTaskAssignments        hangout_task_assignments[]
+  hangoutViews                  HangoutView[]
 
   @@index([email])
   @@index([username])
@@ -169,6 +170,22 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+model HangoutView {
+  id           String   @id @default(cuid())
+  userId       String
+  hangoutId    String
+  lastViewedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hangout      content  @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hangoutId])
+  @@index([userId])
+  @@index([hangoutId])
+  @@index([lastViewedAt])
+  @@map("hangout_views")
 }
 
 model PollVote {
@@ -354,6 +371,7 @@ model content {
   rsvps                rsvp[]
   hangoutTasks         hangout_tasks[]
   reminders            Reminder[]
+  hangoutViews         HangoutView[]
 
   @@index([createdAt])
   @@index([creatorId])
@@ -835,6 +853,13 @@ enum NotificationType {
   HANGOUT_CANCELLED
   HANGOUT_REMINDER
   HANGOUT_STARTING_SOON
+  HANGOUT_VOTE_NEEDED
+  HANGOUT_RSVP_NEEDED
+  HANGOUT_MANDATORY_RSVP
+  HANGOUT_NEW_MESSAGE
+  HANGOUT_NEW_PHOTO
+  HANGOUT_NEW_COMMENT
+  HANGOUT_POLL_CLOSING_SOON
   EVENT_REMINDER
   EVENT_STARTING_SOON
   PHOTO_SHARED

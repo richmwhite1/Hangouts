@@ -111,11 +111,26 @@ app.prepare().then(() => {
       });
     });
 
+    // Join user's notification room
+    socket.on('join-notifications', (userId) => {
+      socket.join(`user:${userId}`);
+      console.log(`🔔 User ${userId} joined their notification room`);
+    });
+
+    // Leave user's notification room
+    socket.on('leave-notifications', (userId) => {
+      socket.leave(`user:${userId}`);
+      console.log(`🔕 User ${userId} left their notification room`);
+    });
+
     // Disconnect
     socket.on('disconnect', () => {
       console.log('🔌 Client disconnected:', socket.id);
     });
   });
+
+  // Export io instance so other modules can emit notifications
+  global.io = io;
 
   httpServer
     .once('error', (err) => {

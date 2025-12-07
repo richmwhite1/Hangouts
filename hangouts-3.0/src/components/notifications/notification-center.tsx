@@ -78,9 +78,9 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-end p-4">
-      <Card className="w-full max-w-md max-h-[80vh] overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-end p-4">
+      <Card className="w-full max-w-md max-h-[80vh] overflow-hidden bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
             <Bell className="w-5 h-5" />
             <CardTitle>Notifications</CardTitle>
@@ -129,26 +129,26 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 bg-white dark:bg-gray-900">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mx-4 mb-4">
+            <TabsList className="grid w-full grid-cols-5 mx-4 mb-4 bg-gray-100 dark:bg-gray-800">
               <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
               <TabsTrigger value="unread" className="text-xs">Unread</TabsTrigger>
               <TabsTrigger value="messages" className="text-xs">Messages</TabsTrigger>
               <TabsTrigger value="hangouts" className="text-xs">Hangouts</TabsTrigger>
               <TabsTrigger value="events" className="text-xs">Events</TabsTrigger>
             </TabsList>
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto bg-white dark:bg-gray-900">
               {isLoading ? (
-                <div className="p-4 text-center text-sm text-gray-500">
+                <div className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">
                   Loading notifications...
                 </div>
               ) : filteredNotifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">
+                <div className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">
                   No notifications found
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-1 bg-white dark:bg-gray-900">
                   {filteredNotifications.map((notification) => (
                     <div
                       key={notification.id}
@@ -227,9 +227,9 @@ export function NotificationCenter({ isOpen, onClose, onOpenSettings, onOpenHist
               )}
             </div>
           </Tabs>
-          <div className="px-4 py-2 border-t border-muted">
-            <Link href="/notifications" className="text-xs text-blue-600 hover:underline" onClick={onClose}>
-              View all notifications
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <Link href="/notifications" className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium" onClick={onClose}>
+              View all notifications →
             </Link>
           </div>
         </CardContent>

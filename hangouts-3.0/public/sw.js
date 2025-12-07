@@ -324,25 +324,99 @@ self.addEventListener('push', (event) => {
     const data = event.data.json()
     console.log('Push data:', data)
 
+    const notificationType = data.type || 'GENERAL'
+    let actions = []
+    let requireInteraction = false
+
+    // Customize actions based on notification type
+    switch (notificationType) {
+      case 'HANGOUT_VOTE_NEEDED':
+      case 'HANGOUT_POLL_CLOSING_SOON':
+        actions = [
+          { action: 'vote', title: 'Vote Now', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Later' }
+        ]
+        requireInteraction = true
+        break
+
+      case 'HANGOUT_RSVP_NEEDED':
+        actions = [
+          { action: 'rsvp_yes', title: 'Going', icon: '/icon-192x192.png' },
+          { action: 'rsvp_maybe', title: 'Maybe', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Later' }
+        ]
+        requireInteraction = true
+        break
+
+      case 'HANGOUT_MANDATORY_RSVP':
+        actions = [
+          { action: 'rsvp_yes', title: 'Confirm Going', icon: '/icon-192x192.png' },
+          { action: 'rsvp_no', title: 'Cannot Attend', icon: '/icon-192x192.png' }
+        ]
+        requireInteraction = true
+        break
+
+      case 'HANGOUT_STARTING_SOON':
+      case 'EVENT_STARTING_SOON':
+        actions = [
+          { action: 'view', title: 'View Details', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'OK' }
+        ]
+        requireInteraction = true
+        break
+
+      case 'HANGOUT_NEW_MESSAGE':
+      case 'MESSAGE_RECEIVED':
+        actions = [
+          { action: 'reply', title: 'Reply', icon: '/icon-192x192.png' },
+          { action: 'view', title: 'View', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Dismiss' }
+        ]
+        break
+
+      case 'HANGOUT_NEW_PHOTO':
+      case 'PHOTO_SHARED':
+        actions = [
+          { action: 'view', title: 'View Photo', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Dismiss' }
+        ]
+        break
+
+      case 'HANGOUT_NEW_COMMENT':
+      case 'COMMENT':
+        actions = [
+          { action: 'reply', title: 'Reply', icon: '/icon-192x192.png' },
+          { action: 'view', title: 'View', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Dismiss' }
+        ]
+        break
+
+      case 'FRIEND_REQUEST':
+        actions = [
+          { action: 'accept', title: 'Accept', icon: '/icon-192x192.png' },
+          { action: 'view', title: 'View Profile', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Later' }
+        ]
+        break
+
+      default:
+        actions = [
+          { action: 'open', title: 'Open', icon: '/icon-192x192.png' },
+          { action: 'dismiss', title: 'Dismiss' }
+        ]
+    }
+
     const options = {
       body: data.message || 'You have a new notification',
-      icon: '/icon-192x192.png',
+      icon: data.icon || '/icon-192x192.png',
       badge: '/icon-192x192.png',
-      tag: data.tag || 'hangouts-notification',
+      tag: data.tag || `${notificationType}-${Date.now()}`,
       data: data,
-      actions: [
-        {
-          action: 'open',
-          title: 'Open',
-          icon: '/icon-192x192.png'
-        },
-        {
-          action: 'dismiss',
-          title: 'Dismiss'
-        }
-      ],
-      requireInteraction: data.requireInteraction || false,
-      silent: data.silent || false
+      actions: actions,
+      requireInteraction: data.requireInteraction !== undefined ? data.requireInteraction : requireInteraction,
+      silent: data.silent || false,
+      vibrate: requireInteraction ? [200, 100, 200] : [100],
+      timestamp: data.timestamp || Date.now()
     }
 
     event.waitUntil(
@@ -368,24 +442,63 @@ self.addEventListener('notificationclick', (event) => {
 
   event.notification.close()
 
-  if (event.action === 'dismiss') {
+  const data = event.notification.data || {}
+  const action = event.action
+  let urlToOpen = '/dashboard'
+
+  // Handle specific actions
+  if (action === 'dismiss') {
     return
   }
 
-  const data = event.notification.data || {}
-  let urlToOpen = '/dashboard'
-
-  // Navigate to specific page based on notification data
-  if (data.hangoutId) {
-    urlToOpen = `/hangout/${data.hangoutId}`
-  } else if (data.conversationId) {
-    urlToOpen = `/messages/${data.conversationId}`
-  } else if (data.friendRequestId) {
-    urlToOpen = '/friends'
-  } else if (data.type === 'MESSAGE_RECEIVED') {
-    urlToOpen = '/messages'
-  } else if (data.type === 'HANGOUT_INVITE') {
-    urlToOpen = '/hangouts'
+  // Handle RSVP actions
+  if (action === 'rsvp_yes' || action === 'rsvp_maybe' || action === 'rsvp_no') {
+    if (data.hangoutId) {
+      urlToOpen = `/hangout/${data.hangoutId}?action=rsvp&response=${action.replace('rsvp_', '')}`
+    }
+  }
+  // Handle vote action
+  else if (action === 'vote') {
+    if (data.hangoutId) {
+      urlToOpen = `/hangout/${data.hangoutId}?action=vote`
+    }
+  }
+  // Handle reply action
+  else if (action === 'reply') {
+    if (data.hangoutId) {
+      urlToOpen = `/hangout/${data.hangoutId}?action=reply`
+    } else if (data.conversationId) {
+      urlToOpen = `/messages/${data.conversationId}?action=reply`
+    }
+  }
+  // Handle accept friend request
+  else if (action === 'accept') {
+    if (data.friendRequestId) {
+      urlToOpen = `/friends?action=accept&requestId=${data.friendRequestId}`
+    }
+  }
+  // Handle view action or default click
+  else {
+    // Navigate to specific page based on notification type and data
+    if (data.hangoutId) {
+      urlToOpen = `/hangout/${data.hangoutId}`
+    } else if (data.eventId) {
+      urlToOpen = `/event/${data.eventId}`
+    } else if (data.conversationId) {
+      urlToOpen = `/messages/${data.conversationId}`
+    } else if (data.friendRequestId) {
+      urlToOpen = '/friends'
+    } else if (data.type === 'MESSAGE_RECEIVED' || data.type === 'HANGOUT_NEW_MESSAGE') {
+      urlToOpen = '/messages'
+    } else if (data.type && data.type.startsWith('HANGOUT_')) {
+      urlToOpen = '/hangouts'
+    } else if (data.type && data.type.startsWith('EVENT_')) {
+      urlToOpen = '/events'
+    } else if (data.type === 'FRIEND_REQUEST') {
+      urlToOpen = '/friends'
+    } else if (data.notificationId) {
+      urlToOpen = '/notifications'
+    }
   }
 
   event.waitUntil(
@@ -395,7 +508,13 @@ self.addEventListener('notificationclick', (event) => {
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.focus()
-            client.navigate(urlToOpen)
+            // Send message to client to navigate
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              url: urlToOpen,
+              action: action,
+              data: data
+            })
             return
           }
         }

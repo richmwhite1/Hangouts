@@ -78,12 +78,15 @@ export function Navigation() {
                   >
                     <Bell className="w-5 h-5" />
                     {notificationCount > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center text-xs"
-                      >
-                        {notificationCount > 99 ? '99+' : notificationCount}
-                      </Badge>
+                      <div className="absolute -top-1 -right-1">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
+                        <Badge
+                          variant="destructive"
+                          className="relative h-5 min-w-[20px] px-1 flex items-center justify-center text-xs font-bold shadow-lg"
+                        >
+                          {notificationCount > 99 ? '99+' : notificationCount}
+                        </Badge>
+                      </div>
                     )}
                   </Button>
                 </div>

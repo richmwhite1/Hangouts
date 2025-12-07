@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { createAndSendNotification } from '@/lib/push-notifications'
 import { logger } from '@/lib/logger'
+import { emitNotificationToUser, emitUnreadCountUpdate, emitHangoutActivity } from '@/lib/websocket-notify'
 
 export type NotificationType = 
   | 'FRIEND_REQUEST'
@@ -19,6 +20,19 @@ export type NotificationType =
   | 'POLL_CONSENSUS_REACHED'
   | 'HANGOUT_CONFIRMED'
   | 'HANGOUT_CANCELLED'
+  | 'HANGOUT_REMINDER'
+  | 'HANGOUT_STARTING_SOON'
+  | 'HANGOUT_VOTE_NEEDED'
+  | 'HANGOUT_RSVP_NEEDED'
+  | 'HANGOUT_MANDATORY_RSVP'
+  | 'HANGOUT_NEW_MESSAGE'
+  | 'HANGOUT_NEW_PHOTO'
+  | 'HANGOUT_NEW_COMMENT'
+  | 'HANGOUT_POLL_CLOSING_SOON'
+  | 'EVENT_REMINDER'
+  | 'EVENT_STARTING_SOON'
+  | 'PHOTO_SHARED'
+  | 'RELATIONSHIP_REMINDER'
 
 export interface NotificationTriggerParams {
   type: NotificationType
@@ -59,7 +73,7 @@ async function checkNotificationPreferences(
 
     if (!preference) {
       // Return default preferences if no preference exists
-      const defaults = {
+      const defaults: Record<NotificationType, { inApp: boolean; push: boolean; email: boolean }> = {
         FRIEND_REQUEST: { inApp: true, push: true, email: false },
         FRIEND_ACCEPTED: { inApp: true, push: true, email: false },
         MESSAGE_RECEIVED: { inApp: true, push: true, email: false },
@@ -75,7 +89,20 @@ async function checkNotificationPreferences(
         POLL_VOTE_CAST: { inApp: true, push: false, email: false },
         POLL_CONSENSUS_REACHED: { inApp: true, push: true, email: false },
         HANGOUT_CONFIRMED: { inApp: true, push: true, email: false },
-        HANGOUT_CANCELLED: { inApp: true, push: true, email: false }
+        HANGOUT_CANCELLED: { inApp: true, push: true, email: false },
+        HANGOUT_REMINDER: { inApp: true, push: true, email: false },
+        HANGOUT_STARTING_SOON: { inApp: true, push: true, email: false },
+        HANGOUT_VOTE_NEEDED: { inApp: true, push: true, email: false },
+        HANGOUT_RSVP_NEEDED: { inApp: true, push: true, email: false },
+        HANGOUT_MANDATORY_RSVP: { inApp: true, push: true, email: false },
+        HANGOUT_NEW_MESSAGE: { inApp: true, push: true, email: false },
+        HANGOUT_NEW_PHOTO: { inApp: true, push: false, email: false },
+        HANGOUT_NEW_COMMENT: { inApp: true, push: false, email: false },
+        HANGOUT_POLL_CLOSING_SOON: { inApp: true, push: true, email: false },
+        EVENT_REMINDER: { inApp: true, push: true, email: false },
+        EVENT_STARTING_SOON: { inApp: true, push: true, email: false },
+        PHOTO_SHARED: { inApp: true, push: false, email: false },
+        RELATIONSHIP_REMINDER: { inApp: true, push: false, email: false }
       }
       return defaults[type] || { inApp: true, push: false, email: false }
     }
@@ -132,8 +159,12 @@ async function shouldSendNotification(
       'FRIEND_REQUEST',
       'CONTENT_INVITATION',
       'MESSAGE_RECEIVED',
+      'HANGOUT_NEW_MESSAGE',
       'POLL_CONSENSUS_REACHED',
-      'HANGOUT_CANCELLED'
+      'HANGOUT_CANCELLED',
+      'HANGOUT_MANDATORY_RSVP',
+      'HANGOUT_STARTING_SOON',
+      'EVENT_STARTING_SOON'
     ]
 
     if (isQuietHours && !criticalTypes.includes(type)) {
@@ -251,6 +282,25 @@ export async function triggerNotification(params: NotificationTriggerParams): Pr
     if (preferences.push) {
       pushSent = await sendPushNotification(params.recipientId, params, preferences)
     }
+
+    // Emit WebSocket notification for real-time updates
+    emitNotificationToUser(params.recipientId, {
+      id: notification.id,
+      type: params.type,
+      title: params.title,
+      message: params.message,
+      data: params.data,
+      createdAt: notification.createdAt.toISOString()
+    })
+
+    // Update unread count via WebSocket
+    const unreadCount = await db.notification.count({
+      where: {
+        userId: params.recipientId,
+        isRead: false
+      }
+    })
+    emitUnreadCountUpdate(params.recipientId, { notifications: unreadCount })
 
     // TODO: Send email notification if enabled
     // This would be implemented with an email service like SendGrid, AWS SES, etc.
@@ -452,10 +502,312 @@ export function formatNotificationMessage(
         message: `"${contentTitle || 'A hangout you\'re part of'}" has been cancelled`
       }
     
+    case 'HANGOUT_REMINDER':
+      return {
+        title: 'Hangout Reminder',
+        message: `"${contentTitle || 'Your hangout'}" starts in 24 hours`
+      }
+    
+    case 'HANGOUT_STARTING_SOON':
+      return {
+        title: 'Hangout Starting Soon',
+        message: `"${contentTitle || 'Your hangout'}" starts in 1 hour!`
+      }
+    
+    case 'HANGOUT_VOTE_NEEDED':
+      return {
+        title: 'Vote Needed',
+        message: `Please vote on "${contentTitle || 'the hangout'}"`
+      }
+    
+    case 'HANGOUT_RSVP_NEEDED':
+      return {
+        title: 'RSVP Requested',
+        message: `Please RSVP to "${contentTitle || 'the hangout'}"`
+      }
+    
+    case 'HANGOUT_MANDATORY_RSVP':
+      return {
+        title: 'RSVP Required',
+        message: `Your RSVP is required for "${contentTitle || 'the hangout'}"`
+      }
+    
+    case 'HANGOUT_NEW_MESSAGE':
+      return {
+        title: 'New Message',
+        message: `${senderName} sent a message in "${contentTitle || 'the hangout'}"`
+      }
+    
+    case 'HANGOUT_NEW_PHOTO':
+      return {
+        title: 'New Photo',
+        message: `${senderName} shared a photo in "${contentTitle || 'the hangout'}"`
+      }
+    
+    case 'HANGOUT_NEW_COMMENT':
+      return {
+        title: 'New Comment',
+        message: `${senderName} commented on "${contentTitle || 'the hangout'}"`
+      }
+    
+    case 'HANGOUT_POLL_CLOSING_SOON':
+      return {
+        title: 'Poll Closing Soon',
+        message: `The poll for "${contentTitle || 'the hangout'}" closes in 24 hours`
+      }
+    
+    case 'EVENT_REMINDER':
+      return {
+        title: 'Event Reminder',
+        message: `"${contentTitle || 'Your saved event'}" starts in 24 hours`
+      }
+    
+    case 'EVENT_STARTING_SOON':
+      return {
+        title: 'Event Starting Soon',
+        message: `"${contentTitle || 'Your saved event'}" starts in 1 hour!`
+      }
+    
+    case 'PHOTO_SHARED':
+      return {
+        title: 'Photo Shared',
+        message: `${senderName} shared a photo with you`
+      }
+    
+    case 'RELATIONSHIP_REMINDER':
+      return {
+        title: 'Stay Connected',
+        message: `It's been a while since you've hung out with ${senderName}`
+      }
+    
     default:
       return {
         title: 'Notification',
         message: 'You have a new notification'
       }
+  }
+}
+
+/**
+ * Trigger notification when a photo is uploaded to a hangout
+ */
+export async function notifyPhotoUploaded(
+  hangoutId: string,
+  uploaderId: string,
+  uploaderName: string,
+  hangoutTitle: string
+): Promise<void> {
+  try {
+    // Get all participants except the uploader
+    const participants = await db.content_participants.findMany({
+      where: {
+        contentId: hangoutId,
+        userId: { not: uploaderId }
+      },
+      select: { userId: true }
+    })
+
+    const recipientIds = participants.map(p => p.userId)
+
+    if (recipientIds.length === 0) {
+      return
+    }
+
+    // Emit hangout activity via WebSocket
+    emitHangoutActivity(hangoutId, {
+      type: 'photo',
+      userId: uploaderId,
+      userName: uploaderName
+    })
+
+    // Trigger batch notifications
+    await triggerBatchNotifications({
+      type: 'HANGOUT_NEW_PHOTO',
+      recipientIds,
+      title: 'New Photo',
+      message: `${uploaderName} shared a photo in "${hangoutTitle}"`,
+      senderId: uploaderId,
+      relatedId: hangoutId,
+      data: {
+        hangoutId,
+        hangoutTitle
+      }
+    })
+  } catch (error) {
+    logger.error('Error notifying photo upload:', error)
+  }
+}
+
+/**
+ * Trigger notification when a comment is added to a hangout
+ */
+export async function notifyCommentAdded(
+  hangoutId: string,
+  commenterId: string,
+  commenterName: string,
+  hangoutTitle: string
+): Promise<void> {
+  try {
+    // Get all participants except the commenter
+    const participants = await db.content_participants.findMany({
+      where: {
+        contentId: hangoutId,
+        userId: { not: commenterId }
+      },
+      select: { userId: true }
+    })
+
+    const recipientIds = participants.map(p => p.userId)
+
+    if (recipientIds.length === 0) {
+      return
+    }
+
+    // Trigger batch notifications
+    await triggerBatchNotifications({
+      type: 'HANGOUT_NEW_COMMENT',
+      recipientIds,
+      title: 'New Comment',
+      message: `${commenterName} commented on "${hangoutTitle}"`,
+      senderId: commenterId,
+      relatedId: hangoutId,
+      data: {
+        hangoutId,
+        hangoutTitle
+      }
+    })
+  } catch (error) {
+    logger.error('Error notifying comment added:', error)
+  }
+}
+
+/**
+ * Trigger notification when a message is sent in a hangout
+ */
+export async function notifyMessageSent(
+  hangoutId: string,
+  senderId: string,
+  senderName: string,
+  hangoutTitle: string
+): Promise<void> {
+  try {
+    // Get all participants except the sender
+    const participants = await db.content_participants.findMany({
+      where: {
+        contentId: hangoutId,
+        userId: { not: senderId }
+      },
+      select: { userId: true }
+    })
+
+    const recipientIds = participants.map(p => p.userId)
+
+    if (recipientIds.length === 0) {
+      return
+    }
+
+    // Trigger batch notifications
+    await triggerBatchNotifications({
+      type: 'HANGOUT_NEW_MESSAGE',
+      recipientIds,
+      title: 'New Message',
+      message: `${senderName} sent a message in "${hangoutTitle}"`,
+      senderId,
+      relatedId: hangoutId,
+      data: {
+        hangoutId,
+        hangoutTitle
+      }
+    })
+  } catch (error) {
+    logger.error('Error notifying message sent:', error)
+  }
+}
+
+/**
+ * Trigger notification when voting is needed
+ */
+export async function notifyVoteNeeded(
+  hangoutId: string,
+  hangoutTitle: string,
+  creatorId: string
+): Promise<void> {
+  try {
+    // Get all participants except the creator
+    const participants = await db.content_participants.findMany({
+      where: {
+        contentId: hangoutId,
+        userId: { not: creatorId }
+      },
+      select: { userId: true }
+    })
+
+    const recipientIds = participants.map(p => p.userId)
+
+    if (recipientIds.length === 0) {
+      return
+    }
+
+    // Trigger batch notifications
+    await triggerBatchNotifications({
+      type: 'HANGOUT_VOTE_NEEDED',
+      recipientIds,
+      title: 'Vote Needed',
+      message: `Please vote on "${hangoutTitle}"`,
+      senderId: creatorId,
+      relatedId: hangoutId,
+      data: {
+        hangoutId,
+        hangoutTitle
+      }
+    })
+  } catch (error) {
+    logger.error('Error notifying vote needed:', error)
+  }
+}
+
+/**
+ * Trigger notification when RSVP is requested
+ */
+export async function notifyRSVPNeeded(
+  hangoutId: string,
+  hangoutTitle: string,
+  creatorId: string,
+  isMandatory: boolean = false
+): Promise<void> {
+  try {
+    // Get all participants except the creator
+    const participants = await db.content_participants.findMany({
+      where: {
+        contentId: hangoutId,
+        userId: { not: creatorId }
+      },
+      select: { userId: true }
+    })
+
+    const recipientIds = participants.map(p => p.userId)
+
+    if (recipientIds.length === 0) {
+      return
+    }
+
+    // Trigger batch notifications
+    await triggerBatchNotifications({
+      type: isMandatory ? 'HANGOUT_MANDATORY_RSVP' : 'HANGOUT_RSVP_NEEDED',
+      recipientIds,
+      title: isMandatory ? 'RSVP Required' : 'RSVP Requested',
+      message: isMandatory 
+        ? `Your RSVP is required for "${hangoutTitle}"`
+        : `Please RSVP to "${hangoutTitle}"`,
+      senderId: creatorId,
+      relatedId: hangoutId,
+      data: {
+        hangoutId,
+        hangoutTitle,
+        isMandatory
+      }
+    })
+  } catch (error) {
+    logger.error('Error notifying RSVP needed:', error)
   }
 }

@@ -1,7 +1,0 @@
-export { BaseService, ServiceContext, ServiceResult, PaginationOptions, SortOptions, FilterOptions } from './base-service'
-export { UserService } from './user-service'
-export { HangoutService } from './hangout-service'
-export { FriendService } from './friend-service'
-export { GroupService } from './group-service'
-export { CommentService } from './comment-service'
-export { PollService } from './poll-service'

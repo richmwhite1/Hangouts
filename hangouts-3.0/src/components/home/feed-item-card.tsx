@@ -5,6 +5,7 @@ import { Clock, MapPin, Users, Calendar as CalendarIcon, MessageCircle, Sparkles
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { OptimizedImage } from '@/components/ui/optimized-image'
+import { ActivityIndicator } from '@/components/notifications/notification-badge'
 
 interface FeedItemCardProps {
   item: any
@@ -93,9 +94,9 @@ export function FeedItemCard({ item, showUpdatedBadge = false }: FeedItemCardPro
           </>
         )}
 
-        {/* Recently Updated Pulse Badge - Top Left */}
-        {isRecentlyUpdated && updatedAtText && (
-          <div className="absolute top-4 left-4 z-10">
+        {/* Recently Updated Pulse Badge and Activity Indicators - Top Left */}
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          {isRecentlyUpdated && updatedAtText && (
             <div className="relative">
               {/* Pulsing animation */}
               <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping"></span>
@@ -104,8 +105,16 @@ export function FeedItemCard({ item, showUpdatedBadge = false }: FeedItemCardPro
                 New Activity
               </Badge>
             </div>
-          </div>
-        )}
+          )}
+          <ActivityIndicator 
+            hangoutId={item.id}
+            newMessagesCount={item.newMessagesCount}
+            newPhotosCount={item.newPhotosCount}
+            newCommentsCount={item.newCommentsCount}
+            needsVote={item.needsVote}
+            needsRSVP={item.needsRSVP}
+          />
+        </div>
 
         {/* Type Badge - Top Right */}
         <div className="absolute top-4 right-4 z-10">

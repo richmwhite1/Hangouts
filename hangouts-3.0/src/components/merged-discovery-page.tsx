@@ -92,7 +92,8 @@ export function MergedDiscoveryPage() {
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState('coming-up')
+  const [sortBy, setSortBy] = useState(() => 'coming-up')
+  const [isMounted, setIsMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
   const [hangouts, setHangouts] = useState<Hangout[]>([])
@@ -135,6 +136,11 @@ export function MergedDiscoveryPage() {
         { timeout: 10000, enableHighAccuracy: false }
       )
     }
+  }, [])
+
+  // Set mounted state to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
   }, [])
 
   // Fetch events
@@ -861,17 +867,23 @@ export function MergedDiscoveryPage() {
           </TabsList>
           {/* Minimal Sort and Filter Controls - Single Line */}
           <div className="flex items-center gap-1.5 mt-2 text-xs overflow-x-auto">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="h-7 w-20 bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-1.5">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="closest" className="text-white hover:bg-gray-700 text-xs">Distance</SelectItem>
-                <SelectItem value="coming-up" className="text-white hover:bg-gray-700 text-xs">Date</SelectItem>
-                <SelectItem value="newest" className="text-white hover:bg-gray-700 text-xs">Newest</SelectItem>
-                <SelectItem value="popular" className="text-white hover:bg-gray-700 text-xs">Popular</SelectItem>
-              </SelectContent>
-            </Select>
+            {isMounted ? (
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-7 w-20 bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-1.5">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="closest" className="text-white hover:bg-gray-700 text-xs">Distance</SelectItem>
+                  <SelectItem value="coming-up" className="text-white hover:bg-gray-700 text-xs">Date</SelectItem>
+                  <SelectItem value="newest" className="text-white hover:bg-gray-700 text-xs">Newest</SelectItem>
+                  <SelectItem value="popular" className="text-white hover:bg-gray-700 text-xs">Popular</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="h-7 w-20 bg-gray-800 border border-gray-700 rounded-md flex items-center justify-center">
+                <span className="text-gray-300 text-xs">Sort</span>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"

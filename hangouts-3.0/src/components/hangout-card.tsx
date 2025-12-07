@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, Users, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { ActivityIndicator } from "@/components/notifications/notification-badge"
 
 interface Participant {
   name: string
@@ -34,6 +35,10 @@ interface Hangout {
   category: string
   hasNewActivity?: boolean
   newCommentsCount?: number
+  newMessagesCount?: number
+  newPhotosCount?: number
+  needsVote?: boolean
+  needsRSVP?: boolean
 }
 
 interface HangoutCardProps {
@@ -131,10 +136,18 @@ export function HangoutCard({ hangout }: HangoutCardProps) {
           )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
             <Badge variant="secondary" className="bg-black/50 text-white border-0">
               {hangout.category}
             </Badge>
+            <ActivityIndicator 
+              hangoutId={hangout.id}
+              newMessagesCount={hangout.newMessagesCount}
+              newPhotosCount={hangout.newPhotosCount}
+              newCommentsCount={hangout.newCommentsCount}
+              needsVote={hangout.needsVote}
+              needsRSVP={hangout.needsRSVP}
+            />
           </div>
           <div className="absolute top-3 right-3">
             <Avatar className="w-8 h-8 border-2 border-white">
