@@ -39,7 +39,7 @@ export function InviteFriendsBar({
     // We'll show the bar even with 0 friends to make it discoverable
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-700 z-40 pb-safe" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        <div className="w-full bg-black/95 backdrop-blur-md border-t border-gray-700 pb-safe sm:mb-4" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3">
                 <div className="flex items-center gap-2 sm:gap-3">
                     {/* Invite Button */}
