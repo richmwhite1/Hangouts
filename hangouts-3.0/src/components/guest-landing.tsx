@@ -18,6 +18,9 @@ import { format } from 'date-fns'
 import { PWAInstallBanner } from '@/components/pwa-install-banner'
 import { SocialProofCounter } from '@/components/social-proof-counter'
 import { BeforeAfterComparison } from '@/components/before-after-comparison'
+import { AppDemoVisual } from '@/components/marketing/app-demo-visual'
+import { TrustSection } from '@/components/marketing/trust-section'
+import { LiveActivityFeed } from '@/components/marketing/live-activity-feed'
 
 interface GuestLandingProps {
   onSignIn: () => void
@@ -149,37 +152,50 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
-      <div className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="relative overflow-hidden">
+        {/* Background gradient accent */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FF1493]/10 via-transparent to-purple-600/10 pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
-              Stop Planning in Group Chats
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white leading-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+              Group Plans That<br />Actually Happen
             </h1>
-            <p className="text-xl md:text-2xl text-gray-400 mb-6 max-w-3xl mx-auto">
-              Plans makes decisions for you. Just say what you want to do.
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Create hangouts, friends vote, everyone knows the plan.<br className="hidden md:block" />
+              <span className="text-[#FF1493] font-semibold">In 30 seconds.</span>
             </p>
 
             {/* Social Proof Counter */}
             <SocialProofCounter className="mb-8" />
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-4 text-lg font-semibold shadow-lg shadow-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/60"
+                className="bg-[#FF1493] hover:bg-[#E01180] text-white px-12 py-6 text-xl font-bold shadow-2xl shadow-[#FF1493]/50 transition-all hover:scale-105 hover:shadow-[#FF1493]/70 rounded-xl"
                 onClick={onSignUp}
               >
-                Create Your First Plan
-                <ArrowRight className="ml-2 h-5 w-5" />
+                Create Your First Hangout
+                <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
             </div>
+            
+            <p className="text-sm text-gray-400 mb-2">
+              Free forever · No credit card · 2 minute setup
+            </p>
+            
             <p className="text-sm text-gray-500 mb-8">
               Already have an account?{' '}
-              <button onClick={onSignIn} className="text-blue-400 hover:text-blue-300 underline">
+              <button onClick={onSignIn} className="text-[#FF1493] hover:text-[#E01180] underline font-medium">
                 Sign in
               </button>
             </p>
 
+            {/* App Demo Visual */}
+            <AppDemoVisual />
+            
             {/* PWA Install Prompt */}
             <PWAInstallBanner variant="hero" showForAllUsers={true} />
           </div>
@@ -189,38 +205,69 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       {/* Visual Comparison Section */}
       <BeforeAfterComparison />
 
-      {/* Features Section */}
-      <div className="py-20 bg-gray-800">
+      {/* How It Works Section - Visual Steps */}
+      <div className="py-24 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              Why Plans Works Better
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white" style={{ fontFamily: 'var(--font-oswald)' }}>
+              How It Works
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              No more endless back-and-forth. Just decisions that stick.
+              Three simple steps. Zero chaos.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon
+          <div className="grid md:grid-cols-3 gap-12 max-w-6xl mx-auto">
+            {[
+              {
+                step: '1',
+                title: 'Create in 30 seconds',
+                description: 'Suggest times, places, or let friends decide',
+                icon: Calendar,
+                color: '#FF1493'
+              },
+              {
+                step: '2',
+                title: 'Friends vote instantly',
+                description: 'Everyone votes, no back-and-forth needed',
+                icon: Users,
+                color: '#8B5CF6'
+              },
+              {
+                step: '3',
+                title: 'Plans finalized automatically',
+                description: 'Majority decides, calendars update, done',
+                icon: CheckCircle,
+                color: '#10B981'
+              }
+            ].map((step, index) => {
+              const Icon = step.icon
               return (
-                <Card
+                <div
                   key={index}
-                  className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-all duration-300 cursor-pointer"
-                  onClick={() => setCurrentFeature(index)}
+                  className="group relative text-center hover:scale-105 transition-transform duration-300"
                 >
-                  <CardHeader className="text-center">
-                    <div className={`mx-auto w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 border border-gray-700 ${currentFeature === index ? 'bg-gray-700 border-gray-600' : ''
-                      }`}>
-                      <Icon className="h-8 w-8 text-gray-300" />
+                  {/* Step Number */}
+                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-[#FF1493] to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg z-10">
+                    {step.step}
+                  </div>
+                  
+                  {/* Card */}
+                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-800 rounded-2xl p-8 h-full hover:border-[#FF1493]/30 transition-all duration-300">
+                    <div className="mx-auto w-20 h-20 rounded-2xl bg-black/50 flex items-center justify-center mb-6 border border-gray-700 group-hover:border-[#FF1493]/50 transition-all" style={{ backgroundColor: `${step.color}15` }}>
+                      <Icon className="h-10 w-10" style={{ color: step.color }} />
                     </div>
-                    <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-400 text-center">{feature.description}</p>
-                  </CardContent>
-                </Card>
+                    <h3 className="text-2xl font-bold text-white mb-3">{step.title}</h3>
+                    <p className="text-gray-400 text-lg leading-relaxed">{step.description}</p>
+                  </div>
+                  
+                  {/* Connecting arrow */}
+                  {index < 2 && (
+                    <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-0">
+                      <ArrowRight className="w-12 h-12 text-[#FF1493]/30" />
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -228,14 +275,14 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       </div>
 
       {/* Live Content Preview Section */}
-      <div className="py-20 bg-gray-900">
+      <div className="py-24 bg-gradient-to-b from-black via-gray-950 to-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              See What's Happening
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white" style={{ fontFamily: 'var(--font-oswald)' }}>
+              Happening Right Now
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Check out these recent hangouts and events happening right now
+              Real hangouts and events from people like you
             </p>
           </div>
 
@@ -249,17 +296,18 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Show hangouts */}
               {publicContent.hangouts.slice(0, 3).map((hangout) => (
-                <Card key={hangout.id} className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-all duration-300 overflow-hidden">
+                <Card key={hangout.id} className="bg-gradient-to-br from-gray-900 to-black border-gray-800 hover:border-[#FF1493]/30 transition-all duration-300 overflow-hidden group hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#FF1493]/20">
                   {/* Primary Photo */}
                   {hangout.image && (
-                    <div className="relative h-48 w-full">
+                    <div className="relative h-48 w-full overflow-hidden">
                       <img
                         src={hangout.image}
                         alt={hangout.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="outline" className="bg-gray-900/80 text-gray-300 border-gray-600">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute top-3 right-3">
+                        <Badge className="bg-[#FF1493]/90 text-white border-0 backdrop-blur-sm">
                           Hangout
                         </Badge>
                       </div>
@@ -308,7 +356,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        className="flex-1 bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
+                        className="flex-1 bg-[#FF1493] hover:bg-[#E01180] text-white font-semibold"
                         onClick={onSignIn}
                       >
                         <Heart className="w-4 h-4 mr-2" />
@@ -317,7 +365,7 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800"
                         onClick={() => window.open(`/hangouts/public/${hangout.id}`, '_blank')}
                       >
                         <Share2 className="w-4 h-4" />
@@ -329,17 +377,18 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
 
               {/* Show events */}
               {publicContent.events.slice(0, 3).map((event) => (
-                <Card key={event.id} className="bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-all duration-300 overflow-hidden">
+                <Card key={event.id} className="bg-gradient-to-br from-gray-900 to-black border-gray-800 hover:border-purple-500/30 transition-all duration-300 overflow-hidden group hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/20">
                   {/* Primary Photo */}
                   {event.image && (
-                    <div className="relative h-48 w-full">
+                    <div className="relative h-48 w-full overflow-hidden">
                       <img
                         src={event.image}
                         alt={event.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="bg-green-600/20 text-green-300 border-green-400/30">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute top-3 right-3">
+                        <Badge className="bg-purple-600/90 text-white border-0 backdrop-blur-sm">
                           Event
                         </Badge>
                       </div>
@@ -391,16 +440,16 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold"
                         onClick={onSignIn}
                       >
                         <Heart className="w-4 h-4 mr-2" />
-                        RSVP
+                        Save Event
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800"
                         onClick={() => window.open(`/events/public/${event.id}`, '_blank')}
                       >
                         <Share2 className="w-4 h-4" />
@@ -425,11 +474,11 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
 
           <div className="text-center mt-12">
             <Button
-              variant="outline"
-              className="border-gray-600 text-white hover:bg-gray-700"
+              size="lg"
+              className="border-2 border-[#FF1493]/30 text-white hover:bg-[#FF1493]/10 bg-black/50 backdrop-blur-sm px-8"
               onClick={() => window.location.href = '/public-discover'}
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
+              <TrendingUp className="w-5 h-5 mr-2" />
               Discover More Events & Hangouts
             </Button>
           </div>
@@ -437,43 +486,105 @@ export function GuestLanding({ onSignIn, onSignUp }: GuestLandingProps) {
       </div>
 
       {/* Benefits Section */}
-      <div className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="py-24 bg-black">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why choose Plans?
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: 'var(--font-oswald)' }}>
+              Everything You Need
             </h2>
-            <p className="text-xl text-gray-300">
-              Join thousands of users who make better plans together
+            <p className="text-xl text-gray-400">
+              Make plans that actually happen
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <CheckCircle className="h-6 w-6 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-300 text-lg">{benefit}</span>
+                <div key={index} className="flex items-start space-x-4 group">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#FF1493]/20 to-purple-600/20 border border-[#FF1493]/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <CheckCircle className="h-5 w-5 text-[#FF1493]" />
+                  </div>
+                  <span className="text-gray-300 text-lg leading-relaxed pt-1.5">{benefit}</span>
                 </div>
               ))}
             </div>
-            <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/20 rounded-2xl p-8">
-              <h3 className="text-2xl font-bold mb-4">Ready to get started?</h3>
-              <p className="text-gray-300 mb-6">
-                Sign up now and start planning your first hangout. It's completely free and takes less than a minute.
+            
+            <div className="bg-gradient-to-br from-[#FF1493]/10 via-purple-600/10 to-transparent border border-[#FF1493]/20 rounded-3xl p-10 backdrop-blur-sm">
+              <h3 className="text-3xl font-bold mb-4">Ready to get started?</h3>
+              <p className="text-gray-300 mb-8 text-lg leading-relaxed">
+                Join thousands making plans that actually stick. Create your first hangout in under 2 minutes.
               </p>
               <Button
                 size="lg"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-[#FF1493] hover:bg-[#E01180] text-white font-bold py-6 text-xl rounded-xl shadow-2xl shadow-[#FF1493]/50 hover:scale-105 transition-all"
                 onClick={onSignUp}
               >
-                Create Your Account
-                <ArrowRight className="ml-2 h-5 w-5" />
+                Create Your First Hangout
+                <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Free forever · No credit card required
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Live Activity Section */}
+      <div className="py-24 bg-gradient-to-b from-black via-gray-950 to-black">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left side - Activity Feed */}
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white" style={{ fontFamily: 'var(--font-oswald)' }}>
+                Happening Right Now
+              </h2>
+              <p className="text-xl text-gray-400 mb-8 leading-relaxed">
+                Join thousands making plans that actually happen
+              </p>
+              <LiveActivityFeed />
+            </div>
+
+            {/* Right side - Stats */}
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-[#FF1493]/10 to-purple-600/10 border border-[#FF1493]/20 rounded-2xl p-8">
+                <div className="text-center mb-6">
+                  <div className="text-6xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-oswald)' }}>
+                    2,847
+                  </div>
+                  <p className="text-xl text-gray-400">Plans created this week</p>
+                </div>
+                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-800">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-[#FF1493] mb-1">4 min</div>
+                    <p className="text-sm text-gray-400">Average decision time</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-400 mb-1">94%</div>
+                    <p className="text-sm text-gray-400">Show-up rate</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center p-6 bg-black/50 border border-gray-800 rounded-xl">
+                <p className="text-gray-400 mb-4 text-lg">
+                  "Finally, a way to plan things without the endless back-and-forth!"
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF1493] to-purple-600" />
+                  <div className="text-left">
+                    <p className="text-white font-semibold">Sarah M.</p>
+                    <p className="text-sm text-gray-500">Brooklyn, NY</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust & Security Section */}
+      <TrustSection />
 
     </div>
   )
