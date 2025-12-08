@@ -39,11 +39,14 @@ const nextConfig: NextConfig = {
     }
   },
   
-  // Security headers
+  // Security headers - only apply nosniff in production to avoid dev server MIME type issues
   async headers() {
+    const isProduction = process.env.NODE_ENV === 'production'
+    
     const securityHeaders = [
       { key: 'X-Frame-Options', value: 'DENY' },
-      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      // Only apply nosniff in production to avoid dev server MIME type issues
+      ...(isProduction ? [{ key: 'X-Content-Type-Options', value: 'nosniff' }] : []),
       { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
     ]

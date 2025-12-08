@@ -27,17 +27,25 @@ export async function PUT(
     const body = await request.json()
     const { frequency } = body
 
+    logger.info('Updating hangout frequency', { 
+      userId: user.id, 
+      friendId, 
+      frequency,
+      body 
+    })
+
     // Validate frequency value
     const validFrequencies = ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUALLY', 'SOMETIMES', null]
     if (frequency !== null && !validFrequencies.includes(frequency)) {
+      logger.warn('Invalid frequency value', { frequency, validFrequencies })
       return NextResponse.json(
         { error: 'Invalid frequency value' },
         { status: 400 }
       )
     }
 
-    // Find the friendship where current user is the userId (not friendId)
-    const friendship = await db.friendship.findFirst({
+    // Find the friendship where current user is userId (preferred)
+    let friendship = await db.friendship.findFirst({
       where: {
         userId: user.id,
         friendId: friendId,
@@ -45,7 +53,19 @@ export async function PUT(
       }
     })
 
+    // If not found, try the reverse direction (bidirectional friendships)
     if (!friendship) {
+      friendship = await db.friendship.findFirst({
+        where: {
+          userId: friendId,
+          friendId: user.id,
+          status: 'ACTIVE'
+        }
+      })
+    }
+
+    if (!friendship) {
+      logger.warn('Friendship not found', { userId: user.id, friendId })
       return NextResponse.json(
         { error: 'Friendship not found' },
         { status: 404 }
@@ -53,6 +73,8 @@ export async function PUT(
     }
 
     // Update the frequency
+    // Note: We update whichever friendship record we found
+    // In a bidirectional system, both records should ideally be kept in sync
     const updatedFriendship = await db.friendship.update({
       where: { id: friendship.id },
       data: {
@@ -66,9 +88,42 @@ export async function PUT(
             username: true,
             avatar: true
           }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true
+          }
         }
       }
     })
+
+    // If we updated the reverse friendship, also update the forward one if it exists
+    if (friendship.userId === friendId && friendship.friendId === user.id) {
+      const forwardFriendship = await db.friendship.findFirst({
+        where: {
+          userId: user.id,
+          friendId: friendId,
+          status: 'ACTIVE'
+        }
+      })
+      
+      if (forwardFriendship) {
+        await db.friendship.update({
+          where: { id: forwardFriendship.id },
+          data: {
+            desiredHangoutFrequency: frequency
+          }
+        })
+        logger.info('Updated both bidirectional friendship records', { 
+          userId: user.id, 
+          friendId,
+          frequency 
+        })
+      }
+    }
 
     logger.info('Updated hangout frequency', {
       friendshipId: friendship.id,
@@ -82,12 +137,29 @@ export async function PUT(
       friendship: updatedFriendship
     })
   } catch (error) {
-    logger.error('Error updating hangout frequency:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    // Safely get params for logging
+    let friendIdForLog = 'unknown'
+    try {
+      const paramsResolved = await params
+      friendIdForLog = paramsResolved.id
+    } catch {
+      // Ignore
+    }
+    
+    logger.error('Error updating hangout frequency:', {
+      error: errorMessage,
+      stack: errorStack,
+      friendId: friendIdForLog
+    })
+    
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to update hangout frequency',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: errorMessage
       },
       { status: 500 }
     )
