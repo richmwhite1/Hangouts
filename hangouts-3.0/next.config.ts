@@ -46,6 +46,7 @@ const nextConfig: NextConfig = {
     const securityHeaders = [
       { key: 'X-Frame-Options', value: 'DENY' },
       // Only apply nosniff in production to avoid dev server MIME type issues
+      // In development, Next.js handles MIME types correctly, and nosniff can interfere
       ...(isProduction ? [{ key: 'X-Content-Type-Options', value: 'nosniff' }] : []),
       { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },

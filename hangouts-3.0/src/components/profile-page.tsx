@@ -538,11 +538,24 @@ export function ProfilePage() {
                   
                   setIsSigningOut(true)
                   try {
+                    // performSignOut handles all errors internally and redirects
+                    // We don't need to catch here, but we do it to prevent crashes
                     await performSignOut(signOut, '/')
-                  } catch (error) {
-                    console.error('Sign out error:', error)
-                    setIsSigningOut(false)
+                    // If we're still here after 2 seconds, force redirect
+                    setTimeout(() => {
+                      if (typeof window !== 'undefined') {
+                        window.location.href = '/'
+                      }
+                    }, 2000)
+                  } catch (error: any) {
+                    // This should rarely happen as performSignOut handles errors
+                    console.warn('Sign out error (fallback):', error?.message || error)
+                    // Force redirect on any error
+                    if (typeof window !== 'undefined') {
+                      window.location.href = '/'
+                    }
                   }
+                  // Don't reset isSigningOut - let the redirect happen
                 }}
                 disabled={isSigningOut}
                 variant="outline"
