@@ -44,3 +44,11 @@
 {"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:35:34.484Z"}
 {"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:35:34.502Z"}
 {"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:35:34.553Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:43.725Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:44.500Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:44.512Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:44.525Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:44.517Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:46.460Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:46.436Z"}
+{"level":"error","message":"[APP] VAPID keys not configured. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.","timestamp":"2025-12-08T02:50:46.479Z"}
