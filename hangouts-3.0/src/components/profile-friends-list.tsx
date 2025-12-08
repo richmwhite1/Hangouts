@@ -191,12 +191,16 @@ export function ProfileFriendsList({
             <div className="flex flex-col items-end gap-3" onClick={(e) => e.stopPropagation()}>
               <div className="flex flex-col items-end gap-2">
                 <label className="text-xs font-medium text-muted-foreground">Hangout Goal</label>
-                <FriendFrequencySelector
-                  friendshipId={friendship.id}
-                  friendId={friendship.friend.id}
-                  currentFrequency={friendship.desiredHangoutFrequency || null}
-                  onUpdate={(frequency) => onFrequencyChange(friendship.id, frequency)}
-                />
+                {friendship.friend?.id ? (
+                  <FriendFrequencySelector
+                    friendshipId={friendship.id}
+                    friendId={friendship.friend.id}
+                    currentFrequency={friendship.desiredHangoutFrequency || null}
+                    onUpdate={(frequency) => onFrequencyChange(friendship.id, frequency)}
+                  />
+                ) : (
+                  <div className="text-xs text-muted-foreground">Loading...</div>
+                )}
                 <HangoutGoalIndicator
                   lastHangoutDate={friendship.stats?.lastHangoutDate}
                   desiredFrequency={friendship.desiredHangoutFrequency}

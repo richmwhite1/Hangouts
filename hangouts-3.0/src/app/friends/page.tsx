@@ -623,19 +623,23 @@ export default function FriendsPage() {
                       <div className="flex flex-col items-end gap-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col items-end gap-2">
                           <label className="text-xs font-medium text-muted-foreground">Hangout Goal</label>
-                          <FriendFrequencySelector
-                            friendshipId={friendship.id}
-                            friendId={friendship.friend.id}
-                            currentFrequency={friendship.desiredHangoutFrequency || null}
-                            onUpdate={(frequency) => {
-                              // Update local state
-                              setFriends(prev => prev.map(f => 
-                                f.id === friendship.id 
-                                  ? { ...f, desiredHangoutFrequency: frequency }
-                                  : f
-                              ))
-                            }}
-                          />
+                          {friendship.friend?.id ? (
+                            <FriendFrequencySelector
+                              friendshipId={friendship.id}
+                              friendId={friendship.friend.id}
+                              currentFrequency={friendship.desiredHangoutFrequency || null}
+                              onUpdate={(frequency) => {
+                                // Update local state
+                                setFriends(prev => prev.map(f => 
+                                  f.id === friendship.id 
+                                    ? { ...f, desiredHangoutFrequency: frequency }
+                                    : f
+                                ))
+                              }}
+                            />
+                          ) : (
+                            <div className="text-xs text-muted-foreground">Loading...</div>
+                          )}
                           <HangoutGoalIndicator
                             lastHangoutDate={friendship.stats?.lastHangoutDate}
                             desiredFrequency={friendship.desiredHangoutFrequency}

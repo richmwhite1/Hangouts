@@ -1991,7 +1991,6 @@ function ParticipantStatusSection({
             itemDescription={hangout.description || ''}
             itemImage={hangout.image || ''}
             privacyLevel={hangout.privacyLevel}
-            className="scale-75"
           />
         </div>
       </div>

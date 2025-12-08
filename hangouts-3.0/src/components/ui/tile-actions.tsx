@@ -126,35 +126,35 @@ export function TileActions({
       <TouchButton
         onClick={handleSave}
         disabled={!canInteract}
-        className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+        className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
           !canInteract 
             ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
             : saved 
               ? 'bg-red-500 text-white' 
-              : 'bg-black/20 text-white hover:bg-black/40'
+              : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/70'
         }`}
         hapticType="light"
         title={!canInteract ? 'Sign in to save content' : saved ? 'Remove from saved' : 'Save content'}
       >
-        <Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
+        <Heart className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} />
       </TouchButton>
 
       {/* Share Button */}
       <TouchButton
         onClick={handleShare}
         disabled={!canInteract}
-        className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+        className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
           !canInteract 
             ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
-            : 'bg-black/20 text-white hover:bg-black/40'
+            : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/70'
         }`}
         hapticType="light"
         title={!canInteract ? sharingService.getPrivacyMessage(privacyLevel) : 'Share content'}
       >
         {!canInteract ? (
-          <Lock className="h-4 w-4" />
+          <Lock className="h-5 w-5" />
         ) : (
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-5 w-5" />
         )}
       </TouchButton>
 
@@ -162,18 +162,18 @@ export function TileActions({
       <TouchButton
         onClick={handleCopyLink}
         disabled={!canInteract}
-        className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+        className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
           !canInteract 
             ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
-            : 'bg-black/20 text-white hover:bg-black/40'
+            : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/70'
         }`}
         hapticType="light"
         title={!canInteract ? sharingService.getPrivacyMessage(privacyLevel) : 'Copy link'}
       >
         {!canInteract ? (
-          <Lock className="h-4 w-4" />
+          <Lock className="h-5 w-5" />
         ) : (
-          <Link2 className="h-4 w-4" />
+          <Link2 className="h-5 w-5" />
         )}
       </TouchButton>
     </div>

@@ -34,6 +34,14 @@ export function FriendFrequencySelector({
   const handleFrequencyChange = async (value: string) => {
     const frequency = value === 'null' ? null : value as HangoutFrequency
     
+    // Validate friendId before making request
+    if (!friendId || friendId === 'undefined' || friendId === 'null') {
+      const errorMsg = 'Invalid friend ID. Please refresh the page and try again.'
+      logger.error('Invalid friendId in frequency selector', { friendId, friendshipId })
+      toast.error(errorMsg)
+      return
+    }
+    
     try {
       setUpdating(true)
       
@@ -54,14 +62,25 @@ export function FriendFrequencySelector({
         logger.info('Successfully updated hangout frequency', { friendId, frequency })
       } else {
         const errorMessage = data.error || data.message || 'Failed to update hangout frequency'
-        logger.error('Failed to update hangout frequency', { friendId, frequency, error: errorMessage })
+        logger.error('Failed to update hangout frequency', { 
+          friendId, 
+          frequency, 
+          error: errorMessage,
+          responseStatus: response.status,
+          responseData: data
+        })
         toast.error(errorMessage)
         // Revert the select value on error
         // The Select component will handle this via its controlled value
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update hangout frequency'
-      logger.error('Error updating hangout frequency:', error)
+      logger.error('Error updating hangout frequency:', { 
+        error, 
+        friendId, 
+        friendshipId,
+        errorMessage 
+      })
       toast.error(errorMessage)
     } finally {
       setUpdating(false)

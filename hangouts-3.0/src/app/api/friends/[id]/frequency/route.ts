@@ -61,9 +61,42 @@ export async function PUT(
       )
     }
 
+    // First, validate that the friend user exists
+    let friendUser: any = null
+    try {
+      friendUser = await db.user.findUnique({
+        where: { id: friendId },
+        select: { id: true, name: true, isActive: true }
+      })
+    } catch (userError) {
+      logger.error('Error finding friend user', {
+        error: userError instanceof Error ? userError.message : String(userError),
+        friendId
+      })
+    }
+
+    if (!friendUser) {
+      logger.warn('Friend user not found', { userId: user.id, friendId })
+      return NextResponse.json(
+        { error: 'Friend not found' },
+        { status: 404 }
+      )
+    }
+
+    if (!friendUser.isActive) {
+      logger.warn('Friend user is inactive', { userId: user.id, friendId })
+      return NextResponse.json(
+        { error: 'Friend account is inactive' },
+        { status: 400 }
+      )
+    }
+
     // Find the friendship where current user is userId (preferred)
     let friendship: any = null
+    let inactiveFriendship: any = null
+    
     try {
+      // First try to find active friendship
       friendship = await db.friendship.findFirst({
         where: {
           userId: user.id,
@@ -71,6 +104,16 @@ export async function PUT(
           status: 'ACTIVE'
         }
       })
+      
+      // If not found, check if there's an inactive friendship (for better error message)
+      if (!friendship) {
+        inactiveFriendship = await db.friendship.findFirst({
+          where: {
+            userId: user.id,
+            friendId: friendId
+          }
+        })
+      }
     } catch (findError) {
       logger.error('Error finding friendship (forward)', {
         error: findError instanceof Error ? findError.message : String(findError),
@@ -89,6 +132,16 @@ export async function PUT(
             status: 'ACTIVE'
           }
         })
+        
+        // If still not found, check reverse direction for inactive
+        if (!friendship && !inactiveFriendship) {
+          inactiveFriendship = await db.friendship.findFirst({
+            where: {
+              userId: friendId,
+              friendId: user.id
+            }
+          })
+        }
       } catch (findError) {
         logger.error('Error finding friendship (reverse)', {
           error: findError instanceof Error ? findError.message : String(findError),
@@ -99,11 +152,25 @@ export async function PUT(
     }
 
     if (!friendship) {
-      logger.warn('Friendship not found', { userId: user.id, friendId })
-      return NextResponse.json(
-        { error: 'Friendship not found' },
-        { status: 404 }
-      )
+      // Provide more helpful error message
+      if (inactiveFriendship) {
+        logger.warn('Friendship exists but is not active', { 
+          userId: user.id, 
+          friendId, 
+          friendName: friendUser.name,
+          status: inactiveFriendship.status 
+        })
+        return NextResponse.json(
+          { error: `Friendship exists but is ${inactiveFriendship.status.toLowerCase()}. You must have an active friendship to set a hangout goal.` },
+          { status: 400 }
+        )
+      } else {
+        logger.warn('Friendship not found', { userId: user.id, friendId, friendName: friendUser.name })
+        return NextResponse.json(
+          { error: 'Friend not found. You must be friends with this user to set a hangout goal.' },
+          { status: 404 }
+        )
+      }
     }
     
     logger.info('Found friendship', {
