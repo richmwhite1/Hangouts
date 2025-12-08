@@ -1,0 +1,11 @@
+logs/
+*.log
+.next/
+node_modules/
+.env.local
+.env.development
+dev.db
+*.db
+*.db.backup
+public/uploads/
+
