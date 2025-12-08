@@ -400,7 +400,7 @@ export function ProfilePage() {
   return (
     <div className="space-y-6">
       {/* Full-width background image with profile image on top */}
-      <div className="relative h-64 w-full overflow-visible">
+      <div className="relative h-64 w-full" style={{ overflow: 'visible' }}>
         {profile.backgroundImage ? (
           <img
             src={profile.backgroundImage}
@@ -431,7 +431,7 @@ export function ProfilePage() {
             <Avatar className="w-32 h-32 border-4 border-background shadow-xl">
               <AvatarImage src={profile.avatar || "/placeholder-avatar.png"} alt={profile.name} />
               <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-primary/50">
-                {profile.name.charAt(0).toUpperCase()}
+                {profile.name?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <button

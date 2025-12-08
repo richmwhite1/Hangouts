@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { logger } from '@/lib/logger'
+import { toast } from 'sonner'
 
 export type HangoutFrequency = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'ANNUALLY' | 'SOMETIMES' | null
 
@@ -44,32 +45,46 @@ export function FriendFrequencySelector({
         body: JSON.stringify({ frequency }),
       })
 
-      if (response.ok) {
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         onUpdate(frequency)
+        const frequencyLabel = frequencyOptions.find(opt => opt.value === frequency)?.label || 'No goal set'
+        toast.success(`Hangout goal set to ${frequencyLabel}`)
+        logger.info('Successfully updated hangout frequency', { friendId, frequency })
       } else {
-        logger.error('Failed to update hangout frequency')
+        const errorMessage = data.error || data.message || 'Failed to update hangout frequency'
+        logger.error('Failed to update hangout frequency', { friendId, frequency, error: errorMessage })
+        toast.error(errorMessage)
+        // Revert the select value on error
+        // The Select component will handle this via its controlled value
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update hangout frequency'
       logger.error('Error updating hangout frequency:', error)
+      toast.error(errorMessage)
     } finally {
       setUpdating(false)
     }
   }
 
+  const selectValue = currentFrequency === null ? 'null' : currentFrequency
+
   return (
     <Select
-      value={currentFrequency || 'null'}
+      value={selectValue}
       onValueChange={handleFrequencyChange}
       disabled={updating}
+      key={`${friendId}-${selectValue}`} // Force re-render when value changes
     >
       <SelectTrigger className="w-32 h-8 text-xs bg-gray-800 border-gray-600">
-        <SelectValue />
+        <SelectValue placeholder="Select goal..." />
       </SelectTrigger>
       <SelectContent className="bg-gray-800 border-gray-600">
         {frequencyOptions.map((option) => (
           <SelectItem 
             key={option.value || 'null'} 
-            value={option.value || 'null'}
+            value={option.value === null ? 'null' : option.value}
             className="text-white hover:bg-gray-700"
           >
             {option.label}

@@ -102,7 +102,7 @@ async function checkNotificationPreferences(
         EVENT_REMINDER: { inApp: true, push: true, email: false },
         EVENT_STARTING_SOON: { inApp: true, push: true, email: false },
         PHOTO_SHARED: { inApp: true, push: false, email: false },
-        RELATIONSHIP_REMINDER: { inApp: true, push: false, email: false }
+        RELATIONSHIP_REMINDER: { inApp: true, push: true, email: false }
       }
       return defaults[type] || { inApp: true, push: false, email: false }
     }

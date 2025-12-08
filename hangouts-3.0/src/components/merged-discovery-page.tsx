@@ -25,7 +25,7 @@ import {
   BookmarkCheck,
   Loader2,
   Plus,
-  Zap
+  Sparkles
 } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
@@ -1103,13 +1103,8 @@ export function MergedDiscoveryPage() {
               }`}
               title="AI-powered web search for events"
             >
-              <div className="relative flex items-center justify-center w-5 h-5">
-                <Search className="w-4 h-4" />
-                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg border border-white/20">
-                  <Zap className="w-2 h-2 text-white" fill="white" strokeWidth={3} />
-                </div>
-              </div>
-              <span className="hidden sm:inline">AI Search</span>
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">AI search</span>
             </Button>
           </div>
         </div>
