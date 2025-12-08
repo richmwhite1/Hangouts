@@ -399,8 +399,8 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* Full-width background image */}
-      <div className="relative h-64 w-full overflow-hidden">
+      {/* Full-width background image with profile image on top */}
+      <div className="relative h-64 w-full overflow-visible">
         {profile.backgroundImage ? (
           <img
             src={profile.backgroundImage}
@@ -419,106 +419,119 @@ export function ProfilePage() {
         )}
         <button
           onClick={() => handlePhotoUpload("background")}
-          className="absolute top-4 right-4 text-xs text-white/70 hover:text-white bg-black/20 hover:bg-black/40 px-2 py-1 rounded flex items-center gap-1"
+          className="absolute top-4 right-4 text-xs text-white/70 hover:text-white bg-black/20 hover:bg-black/40 px-2 py-1 rounded flex items-center gap-1 z-10"
         >
           <Upload className="w-3 h-3" />
           Background
         </button>
+        
+        {/* Profile image positioned on top of background */}
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20">
+          <div className="relative">
+            <Avatar className="w-32 h-32 border-4 border-background shadow-xl">
+              <AvatarImage src={profile.avatar || "/placeholder-avatar.png"} alt={profile.name} />
+              <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-primary/50">
+                {profile.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => handlePhotoUpload("profile")}
+              className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-background"
+              title="Change profile photo"
+            >
+              <Upload className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Profile content in centered container */}
-      <div className="max-w-2xl mx-auto px-4">
+      {/* Profile content with name and bio */}
+      <div className="max-w-2xl mx-auto px-4 pt-16">
         <Card>
-          <CardContent className="p-6 text-center -mt-48 relative">
-            <div className="relative inline-block">
-              <Avatar className="w-72 h-72 mx-auto mb-4 border-4 border-background rounded-lg">
-                <AvatarImage src={profile.avatar || "/placeholder-avatar.png"} alt={profile.name} className="rounded-lg" />
-                <AvatarFallback className="text-6xl rounded-lg">{profile.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <button
-                onClick={() => handlePhotoUpload("profile")}
-                className="absolute bottom-4 right-4 text-sm bg-primary hover:bg-primary/90 text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center"
-              >
-                <Upload className="w-4 h-4" />
-              </button>
-            </div>
-
-            <h1 className="text-2xl font-bold mb-1">{profile.name}</h1>
-            <p className="text-muted-foreground text-sm mb-3">@{profile.username}</p>
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="text-sm max-w-md text-center">
-                <p className="mb-2">{editForm.bio || 'No bio yet'}</p>
-                
-                {/* Personality Information */}
-                {(profile.zodiac || profile.enneagram || profile.bigFive || profile.loveLanguage) && (
-                  <div className="flex flex-wrap gap-2 justify-center mt-3">
-                    {profile.zodiac && (
-                      <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
-                        ♈ {profile.zodiac}
-                      </span>
-                    )}
-                    {profile.enneagram && (
-                      <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded-full border border-orange-500/30">
-                        🔢 {profile.enneagram}
-                      </span>
-                    )}
-                    {profile.bigFive && (
-                      <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/30">
-                        🧠 {profile.bigFive}
-                      </span>
-                    )}
-                    {profile.loveLanguage && (
-                      <span className="px-2 py-1 bg-pink-500/20 text-pink-300 text-xs rounded-full border border-pink-500/30">
-                        💕 {profile.loveLanguage}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Favorite Activities */}
-                {userPreferences.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-xs font-medium text-muted-foreground mb-2 text-center">Favorite Activities</h4>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {userPreferences.map((pref) => (
-                        <span key={pref.id} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
-                          {pref.icon} {pref.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Favorite Places */}
-                {favoritePlaces.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-xs font-medium text-muted-foreground mb-2 text-center">Favorite Places</h4>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {favoritePlaces.map((place) => (
-                        <span 
-                          key={place.id} 
-                          className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full border border-emerald-500/30 cursor-pointer hover:bg-emerald-500/30 transition-colors"
-                          onClick={() => place.mapLink && window.open(place.mapLink, '_blank', 'noopener,noreferrer')}
-                          title="Click to view on map"
-                        >
-                          📍 {place.title}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          <CardContent className="p-6 text-center">
+            {/* Name and username */}
+            <div className="mb-4">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h1 className="text-3xl font-bold">{profile.name}</h1>
+                <button
+                  onClick={handleEditProfile}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  title="Edit Profile"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={handleEditProfile}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                title="Edit Profile"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
+              <p className="text-muted-foreground text-sm mb-4">@{profile.username}</p>
             </div>
 
+            {/* Bio */}
+            <div className="mb-6">
+              <p className="text-sm text-foreground/90 max-w-md mx-auto mb-4">
+                {editForm.bio || 'No bio yet'}
+              </p>
+              
+              {/* Personality Information */}
+              {(profile.zodiac || profile.enneagram || profile.bigFive || profile.loveLanguage) && (
+                <div className="flex flex-wrap gap-2 justify-center mt-3">
+                  {profile.zodiac && (
+                    <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+                      ♈ {profile.zodiac}
+                    </span>
+                  )}
+                  {profile.enneagram && (
+                    <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded-full border border-orange-500/30">
+                      🔢 {profile.enneagram}
+                    </span>
+                  )}
+                  {profile.bigFive && (
+                    <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/30">
+                      🧠 {profile.bigFive}
+                    </span>
+                  )}
+                  {profile.loveLanguage && (
+                    <span className="px-2 py-1 bg-pink-500/20 text-pink-300 text-xs rounded-full border border-pink-500/30">
+                      💕 {profile.loveLanguage}
+                    </span>
+                  )}
+                </div>
+              )}
 
-            <div className="flex justify-center">
+              {/* Favorite Activities */}
+              {userPreferences.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-xs font-medium text-muted-foreground mb-2 text-center">Favorite Activities</h4>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {userPreferences.map((pref) => (
+                      <span key={pref.id} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+                        {pref.icon} {pref.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Favorite Places */}
+              {favoritePlaces.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-xs font-medium text-muted-foreground mb-2 text-center">Favorite Places</h4>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {favoritePlaces.map((place) => (
+                      <span 
+                        key={place.id} 
+                        className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full border border-emerald-500/30 cursor-pointer hover:bg-emerald-500/30 transition-colors"
+                        onClick={() => place.mapLink && window.open(place.mapLink, '_blank', 'noopener,noreferrer')}
+                        title="Click to view on map"
+                      >
+                        📍 {place.title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sign Out Button */}
+            <div className="flex justify-center pt-4 border-t border-border">
               <Button
                 onClick={async () => {
                   if (isSigningOut) return

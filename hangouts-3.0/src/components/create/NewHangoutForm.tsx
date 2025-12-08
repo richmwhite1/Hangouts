@@ -41,6 +41,12 @@ interface NewHangoutFormProps {
       price?: number
     }>
   }
+  prefillFromSimple?: {
+    title: string
+    dateTime: string
+    location: string
+    participants: string[]
+  } | null
   isEditMode?: boolean
   hangoutState?: string
 }
@@ -73,7 +79,7 @@ export interface NewHangoutFormData {
   }>
 }
 
-export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent, isEditMode = false, hangoutState }: NewHangoutFormProps) {
+export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEvent, prefillFromSimple, isEditMode = false, hangoutState }: NewHangoutFormProps) {
   const { getToken } = useAuth()
   const [formData, setFormData] = useState<NewHangoutFormData>({
     title: '',
@@ -260,6 +266,31 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
       }))
     }
   }, [prefillEvent, hangoutState, isEditMode])
+
+  // Prefill form with data from simple form when switching to advanced mode
+  useEffect(() => {
+    if (prefillFromSimple && !prefillEvent) {
+      // Only prefill if we have meaningful data and we're not in edit mode
+      const hasData = prefillFromSimple.title || prefillFromSimple.dateTime || prefillFromSimple.location || prefillFromSimple.participants.length > 0
+      
+      if (hasData) {
+        setFormData(prev => ({
+          ...prev,
+          title: prefillFromSimple.title || prev.title,
+          location: prefillFromSimple.location || prev.location,
+          participants: prefillFromSimple.participants.length > 0 ? prefillFromSimple.participants : prev.participants,
+          options: prev.options.map((opt, idx) => 
+            idx === 0 ? {
+              ...opt,
+              title: prefillFromSimple.title || opt.title,
+              location: prefillFromSimple.location || opt.location,
+              dateTime: prefillFromSimple.dateTime || opt.dateTime
+            } : opt
+          )
+        }))
+      }
+    }
+  }, [prefillFromSimple, prefillEvent])
 
   // Fetch friends on component mount
   useEffect(() => {
@@ -1187,7 +1218,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </Card>
 
         {/* Sticky Submit Button with Progress */}
-        <div className="fixed bottom-16 sm:bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-50 shadow-lg sm:sticky sm:relative sm:shadow-none sm:pb-4 sm:mt-6" style={{ paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' }}>
+        <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-50 shadow-lg sm:sticky sm:relative sm:shadow-none sm:pb-4 sm:mt-6" style={{ paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))', paddingTop: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' }}>
           {/* Progress Indicator */}
           <div className="mb-2">
             <div className="flex items-center justify-between mb-1">
@@ -1214,7 +1245,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
       </form>
 
 
-      {/* Floating Invite Friends Bar */}
+      {/* Floating Invite Friends Bar - Positioned above submit button */}
       <InviteFriendsBar
         invitedFriends={invitedFriendsWithDetails}
         onOpenModal={() => setIsFriendModalOpen(true)}

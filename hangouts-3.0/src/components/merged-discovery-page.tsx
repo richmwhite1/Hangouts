@@ -19,14 +19,20 @@ import {
   Sun,
   Heart as HealthIcon,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  Globe,
+  Bookmark,
+  BookmarkCheck,
+  Loader2,
+  Plus,
+  Zap
 } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
-import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 interface Event {
   id: string
   title: string
@@ -87,6 +93,96 @@ const categories = [
   { id: 'outdoor', label: 'Outdoor', icon: Sun },
   { id: 'wellness', label: 'Wellness', icon: HealthIcon },
 ]
+
+// Component to save Google search events
+function GoogleEventSaveButton({ event }: { event: any }) {
+  const [isSaving, setIsSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const { isSignedIn } = useAuth()
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!isSignedIn) {
+      toast.error('Please sign in to save events')
+      return
+    }
+
+    if (isSaved) {
+      toast.info('Event already saved')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const eventData = {
+        title: event.title,
+        description: event.description || '',
+        venue: event.venue || '',
+        address: event.address || '',
+        city: event.city || '',
+        startDate: event.startDate || null,
+        startTime: event.startTime || null,
+        endDate: event.endDate || null,
+        endTime: event.endTime || null,
+        coverImage: event.coverImage || null,
+        sourceUrl: event.sourceUrl || '',
+        price: event.price || { min: 0, currency: 'USD' },
+        tags: event.tags || []
+      }
+
+      const response = await fetch('/api/events/save-from-google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventData)
+      })
+
+      if (response.ok) {
+        setIsSaved(true)
+        toast.success('Event saved! You can find it in your events.')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to save event')
+      }
+    } catch (error) {
+      logger.error('Error saving Google event:', error)
+      toast.error('Failed to save event')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Button
+      onClick={handleSave}
+      disabled={isSaving || isSaved}
+      size="sm"
+      variant="secondary"
+      className={`bg-black/80 backdrop-blur-sm border border-white/20 text-white hover:bg-black/90 ${
+        isSaved ? 'bg-green-600/80 hover:bg-green-600/90' : ''
+      }`}
+    >
+      {isSaving ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : isSaved ? (
+        <>
+          <BookmarkCheck className="w-4 h-4 mr-1" />
+          Saved
+        </>
+      ) : (
+        <>
+          <Bookmark className="w-4 h-4 mr-1" />
+          Save
+        </>
+      )}
+    </Button>
+  )
+}
+
 export function MergedDiscoveryPage() {
   const { isSignedIn, isLoaded } = useAuth()
   const searchParams = useSearchParams()
@@ -102,6 +198,16 @@ export function MergedDiscoveryPage() {
   const [hasMoreContent, setHasMoreContent] = useState(true)
   const [page, setPage] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
+
+  // Google Search state
+  const [showGoogleSearch, setShowGoogleSearch] = useState(false)
+  const [googleSearchQuery, setGoogleSearchQuery] = useState('')
+  const [googleSearchLocation, setGoogleSearchLocation] = useState('Salt Lake City, UT')
+  const [googleEvents, setGoogleEvents] = useState<any[]>([])
+  const [isGoogleSearching, setIsGoogleSearching] = useState(false)
+
+  // Create Event Modal state
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
 
   // Location filtering state
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -124,11 +230,24 @@ export function MergedDiscoveryPage() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           })
+          
+          // Try to get city name from coordinates for Google Search
+          try {
+            const response = await fetch(`/api/locations/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (data.success && data.location) {
+                setGoogleSearchLocation(data.location.city || 'Salt Lake City, UT')
+              }
+            }
+          } catch (error) {
+            logger.error('Could not reverse geocode location:', error)
+          }
         },
         (error) => {
           console.error('Error getting location:', error)
@@ -137,6 +256,36 @@ export function MergedDiscoveryPage() {
       )
     }
   }, [])
+  
+  // Google Search function
+  const searchGoogleEvents = async () => {
+    if (!googleSearchQuery.trim()) return
+    
+    try {
+      setIsGoogleSearching(true)
+      const params = new URLSearchParams({
+        q: googleSearchQuery,
+        location: googleSearchLocation,
+        limit: '20'
+      })
+      
+      const response = await fetch(`/api/events/search?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setGoogleEvents(data.events || [])
+        showSuccess(`Found ${data.events?.length || 0} events from Google Search`)
+      } else {
+        showError('Failed to search events')
+        setGoogleEvents([])
+      }
+    } catch (error) {
+      logger.error('Error searching Google events:', error)
+      showError('Failed to search events')
+      setGoogleEvents([])
+    } finally {
+      setIsGoogleSearching(false)
+    }
+  }
 
   // Set mounted state to prevent hydration mismatch
   useEffect(() => {
@@ -339,10 +488,42 @@ export function MergedDiscoveryPage() {
       return true
     })
   }, [searchQuery])
-  // Merge and sort content (memoized)
+  // Merge and sort content (memoized) - includes Google search results
   const mergeAndSortContent = useMemo(() => {
     const now = Date.now()
     const allContent = [
+      // Add Google search results if available
+      ...googleEvents.map((googleEvent, index) => {
+        // Validate and parse date safely
+        let sortDate = new Date()
+        let isValidDate = false
+        
+        if (googleEvent.startDate) {
+          const testDate = new Date(googleEvent.startDate)
+          if (!isNaN(testDate.getTime()) && testDate.getTime() > 0) {
+            sortDate = testDate
+            isValidDate = true
+          }
+        }
+        
+        return {
+          ...googleEvent,
+          type: 'event',
+          sortDate,
+          startDate: isValidDate ? googleEvent.startDate : undefined, // Only set if valid
+          isPast: false, // Google results are usually upcoming
+          sortPrice: googleEvent.price?.min || 0,
+          sortDistance: Infinity,
+          isGoogleResult: true, // Flag to identify Google search results
+          coverImage: googleEvent.coverImage && googleEvent.coverImage.startsWith('http') 
+            ? googleEvent.coverImage 
+            : '/placeholder-event.jpg',
+          creator: googleEvent.creator || { id: 'google', username: 'google', name: 'Google Search', avatar: '' },
+          saveCount: 0,
+          // Ensure unique key by adding index
+          uniqueKey: `${googleEvent.id}_${index}_${Date.now()}`
+        }
+      }),
       ...events.map(event => {
         const startDate = new Date(event.startDate)
         const endDate = event.endDate ? new Date(event.endDate) : null
@@ -421,7 +602,7 @@ export function MergedDiscoveryPage() {
       isPast: typeof item.isPast === 'boolean' ? item.isPast : item.sortDate.getTime() < now
     }))
     return enrichedContent
-  }, [events, hangouts, filterContent, sortBy, userLocation])
+  }, [events, hangouts, googleEvents, filterContent, sortBy, userLocation])
   // Update merged content when mergeAndSortContent changes
   useEffect(() => {
     setMergedContent(mergeAndSortContent)
@@ -468,33 +649,73 @@ export function MergedDiscoveryPage() {
     }
     return `$${price.min}`
   }
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Date TBD'
+    
+    try {
+      const date = new Date(dateString)
+      // Validate date
+      if (isNaN(date.getTime()) || date.getTime() <= 0) {
+        return 'Date TBD'
+      }
+      
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      logger.warn(`Error formatting date: ${dateString} - ${errorMsg}`)
+      return 'Date TBD'
+    }
   }
   const getCategoryIcon = (category: string) => {
     const categoryObj = categories.find(cat => cat.id === category)
     return categoryObj ? categoryObj.icon : TrendingUp
   }
-  const renderEventCard = (event: Event & { isPast?: boolean }) => {
+  const renderEventCard = (event: Event & { isPast?: boolean; isGoogleResult?: boolean }) => {
     const CategoryIcon = getCategoryIcon(event.category)
     const distance = userLocation && event.latitude && event.longitude
       ? calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude)
       : null
+    
+    // For Google results, open the source URL instead of internal page
+    const eventUrl = event.isGoogleResult && (event as any).sourceUrl 
+      ? (event as any).sourceUrl 
+      : `/event/${event.id}`
+    const isExternalLink = !!event.isGoogleResult
+    
+    // Use unique key to prevent duplicate key errors
+    const uniqueKey = (event as any).uniqueKey || `event-${event.id}-${Math.random().toString(36).substr(2, 9)}`
+    
     return (
-      <Link href={`/event/${event.id}`} key={`event-${event.id}`}>
+      <Link 
+        href={eventUrl} 
+        key={uniqueKey}
+        target={isExternalLink ? '_blank' : undefined}
+        rel={isExternalLink ? 'noopener noreferrer' : undefined}
+        onClick={(e) => {
+          // Don't navigate if clicking the save button
+          const target = e.target as HTMLElement
+          if (target.closest('button') || target.closest('[role="button"]')) {
+            e.preventDefault()
+            e.stopPropagation()
+          }
+        }}
+      >
         <div className="relative w-full h-80 bg-gray-700 overflow-hidden hover:scale-[1.02] transition-transform duration-300 cursor-pointer group rounded-2xl shadow-xl">
           {/* Event Image - full width */}
           <OptimizedImage
-            src={event.coverImage}
+            src={event.coverImage || '/placeholder-event.jpg'}
             alt={event.title}
             className="w-full h-full object-cover"
             placeholder="/placeholder-event.jpg"
             sizes="100vw"
+            onError={() => {
+              // Fallback to placeholder if image fails to load
+              logger.warn('Event image failed to load:', String(event.coverImage || ''))
+            }}
           />
           {/* Dark overlay for better text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -509,9 +730,13 @@ export function MergedDiscoveryPage() {
           )}
           {/* Type Badge - Top Left - More Discreet */}
           <div className="absolute top-4 left-4 space-y-2">
-            <Badge className="bg-black/60 text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 flex items-center">
+            <Badge className={`text-white/90 text-xs px-2 py-1 font-normal backdrop-blur-sm border border-white/20 flex items-center ${
+              event.isGoogleResult 
+                ? 'bg-blue-600/80'  
+                : 'bg-black/60'
+            }`}>
               <CategoryIcon className="w-3 h-3 mr-1" />
-              Event
+              {event.isGoogleResult ? 'Web Event' : 'Event'}
             </Badge>
             {/* Price Badge - Under Type Badge - More Discreet */}
             {event.price && event.price.min > 0 && (
@@ -552,19 +777,28 @@ export function MergedDiscoveryPage() {
             )}
           </div>
           {/* Action Buttons - Bottom Right */}
-          <div className="absolute bottom-4 right-4">
-            <TileActions
-              itemId={event.id}
-              itemType="event"
-              onSave={() => {
-                // TODO: Implement save functionality
-                // console.log('Save event:', id, type); // Removed for production
-              }}
-              onUnsave={() => {
-                // TODO: Implement unsave functionality
-                // console.log('Unsave event:', id, type); // Removed for production
-              }}
-            />
+          <div className="absolute bottom-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
+            {event.isGoogleResult ? (
+              <div onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}>
+                <GoogleEventSaveButton event={event as any} />
+              </div>
+            ) : (
+              <TileActions
+                itemId={event.id}
+                itemType="event"
+                onSave={() => {
+                  // TODO: Implement save functionality
+                  // console.log('Save event:', id, type); // Removed for production
+                }}
+                onUnsave={() => {
+                  // TODO: Implement unsave functionality
+                  // console.log('Unsave event:', id, type); // Removed for production
+                }}
+              />
+            )}
           </div>
         </div>
       </Link>
@@ -840,16 +1074,98 @@ export function MergedDiscoveryPage() {
     <div className="min-h-screen bg-black">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800 p-4">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white">Discover</h1>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Create Event Button */}
+            {isSignedIn && (
+              <Button
+                size="sm"
+                onClick={() => setIsCreateEventModalOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Create Event</span>
+              </Button>
+            )}
+            
+            {/* Google Search Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGoogleSearch(!showGoogleSearch)}
+              className={`flex items-center gap-2 ${
+                showGoogleSearch 
+                  ? 'bg-blue-600 text-white border-blue-500' 
+                  : 'border-gray-700 text-gray-300'
+              }`}
+              title="AI-powered web search for events"
+            >
+              <div className="relative flex items-center justify-center w-5 h-5">
+                <Search className="w-4 h-4" />
+                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg border border-white/20">
+                  <Zap className="w-2 h-2 text-white" fill="white" strokeWidth={3} />
+                </div>
+              </div>
+              <span className="hidden sm:inline">AI Search</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Google Event Search Panel */}
+        {showGoogleSearch && (
+          <div className="mb-4 p-4 bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe className="w-5 h-5 text-blue-400" />
+              <h3 className="text-white font-semibold">Search Events on the Web</h3>
+              <Badge variant="secondary" className="bg-blue-600/20 text-blue-400 text-xs">
+                Powered by Google
+              </Badge>
+            </div>
+            
+            <div className="flex gap-2 mb-2">
+              <Input
+                placeholder="e.g., concerts, food festivals, sports..."
+                value={googleSearchQuery}
+                onChange={(e) => setGoogleSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && searchGoogleEvents()}
+                className="flex-1 bg-black border-blue-500/50 text-white"
+              />
+              <Input
+                placeholder="Location"
+                value={googleSearchLocation}
+                onChange={(e) => setGoogleSearchLocation(e.target.value)}
+                className="w-32 sm:w-48 bg-black border-blue-500/50 text-white"
+              />
+              <Button
+                onClick={searchGoogleEvents}
+                disabled={!googleSearchQuery.trim() || isGoogleSearching}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isGoogleSearching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Search'
+                )}
+              </Button>
+            </div>
+            
+            {googleEvents.length > 0 && (
+              <p className="text-sm text-blue-300 mt-2">
+                Found {googleEvents.length} events • Results cached for 7 days
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Regular Search and Filters */}
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Search events, hangouts, venues, or tags..."
+              placeholder="Search your events, hangouts, venues, or tags..."
               className="pl-10 bg-gray-800 border-gray-700 text-white min-h-[44px] text-base"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -858,15 +1174,35 @@ export function MergedDiscoveryPage() {
         </div>
 
         {/* Content Type Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-800">
-            <TabsTrigger value="all" className="data-[state=active]:bg-blue-600">All</TabsTrigger>
-            <TabsTrigger value="events" className="data-[state=active]:bg-blue-600">Events</TabsTrigger>
-            <TabsTrigger value="hangouts" className="data-[state=active]:bg-blue-600">Hangouts</TabsTrigger>
-            <TabsTrigger value="saved" className="data-[state=active]:bg-blue-600">Saved</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800/50 border border-gray-700 rounded-lg p-1 gap-1">
+            <TabsTrigger 
+              value="all" 
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300 rounded-md py-2.5 transition-all"
+            >
+              All
+            </TabsTrigger>
+            <TabsTrigger 
+              value="events" 
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300 rounded-md py-2.5 transition-all"
+            >
+              Events
+            </TabsTrigger>
+            <TabsTrigger 
+              value="hangouts" 
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300 rounded-md py-2.5 transition-all"
+            >
+              Hangouts
+            </TabsTrigger>
+            <TabsTrigger 
+              value="saved" 
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300 rounded-md py-2.5 transition-all"
+            >
+              Saved
+            </TabsTrigger>
           </TabsList>
           {/* Minimal Sort and Filter Controls - Single Line */}
-          <div className="flex items-center gap-1.5 mt-2 text-xs overflow-x-auto">
+          <div className="flex items-center gap-1.5 mt-6 text-xs overflow-x-auto pb-2">
             {isMounted ? (
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="h-7 w-20 bg-gray-800 border-gray-700 text-gray-300 text-xs focus:ring-0 px-1.5">
@@ -929,7 +1265,13 @@ export function MergedDiscoveryPage() {
                     </p>
                     {!searchQuery && (
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <CreateEventModal />
+                        <CreateEventModal 
+                          onSuccess={async () => {
+                            // Refresh events list
+                            await fetchEvents(1, false)
+                            showSuccess('Event created successfully!')
+                          }}
+                        />
                       </div>
                     )}
                   </div>
@@ -1002,6 +1344,24 @@ export function MergedDiscoveryPage() {
           })()}
         </div>
       </PullToRefresh>
+
+      {/* Create Event Modal - Controlled */}
+      {isSignedIn && (
+        <CreateEventModal
+          isOpen={isCreateEventModalOpen}
+          onOpenChange={setIsCreateEventModalOpen}
+          onSuccess={async () => {
+            // Close modal
+            setIsCreateEventModalOpen(false)
+            // Refresh events list and hangouts
+            await Promise.all([
+              fetchEvents(1, false),
+              fetchHangouts(1, false)
+            ])
+            showSuccess('Event created successfully! It will appear in your feed shortly.')
+          }}
+        />
+      )}
     </div>
   )
 }

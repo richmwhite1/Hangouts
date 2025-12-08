@@ -73,11 +73,25 @@ const commonTags = [
   'dance', 'art', 'food', 'drinks', 'sports', 'fitness'
 ]
 
-export function CreateEventModal() {
+interface CreateEventModalProps {
+  isOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  onSuccess?: () => void
+}
+
+export function CreateEventModal({ 
+  isOpen: externalIsOpen, 
+  onOpenChange: externalOnOpenChange,
+  onSuccess 
+}: CreateEventModalProps = {}) {
   const { getToken } = useAuth()
-  const [isOpen, setIsOpen] = useState(false)
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
+  const setIsOpen = externalOnOpenChange || setInternalIsOpen
   const [newTag, setNewTag] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const additionalImagesRef = useRef<HTMLInputElement>(null)
@@ -272,9 +286,10 @@ export function CreateEventModal() {
       })
 
       if (response.ok) {
-        await response.json()
-        // console.log('✅ Event created'); // Removed for production
-        setIsOpen(false)
+        const result = await response.json()
+        // console.log('✅ Event created:', result); // Removed for production
+        
+        // Reset form
         setCurrentStep(1)
         setFormData({
           title: '',
@@ -304,8 +319,15 @@ export function CreateEventModal() {
           tags: [],
           isPublic: true
         })
-        // TODO: Refresh events list or redirect
-        window.location.reload()
+        
+        // Call onSuccess callback if provided, otherwise reload
+        if (onSuccess) {
+          setIsOpen(false)
+          onSuccess()
+        } else {
+          setIsOpen(false)
+          window.location.reload()
+        }
       } else {
         const error = await response.json()
         logger.error('❌ Event creation failed:', error);
@@ -712,12 +734,15 @@ export function CreateEventModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Event
-        </Button>
-      </DialogTrigger>
+      {/* Only show trigger if not controlled externally */}
+      {externalIsOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Event
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-white">

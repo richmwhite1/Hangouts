@@ -131,6 +131,9 @@ app.prepare().then(() => {
 
   // Export io instance so other modules can emit notifications
   global.io = io;
+  
+  // Note: Notification scheduler is initialized separately via API route or cron job
+  // to avoid TypeScript compilation issues in this JS file
 
   httpServer
     .once('error', (err) => {

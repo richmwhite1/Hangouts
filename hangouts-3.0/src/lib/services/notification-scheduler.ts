@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { triggerBatchNotifications } from '@/lib/notification-triggers'
+import { checkRelationshipReminders } from './relationship-reminder-service'
 
 /**
  * Notification Scheduler Service
@@ -306,6 +307,22 @@ export async function sendPollClosingReminders(): Promise<void> {
 }
 
 /**
+ * Check and send relationship reminders based on hangout goals
+ */
+export async function sendRelationshipReminders(): Promise<void> {
+  try {
+    logger.info('Checking relationship reminders...')
+    
+    const result = await checkRelationshipReminders()
+    
+    logger.info(`Relationship reminders: checked ${result.checked}, sent ${result.sent}, errors ${result.errors}`)
+  } catch (error) {
+    logger.error('Error sending relationship reminders:', error)
+    throw error
+  }
+}
+
+/**
  * Initialize the notification scheduler with cron jobs
  * This should be called when the server starts
  */
@@ -322,10 +339,14 @@ export function initializeNotificationScheduler(): void {
     // Run poll closing reminders every 6 hours
     setInterval(sendPollClosingReminders, 6 * 60 * 60 * 1000) // Every 6 hours
 
+    // Run relationship reminders daily at 10am local time
+    setInterval(sendRelationshipReminders, 24 * 60 * 60 * 1000) // Every 24 hours
+
     // Run initial check after 1 minute
     setTimeout(sendHourlyReminders, 60 * 1000)
     setTimeout(sendDailyReminders, 90 * 1000)
     setTimeout(sendPollClosingReminders, 120 * 1000)
+    setTimeout(sendRelationshipReminders, 150 * 1000) // After 2.5 minutes
 
     logger.info('Notification scheduler initialized successfully')
   } catch (error) {

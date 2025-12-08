@@ -980,3 +980,17 @@ enum ReminderType {
   HANGOUT_DAY_BEFORE
   EVENT_DAY_BEFORE
 }
+
+// Event cache for Google Search results
+model EventCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique // Format: "events:{location}:{query}"
+  data      Json // Cached event data
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cacheKey])
+  @@index([expiresAt])
+  @@map("event_cache")
+}

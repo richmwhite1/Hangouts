@@ -1,11 +1,12 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { X, Search, Calendar, MapPin, DollarSign, Plus } from 'lucide-react'
+import { X, Search, Calendar, MapPin, DollarSign, Plus, TrendingUp, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from './button'
 import { Input } from './input'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Badge } from './badge'
 import { MobileModal } from './mobile-modal'
+import { Tabs, TabsList, TabsTrigger } from './tabs'
 import { logger } from '@/lib/logger'
 interface Event {
   id: string
@@ -37,14 +38,47 @@ interface EventSelectionModalProps {
   currentOptions: any[]
 }
 export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOptions }: EventSelectionModalProps) {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'my-events' | 'browse' | 'trending'>('my-events')
+  
+  // Events state
   const [events, setEvents] = useState<Event[]>([])
+  const [browseEvents, setBrowseEvents] = useState<Event[]>([])
+  const [trendingEvents, setTrendingEvents] = useState<Event[]>([])
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([])
+  
+  // Search state
   const [searchQuery, setSearchQuery] = useState('')
+  const [browseSearchQuery, setBrowseSearchQuery] = useState('')
+  const [locationQuery, setLocationQuery] = useState('Salt Lake City, UT') // Default location
+  
+  // Loading states
   const [isLoading, setIsLoading] = useState(false)
-  // Fetch events when modal opens
+  const [isBrowseLoading, setIsBrowseLoading] = useState(false)
+  const [isTrendingLoading, setIsTrendingLoading] = useState(false)
+  // Fetch events when modal opens or tab changes
   useEffect(() => {
     if (isOpen) {
-      fetchEvents()
+      if (activeTab === 'my-events') {
+        fetchMyEvents()
+      } else if (activeTab === 'trending') {
+        fetchTrendingEvents()
+      }
+    }
+  }, [isOpen, activeTab])
+  
+  // Get user's location on mount
+  useEffect(() => {
+    if (isOpen && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          // Reverse geocode would go here - for now use default
+          // Could use Google Geocoding API
+        },
+        (error) => {
+          logger.warn('Could not get user location:', error)
+        }
+      )
     }
   }, [isOpen])
   // Filter events based on search query
@@ -63,7 +97,7 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
       setFilteredEvents(filtered)
     }
   }, [searchQuery, events])
-  const fetchEvents = async () => {
+  const fetchMyEvents = async () => {
     try {
       setIsLoading(true)
       // Fetch user's saved/interested events from the API
@@ -86,6 +120,56 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
       logger.error('Error fetching events:', error);
     } finally {
       setIsLoading(false)
+    }
+  }
+  
+  const searchBrowseEvents = async () => {
+    if (!browseSearchQuery.trim()) return
+    
+    try {
+      setIsBrowseLoading(true)
+      const params = new URLSearchParams({
+        q: browseSearchQuery,
+        location: locationQuery,
+        limit: '10'
+      })
+      
+      const response = await fetch(`/api/events/search?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBrowseEvents(data.events || [])
+      } else {
+        logger.error('Failed to search events')
+        setBrowseEvents([])
+      }
+    } catch (error) {
+      logger.error('Error searching events:', error)
+      setBrowseEvents([])
+    } finally {
+      setIsBrowseLoading(false)
+    }
+  }
+  
+  const fetchTrendingEvents = async () => {
+    try {
+      setIsTrendingLoading(true)
+      const params = new URLSearchParams({
+        location: locationQuery
+      })
+      
+      const response = await fetch(`/api/events/trending?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setTrendingEvents(data.events || [])
+      } else {
+        logger.error('Failed to fetch trending events')
+        setTrendingEvents([])
+      }
+    } catch (error) {
+      logger.error('Error fetching trending events:', error)
+      setTrendingEvents([])
+    } finally {
+      setIsTrendingLoading(false)
     }
   }
   const handleSelectEvent = (event: Event) => {
@@ -130,6 +214,33 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
     if (max && max !== min) return `$${min}-${max} ${currency}`
     return `$${min} ${currency}`
   }
+  // Get current events based on active tab
+  const getCurrentEvents = () => {
+    switch (activeTab) {
+      case 'my-events':
+        return filteredEvents
+      case 'browse':
+        return browseEvents
+      case 'trending':
+        return trendingEvents
+      default:
+        return []
+    }
+  }
+  
+  const getCurrentLoading = () => {
+    switch (activeTab) {
+      case 'my-events':
+        return isLoading
+      case 'browse':
+        return isBrowseLoading
+      case 'trending':
+        return isTrendingLoading
+      default:
+        return false
+    }
+  }
+
   return (
     <MobileModal
       isOpen={isOpen}
@@ -140,34 +251,118 @@ export function EventSelectionModal({ isOpen, onClose, onSelectEvent, currentOpt
       closeOnEscape={true}
       preventBodyScroll={true}
     >
+        {/* Tabs */}
+        <div className="p-4 border-b border-gray-600">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-800">
+              <TabsTrigger value="my-events" className="data-[state=active]:bg-purple-600">
+                My Events
+              </TabsTrigger>
+              <TabsTrigger value="browse" className="data-[state=active]:bg-blue-600">
+                <Sparkles className="w-4 h-4 mr-1" />
+                Browse
+              </TabsTrigger>
+              <TabsTrigger value="trending" className="data-[state=active]:bg-orange-600">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                Trending
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        
         {/* Search */}
         <div className="p-4 border-b border-gray-600">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-black border-gray-600 text-white"
-            />
-          </div>
+          {activeTab === 'my-events' && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search your events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-black border-gray-600 text-white"
+              />
+            </div>
+          )}
+          
+          {activeTab === 'browse' && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search events (e.g., concerts, food festival)..."
+                  value={browseSearchQuery}
+                  onChange={(e) => setBrowseSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchBrowseEvents()}
+                  className="pl-10 bg-black border-gray-600 text-white"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Location"
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                  className="flex-1 bg-black border-gray-600 text-white text-sm"
+                />
+                <Button
+                  onClick={searchBrowseEvents}
+                  disabled={!browseSearchQuery.trim() || isBrowseLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isBrowseLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Search'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'trending' && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400">
+                Popular events in {locationQuery}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchTrendingEvents}
+                disabled={isTrendingLoading}
+                className="text-orange-400 hover:text-orange-300"
+              >
+                Refresh
+              </Button>
+            </div>
+          )}
         </div>
         {/* Events List */}
         <div className="flex-1 overflow-y-auto p-4">
-          {isLoading ? (
+          {getCurrentLoading() ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <p className="text-gray-400">Loading events...</p>
             </div>
-          ) : filteredEvents.length === 0 ? (
+          ) : getCurrentEvents().length === 0 ? (
             <div className="text-center py-8">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400">No events found</p>
-              <p className="text-gray-500 text-sm">Try adjusting your search or create a custom option</p>
+              <p className="text-gray-400">
+                {activeTab === 'browse' 
+                  ? 'Enter a search query to find events'
+                  : 'No events found'
+                }
+              </p>
+              <p className="text-gray-500 text-sm">
+                {activeTab === 'my-events' 
+                  ? 'Try the Browse or Trending tabs to discover events'
+                  : activeTab === 'browse'
+                  ? 'Try searching for "concerts", "festivals", "sports", etc.'
+                  : 'Check back later for trending events'
+                }
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredEvents.map((event) => (
+              {getCurrentEvents().map((event) => (
                 <Card
                   key={event.id}
                   data-event-id={event.id}

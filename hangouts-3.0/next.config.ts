@@ -102,24 +102,26 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        source: '/_next/static/css/(.*\\.css)',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'text/css; charset=utf-8',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/chunks/(.*\\.js)',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
-          },
-        ],
-      },
+      // Note: Content-Type headers for static files are handled automatically by Next.js
+      // Explicitly setting them can cause issues if files don't exist yet
+      // {
+      //   source: '/_next/static/css/(.*\\.css)',
+      //   headers: [
+      //     {
+      //       key: 'Content-Type',
+      //       value: 'text/css; charset=utf-8',
+      //     },
+      //   ],
+      // },
+      // {
+      //   source: '/_next/static/chunks/(.*\\.js)',
+      //   headers: [
+      //     {
+      //       key: 'Content-Type',
+      //       value: 'application/javascript; charset=utf-8',
+      //     },
+      //   ],
+      // },
     ]
   },
   

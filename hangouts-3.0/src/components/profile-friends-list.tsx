@@ -197,6 +197,10 @@ export function ProfileFriendsList({
                   currentFrequency={friendship.desiredHangoutFrequency || null}
                   onUpdate={(frequency) => onFrequencyChange(friendship.id, frequency)}
                 />
+                <HangoutGoalIndicator
+                  lastHangoutDate={friendship.stats?.lastHangoutDate}
+                  desiredFrequency={friendship.desiredHangoutFrequency}
+                />
               </div>
               <div className="flex space-x-2">
                 <Button 
@@ -232,6 +236,7 @@ export function ProfileFriendsList({
     </div>
   )
 }
+
 
 
 

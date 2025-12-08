@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { FriendFrequencySelector, HangoutFrequency } from '@/components/friend-frequency-selector'
+import { HangoutGoalIndicator } from '@/components/hangout-goal-indicator'
 import Link from 'next/link'
 
 import { logger } from '@/lib/logger'
@@ -634,6 +635,10 @@ export default function FriendsPage() {
                                   : f
                               ))
                             }}
+                          />
+                          <HangoutGoalIndicator
+                            lastHangoutDate={friendship.stats?.lastHangoutDate}
+                            desiredFrequency={friendship.desiredHangoutFrequency}
                           />
                       </div>
                       <div className="flex space-x-2">
