@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Heart, Share2, Link2, Lock } from 'lucide-react'
-import { TouchButton } from './touch-button'
 import { useVisualFeedback } from '@/hooks/use-visual-feedback'
 import { useAuth } from '@clerk/nextjs'
 import { sharingService, ShareData } from '@/lib/services/sharing-service'
@@ -123,59 +122,56 @@ export function TileActions({
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       {/* Heart/Save Button */}
-      <TouchButton
+      <button
         onClick={handleSave}
         disabled={!canInteract}
-        className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
+        className={`p-1.5 rounded-full transition-colors group ${
           !canInteract 
             ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
             : saved 
-              ? 'bg-red-500 text-white' 
-              : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/70'
+              ? 'bg-red-500/80 text-white hover:bg-red-500' 
+              : 'hover:bg-gray-700/50 text-gray-400 group-hover:text-red-400'
         }`}
-        hapticType="light"
         title={!canInteract ? 'Sign in to save content' : saved ? 'Remove from saved' : 'Save content'}
       >
-        <Heart className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} />
-      </TouchButton>
+        <Heart className={`w-4 h-4 ${saved ? 'fill-current' : ''}`} />
+      </button>
 
       {/* Share Button */}
-      <TouchButton
+      <button
         onClick={handleShare}
         disabled={!canInteract}
-        className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
+        className={`p-1.5 rounded-full transition-colors group ${
           !canInteract 
             ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
-            : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/70'
+            : 'hover:bg-gray-700/50 text-gray-400 group-hover:text-blue-400'
         }`}
-        hapticType="light"
         title={!canInteract ? sharingService.getPrivacyMessage(privacyLevel) : 'Share content'}
       >
         {!canInteract ? (
-          <Lock className="h-5 w-5" />
+          <Lock className="w-4 h-4" />
         ) : (
-          <Share2 className="h-5 w-5" />
+          <Share2 className="w-4 h-4" />
         )}
-      </TouchButton>
+      </button>
 
       {/* Copy Link Button */}
-      <TouchButton
+      <button
         onClick={handleCopyLink}
         disabled={!canInteract}
-        className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
+        className={`p-1.5 rounded-full transition-colors group ${
           !canInteract 
             ? 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
-            : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/70'
+            : 'hover:bg-gray-700/50 text-gray-400 group-hover:text-green-400'
         }`}
-        hapticType="light"
         title={!canInteract ? sharingService.getPrivacyMessage(privacyLevel) : 'Copy link'}
       >
         {!canInteract ? (
-          <Lock className="h-5 w-5" />
+          <Lock className="w-4 h-4" />
         ) : (
-          <Link2 className="h-5 w-5" />
+          <Link2 className="w-4 h-4" />
         )}
-      </TouchButton>
+      </button>
     </div>
   )
 }
