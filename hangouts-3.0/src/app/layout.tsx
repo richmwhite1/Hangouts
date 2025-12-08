@@ -109,6 +109,30 @@ export default function RootLayout({
                       registrations.forEach(reg => reg.unregister());
                     });
                   }
+                  
+                  // Suppress harmless server action errors from stale browser cache
+                  const originalError = console.error;
+                  console.error = function(...args) {
+                    const message = args[0]?.toString() || '';
+                    // Suppress UnrecognizedActionError - these are from stale browser cache
+                    if (message.includes('UnrecognizedActionError') || 
+                        message.includes('Server Action') && message.includes('was not found') ||
+                        message.includes('server-action-reducer')) {
+                      return; // Silently ignore
+                    }
+                    originalError.apply(console, args);
+                  };
+                  
+                  // Suppress unhandled promise rejections for server actions
+                  window.addEventListener('unhandledrejection', function(event) {
+                    if (event.reason && (
+                      event.reason.message?.includes('UnrecognizedActionError') ||
+                      event.reason.message?.includes('Server Action') ||
+                      event.reason.name === 'UnrecognizedActionError'
+                    )) {
+                      event.preventDefault(); // Suppress the error
+                    }
+                  });
                 `
               }}
             />

@@ -76,38 +76,79 @@ export async function POST(request: NextRequest) {
     }
 
     // Create content record
-    const content = await db.content.create({
-      data: {
-        id: `${validatedData.type.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: validatedData.type,
-        title: validatedData.title,
-        description: validatedData.description,
-        image: validatedData.image,
-        location: validatedData.location,
-        latitude: validatedData.latitude,
-        longitude: validatedData.longitude,
-        startTime: startTime,
-        endTime: endTime,
-        privacyLevel: validatedData.privacyLevel,
-        creatorId: user.id,
-        // Event-specific fields
-        venue: validatedData.venue,
-        address: validatedData.address,
-        city: validatedData.city,
-        state: validatedData.state,
-        zipCode: validatedData.zipCode,
-        priceMin: validatedData.priceMin,
-        priceMax: validatedData.priceMax,
-        currency: validatedData.currency,
-        ticketUrl: validatedData.ticketUrl,
-        attendeeCount: validatedData.attendeeCount,
-        externalEventId: validatedData.externalEventId,
-        source: validatedData.source,
-        // Hangout-specific fields
-        maxParticipants: validatedData.maxParticipants,
-        weatherEnabled: validatedData.weatherEnabled
+    let content
+    try {
+      content = await db.content.create({
+        data: {
+          id: `${validatedData.type.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: validatedData.type,
+          title: validatedData.title,
+          description: validatedData.description,
+          image: validatedData.image,
+          location: validatedData.location,
+          latitude: validatedData.latitude,
+          longitude: validatedData.longitude,
+          startTime: startTime,
+          endTime: endTime,
+          privacyLevel: validatedData.privacyLevel,
+          creatorId: user.id,
+          // Event-specific fields
+          venue: validatedData.venue,
+          address: validatedData.address,
+          city: validatedData.city,
+          state: validatedData.state,
+          zipCode: validatedData.zipCode,
+          priceMin: validatedData.priceMin,
+          priceMax: validatedData.priceMax,
+          currency: validatedData.currency,
+          ticketUrl: validatedData.ticketUrl,
+          attendeeCount: validatedData.attendeeCount,
+          externalEventId: validatedData.externalEventId,
+          source: validatedData.source,
+          // Hangout-specific fields
+          maxParticipants: validatedData.maxParticipants,
+          weatherEnabled: validatedData.weatherEnabled
+        }
+      })
+    } catch (error: any) {
+      // Handle case where lastActivityAt column doesn't exist in production
+      if (error?.code === 'P2022' && error?.message?.includes('lastActivityAt')) {
+        // Use raw SQL to create the content without lastActivityAt
+        const contentId = `${validatedData.type.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        await db.$executeRaw`
+          INSERT INTO content (
+            id, type, title, description, image, location, latitude, longitude,
+            "startTime", "endTime", "privacyLevel", "creatorId",
+            venue, address, city, state, "zipCode", "priceMin", "priceMax",
+            currency, "ticketUrl", "attendeeCount", "externalEventId", source,
+            "maxParticipants", "weatherEnabled", "createdAt", "updatedAt"
+          ) VALUES (
+            ${contentId}, ${validatedData.type}, ${validatedData.title},
+            ${validatedData.description || null}, ${validatedData.image || null},
+            ${validatedData.location || null}, ${validatedData.latitude || null},
+            ${validatedData.longitude || null}, ${startTime}, ${endTime},
+            ${validatedData.privacyLevel}, ${user.id},
+            ${validatedData.venue || null}, ${validatedData.address || null},
+            ${validatedData.city || null}, ${validatedData.state || null},
+            ${validatedData.zipCode || null}, ${validatedData.priceMin || 0},
+            ${validatedData.priceMax || null}, ${validatedData.currency || 'USD'},
+            ${validatedData.ticketUrl || null}, ${validatedData.attendeeCount || 0},
+            ${validatedData.externalEventId || null}, ${validatedData.source || 'MANUAL'},
+            ${validatedData.maxParticipants || null}, ${validatedData.weatherEnabled ?? false},
+            ${new Date()}, ${new Date()}
+          )
+        `
+        // Fetch the created content
+        content = await db.content.findUnique({
+          where: { id: contentId }
+        })
+        if (!content) {
+          throw new Error('Failed to create content using fallback method')
+        }
+      } else {
+        throw error
       }
-    })
+    }
 
     // Add creator as participant
     await db.content_participants.create({

@@ -358,36 +358,84 @@ export class TransactionQueries {
     coHosts?: string[] // Array of co-host user IDs
   }) {
     return await db.$transaction(async (tx) => {
-      const hangout = await tx.content.create({
-        data: {
-          id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type: 'HANGOUT',
-          title: data.title,
-          description: data.description,
-          location: data.location,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          status: 'PUBLISHED',
-          privacyLevel: data.privacyLevel,
-          image: data.image,
-          creatorId: data.creatorId,
-          updatedAt: new Date(),
-          // Hangout-specific fields
-          maxParticipants: data.maxParticipants,
-          weatherEnabled: data.weatherEnabled,
-          content_participants: {
-            create: {
-              id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              userId: data.creatorId,
-              role: 'CREATOR',
-              canEdit: true,
-              joinedAt: new Date()}
+      let hangout
+      try {
+        hangout = await tx.content.create({
+          data: {
+            id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: 'HANGOUT',
+            title: data.title,
+            description: data.description,
+            location: data.location,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            status: 'PUBLISHED',
+            privacyLevel: data.privacyLevel,
+            image: data.image,
+            creatorId: data.creatorId,
+            updatedAt: new Date(),
+            // Hangout-specific fields
+            maxParticipants: data.maxParticipants,
+            weatherEnabled: data.weatherEnabled,
+            content_participants: {
+              create: {
+                id: `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                userId: data.creatorId,
+                role: 'CREATOR',
+                canEdit: true,
+                joinedAt: new Date()}
+            }
+          },
+          include: hangoutInclude
+        })
+      } catch (error: any) {
+        // Handle case where lastActivityAt column doesn't exist in production
+        if (error?.code === 'P2022' && error?.message?.includes('lastActivityAt')) {
+          // Use raw SQL to create the hangout without lastActivityAt
+          const hangoutId = `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          const participantId = `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          
+          await tx.$executeRaw`
+            INSERT INTO content (
+              id, type, title, description, location, latitude, longitude,
+              "startTime", "endTime", "privacyLevel", "creatorId", image,
+              "weatherEnabled", "maxParticipants", status, "priceMin", "priceMax",
+              currency, "ticketUrl", "attendeeCount", "externalEventId", source,
+              "createdAt", "updatedAt"
+            ) VALUES (
+              ${hangoutId}, 'HANGOUT', ${data.title},
+              ${data.description || null}, ${data.location || null},
+              ${data.latitude || null}, ${data.longitude || null},
+              ${data.startTime}, ${data.endTime}, ${data.privacyLevel},
+              ${data.creatorId}, ${data.image || null},
+              ${data.weatherEnabled}, ${data.maxParticipants || null},
+              'PUBLISHED', 0, NULL, 'USD', NULL, 0, NULL, 'MANUAL',
+              ${new Date()}, ${new Date()}
+            )
+          `
+          
+          await tx.$executeRaw`
+            INSERT INTO content_participants (
+              id, "contentId", "userId", role, "canEdit", "isMandatory", "isCoHost", "joinedAt"
+            ) VALUES (
+              ${participantId}, ${hangoutId}, ${data.creatorId}, 'CREATOR', true, false, false, ${new Date()}
+            )
+          `
+          
+          // Fetch the created hangout
+          hangout = await tx.content.findUnique({
+            where: { id: hangoutId },
+            include: hangoutInclude
+          })
+          if (!hangout) {
+            throw new Error('Failed to create hangout using fallback method')
           }
-        },
-        include: hangoutInclude
-      })
+        } else {
+          throw error
+        }
+      }
 
       // Add invited participants if provided (excluding creator)
       if (data.participants && data.participants.length > 0) {

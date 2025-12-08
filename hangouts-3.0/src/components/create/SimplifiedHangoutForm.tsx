@@ -294,7 +294,7 @@ export function SimplifiedHangoutForm({ onSubmit, isLoading = false, onDataChang
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto space-y-6">
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto space-y-6 pb-64 sm:pb-0">
       {/* Stage 1: Initial Input - The "Magic" Entry Point */}
       <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/30 p-6">
         <div className="space-y-4">
@@ -459,7 +459,7 @@ export function SimplifiedHangoutForm({ onSubmit, isLoading = false, onDataChang
         </div>
       )}
 
-      {/* Submit Button - Fixed at bottom, above InviteFriendsBar */}
+      {/* Submit Button - Fixed at bottom */}
       {stage !== 'input' && (
         <div 
           className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 p-4 space-y-3 z-[60] shadow-2xl sm:relative sm:border-t-0 sm:bg-transparent sm:mt-6 sm:z-auto" 
@@ -495,7 +495,7 @@ export function SimplifiedHangoutForm({ onSubmit, isLoading = false, onDataChang
 
     {/* Floating Invite Friends Bar - Positioned above submit button on mobile */}
     {stage !== 'input' && (
-      <div className="fixed bottom-20 left-0 right-0 z-[55] sm:hidden">
+      <div className="fixed left-0 right-0 z-[55] sm:hidden" style={{ bottom: 'calc(220px + env(safe-area-inset-bottom, 0px))' }}>
         <InviteFriendsBar
           invitedFriends={invitedFriendsWithDetails}
           onOpenModal={() => setIsFriendModalOpen(true)}

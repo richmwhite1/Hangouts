@@ -54,83 +54,133 @@ export function TodayView({ items, loading }: TodayViewProps) {
                             </div>
 
                             <div className="md:pl-20 space-y-4">
-                                {hourEvents.map(event => (
-                                    <Link key={event.id} href={`/hangout/${event.id}`}>
-                                        <div className="group relative bg-white rounded-xl p-5 shadow-planner hover:shadow-planner-md transition-all duration-300 border border-planner-border/50 overflow-hidden">
-                                            {/* Left Accent Bar */}
-                                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${event.type === 'EVENT' ? 'bg-planner-navy' : 'bg-accent'
-                                                }`} />
+                                {hourEvents.map(event => {
+                                    // Get image with multiple fallbacks - photos are objects with originalUrl/thumbnailUrl
+                                    // The feed API already sets event.image to the first photo URL for hangouts
+                                    const eventImage = event.image 
+                                        || (event.photos && Array.isArray(event.photos) && event.photos.length > 0 
+                                            ? (event.photos[0]?.originalUrl || event.photos[0]?.thumbnailUrl || (typeof event.photos[0] === 'string' ? event.photos[0] : null))
+                                            : null)
+                                        || event.coverImage 
+                                        || '/placeholder-hangout.png'
+                                    
+                                    // Debug logging (remove in production)
+                                    if (process.env.NODE_ENV === 'development' && !event.image && event.photos?.length > 0) {
+                                        console.log('Event image debug:', {
+                                            id: event.id,
+                                            title: event.title,
+                                            hasImage: !!event.image,
+                                            photosCount: event.photos?.length,
+                                            firstPhoto: event.photos[0]
+                                        })
+                                    }
+                                    
+                                    return (
+                                        <Link key={event.id} href={`/hangout/${event.id}`}>
+                                            <div className="group relative rounded-xl shadow-planner hover:shadow-planner-md transition-all duration-300 overflow-hidden h-56 min-h-[224px] bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600">
+                                                {/* Background Image Layer */}
+                                                {eventImage && eventImage !== '/placeholder-hangout.png' ? (
+                                                    <div className="absolute inset-0">
+                                                        <img
+                                                            src={eventImage}
+                                                            alt={event.title || 'Hangout'}
+                                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                            onError={(e) => {
+                                                                // Hide image if it fails to load, gradient background will show
+                                                                e.currentTarget.style.display = 'none'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ) : null}
+                                                
+                                                {/* Dark gradient overlay for text readability - ALWAYS visible and very dark */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/60 z-0" />
 
-                                            <div className="flex items-start justify-between mb-3 pl-2">
-                                                <div>
-                                                    <h3 className="font-bold text-planner-text-primary text-xl leading-tight mb-1">
-                                                        {event.title}
-                                                    </h3>
-                                                    <div className="flex items-center gap-2 text-sm text-planner-text-secondary">
-                                                        <Clock className="w-3.5 h-3.5 text-planner-navy/60" />
-                                                        <span className="font-medium">
-                                                            {formatTimeBlock(event.startTime)} - {formatTimeBlock(event.endTime)}
+                                                {/* Left Accent Bar */}
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1.5 z-20 ${event.type === 'EVENT' ? 'bg-blue-400' : 'bg-pink-400'}`} />
+
+                                                {/* Content - All text is white with strong shadows */}
+                                                <div className="relative h-full flex flex-col justify-between p-5 z-10">
+                                                    {/* Top Section */}
+                                                    <div className="flex items-start justify-between mb-auto">
+                                                        <div className="flex-1 pr-2">
+                                                            <h3 className="font-bold text-2xl leading-tight mb-2" style={{ color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,0.8)' }}>
+                                                                {event.title || 'Untitled Hangout'}
+                                                            </h3>
+                                                            <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#ffffff' }}>
+                                                                <Clock className="w-4 h-4" style={{ color: '#ffffff' }} />
+                                                                <span style={{ color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,1)' }}>
+                                                                    {formatTimeBlock(event.startTime)} - {formatTimeBlock(event.endTime)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Type Badge */}
+                                                        <span className={`
+                                                            text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full backdrop-blur-md border-2
+                                                            ${event.type === 'EVENT'
+                                                                ? 'bg-blue-500/90 text-white border-white/30 shadow-lg'
+                                                                : 'bg-pink-500/90 text-white border-white/30 shadow-lg'
+                                                            }
+                                                        `} style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+                                                            {event.type === 'EVENT' ? 'Event' : 'Hangout'}
                                                         </span>
                                                     </div>
-                                                </div>
 
-                                                {/* Type Badge */}
-                                                <span className={`
-                                                    text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full
-                                                    ${event.type === 'EVENT'
-                                                        ? 'bg-planner-navy/10 text-planner-navy'
-                                                        : 'bg-accent/10 text-accent'
-                                                    }
-                                                `}>
-                                                    {event.type === 'EVENT' ? 'Event' : 'Hangout'}
-                                                </span>
-                                            </div>
-
-                                            <div className="pl-2 space-y-2.5">
-                                                {event.location && (
-                                                    <div className="flex items-center gap-2 text-sm text-planner-text-secondary">
-                                                        <MapPin className="w-4 h-4 text-planner-text-muted" />
-                                                        <span className="line-clamp-1">{event.location}</span>
-                                                    </div>
-                                                )}
-
-                                                {event._count?.participants && (
-                                                    <div className="flex items-center gap-2 text-sm text-planner-text-secondary">
-                                                        <Users className="w-4 h-4 text-planner-text-muted" />
-                                                        <span>{event._count.participants} attending</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Participants Avatars Preview (Mock) */}
-                                                {event.participants && event.participants.length > 0 && (
-                                                    <div className="flex -space-x-2 pt-2">
-                                                        {event.participants.slice(0, 4).map((p: any, i: number) => (
-                                                            <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-planner-tab flex items-center justify-center text-[10px] font-bold text-planner-text-secondary overflow-hidden">
-                                                                {p.user.avatar ? (
-                                                                    <img src={p.user.avatar} alt={p.user.name} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    p.user.name[0]
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                        {event.participants.length > 4 && (
-                                                            <div className="w-7 h-7 rounded-full border-2 border-white bg-planner-tab flex items-center justify-center text-[10px] font-bold text-planner-text-secondary">
-                                                                +{event.participants.length - 4}
+                                                    {/* Bottom Section */}
+                                                    <div className="space-y-2.5 mt-auto">
+                                                        {event.location && (
+                                                            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#ffffff' }}>
+                                                                <MapPin className="w-4 h-4" style={{ color: '#ffffff' }} />
+                                                                <span className="line-clamp-1" style={{ color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,1)' }}>
+                                                                    {event.location}
+                                                                </span>
                                                             </div>
                                                         )}
-                                                    </div>
-                                                )}
-                                            </div>
 
-                                            {/* Action Button (Visible on Hover/Focus) */}
-                                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button className="p-1.5 rounded-full hover:bg-planner-tab text-planner-text-muted hover:text-planner-navy">
-                                                    <MoreHorizontal className="w-5 h-5" />
-                                                </button>
+                                                        <div className="flex items-center justify-between">
+                                                            {event._count?.participants && (
+                                                                <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#ffffff' }}>
+                                                                    <Users className="w-4 h-4" style={{ color: '#ffffff' }} />
+                                                                    <span style={{ color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,1)' }}>
+                                                                        {event._count.participants} attending
+                                                                    </span>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Participants Avatars Preview */}
+                                                            {event.participants && event.participants.length > 0 && (
+                                                                <div className="flex -space-x-2">
+                                                                    {event.participants.slice(0, 4).map((p: any, i: number) => (
+                                                                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-white/30 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white overflow-hidden shadow-lg">
+                                                                            {p.user?.avatar ? (
+                                                                                <img src={p.user.avatar} alt={p.user?.name || ''} className="w-full h-full object-cover" />
+                                                                            ) : (
+                                                                                p.user?.name?.[0] || '?'
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                    {event.participants.length > 4 && (
+                                                                        <div className="w-8 h-8 rounded-full border-2 border-white bg-white/30 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white shadow-lg">
+                                                                            +{event.participants.length - 4}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Action Button (Visible on Hover/Focus) */}
+                                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                                        <button className="p-2 rounded-full bg-black/60 backdrop-blur-md hover:bg-black/80 text-white border-2 border-white/30 shadow-lg">
+                                                            <MoreHorizontal className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                ))}
+                                        </Link>
+                                    )
+                                })}
                             </div>
                         </div>
                     )

@@ -278,34 +278,71 @@ export async function POST(request: NextRequest) {
 
     // Create the hangout in the database
     console.log('Hangouts API - Creating hangout in database...')
-    const hangout = await db.content.create({
-      data: {
-        id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: 'HANGOUT',
-        title: validatedData.title,
-        description: validatedData.description || null,
-        location: validatedData.location || null,
-        latitude: validatedData.latitude || null,
-        longitude: validatedData.longitude || null,
-        startTime,
-        endTime,
-        privacyLevel: validatedData.privacyLevel || 'PUBLIC',
-        creatorId: userId,
-        image: validatedData.image || null,
-        weatherEnabled: validatedData.weatherEnabled ?? false,
-        maxParticipants: validatedData.maxParticipants || null,
-        status: 'PUBLISHED',
-        priceMin: 0,
-        priceMax: null,
-        currency: 'USD',
-        ticketUrl: null,
-        attendeeCount: 0,
-        externalEventId: null,
-        source: 'MANUAL',
-        createdAt: new Date(),
-        updatedAt: new Date()
+    let hangout
+    try {
+      hangout = await db.content.create({
+        data: {
+          id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: 'HANGOUT',
+          title: validatedData.title,
+          description: validatedData.description || null,
+          location: validatedData.location || null,
+          latitude: validatedData.latitude || null,
+          longitude: validatedData.longitude || null,
+          startTime,
+          endTime,
+          privacyLevel: validatedData.privacyLevel || 'PUBLIC',
+          creatorId: userId,
+          image: validatedData.image || null,
+          weatherEnabled: validatedData.weatherEnabled ?? false,
+          maxParticipants: validatedData.maxParticipants || null,
+          status: 'PUBLISHED',
+          priceMin: 0,
+          priceMax: null,
+          currency: 'USD',
+          ticketUrl: null,
+          attendeeCount: 0,
+          externalEventId: null,
+          source: 'MANUAL',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
+    } catch (error: any) {
+      // Handle case where lastActivityAt column doesn't exist in production
+      if (error?.code === 'P2022' && error?.message?.includes('lastActivityAt')) {
+        console.log('Hangouts API - lastActivityAt column not found, using raw SQL fallback...')
+        // Use raw SQL to create the hangout without lastActivityAt
+        const hangoutId = `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        await db.$executeRaw`
+          INSERT INTO content (
+            id, type, title, description, location, latitude, longitude,
+            "startTime", "endTime", "privacyLevel", "creatorId", image,
+            "weatherEnabled", "maxParticipants", status, "priceMin", "priceMax",
+            currency, "ticketUrl", "attendeeCount", "externalEventId", source,
+            "createdAt", "updatedAt"
+          ) VALUES (
+            ${hangoutId}, 'HANGOUT', ${validatedData.title},
+            ${validatedData.description || null}, ${validatedData.location || null},
+            ${validatedData.latitude || null}, ${validatedData.longitude || null},
+            ${startTime}, ${endTime}, ${validatedData.privacyLevel || 'PUBLIC'},
+            ${userId}, ${validatedData.image || null},
+            ${validatedData.weatherEnabled ?? false}, ${validatedData.maxParticipants || null},
+            'PUBLISHED', 0, NULL, 'USD', NULL, 0, NULL, 'MANUAL',
+            ${new Date()}, ${new Date()}
+          )
+        `
+        // Fetch the created hangout
+        hangout = await db.content.findUnique({
+          where: { id: hangoutId }
+        })
+        if (!hangout) {
+          throw new Error('Failed to create hangout using fallback method')
+        }
+      } else {
+        throw error
       }
-    })
+    }
     console.log('Hangouts API - Hangout created successfully:', hangout.id)
 
     // Add creator as participant
