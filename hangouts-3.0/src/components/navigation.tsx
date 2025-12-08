@@ -80,12 +80,12 @@ export function Navigation() {
                     {notificationCount > 0 && (
                       <div className="absolute -top-1 -right-1">
                         <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
-                        <Badge
-                          variant="destructive"
+                      <Badge
+                        variant="destructive"
                           className="relative h-5 min-w-[20px] px-1 flex items-center justify-center text-xs font-bold shadow-lg"
-                        >
-                          {notificationCount > 99 ? '99+' : notificationCount}
-                        </Badge>
+                      >
+                        {notificationCount > 99 ? '99+' : notificationCount}
+                      </Badge>
                       </div>
                     )}
                   </Button>

@@ -480,18 +480,18 @@ self.addEventListener('notificationclick', (event) => {
   // Handle view action or default click
   else {
     // Navigate to specific page based on notification type and data
-    if (data.hangoutId) {
-      urlToOpen = `/hangout/${data.hangoutId}`
+  if (data.hangoutId) {
+    urlToOpen = `/hangout/${data.hangoutId}`
     } else if (data.eventId) {
       urlToOpen = `/event/${data.eventId}`
-    } else if (data.conversationId) {
-      urlToOpen = `/messages/${data.conversationId}`
-    } else if (data.friendRequestId) {
-      urlToOpen = '/friends'
+  } else if (data.conversationId) {
+    urlToOpen = `/messages/${data.conversationId}`
+  } else if (data.friendRequestId) {
+    urlToOpen = '/friends'
     } else if (data.type === 'MESSAGE_RECEIVED' || data.type === 'HANGOUT_NEW_MESSAGE') {
-      urlToOpen = '/messages'
+    urlToOpen = '/messages'
     } else if (data.type && data.type.startsWith('HANGOUT_')) {
-      urlToOpen = '/hangouts'
+    urlToOpen = '/hangouts'
     } else if (data.type && data.type.startsWith('EVENT_')) {
       urlToOpen = '/events'
     } else if (data.type === 'FRIEND_REQUEST') {

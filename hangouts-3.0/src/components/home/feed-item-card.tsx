@@ -96,7 +96,7 @@ export function FeedItemCard({ item, showUpdatedBadge = false }: FeedItemCardPro
 
         {/* Recently Updated Pulse Badge and Activity Indicators - Top Left */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          {isRecentlyUpdated && updatedAtText && (
+        {isRecentlyUpdated && updatedAtText && (
             <div className="relative">
               {/* Pulsing animation */}
               <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping"></span>
@@ -114,7 +114,7 @@ export function FeedItemCard({ item, showUpdatedBadge = false }: FeedItemCardPro
             needsVote={item.needsVote}
             needsRSVP={item.needsRSVP}
           />
-        </div>
+          </div>
 
         {/* Type Badge - Top Right */}
         <div className="absolute top-4 right-4 z-10">

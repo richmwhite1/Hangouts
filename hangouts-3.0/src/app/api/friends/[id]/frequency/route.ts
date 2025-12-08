@@ -75,67 +75,117 @@ export async function PUT(
     // Update the frequency
     // Note: We update whichever friendship record we found
     // In a bidirectional system, both records should ideally be kept in sync
-    const updatedFriendship = await db.friendship.update({
-      where: { id: friendship.id },
-      data: {
-        desiredHangoutFrequency: frequency
-      },
-      include: {
-        friend: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true
-          }
+    try {
+      const updatedFriendship = await db.friendship.update({
+        where: { id: friendship.id },
+        data: {
+          desiredHangoutFrequency: frequency
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true
+        include: {
+          friend: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true
+            }
           }
-        }
-      }
-    })
-
-    // If we updated the reverse friendship, also update the forward one if it exists
-    if (friendship.userId === friendId && friendship.friendId === user.id) {
-      const forwardFriendship = await db.friendship.findFirst({
-        where: {
-          userId: user.id,
-          friendId: friendId,
-          status: 'ACTIVE'
         }
       })
-      
-      if (forwardFriendship) {
-        await db.friendship.update({
-          where: { id: forwardFriendship.id },
-          data: {
-            desiredHangoutFrequency: frequency
+
+      // If we updated the reverse friendship, also update the forward one if it exists
+      if (friendship.userId === friendId && friendship.friendId === user.id) {
+        const forwardFriendship = await db.friendship.findFirst({
+          where: {
+            userId: user.id,
+            friendId: friendId,
+            status: 'ACTIVE'
           }
         })
-        logger.info('Updated both bidirectional friendship records', { 
-          userId: user.id, 
-          friendId,
-          frequency 
-        })
+        
+        if (forwardFriendship) {
+          await db.friendship.update({
+            where: { id: forwardFriendship.id },
+            data: {
+              desiredHangoutFrequency: frequency
+            }
+          })
+          logger.info('Updated both bidirectional friendship records', { 
+            userId: user.id, 
+            friendId,
+            frequency 
+          })
+        }
       }
+
+      logger.info('Updated hangout frequency', {
+        friendshipId: friendship.id,
+        userId: user.id,
+        friendId,
+        frequency
+      })
+
+      return NextResponse.json({
+        success: true,
+        friendship: updatedFriendship
+      })
+    } catch (updateError) {
+      // If include fails, try without include
+      logger.warn('Update with include failed, trying without include', { 
+        error: updateError instanceof Error ? updateError.message : String(updateError) 
+      })
+      
+      const updatedFriendship = await db.friendship.update({
+        where: { id: friendship.id },
+        data: {
+          desiredHangoutFrequency: frequency
+        }
+      })
+
+      // If we updated the reverse friendship, also update the forward one if it exists
+      if (friendship.userId === friendId && friendship.friendId === user.id) {
+        const forwardFriendship = await db.friendship.findFirst({
+          where: {
+            userId: user.id,
+            friendId: friendId,
+            status: 'ACTIVE'
+          }
+        })
+        
+        if (forwardFriendship) {
+          await db.friendship.update({
+            where: { id: forwardFriendship.id },
+            data: {
+              desiredHangoutFrequency: frequency
+            }
+          })
+        }
+      }
+
+      logger.info('Updated hangout frequency (without include)', {
+        friendshipId: friendship.id,
+        userId: user.id,
+        friendId,
+        frequency
+      })
+
+      return NextResponse.json({
+        success: true,
+        friendship: {
+          id: updatedFriendship.id,
+          desiredHangoutFrequency: updatedFriendship.desiredHangoutFrequency
+        }
+      })
     }
 
-    logger.info('Updated hangout frequency', {
-      friendshipId: friendship.id,
-      userId: user.id,
-      friendId,
-      frequency
-    })
-
-    return NextResponse.json({
-      success: true,
-      friendship: updatedFriendship
-    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     const errorStack = error instanceof Error ? error.stack : undefined
