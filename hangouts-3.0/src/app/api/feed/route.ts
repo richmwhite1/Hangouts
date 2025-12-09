@@ -89,7 +89,7 @@ async function getFeedHandler(request: NextRequest) {
         }] : [])
       ]
     } else {
-      // HOME FEED: Show content user created, was invited to, has saved/RSVP'd, OR public content
+      // HOME FEED: Show only content user has interacted with (created, invited to, saved, or RSVP'd)
       if (userId) {
         whereClause.OR = [
           // User's own content (all privacy levels)
@@ -109,16 +109,14 @@ async function getFeedHandler(request: NextRequest) {
           // Content user has RSVP'd to (for events)
           {
             rsvps: {
-              some: { 
+              some: {
                 userId: userId,
                 status: { in: ['YES', 'MAYBE'] }
               }
             }
-          },
-          // PUBLIC content (everyone can see public hangouts and events)
-          { privacyLevel: 'PUBLIC' }
+          }
         ]
-        logger.debug('Using OR filter for user', { userId }, 'FEED')
+        logger.debug('Using OR filter for user (no public content)', { userId }, 'FEED')
       } else {
         // If no user, show only public content
         whereClause.privacyLevel = 'PUBLIC'

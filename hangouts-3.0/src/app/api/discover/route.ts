@@ -11,6 +11,7 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
   const includePast = searchParams.get('includePast') === 'true'
+  const contentType = searchParams.get('contentType') || 'all' // 'all', 'hangouts', 'events'
   const page = parseInt(searchParams.get('page') || '1')
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Increased default to 50, max 100
   const offset = (page - 1) * limit
@@ -116,9 +117,18 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
       })
     }
 
+    // Build content type filter
+    let contentTypeFilter: any = {}
+    if (contentType === 'hangouts') {
+      contentTypeFilter.type = 'HANGOUT'
+    } else if (contentType === 'events') {
+      contentTypeFilter.type = 'EVENT'
+    }
+    // If contentType is 'all', don't filter by type
+
     const hangouts = await db.content.findMany({
       where: {
-        type: 'HANGOUT',
+        ...contentTypeFilter,
         ...whereClause
       },
       select: {
@@ -188,7 +198,7 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
     // Get total count for pagination
     const totalCount = await db.content.count({
       where: {
-        type: 'HANGOUT',
+        ...contentTypeFilter,
         ...whereClause
       }
     })

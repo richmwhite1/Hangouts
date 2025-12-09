@@ -52,6 +52,7 @@ export function DiscoveryPageServer() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [mounted, setMounted] = useState(false)
+  const [contentType, setContentType] = useState('all') // 'all', 'hangouts', 'events'
 
   useEffect(() => {
     setMounted(true)
@@ -63,8 +64,10 @@ export function DiscoveryPageServer() {
     const fetchHangouts = async () => {
       try {
         setIsLoading(true)
-        const hangoutsData = await getHangouts()
-        setHangouts(hangoutsData)
+        // Pass contentType parameter to API
+        const response = await fetch(`/api/discover?contentType=${contentType}`)
+        const data = await response.json()
+        setHangouts(data.hangouts || [])
       } catch (err) {
         logger.error('Error fetching hangouts:', err);
         setError('Failed to load hangouts')
@@ -74,7 +77,7 @@ export function DiscoveryPageServer() {
     }
 
     fetchHangouts()
-  }, [mounted])
+  }, [mounted, contentType])
 
   // Ensure hangouts is an array
   const safeHangouts = Array.isArray(hangouts) ? hangouts : []
@@ -190,6 +193,42 @@ export function DiscoveryPageServer() {
         <p className="text-muted-foreground text-sm">Find events near you</p>
       </div>
 
+      {/* Content Type Tabs */}
+      <div className="flex justify-center">
+        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1">
+          <button
+            onClick={() => setContentType('all')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              contentType === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setContentType('hangouts')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              contentType === 'hangouts'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            Hangouts
+          </button>
+          <button
+            onClick={() => setContentType('events')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              contentType === 'events'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            Events
+          </button>
+        </div>
+      </div>
+
       {/* Search and Filters */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -239,7 +278,7 @@ export function DiscoveryPageServer() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">
-            {displayHangouts.length} found
+            {displayHangouts.length} {contentType === 'all' ? 'results' : contentType} found
           </h2>
           <Select defaultValue="trending">
             <SelectTrigger className="w-[140px]">
