@@ -47,7 +47,7 @@ export const useFriends = (): UseFriendsReturn => {
     }
   }
 
-  const { isSignedIn, isLoaded } = clerkAuth
+  const { isSignedIn, isLoaded, getToken } = clerkAuth
   const [friends, setFriends] = useState<User[]>([])
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -67,15 +67,18 @@ export const useFriends = (): UseFriendsReturn => {
     try {
       setIsLoading(true)
       setError(null)
-      
+
+      // Get the JWT token and set it on the API client
+      const token = await getToken()
+      apiClient.setToken(token)
+
       const [friendsData, requestsData] = await Promise.all([
         apiClient.getFriends(),
         apiClient.getFriendRequests()
       ])
-      
-      setFriends(friendsData.friends)
-      setSentRequests(requestsData.sent)
-      setReceivedRequests(requestsData.received)
+      setFriends(friendsData.friends || [])
+      setSentRequests(requestsData.sent || [])
+      setReceivedRequests(requestsData.received || [])
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch friends data'
       setError(errorMessage)

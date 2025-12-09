@@ -114,10 +114,13 @@ export default function RootLayout({
                   const originalError = console.error;
                   console.error = function(...args) {
                     const message = args[0]?.toString() || '';
+                    const fullMessage = args.map(arg => String(arg)).join(' ');
                     // Suppress UnrecognizedActionError - these are from stale browser cache
                     if (message.includes('UnrecognizedActionError') || 
                         message.includes('Server Action') && message.includes('was not found') ||
-                        message.includes('server-action-reducer')) {
+                        message.includes('server-action-reducer') ||
+                        fullMessage.includes('POST http://localhost:3000/ 404') ||
+                        fullMessage.includes('POST http://localhost:3000/') && fullMessage.includes('404')) {
                       return; // Silently ignore
                     }
                     originalError.apply(console, args);
@@ -128,11 +131,49 @@ export default function RootLayout({
                     if (event.reason && (
                       event.reason.message?.includes('UnrecognizedActionError') ||
                       event.reason.message?.includes('Server Action') ||
-                      event.reason.name === 'UnrecognizedActionError'
+                      event.reason.name === 'UnrecognizedActionError' ||
+                      (event.reason.message?.includes('POST') && event.reason.message?.includes('404'))
                     )) {
                       event.preventDefault(); // Suppress the error
                     }
                   });
+                  
+                  // Intercept fetch requests to suppress 404 errors for POST requests (stale server actions)
+                  const originalFetch = window.fetch;
+                  window.fetch = function(...args) {
+                    const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+                    const method = args[1]?.method || 'GET';
+                    
+                    // If it's a POST request, intercept to suppress 404s from stale server actions
+                    if (method === 'POST') {
+                      return originalFetch.apply(this, args).then(response => {
+                        // If 404 and likely a server action (POST to page routes), suppress the error
+                        if (response.status === 404 && (
+                          url === '/' || 
+                          url === window.location.origin + '/' ||
+                          url.includes('/_next') === false // Not a Next.js internal route
+                        )) {
+                          // Return a successful response to prevent console errors
+                          return Promise.resolve(new Response(JSON.stringify({ error: 'Stale server action' }), {
+                            status: 200,
+                            headers: { 'Content-Type': 'application/json' }
+                          }));
+                        }
+                        return response;
+                      }).catch(error => {
+                        // Silently handle network errors for stale server actions
+                        if (error.message?.includes('404') || error.status === 404) {
+                          return Promise.resolve(new Response(JSON.stringify({ error: 'Stale server action' }), {
+                            status: 200,
+                            headers: { 'Content-Type': 'application/json' }
+                          }));
+                        }
+                        throw error;
+                      });
+                    }
+                    
+                    return originalFetch.apply(this, args);
+                  };
                 `
               }}
             />

@@ -120,29 +120,44 @@ export async function getUserFriends(userId: string): Promise<UniversalFriend[]>
       }
     })
 
-    const friends = friendships
-      .map(friendship => {
-        try {
-          const friendUser = friendship.userId === userId ? friendship.friend : friendship.user
-          // Handle null friend/user gracefully
-          if (!friendUser) {
-            logger.warn(`Friendship ${friendship.id} has null friend/user, skipping`)
-            return null
+    const friendsMap = new Map<string, UniversalFriend>()
+    
+    friendships.forEach(friendship => {
+      try {
+        const friendUser = friendship.userId === userId ? friendship.friend : friendship.user
+        // Handle null friend/user gracefully
+        if (!friendUser) {
+          logger.warn(`Friendship ${friendship.id} has null friend/user, skipping`)
+          return
+        }
+        
+        // Deduplicate by friend ID - if we already have this friend, keep the one with the earliest createdAt
+        const existingFriend = friendsMap.get(friendUser.id)
+        if (existingFriend) {
+          // Keep the friendship with the earliest createdAt date
+          if (friendship.createdAt < existingFriend.createdAt) {
+            friendsMap.set(friendUser.id, {
+              id: friendship.id,
+              friend: friendUser,
+              status: friendship.status || 'ACTIVE',
+              createdAt: friendship.createdAt
+            })
           }
-          return {
+        } else {
+          friendsMap.set(friendUser.id, {
             id: friendship.id,
             friend: friendUser,
             status: friendship.status || 'ACTIVE',
             createdAt: friendship.createdAt
-          }
-        } catch (mapError: any) {
-          logger.warn(`Error mapping friendship ${friendship.id}:`, mapError?.message || String(mapError))
-          return null
+          })
         }
-      })
-      .filter((f): f is UniversalFriend => f !== null)
+      } catch (mapError: any) {
+        logger.warn(`Error mapping friendship ${friendship.id}:`, mapError?.message || String(mapError))
+      }
+    })
 
-    logger.info(`Successfully fetched ${friends.length} friends`, { userId, totalFriendships: friendships.length })
+    const friends = Array.from(friendsMap.values())
+    logger.info(`Successfully fetched ${friends.length} unique friends (from ${friendships.length} friendships)`, { userId })
     return friends
 
   } catch (error: any) {

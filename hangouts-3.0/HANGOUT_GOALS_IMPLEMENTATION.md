@@ -199,3 +199,4 @@ curl http://localhost:3000/api/cron/relationship-reminders
 - Scheduler can be disabled in development by not setting `ENABLE_SCHEDULER=true`
 - Manual trigger endpoint useful for testing and external cron integration
 
+

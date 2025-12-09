@@ -159,3 +159,4 @@
 **The component will no longer crash!** It gracefully handles the API error and allows manual input. ✅
 
 **To get full autocomplete functionality, enable the Maps JavaScript API in Google Cloud Console.**
+

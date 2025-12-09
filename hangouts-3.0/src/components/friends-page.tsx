@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { AvatarWithStatus } from "@/components/ui/avatar-with-status"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
@@ -19,18 +18,19 @@ import {
   UserSearch,
   UserMinus,
   Plus,
-  Settings,
-  Phone,
-  Video,
-  Star,
-  Clock,
-  Globe
+  Settings
 } from "lucide-react"
 import { useFriends } from "@/hooks/use-friends"
 import { useAuth } from "@clerk/nextjs"
 import { User } from "@/types/api"
 import Link from "next/link"
 import { logger } from '@/lib/logger'
+import { getHangoutStats, getSharedHangouts, SharedHangout } from '@/lib/services/friend-relationship-service'
+import { getTimeElapsedInfo, RelationshipStatus } from '@/lib/friend-relationship-utils'
+import { HangoutFrequency } from '@/lib/services/relationship-reminder-service'
+import { FriendSection, groupFriendsByGoalStatus } from './friends/friend-section'
+import { GoalSettingModal } from './friends/goal-setting-modal'
+import { toast } from 'sonner'
 interface Group {
   id: string
   name: string
@@ -51,6 +51,29 @@ interface Group {
   createdAt: string
   updatedAt: string
 }
+
+interface EnhancedFriend {
+  id: string
+  name: string
+  username: string
+  avatar?: string
+  isActive: boolean
+  friendshipCreatedAt: Date
+  desiredHangoutFrequency: HangoutFrequency | null
+  hangoutStats: {
+    lastHangoutDate: Date | null
+    totalHangouts: number
+    lastHangout?: SharedHangout
+  }
+  upcomingHangouts: SharedHangout[]
+  goalStatus: {
+    status: RelationshipStatus
+    days: number | null
+    text: string
+    daysUntilThreshold?: number
+    thresholdDays?: number
+  }
+}
 export function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("friends")
@@ -62,6 +85,12 @@ export function FriendsPage() {
   // Group-related state
   const [groups, setGroups] = useState<Group[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(false)
+  // Enhanced friend data
+  const [enhancedFriends, setEnhancedFriends] = useState<EnhancedFriend[]>([])
+  const [isLoadingStats, setIsLoadingStats] = useState(false)
+  // Goal setting modal
+  const [goalModalOpen, setGoalModalOpen] = useState(false)
+  const [goalModalFriend, setGoalModalFriend] = useState<EnhancedFriend | null>(null)
   const { isSignedIn, isLoaded, user, getToken } = useAuth()
   const {
     friends,
@@ -113,23 +142,150 @@ export function FriendsPage() {
 
   const updateFriendStatuses = () => {
     const statusMap = new Map<string, 'none' | 'pending' | 'friends' | 'received'>()
-    
+
     // Mark friends
     friends.forEach(friend => {
       statusMap.set(friend.friend.id, 'friends')
     })
-    
+
     // Mark sent requests
     sentRequests.forEach(request => {
       statusMap.set(request.receiver.id, 'pending')
     })
-    
+
     // Mark received requests
     receivedRequests.forEach(request => {
       statusMap.set(request.sender.id, 'received')
     })
-    
+
     setFriendStatuses(statusMap)
+  }
+
+  // Fetch enhanced friend data with hangout stats and upcoming plans
+  const fetchEnhancedFriendData = async () => {
+    if (!user || friends.length === 0) return
+
+    setIsLoadingStats(true)
+    try {
+      const enhancedFriendsData: EnhancedFriend[] = []
+
+      // Process friends in parallel for better performance
+      const friendPromises = friends.map(async (friend) => {
+        try {
+          // Get hangout stats for this friend
+          const hangoutStats = await getHangoutStats(user.id, friend.friend.id)
+
+          // Get all shared hangouts to find upcoming ones
+          const allSharedHangouts = await getSharedHangouts(user.id, friend.friend.id)
+
+          // Filter for upcoming hangouts (startTime in the future)
+          const now = new Date()
+          const upcomingHangouts = allSharedHangouts.filter(hangout => {
+            if (!hangout.startTime) return false
+            return new Date(hangout.startTime) > now
+          }).slice(0, 3) // Limit to 3 upcoming hangouts
+
+          // Calculate goal status
+          const goalStatus = getTimeElapsedInfo(
+            hangoutStats.lastHangoutDate,
+            friend.friend.desiredHangoutFrequency || null
+          )
+
+          return {
+            id: friend.friend.id,
+            name: friend.friend.name,
+            username: friend.friend.username,
+            avatar: friend.friend.avatar || undefined,
+            isActive: friend.friend.isActive,
+            friendshipCreatedAt: friend.friendshipCreatedAt,
+            desiredHangoutFrequency: friend.friend.desiredHangoutFrequency || null,
+            hangoutStats: {
+              lastHangoutDate: hangoutStats.lastHangoutDate,
+              totalHangouts: hangoutStats.totalHangouts,
+              lastHangout: hangoutStats.lastHangout
+            },
+            upcomingHangouts,
+            goalStatus
+          } as EnhancedFriend
+        } catch (error) {
+          logger.error(`Error fetching data for friend ${friend.friend.id}:`, error)
+          // Return basic friend data if stats fail
+          return {
+            id: friend.friend.id,
+            name: friend.friend.name,
+            username: friend.friend.username,
+            avatar: friend.friend.avatar || undefined,
+            isActive: friend.friend.isActive,
+            friendshipCreatedAt: friend.friendshipCreatedAt,
+            desiredHangoutFrequency: friend.friend.desiredHangoutFrequency || null,
+            hangoutStats: {
+              lastHangoutDate: null,
+              totalHangouts: 0
+            },
+            upcomingHangouts: [],
+            goalStatus: {
+              status: 'no-goal' as RelationshipStatus,
+              days: null,
+              text: 'Never'
+            }
+          } as EnhancedFriend
+        }
+      })
+
+      const results = await Promise.all(friendPromises)
+      setEnhancedFriends(results)
+    } catch (error) {
+      logger.error('Error fetching enhanced friend data:', error)
+      setEnhancedFriends([])
+    } finally {
+      setIsLoadingStats(false)
+    }
+  }
+
+  // Goal setting handlers
+  const handleOpenGoalModal = (friendId: string) => {
+    const friend = enhancedFriends.find(f => f.id === friendId)
+    if (friend) {
+      setGoalModalFriend(friend)
+      setGoalModalOpen(true)
+    }
+  }
+
+  const handleSaveGoal = async (frequency: HangoutFrequency | null) => {
+    if (!goalModalFriend) return
+
+    try {
+      // Call the existing API endpoint
+      const response = await fetch(`/api/friends/${goalModalFriend.id}/frequency`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await getToken()}`
+        },
+        body: JSON.stringify({ frequency })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save goal')
+      }
+
+      // Refresh friend data
+      await fetchEnhancedFriendData()
+    } catch (error) {
+      logger.error('Error saving goal:', error)
+      throw error
+    }
+  }
+
+  // Message and invite handlers (wrappers for existing functions)
+  const handleMessageFriend = (friendId: string) => {
+    createDirectMessage(friendId)
+  }
+
+  const handleInviteFriend = (friendId: string) => {
+    // For now, just log - we'll implement invite logic later
+    logger.info('Invite friend:', friendId)
+    // TODO: Implement invite to hangout functionality
   }
 
   // Send friend request
@@ -228,6 +384,13 @@ export function FriendsPage() {
   useEffect(() => {
     updateFriendStatuses()
   }, [friends, sentRequests, receivedRequests])
+
+  // Fetch enhanced friend data when friends change
+  useEffect(() => {
+    if (isSignedIn && user && friends.length > 0) {
+      fetchEnhancedFriendData()
+    }
+  }, [friends, isSignedIn, user])
   // Load all users when component mounts and when "Find People" tab is activated
   useEffect(() => {
     if (isSignedIn && user) {
@@ -304,57 +467,22 @@ export function FriendsPage() {
                 Find People
               </Button>
             </div>
+          ) : isLoadingStats ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading friend activity...</p>
+            </div>
           ) : (
-            <div className="space-y-3">
-              {friends.map((friend) => (
-                <Card key={friend.id} className="bg-gray-800/50 border-gray-700/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <AvatarWithStatus
-                          src={friend.avatar || "/placeholder-avatar.png"}
-                          alt={friend.name || "User"}
-                          fallback={friend.name || "U"}
-                          size="xl"
-                          status={friend.isActive ? "online" : "offline"}
-                          className="w-48 h-48"
-                        />
-                        <div>
-                          <h3 className="font-medium text-white">{friend.name}</h3>
-                          <p className="text-sm text-gray-400">@{friend.username}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {friend.isActive ? "Online" : "Offline"}
-                            </Badge>
-                            <span className="text-xs text-gray-500">
-                              Friends since {new Date(friend.friendshipCreatedAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => createDirectMessage(friend.id)}
-                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 px-3 py-1.5 rounded-lg"
-                        >
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          Message
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => unfriendUser(friend.id)}
-                          className="text-gray-400 hover:text-red-400 hover:bg-red-900/20 px-3 py-1.5 rounded-lg"
-                        >
-                          <UserMinus className="w-4 h-4 mr-1" />
-                          Unfriend
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-6">
+              {groupFriendsByGoalStatus(enhancedFriends).map((section, index) => (
+                <FriendSection
+                  key={section.title}
+                  section={section}
+                  onMessageFriend={handleMessageFriend}
+                  onInviteFriend={handleInviteFriend}
+                  onSetGoal={handleOpenGoalModal}
+                  defaultExpanded={index === 0} // Expand first section by default
+                />
               ))}
             </div>
           )}
@@ -653,6 +781,24 @@ export function FriendsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Goal Setting Modal */}
+      {goalModalFriend && (
+        <GoalSettingModal
+          isOpen={goalModalOpen}
+          onClose={() => {
+            setGoalModalOpen(false)
+            setGoalModalFriend(null)
+          }}
+          friendId={goalModalFriend.id}
+          friendName={goalModalFriend.name}
+          friendAvatar={goalModalFriend.avatar}
+          currentFrequency={goalModalFriend.desiredHangoutFrequency}
+          lastHangoutDate={goalModalFriend.hangoutStats.lastHangoutDate}
+          goalStatus={goalModalFriend.goalStatus.status}
+          onSave={handleSaveGoal}
+        />
+      )}
     </div>
   )
 }

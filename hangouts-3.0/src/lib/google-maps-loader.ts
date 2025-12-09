@@ -156,3 +156,4 @@ export function isGoogleMapsLoaded(): boolean {
          !!window.google?.maps?.places &&
          isScriptLoaded
 }
+
