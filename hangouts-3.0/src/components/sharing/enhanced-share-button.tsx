@@ -83,7 +83,7 @@ export function EnhancedShareButton({
       const success = await sharingService.shareContent(shareData, {
         includeImage: false,
         includeDescription: true,
-        customMessage: `Check out this ${type}: ${title}`
+        customMessage: `${creator || 'Someone'} invited you to ${title}!${startTime ? ` 📅 ${new Date(startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}` : ''}${location ? ` 📍 ${location}` : ''}\n\nAre you interested?`
       })
 
       if (success) {

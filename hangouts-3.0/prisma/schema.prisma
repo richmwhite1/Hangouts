@@ -84,6 +84,7 @@ model FriendRequest {
   receiverId String
   status     FriendRequestStatus @default(PENDING)
   message    String?
+  metadata   Json?
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
   receiver   User                @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)

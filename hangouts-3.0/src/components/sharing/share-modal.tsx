@@ -32,6 +32,7 @@ interface ShareModalProps {
   venue?: string
   city?: string
   price?: number
+  hostName?: string
   image?: string
 }
 
@@ -48,6 +49,7 @@ export function ShareModal({
   venue,
   city,
   price,
+  hostName,
   image
 }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
@@ -97,7 +99,7 @@ export function ShareModal({
     }
 
     try {
-      const shareText = `${title}\n\n${description || `Join us for this ${type}!`}\n\n${startTime ? `When: ${formatDate(startTime)}${endTime ? ` at ${formatTime(startTime)}` : ''}` : ''}\n${location ? `Where: ${location}` : venue ? `Where: ${venue}${city ? `, ${city}` : ''}` : ''}\n${price !== undefined ? `Price: ${formatPrice(price)}` : ''}\n\n${url}`
+      const shareText = `${hostName || 'Someone'} invited you to ${title}!\n\n${startTime ? `📅 ${formatDate(startTime)}${endTime ? ` at ${formatTime(startTime)}` : ''}` : ''}\n${location ? `📍 ${location}` : venue ? `📍 ${venue}${city ? `, ${city}` : ''}` : ''}\n\nAre you interested?\n👉 ${url}`
       
       await navigator.share({
         title: `Check out this ${type}: ${title}`,
@@ -113,7 +115,7 @@ export function ShareModal({
   }
 
   const handleSocialShare = (platform: 'twitter' | 'facebook' | 'whatsapp' | 'email') => {
-    const shareText = `${title}\n\n${description || `Join us for this ${type}!`}\n\n${url}`
+    const shareText = `${hostName || 'Someone'} invited you to ${title}!\n\n${startTime ? `📅 ${formatDate(startTime)}${endTime ? ` at ${formatTime(startTime)}` : ''}` : ''}\n${location ? `📍 ${location}` : venue ? `📍 ${venue}${city ? `, ${city}` : ''}` : ''}\n\nAre you interested?\n👉 ${url}`
     const encodedText = encodeURIComponent(shareText)
     const encodedUrl = encodeURIComponent(url)
 

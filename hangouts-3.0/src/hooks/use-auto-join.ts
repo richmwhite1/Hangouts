@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
+import { AuthIntentHandler } from '@/lib/auth-intent-handler'
 
 interface UseAutoJoinProps {
   hangoutId: string
@@ -23,14 +24,18 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
     // 2. We have a hangout
     // 3. We haven't already attempted to join
     // 4. The hangout is public
-    // 5. We're on a public hangout page OR came from a redirect (indicating they came from sign-in)
+    // 5. We're on a public hangout page OR have a stored auth intent OR came from a redirect
     const redirectUrl = searchParams.get('redirect_url')
     const currentPath = window.location.pathname
     const isOnPublicHangoutPage = currentPath.includes('/hangouts/public/')
-    
-    // Check if redirect_url indicates we came from sign-in to join a hangout
+
+    // Check for stored auth intent (new system)
+    const storedIntent = AuthIntentHandler.getIntent()
+    const hasStoredJoinIntent = storedIntent?.action === 'join' && storedIntent?.hangoutId === hangoutId
+
+    // Check if redirect_url indicates we came from sign-in to join a hangout (legacy system)
     const cameFromSignIn = redirectUrl && redirectUrl.includes('/hangouts/public/')
-    
+
     logger.info('Auto-join check:', {
       isSignedIn,
       isLoaded,
@@ -40,18 +45,19 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
       redirectUrl,
       currentPath,
       isOnPublicHangoutPage,
+      hasStoredJoinIntent,
       cameFromSignIn,
       currentUserId,
       joinStatus
     })
-    
+
     if (
-      isSignedIn && 
-      isLoaded && 
-      hangout && 
+      isSignedIn &&
+      isLoaded &&
+      hangout &&
       !hasAttemptedJoin &&
       hangout.privacyLevel === 'PUBLIC' &&
-      (isOnPublicHangoutPage || cameFromSignIn) &&
+      (isOnPublicHangoutPage || hasStoredJoinIntent || cameFromSignIn) &&
       joinStatus === 'idle'
     ) {
       const attemptAutoJoin = async (retryCount = 0) => {
@@ -68,13 +74,16 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
             if (isAlreadyParticipant) {
               logger.info('User is already a participant, redirecting to authenticated page')
               setJoinStatus('success')
-              
+
+              // Clear any stored auth intent since user is already a participant
+              AuthIntentHandler.clearIntent()
+
               // Show success message
               toast.success('Welcome back!', {
                 description: 'You\'re already part of this hangout.',
                 duration: 3000,
               })
-              
+
               // Redirect to authenticated page for better experience
               if (isOnPublicHangoutPage) {
                 const hangoutDetailUrl = `/hangout/${hangoutId}`
@@ -118,21 +127,24 @@ export function useAutoJoin({ hangoutId, hangout, currentUserId, onJoinSuccess }
             const data = await response.json()
             logger.info('Auto-join successful', { hangoutId, data })
             setJoinStatus('success')
-            
+
+            // Clear any stored auth intent since we've successfully joined
+            AuthIntentHandler.clearIntent()
+
             // Call success callback if provided
             if (onJoinSuccess) {
               onJoinSuccess()
             }
-            
+
             toast.success('🎉 You\'ve joined the hangout!', {
               description: 'Redirecting you to the full experience...',
               duration: 4000,
             })
-            
+
             // Always redirect to authenticated hangout page after successful join
             // This provides the full experience (RSVP, voting, chat, etc.)
             const hangoutDetailUrl = `/hangout/${hangoutId}`
-            
+
             // Delay to let user see the success message
             setTimeout(() => {
               window.location.href = hangoutDetailUrl

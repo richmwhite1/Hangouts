@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
+import { AuthIntentHandler } from '@/lib/auth-intent-handler'
 import { User, Content as Hangout } from '@/types/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -95,6 +96,8 @@ export default function ProfilePage() {
   const [friends, setFriends] = useState<any[]>([])
   const [loadingFriends, setLoadingFriends] = useState(false)
   const [friendsError, setFriendsError] = useState<string | null>(null)
+  const [showHangoutBanner, setShowHangoutBanner] = useState(false)
+  const [hangoutIntent, setHangoutIntent] = useState<{ hangoutId: string; returnTo: string } | null>(null)
 
   const username = params?.username as string
 
@@ -212,6 +215,13 @@ export default function ProfilePage() {
       const profile = userData.data.profile
       setProfileUser(profile)
 
+      // Check for stored auth intent (user came from friends-only hangout)
+      const intent = AuthIntentHandler.getIntent()
+      if (intent && intent.action === 'view_friends_only' && intent.hangoutId && !profileIsOwn) {
+        setShowHangoutBanner(true)
+        setHangoutIntent({ hangoutId: intent.hangoutId, returnTo: intent.returnTo || `/hangout/${intent.hangoutId}` })
+      }
+
       let profileIsOwn = false
       if (fetchedCurrentUserId) {
         profileIsOwn = profile.id === fetchedCurrentUserId
@@ -279,14 +289,31 @@ export default function ProfilePage() {
     if (!profileUser) return
 
     try {
+      const requestData: any = { userId: profileUser.id }
+
+      // Include hangout intent metadata if user came from friends-only hangout
+      if (showHangoutBanner && hangoutIntent) {
+        requestData.metadata = {
+          hangoutAccess: {
+            hangoutId: hangoutIntent.hangoutId,
+            returnTo: hangoutIntent.returnTo
+          }
+        }
+      }
+
       const response = await fetch('/api/friends/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: profileUser.id })
+        body: JSON.stringify(requestData)
       })
 
       if (response.ok) {
         setFriendRequestSent(true)
+        // Clear hangout intent since friend request was sent
+        if (showHangoutBanner) {
+          setShowHangoutBanner(false)
+          AuthIntentHandler.clearIntent()
+        }
       }
     } catch (err) {
       logger.error('Error sending friend request:', err);
@@ -440,6 +467,33 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Hangout Access Banner */}
+        {showHangoutBanner && hangoutIntent && (
+          <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-700/30 mb-6">
+            <CardContent className="px-6 py-4">
+              <div className="flex items-start gap-4">
+                <div className="text-blue-400 mt-1">
+                  ℹ️
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-medium mb-2">
+                    Add {profileUser.name} as a friend to view their private hangout invitation
+                  </p>
+                  <Button
+                    onClick={handleFriendRequest}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={friendRequestSent}
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    {friendRequestSent ? 'Request Sent' : 'Send Friend Request'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Activity Summary Section - Show for own profile */}
         {isOwnProfile && (

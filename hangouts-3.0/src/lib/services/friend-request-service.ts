@@ -156,7 +156,8 @@ export class FriendRequestService {
   static async sendFriendRequest(
     senderId: string,
     receiverId: string,
-    message?: string
+    message?: string,
+    metadata?: any
   ): Promise<FriendRequestWithDetails> {
     const validation = await this.checkCanSendRequest(senderId, receiverId)
 
@@ -189,6 +190,7 @@ export class FriendRequestService {
         senderId,
         receiverId,
         message: message || null,
+        metadata: metadata || null,
         status: 'PENDING'
       },
       include: friendRequestInclude

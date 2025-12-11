@@ -86,49 +86,72 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     }
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString?: string | null) => {
       if (!dateString) return 'TBD'
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) return 'TBD'
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
+      try {
+        const date = new Date(dateString)
+        if (isNaN(date.getTime())) return 'TBD'
+        return date.toLocaleDateString('en-US', { 
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      } catch {
+        return 'TBD'
+      }
     }
     
-    const formatTime = (dateString: string) => {
+    const formatTime = (dateString?: string | null) => {
       if (!dateString) return 'TBD'
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) return 'TBD'
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
+      try {
+        const date = new Date(dateString)
+        if (isNaN(date.getTime())) return 'TBD'
+        return date.toLocaleTimeString('en-US', { 
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })
+      } catch {
+        return 'TBD'
+      }
     }
     
-    // Create inviting title and description for link previews
-    // Keep description concise for Open Graph (max 200 chars recommended)
-    const title = `${hangout.title} - Plans`
+    // Create title and description for link previews
+    // Use the hangout title directly for better preview display
+    const title = hangout.title
     const invitationText = `Hey, are you interested in ${hangout.title}?`
     
-    // Build description without newlines (Open Graph doesn't support them well)
+    // Build description prioritizing the hangout description
+    // Open Graph description should be concise (max 200 chars recommended, but can go up to 300)
     const dateTime = hangout.startTime 
       ? `${formatDate(hangout.startTime)}${hangout.startTime ? ` at ${formatTime(hangout.startTime)}` : ''}`
       : 'TBD'
     const location = hangout.location || 'TBD'
     const creator = hangout.creator?.name || 'Someone'
     
-    // Create a clean description (remove newlines, limit length)
-    let description = hangout.description 
-      ? `${invitationText} ${hangout.description.substring(0, 100)}${hangout.description.length > 100 ? '...' : ''} When: ${dateTime}. Where: ${location}.`
-      : `${invitationText} When: ${dateTime}. Where: ${location}. Created by: ${creator}.`
+    // Create description: prioritize hangout description, then add context
+    // Remove newlines and clean up whitespace for better display
+    let description = ''
+    if (hangout.description && hangout.description.trim().length > 0) {
+      // Clean description: remove newlines, extra spaces
+      const cleanDesc = hangout.description.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
+      // Use description first, then add context if there's room
+      const maxDescLength = 180 // Leave room for context
+      if (cleanDesc.length <= maxDescLength) {
+        description = `${cleanDesc} When: ${dateTime}. Where: ${location}.`
+      } else {
+        description = `${cleanDesc.substring(0, maxDescLength - 3)}... When: ${dateTime}. Where: ${location}.`
+      }
+    } else {
+      // No description, create one with available info
+      description = `${invitationText} When: ${dateTime}. Where: ${location}. Created by: ${creator}.`
+    }
     
-    // Ensure description is not too long (Open Graph recommends max 200 chars)
-    if (description.length > 200) {
-      description = description.substring(0, 197) + '...'
+    // Ensure description is not too long (Open Graph recommends max 200-300 chars)
+    // Some platforms support up to 300 chars, but 200 is safer
+    if (description.length > 300) {
+      description = description.substring(0, 297) + '...'
     }
     
     const shareUrl = `${baseUrl}/hangouts/public/${id}`
@@ -140,6 +163,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const rawImage = hangout.image
     
     // Helper function to ensure absolute HTTPS URL
+    // iPhone Messages requires absolute HTTPS URLs for preview images
     const ensureAbsoluteHttpsUrl = (url: string): string => {
       if (!url || url.trim().length === 0) return ''
       
@@ -149,18 +173,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       // If already absolute HTTPS, return as-is
       if (url.startsWith('https://')) return url
       
-      // Convert HTTP to HTTPS
+      // Convert HTTP to HTTPS (required for iPhone Messages)
       if (url.startsWith('http://')) {
         return url.replace('http://', 'https://')
       }
       
-      // If relative URL, make it absolute
+      // If relative URL (starts with /), make it absolute
       if (url.startsWith('/')) {
-        return `${baseUrl}${url}`
+        // Remove leading slash if baseUrl already has trailing slash
+        const cleanUrl = url.startsWith('//') ? url.substring(1) : url
+        return `${baseUrl}${cleanUrl}`
       }
       
-      // If no protocol, assume relative and prepend baseUrl
-      return `${baseUrl}/${url}`
+      // If no protocol and doesn't start with /, assume relative and prepend baseUrl
+      // Ensure baseUrl doesn't have trailing slash
+      const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+      return `${cleanBaseUrl}/${url}`
     }
     
     // Check if image is valid for preview (not a data URL and not empty)
@@ -231,7 +259,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         canonical: shareUrl,
       },
       openGraph: {
-        title: invitationText,
+        title: title, // Use hangout title for better preview display
         description,
         url: shareUrl,
         siteName: 'Plans',
@@ -243,7 +271,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             width: 1200,
             height: 630,
             alt: hangout.title,
-            type: 'image/png', // OG images are PNG
+            type: hangout.image ? 'image/jpeg' : 'image/png', // Use correct type based on source
             secureUrl: hangoutImage.startsWith('https') ? hangoutImage : hangoutImage.replace('http://', 'https://'),
           }
         ],
@@ -253,7 +281,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
       twitter: {
         card: 'summary_large_image',
-        title: invitationText,
+        title: title, // Use hangout title for better preview display
         description,
         images: [hangoutImage],
         creator: hangout.creator?.name || '@Plans',
@@ -261,6 +289,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       other: {
         'og:type': 'website',
         'og:site_name': 'Plans',
+        'og:title': title, // Explicitly set OG title
+        'og:description': description, // Explicitly set OG description
         'og:image': hangoutImage,
         'og:image:url': hangoutImage,
         'og:image:secure_url': hangoutImage.startsWith('https') ? hangoutImage : hangoutImage.replace('http://', 'https://'),
@@ -274,6 +304,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         // iOS Messages specific tags
         'apple-mobile-web-app-capable': 'yes',
         'apple-mobile-web-app-status-bar-style': 'black-translucent',
+        // Additional iPhone Messages compatibility tags
+        'format-detection': 'telephone=no',
         ...(hangout.startTime && {
           'event:start_time': new Date(hangout.startTime).toISOString(),
         }),

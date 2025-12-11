@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import SimpleTaskManager from '@/components/hangout/SimpleTaskManager'
 import { PublicHangoutViewer } from '@/components/public-hangout-viewer'
+import { PrivateHangoutGate } from '@/components/private-hangout-gate'
 import EditHangoutModal from '@/components/hangout/EditHangoutModal'
 import { TileActions } from '@/components/ui/tile-actions'
 import { sharingService } from '@/lib/services/sharing-service'
@@ -662,27 +663,30 @@ export default function HangoutDetailPage() {
       />
     )
   }
-  // Show sign-in prompt for non-authenticated users with private hangouts
+  // Show privacy gate for non-authenticated users with private hangouts
   if (!userId && hangout && hangout.privacyLevel !== 'PUBLIC') {
-    return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="text-center max-w-md mx-4">
-          <div className="text-red-500 mb-4">
-            <Lock className="h-12 w-12 mx-auto" />
+    if (hangout.privacyLevel === 'FRIENDS_ONLY') {
+      // Use the dedicated friends-only gate
+      return <PrivateHangoutGate hangout={hangout} />
+    } else {
+      // For truly private hangouts, show generic access denied
+      return (
+        <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+          <div className="text-center max-w-md mx-4">
+            <div className="text-red-500 mb-4">
+              <Lock className="h-12 w-12 mx-auto" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+            <p className="text-gray-400 mb-6">
+              This is a private hangout. You need to be invited to view this event.
+            </p>
+            <Button onClick={() => window.location.href = '/signin'} className="w-full">
+              Sign In to Continue
+            </Button>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
-          <p className="text-gray-400 mb-6">
-            {hangout.privacyLevel === 'FRIENDS_ONLY'
-              ? 'This is a friends-only hangout. Sign in and make sure you are friends with the host to join this event.'
-              : 'This is a private hangout. You need to be invited to view this event.'
-            }
-          </p>
-          <Button onClick={() => window.location.href = '/signin'} className="w-full">
-            Sign In to Continue
-          </Button>
         </div>
-      </div>
-    )
+      )
+    }
   }
 
   // Show loading state

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    const { userId, message } = await request.json()
+    const { userId, message, metadata } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     const friendRequest = await FriendRequestService.sendFriendRequest(
       user.id,
       userId,
-      message
+      message,
+      metadata
     )
 
     // Send notification to the receiver (only if it's a new request, not auto-accepted)

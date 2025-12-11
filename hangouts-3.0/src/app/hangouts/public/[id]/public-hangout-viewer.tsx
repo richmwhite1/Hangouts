@@ -22,6 +22,7 @@ import { logger } from '@/lib/logger'
 import { ShareModal } from '@/components/sharing/share-modal'
 import { useAuth } from '@clerk/nextjs'
 import { useAutoJoin } from '@/hooks/use-auto-join'
+import { AuthIntentHandler } from '@/lib/auth-intent-handler'
 import { toast } from 'sonner'
 
 interface Hangout {
@@ -141,12 +142,14 @@ export function PublicHangoutViewer({ params }: Props) {
       handleDirectJoin()
       return
     }
-    
-    // Otherwise, redirect to sign-in with current hangout URL as redirect parameter
-    // After sign-in, user will be redirected back and auto-joined
+
+    // Store auth intent before redirecting to sign-in
+    // This ensures the user gets added as a participant after authentication
+    AuthIntentHandler.storeIntent('join', hangoutId)
+
+    // Redirect to sign-in page
     setIsJoining(true)
-    const currentUrl = encodeURIComponent(window.location.href)
-    router.push(`/signin?redirect_url=${currentUrl}`)
+    router.push('/signin')
   }
   
   const handleDirectJoin = async () => {
@@ -664,6 +667,7 @@ END:VCALENDAR`
           startTime={currentHangout.startTime}
           endTime={currentHangout.endTime}
           location={currentHangout.location || ''}
+          hostName={currentHangout.creator.name}
           image={currentHangout.image || ''}
         />
     </div>

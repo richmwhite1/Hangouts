@@ -1,9 +1,10 @@
 'use client'
 
-import { SignIn } from '@clerk/nextjs'
+import { SignIn, useUser } from '@clerk/nextjs'
 import { useEffect, useState } from 'react'
 import { clearAllAuthData } from '@/lib/sign-out-utils'
 import { logger } from '@/lib/logger'
+import { AuthIntentHandler } from '@/lib/auth-intent-handler'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar, MapPin, Users, Loader2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -34,20 +35,33 @@ interface HangoutContext {
 }
 
 export function SignInPageClient({ redirectUrl }: SignInPageClientProps) {
+  const { isSignedIn, user } = useUser()
   const [isHangoutJoin, setIsHangoutJoin] = useState(false)
   const [hangoutContext, setHangoutContext] = useState<HangoutContext | null>(null)
   const [isLoadingContext, setIsLoadingContext] = useState(false)
+  const [isExecutingIntent, setIsExecutingIntent] = useState(false)
   
   // Clear any stale auth data when the sign-in page loads
   // This ensures a clean sign-in experience
   useEffect(() => {
     clearAllAuthData()
-    
-    // Check if redirect URL is for a public hangout (indicates join flow)
+
+    // Check for stored auth intent (new system)
+    const intent = AuthIntentHandler.getIntent()
+    if (intent && intent.action === 'join' && intent.hangoutId) {
+      setIsHangoutJoin(true)
+      logger.info('Sign-in for hangout join via intent', { hangoutId: intent.hangoutId })
+
+      // Fetch hangout context using the stored intent
+      fetchHangoutContext(intent.hangoutId)
+      return
+    }
+
+    // Fallback: Check if redirect URL is for a public hangout (legacy system)
     if (redirectUrl && redirectUrl.includes('/hangouts/public/')) {
       setIsHangoutJoin(true)
-      logger.info('Sign-in for hangout join', { redirectUrl })
-      
+      logger.info('Sign-in for hangout join via redirect URL', { redirectUrl })
+
       // Extract hangout ID and fetch context
       const hangoutId = redirectUrl.split('/hangouts/public/')[1]?.split('?')[0]
       if (hangoutId) {
@@ -55,6 +69,36 @@ export function SignInPageClient({ redirectUrl }: SignInPageClientProps) {
       }
     }
   }, [redirectUrl])
+
+  // Execute auth intent after successful sign-in
+  useEffect(() => {
+    if (isSignedIn && user && !isExecutingIntent) {
+      const executeIntent = async () => {
+        setIsExecutingIntent(true)
+
+        try {
+          const result = await AuthIntentHandler.executeIntent()
+
+          if (result.success && result.redirectTo) {
+            logger.info('Auth intent executed successfully, redirecting', { redirectTo: result.redirectTo })
+            window.location.href = result.redirectTo
+          } else if (result.error) {
+            logger.error('Failed to execute auth intent:', result.error)
+            // Fall back to default redirect
+            window.location.href = redirectUrl || '/'
+          }
+        } catch (error) {
+          logger.error('Error executing auth intent:', error)
+          // Fall back to default redirect
+          window.location.href = redirectUrl || '/'
+        }
+      }
+
+      // Small delay to ensure auth state is fully settled
+      const timeoutId = setTimeout(executeIntent, 1000)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [isSignedIn, user, isExecutingIntent, redirectUrl])
 
   const fetchHangoutContext = async (hangoutId: string) => {
     setIsLoadingContext(true)

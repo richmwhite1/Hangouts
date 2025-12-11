@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { FriendRequestService } from '@/lib/services/friend-request-service'
-import { createFriendAcceptedNotification } from '@/lib/notifications'
+import { createNotification } from '@/lib/notifications'
 import { logger } from '@/lib/logger'
 
 export async function PUT(
@@ -42,17 +42,31 @@ export async function PUT(
 
       // Create notification for the sender
       try {
-        await createFriendAcceptedNotification(
-          updatedRequest.sender.id,
-          updatedRequest.receiver.id,
-          updatedRequest.receiver.name
-        )
+        // Check if friend request has hangout access metadata
+        const hangoutAccess = updatedRequest.metadata?.hangoutAccess
+
+        let notificationMessage = `${updatedRequest.receiver.name} accepted your friend request`
+        let notificationData: any = { receiverId: updatedRequest.receiver.id }
+
+        if (hangoutAccess?.hangoutId) {
+          notificationMessage += `! You can now view their hangout invitation.`
+          notificationData.hangoutId = hangoutAccess.hangoutId
+          notificationData.hangoutLink = hangoutAccess.returnTo || `/hangout/${hangoutAccess.hangoutId}`
+        }
+
+        await createNotification({
+          userId: updatedRequest.sender.id,
+          type: hangoutAccess?.hangoutId ? 'FRIEND_ACCEPTED_WITH_HANGOUT' : 'FRIEND_ACCEPTED',
+          title: 'Friend Request Accepted',
+          message: notificationMessage,
+          data: notificationData
+        })
 
         // Mark the original friend request notification as read for the receiver
         await db.$executeRaw`
-          UPDATE "Notification" 
+          UPDATE "Notification"
           SET "isRead" = true, "readAt" = NOW()
-          WHERE "userId" = ${updatedRequest.receiver.id} 
+          WHERE "userId" = ${updatedRequest.receiver.id}
           AND "type" = 'FRIEND_REQUEST'
           AND "data"->>'senderId' = ${updatedRequest.sender.id}
         `
