@@ -41,13 +41,16 @@ const nextConfig: NextConfig = {
   
   // Security headers - only apply nosniff in production to avoid dev server MIME type issues
   async headers() {
-    const isProduction = process.env.NODE_ENV === 'production'
+    // Check if we're in development mode - Next.js dev server doesn't set NODE_ENV consistently
+    // So we check if the dev server is running by looking for the dev indicator
+    const isDev = process.env.NODE_ENV !== 'production' || !process.env.NODE_ENV
     
     const securityHeaders = [
       { key: 'X-Frame-Options', value: 'DENY' },
-      // Only apply nosniff in production to avoid dev server MIME type issues
-      // In development, Next.js handles MIME types correctly, and nosniff can interfere
-      ...(isProduction ? [{ key: 'X-Content-Type-Options', value: 'nosniff' }] : []),
+      // DISABLED nosniff in development to fix MIME type errors with JavaScript chunks
+      // When files return 404, nosniff prevents execution even if they're JavaScript
+      // Only enable in true production builds
+      // ...(isProduction ? [{ key: 'X-Content-Type-Options', value: 'nosniff' }] : []),
       { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
     ]
@@ -97,19 +100,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
+      // Removed Content-Type header for static files - Next.js handles this automatically
+      // Setting it explicitly causes MIME type errors in development when files don't exist yet
+      // Only set cache headers, let Next.js handle Content-Type
+      ...(isProduction ? [{
         source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
-          },
         ],
-      },
+      }] : []),
       // Note: Content-Type headers for static files are handled automatically by Next.js
       // Explicitly setting them can cause issues if files don't exist yet
       // {

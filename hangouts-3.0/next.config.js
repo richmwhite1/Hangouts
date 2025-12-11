@@ -19,8 +19,10 @@ const nextConfig = {
   poweredByHeader: false,
   generateEtags: true,
 
-  // Security headers
+  // Security headers - only apply nosniff in production to avoid dev server MIME type issues
   async headers() {
+    const isProduction = process.env.NODE_ENV === 'production'
+    
     return [
       {
         source: '/(.*)',
@@ -29,10 +31,13 @@ const nextConfig = {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
-          {
+          // DISABLED nosniff in development to fix MIME type errors with JavaScript chunks
+          // When files return 404, nosniff prevents execution even if they're JavaScript
+          // Only enable in true production builds
+          ...(isProduction ? [{
             key: 'X-Content-Type-Options',
             value: 'nosniff',
-          },
+          }] : []),
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',

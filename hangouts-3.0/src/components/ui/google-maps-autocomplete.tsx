@@ -34,6 +34,7 @@ export function GoogleMapsAutocomplete({
   placeholder = "Search for a location...",
   className = ""
 }: GoogleMapsAutocompleteProps) {
+  console.log('GoogleMapsAutocomplete rendered', { value, placeholder })
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -46,7 +47,9 @@ export function GoogleMapsAutocomplete({
 
   // Fetch suggestions from server-side API
   const fetchSuggestions = useCallback(async (query: string) => {
+    console.log('fetchSuggestions called', { query, length: query.length })
     if (!query || query.length < 2) {
+      console.log('Query too short, clearing suggestions')
       setSuggestions([])
       setIsOpen(false)
       return
@@ -109,6 +112,7 @@ export function GoogleMapsAutocomplete({
   // Debounced input handler - optimized for performance
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
+    console.log('handleInputChange called', { newValue })
     onChange(newValue)
 
     // Clear existing timer
@@ -130,11 +134,14 @@ export function GoogleMapsAutocomplete({
 
     // Debounce API calls - start showing suggestions after 2 characters
     if (newValue.length >= 2) {
+      console.log('Setting debounce timer for:', newValue)
       debounceTimerRef.current = setTimeout(() => {
+        console.log('Executing fetchSuggestions for:', newValue)
         fetchSuggestions(newValue)
       }, 200) // Faster response for better UX
     } else if (newValue.length < 2) {
       // Clear suggestions for very short inputs
+      console.log('Clearing suggestions for short input')
       setSuggestions([])
       setIsOpen(false)
     }
@@ -250,6 +257,7 @@ export function GoogleMapsAutocomplete({
           value={value}
           onChange={handleInputChange}
           onFocus={() => {
+            console.log('Input focused', { value, suggestionsLength: suggestions.length })
             // If we have suggestions, show them
             if (suggestions.length > 0) {
               setIsOpen(true)

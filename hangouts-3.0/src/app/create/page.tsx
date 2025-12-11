@@ -16,7 +16,7 @@ export default function CreateHangoutPage() {
   const searchParams = useSearchParams()
   const { isSignedIn, isLoaded, userId } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
-  const [mode, setMode] = useState<'simple' | 'advanced'>('simple') // Default to simple mode
+  const [mode, setMode] = useState<'simple' | 'advanced'>('advanced') // Default to advanced mode for testing
   const [simpleFormData, setSimpleFormData] = useState<{
     title: string
     dateTime: string
