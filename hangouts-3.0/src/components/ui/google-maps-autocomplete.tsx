@@ -128,13 +128,13 @@ export function GoogleMapsAutocomplete({
       setIsOpen(true)
     }
 
-    // Debounce API calls - only for longer inputs to reduce API calls
-    if (newValue.length >= 3) {
+    // Debounce API calls - start showing suggestions after 2 characters
+    if (newValue.length >= 2) {
       debounceTimerRef.current = setTimeout(() => {
         fetchSuggestions(newValue)
-      }, 300) // Slightly longer debounce to reduce API calls
-    } else if (newValue.length < 3) {
-      // Clear suggestions for short inputs
+      }, 200) // Faster response for better UX
+    } else if (newValue.length < 2) {
+      // Clear suggestions for very short inputs
       setSuggestions([])
       setIsOpen(false)
     }
