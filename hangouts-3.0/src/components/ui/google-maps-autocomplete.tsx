@@ -64,7 +64,23 @@ export function GoogleMapsAutocomplete({
         const predictions = data.predictions || data.suggestions || []
         logger.info('Places API response:', { count: predictions.length })
         setSuggestions(predictions)
-        setIsOpen(true)
+        // Always open dropdown when we have suggestions
+        if (predictions.length > 0) {
+          setIsOpen(true)
+          // Calculate position immediately after setting suggestions
+          // Use setTimeout to ensure DOM is updated
+          setTimeout(() => {
+            if (inputRef.current) {
+              const rect = inputRef.current.getBoundingClientRect()
+              setSuggestionsPosition({
+                top: rect.bottom + window.scrollY + 4,
+                left: rect.left + window.scrollX,
+                width: rect.width
+              })
+              logger.info('Suggestions position calculated', { top: rect.bottom, left: rect.left, width: rect.width })
+            }
+          }, 0)
+        }
         setApiError(null)
       } else {
         // Check for specific error messages
@@ -89,31 +105,53 @@ export function GoogleMapsAutocomplete({
     }
   }, [])
 
-  // Update suggestions position when input changes
+  // Update suggestions position when input changes or suggestions update
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect()
-      setSuggestionsPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width
+    if (isOpen && suggestions.length > 0 && inputRef.current) {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          const rect = inputRef.current.getBoundingClientRect()
+          setSuggestionsPosition({
+            top: rect.bottom + window.scrollY + 4,
+            left: rect.left + window.scrollX,
+            width: rect.width
+          })
+        }
       })
     }
-  }, [isOpen, value, suggestions.length])
+  }, [isOpen, suggestions.length])
 
   // Close suggestions when a modal opens (like date picker)
+  // Less aggressive modal detection to avoid kicking users out of input
   useEffect(() => {
     const handleModalOpen = () => {
-      setIsOpen(false)
+      // Only close suggestions if we detect a high-priority modal
+      // Don't interfere with normal typing
+      const modals = document.querySelectorAll('[style*="z-index"][style*="100000"], [style*="zIndex"][style*="100000"]')
+      if (modals.length > 0 && isOpen) {
+        // Add a small delay to avoid false positives
+        setTimeout(() => {
+          setIsOpen(false)
+        }, 150)
+      }
     }
 
-    // Listen for modal open events or check for modals
+    // Listen for modal open events or check for modals less frequently
     const checkForModals = setInterval(() => {
       const modals = document.querySelectorAll('[style*="z-index"][style*="100000"], [style*="zIndex"][style*="100000"]')
       if (modals.length > 0 && isOpen) {
-        setIsOpen(false)
+        // Only close if there are actual modals and we're still open
+        // This prevents false positives during normal typing
+        const hasActualModals = Array.from(modals).some(modal => {
+          const style = modal.getAttribute('style') || ''
+          return style.includes('100000') || style.includes('99999')
+        })
+        if (hasActualModals) {
+          setIsOpen(false)
+        }
       }
-    }, 100)
+    }, 300) // Check less frequently
 
     return () => {
       clearInterval(checkForModals)
@@ -130,20 +168,28 @@ export function GoogleMapsAutocomplete({
       clearTimeout(debounceTimerRef.current)
     }
 
-    // Show suggestions immediately if we have cached ones
+    // If input is cleared, close suggestions
+    if (newValue.length === 0) {
+      setSuggestions([])
+      setIsOpen(false)
+      return
+    }
+
+    // Show suggestions immediately if we have cached ones and user is typing
     if (suggestions.length > 0 && newValue.length > 0) {
       setIsOpen(true)
     }
 
-    // Debounce API calls - shorter delay for better UX
-    debounceTimerRef.current = setTimeout(() => {
-      if (newValue.length >= 2) {
+    // Debounce API calls - fetch suggestions as user types
+    if (newValue.length >= 2) {
+      debounceTimerRef.current = setTimeout(() => {
         fetchSuggestions(newValue)
-      } else {
-        setSuggestions([])
-        setIsOpen(false)
-      }
-    }, 200) // 200ms debounce for faster response
+      }, 200) // Reduced debounce for faster response
+    } else {
+      // Clear suggestions if less than 2 characters
+      setSuggestions([])
+      setIsOpen(false)
+    }
   }, [onChange, fetchSuggestions, suggestions.length])
 
   // Handle suggestion selection
@@ -152,6 +198,11 @@ export function GoogleMapsAutocomplete({
     onChange(address)
     setIsOpen(false)
     setSuggestions([])
+
+    // Keep input focused for further editing
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 10)
 
     if (onPlaceSelect) {
       onPlaceSelect({
@@ -251,12 +302,13 @@ export function GoogleMapsAutocomplete({
           value={value}
           onChange={handleInputChange}
           onFocus={() => {
-            if (suggestions.length > 0 || value.length >= 2) {
+            // If we have suggestions, show them
+            if (suggestions.length > 0) {
               setIsOpen(true)
-              // Fetch suggestions if we have text but no suggestions
-              if (value.length >= 2 && suggestions.length === 0) {
-                fetchSuggestions(value)
-              }
+            }
+            // If we have text but no suggestions, fetch them
+            if (value.length >= 2 && suggestions.length === 0) {
+              fetchSuggestions(value)
             }
           }}
           placeholder={placeholder}
@@ -284,7 +336,7 @@ export function GoogleMapsAutocomplete({
       {/* Custom suggestions dropdown - High z-index to appear above everything */}
       {isOpen && suggestions.length > 0 && (
         <>
-          {typeof window !== 'undefined' && suggestionsPosition ? (
+          {typeof window !== 'undefined' && suggestionsPosition && suggestionsPosition.width > 0 ? (
             createPortal(
               <div
                 ref={suggestionsRef}
@@ -327,7 +379,7 @@ export function GoogleMapsAutocomplete({
           ) : (
             <div
               ref={suggestionsRef}
-              className="absolute w-full mt-2 bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+              className="absolute w-full mt-2 bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto z-[99999]"
               style={{ 
                 position: 'absolute', 
                 top: '100%', 

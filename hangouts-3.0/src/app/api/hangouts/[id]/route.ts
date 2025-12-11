@@ -218,7 +218,31 @@ export async function GET(
         })
       }
       
-      const pollOptions = Array.isArray(poll.options) ? poll.options as any[] : []
+      // Parse poll.options - handle JSON string, array, or null/undefined
+      let pollOptions: any[] = []
+      try {
+        if (poll.options) {
+          if (Array.isArray(poll.options)) {
+            pollOptions = poll.options as any[]
+          } else if (typeof poll.options === 'string') {
+            const parsed = JSON.parse(poll.options)
+            pollOptions = Array.isArray(parsed) ? parsed : []
+          } else if (typeof poll.options === 'object') {
+            // Try to convert object to array if it's a single object or array-like
+            const asUnknown = poll.options as unknown
+            pollOptions = Array.isArray(asUnknown) ? asUnknown : []
+          }
+        }
+      } catch (error) {
+        logger.error('Error parsing poll.options:', error)
+        logger.error('poll.options value:', poll.options)
+        pollOptions = []
+      }
+      
+      // Ensure pollOptions is an array
+      if (!Array.isArray(pollOptions)) {
+        pollOptions = []
+      }
       
       if (poll.status === 'ACTIVE' && pollOptions.length > 1) {
         hangoutState = 'polling'
@@ -237,22 +261,34 @@ export async function GET(
         
         // Build votes object from poll votes
         const votesObj: Record<string, string[]> = {}
-        if (poll.votes) {
-          poll.votes.forEach(vote => {
-            if (!votesObj[vote.userId]) {
-              votesObj[vote.userId] = []
-            }
-            votesObj[vote.userId]!.push(vote.option)
-          })
+        if (poll.votes && Array.isArray(poll.votes)) {
+          try {
+            poll.votes.forEach(vote => {
+              if (vote && vote.userId && vote.option) {
+                if (!votesObj[vote.userId]) {
+                  votesObj[vote.userId] = []
+                }
+                votesObj[vote.userId]!.push(vote.option)
+              }
+            })
+          } catch (error) {
+            logger.error('Error processing poll votes:', error)
+          }
         }
         votes = votesObj
       } else if (poll.status === 'CONSENSUS_REACHED' && pollOptions.length > 0) {
         // Find the winning option based on votes
         const optionVoteCounts = {} as Record<string, number>
-        if (poll.votes) {
-          poll.votes.forEach(vote => {
-            optionVoteCounts[vote.option] = (optionVoteCounts[vote.option] || 0) + 1
-          })
+        if (poll.votes && Array.isArray(poll.votes)) {
+          try {
+            poll.votes.forEach(vote => {
+              if (vote && vote.option) {
+                optionVoteCounts[vote.option] = (optionVoteCounts[vote.option] || 0) + 1
+              }
+            })
+          } catch (error) {
+            logger.error('Error counting poll votes:', error)
+          }
         }
         
         const winningOptionId = Object.keys(optionVoteCounts).length > 0 
