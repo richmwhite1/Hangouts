@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
 
     const whereClause: any = {
       type: 'EVENT',
+      status: 'PUBLISHED', // Only show published events
       AND: [
         {
           OR: privacyOr
@@ -234,6 +235,7 @@ export async function POST(request: NextRequest) {
         startTime: body.startDate ? new Date(body.startDate) : new Date(),
         endTime: body.endDate ? new Date(body.endDate) : null,
         privacyLevel: isPublic ? 'PUBLIC' : 'PRIVATE',
+        status: 'PUBLISHED', // Ensure events are published by default
         creatorId: user.id,
         updatedAt: new Date()
       }

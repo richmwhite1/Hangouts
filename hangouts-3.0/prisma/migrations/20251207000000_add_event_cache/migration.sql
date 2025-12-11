@@ -19,3 +19,4 @@ CREATE INDEX "event_cache_cacheKey_idx" ON "event_cache"("cacheKey");
 -- CreateIndex
 CREATE INDEX "event_cache_expiresAt_idx" ON "event_cache"("expiresAt");
 
+

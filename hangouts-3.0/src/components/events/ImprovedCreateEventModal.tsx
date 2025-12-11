@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MobileFullScreenModal } from '@/components/ui/mobile-modal'
+import { GoogleMapsAutocomplete } from '@/components/ui/google-maps-autocomplete'
 import { logger } from '@/lib/logger'
 import {
   Calendar,
@@ -66,9 +67,6 @@ export function ImprovedCreateEventModal() {
   const [isScraping, setIsScraping] = useState(false)
   const [newTag, setNewTag] = useState('')
   const [locationSearch, setLocationSearch] = useState('')
-  const [locationResults, setLocationResults] = useState<any[]>([])
-  const [isSearchingLocation, setIsSearchingLocation] = useState(false)
-  const [showLocationResults, setShowLocationResults] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const additionalImagesRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState<EventFormData>({
@@ -238,46 +236,19 @@ export function ImprovedCreateEventModal() {
       setIsScraping(false)
     }
   }
-  const handleLocationSearch = async (query: string) => {
-    if (!query.trim() || query.length < 3) {
-      setLocationResults([])
-      setShowLocationResults(false)
-      return
-    }
-    setIsSearchingLocation(true)
-    try {
-      // Use our proxy API to avoid CORS issues
-      const response = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}&limit=5`)
-      const data = await response.json()
-      if (data.success) {
-        setLocationResults(data.locations)
-        setShowLocationResults(true)
-      }
-    } catch (error) {
-      logger.error('Error searching locations:', error);
-      setLocationResults([])
-    } finally {
-      setIsSearchingLocation(false)
-    }
-  }
-  const handleLocationSelect = (location: any) => {
-    const address = location.displayName || location.display_name || ''
+  const handleLocationSelect = (place: { formatted_address: string; place_id?: string }) => {
+    const address = place.formatted_address || ''
     const parts = address ? address.split(', ') : []
     
     setFormData(prev => ({
       ...prev,
-      venue: location.name || parts[0] || '',
+      venue: parts[0] || '',
       address: address,
-      city: location.address?.city || location.address?.town || location.address?.village || '',
-      state: location.address?.state || location.address?.county || '',
-      zipCode: location.address?.postcode || '',
-      latitude: location.lat ? parseFloat(location.lat) : null,
-      longitude: location.lon ? parseFloat(location.lon) : null
+      // City, state, zipCode can be manually filled or extracted from address if needed
+      // For now, user can manually fill these fields
     }))
     
-    setLocationSearch('')
-    setLocationResults([])
-    setShowLocationResults(false)
+    setLocationSearch(address)
   }
   const handleSubmit = async () => {
     setIsLoading(true)
@@ -522,45 +493,13 @@ export function ImprovedCreateEventModal() {
             <CardContent className="pt-0 space-y-3">
               <div className="relative">
                 <Label htmlFor="location" className="text-white">Venue & Location</Label>
-                <Input
-                  id="location"
+                <GoogleMapsAutocomplete
                   value={locationSearch || `${formData.venue}${formData.address ? ', ' + formData.address : ''}`}
-                  onChange={(e) => {
-                    setLocationSearch(e.target.value)
-                    handleLocationSearch(e.target.value)
-                  }}
-                  onFocus={() => {
-                    if (locationResults.length > 0) {
-                      setShowLocationResults(true)
-                    }
-                  }}
+                  onChange={(value) => setLocationSearch(value)}
+                  onPlaceSelect={handleLocationSelect}
                   placeholder="Search for venue or location..."
-                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                  className="w-full"
                 />
-                {/* Location search results */}
-                {showLocationResults && locationResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {locationResults.map((location, index) => (
-                      <div
-                        key={index}
-                        className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
-                        onClick={() => handleLocationSelect(location)}
-                      >
-                        <div className="font-medium text-white">
-                          {location.name || (location.displayName ? location.displayName.split(',')[0] : 'Unknown Location')}
-                        </div>
-                        <div className="text-sm text-gray-300">
-                          {location.displayName || location.display_name}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {isSearchingLocation && (
-                  <div className="absolute right-3 top-8">
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                  </div>
-                )}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>

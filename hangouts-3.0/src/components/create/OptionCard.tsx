@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { CalendarPicker } from '@/components/ui/calendar-picker'
-import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
+import { SimpleDateTimePicker } from '@/components/ui/simple-datetime-picker'
+import { GoogleMapsAutocomplete } from '@/components/ui/google-maps-autocomplete'
 import { Badge } from '@/components/ui/badge'
 
 interface OptionCardProps {
@@ -141,7 +141,7 @@ export function OptionCard({
 
             {/* Location autocomplete */}
             <div className="mb-3">
-                <LocationAutocomplete
+                <GoogleMapsAutocomplete
                     value={option.location || ''}
                     onChange={(value) => onChange('location', value)}
                     placeholder="Search for a location..."
@@ -183,7 +183,7 @@ export function OptionCard({
                 )}
 
                 {/* Calendar picker */}
-                <CalendarPicker
+                <SimpleDateTimePicker
                     value={option.dateTime || ''}
                     onChange={(value) => onChange('dateTime', value)}
                     placeholder={isAllDay ? "Select date" : "Select date and time"}

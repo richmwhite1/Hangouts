@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Plus, X, Camera, Users, Sparkles } from 'lucide-react'
-import { CalendarPicker } from '@/components/ui/calendar-picker'
-import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
+import { SimpleDateTimePicker } from '@/components/ui/simple-datetime-picker'
+import { GoogleMapsAutocomplete } from '@/components/ui/google-maps-autocomplete'
 import { EventSelectionModal } from '@/components/ui/event-selection-modal'
 import { InviteFriendsBar } from '@/components/create/InviteFriendsBar'
 import { ConsensusBanner } from '@/components/create/ConsensusBanner'
@@ -972,7 +972,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 />
 
                 <div className="space-y-3">
-                  <LocationAutocomplete
+                  <GoogleMapsAutocomplete
                     value={option.location || ''}
                     onChange={(value) => handleOptionChange(index, 'location', value)}
                     placeholder="Search for a location..."
@@ -1007,7 +1007,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                       )}
                     </div>
 
-                    <CalendarPicker
+                    <SimpleDateTimePicker
                       value={option.dateTime || ''}
                       onChange={(value) => handleOptionChange(index, 'dateTime', value)}
                       placeholder={formData.isAllDay ? "Select date" : "Select date and time"}

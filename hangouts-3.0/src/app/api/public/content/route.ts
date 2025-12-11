@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const whereBase: any = {
-      privacyLevel: 'PUBLIC'
+      privacyLevel: 'PUBLIC',
+      status: 'PUBLISHED' // Only show published content
     }
 
     if (typeParam === 'HANGOUT' || typeParam === 'EVENT') {

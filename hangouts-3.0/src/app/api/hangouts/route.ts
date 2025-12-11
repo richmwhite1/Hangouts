@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getClerkApiUser } from '@/lib/clerk-auth'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { createHangoutFlow } from '@/lib/hangout-flow'
 import { createStartTimeFilter } from '@/lib/date-utils'
@@ -314,7 +315,8 @@ export async function POST(request: NextRequest) {
         console.log('Hangouts API - lastActivityAt column not found, using raw SQL fallback...')
         // Use raw SQL to create the hangout without lastActivityAt
         const hangoutId = `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        await db.$executeRaw`
+        const privacyLevel = validatedData.privacyLevel || 'PUBLIC'
+        await db.$executeRaw(Prisma.sql`
           INSERT INTO content (
             id, type, title, description, location, latitude, longitude,
             "startTime", "endTime", "privacyLevel", "creatorId", image,
@@ -325,13 +327,13 @@ export async function POST(request: NextRequest) {
             ${hangoutId}, 'HANGOUT', ${validatedData.title},
             ${validatedData.description || null}, ${validatedData.location || null},
             ${validatedData.latitude || null}, ${validatedData.longitude || null},
-            ${startTime}, ${endTime}, ${validatedData.privacyLevel || 'PUBLIC'},
+            ${startTime}, ${endTime}, ${Prisma.raw(`${privacyLevel}::"PrivacyLevel"`)},
             ${userId}, ${validatedData.image || null},
             ${validatedData.weatherEnabled ?? false}, ${validatedData.maxParticipants || null},
             'PUBLISHED', 0, NULL, 'USD', NULL, 0, NULL, 'MANUAL',
             ${new Date()}, ${new Date()}
           )
-        `
+        `)
         // Fetch the created hangout
         hangout = await db.content.findUnique({
           where: { id: hangoutId }
