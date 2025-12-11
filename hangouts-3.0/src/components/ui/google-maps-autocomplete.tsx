@@ -62,24 +62,10 @@ export function GoogleMapsAutocomplete({
       if (response.ok && data.success && (data.predictions?.length > 0 || data.suggestions?.length > 0)) {
         // Handle both new and legacy API formats
         const predictions = data.predictions || data.suggestions || []
-        logger.info('Places API response:', { count: predictions.length })
         setSuggestions(predictions)
         // Always open dropdown when we have suggestions
         if (predictions.length > 0) {
           setIsOpen(true)
-          // Calculate position immediately after setting suggestions
-          // Use setTimeout to ensure DOM is updated
-          setTimeout(() => {
-            if (inputRef.current) {
-              const rect = inputRef.current.getBoundingClientRect()
-              setSuggestionsPosition({
-                top: rect.bottom + window.scrollY + 4,
-                left: rect.left + window.scrollX,
-                width: rect.width
-              })
-              logger.info('Suggestions position calculated', { top: rect.bottom, left: rect.left, width: rect.width })
-            }
-          }, 0)
         }
         setApiError(null)
       } else {
@@ -105,60 +91,22 @@ export function GoogleMapsAutocomplete({
     }
   }, [])
 
-  // Update suggestions position when input changes or suggestions update
+  // Update suggestions position when suggestions change
   useEffect(() => {
     if (isOpen && suggestions.length > 0 && inputRef.current) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        if (inputRef.current) {
-          const rect = inputRef.current.getBoundingClientRect()
-          setSuggestionsPosition({
-            top: rect.bottom + window.scrollY + 4,
-            left: rect.left + window.scrollX,
-            width: rect.width
-          })
-        }
+      const rect = inputRef.current.getBoundingClientRect()
+      setSuggestionsPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width
       })
     }
   }, [isOpen, suggestions.length])
 
-  // Close suggestions when a modal opens (like date picker)
-  // Less aggressive modal detection to avoid kicking users out of input
-  useEffect(() => {
-    const handleModalOpen = () => {
-      // Only close suggestions if we detect a high-priority modal
-      // Don't interfere with normal typing
-      const modals = document.querySelectorAll('[style*="z-index"][style*="100000"], [style*="zIndex"][style*="100000"]')
-      if (modals.length > 0 && isOpen) {
-        // Add a small delay to avoid false positives
-        setTimeout(() => {
-          setIsOpen(false)
-        }, 150)
-      }
-    }
+  // Simplified modal handling - only close on blur or outside click
+  // Removed aggressive modal detection that was causing freezing
 
-    // Listen for modal open events or check for modals less frequently
-    const checkForModals = setInterval(() => {
-      const modals = document.querySelectorAll('[style*="z-index"][style*="100000"], [style*="zIndex"][style*="100000"]')
-      if (modals.length > 0 && isOpen) {
-        // Only close if there are actual modals and we're still open
-        // This prevents false positives during normal typing
-        const hasActualModals = Array.from(modals).some(modal => {
-          const style = modal.getAttribute('style') || ''
-          return style.includes('100000') || style.includes('99999')
-        })
-        if (hasActualModals) {
-          setIsOpen(false)
-        }
-      }
-    }, 300) // Check less frequently
-
-    return () => {
-      clearInterval(checkForModals)
-    }
-  }, [isOpen])
-
-  // Debounced input handler - like Google Calendar
+  // Debounced input handler - optimized for performance
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     onChange(newValue)
@@ -175,18 +123,18 @@ export function GoogleMapsAutocomplete({
       return
     }
 
-    // Show suggestions immediately if we have cached ones and user is typing
+    // Show suggestions immediately if we have cached ones
     if (suggestions.length > 0 && newValue.length > 0) {
       setIsOpen(true)
     }
 
-    // Debounce API calls - fetch suggestions as user types
-    if (newValue.length >= 2) {
+    // Debounce API calls - only for longer inputs to reduce API calls
+    if (newValue.length >= 3) {
       debounceTimerRef.current = setTimeout(() => {
         fetchSuggestions(newValue)
-      }, 200) // Reduced debounce for faster response
-    } else {
-      // Clear suggestions if less than 2 characters
+      }, 300) // Slightly longer debounce to reduce API calls
+    } else if (newValue.length < 3) {
+      // Clear suggestions for short inputs
       setSuggestions([])
       setIsOpen(false)
     }
