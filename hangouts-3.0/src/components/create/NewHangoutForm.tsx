@@ -939,7 +939,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
           </CardHeader>
           <CardContent className="space-y-5">
             {formData.options.map((option, index) => (
-              <div key={option.id} className="p-4 sm:p-5 border border-gray-600 rounded-lg space-y-3 w-full overflow-hidden">
+              <div key={option.id} className="p-4 sm:p-5 border border-gray-600 rounded-lg space-y-3 w-full">
                 <div className="flex justify-between items-center gap-2">
                   <Label className="text-white text-sm sm:text-base">Option {index + 1}</Label>
                   {((formData.type === 'multi_option' && formData.options.length > 2) ||
@@ -971,7 +971,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                   className="bg-black border-gray-600 text-white"
                 />
 
-                <div className="space-y-3">
+                <div className="space-y-3 relative" style={{ zIndex: 1000 }}>
                   <GoogleMapsAutocomplete
                     value={option.location || ''}
                     onChange={(value) => handleOptionChange(index, 'location', value)}
