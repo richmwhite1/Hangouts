@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Plus, X, Camera, Users, Sparkles } from 'lucide-react'
+import { Plus, X, Camera, Users, Sparkles, MapPin } from 'lucide-react'
 import { SimpleDateTimePicker } from '@/components/ui/simple-datetime-picker'
 import { GoogleMapsAutocomplete } from '@/components/ui/google-maps-autocomplete'
 import { EventSelectionModal } from '@/components/ui/event-selection-modal'
@@ -414,16 +414,22 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
     })
   }
 
-  const handleOptionChange = (index: number, field: keyof NewHangoutFormData['options'][0], value: any) => {
-    const newOptions = [...formData.options]
-    const updatedOption = { ...newOptions[index], [field]: value }
-    // Ensure id is always defined
-    if (!updatedOption.id) {
-      updatedOption.id = `option_${Date.now()}_${index}`
-    }
-    newOptions[index] = updatedOption as NewHangoutFormData['options'][0]
-    handleInputChange('options', newOptions)
-  }
+  const handleOptionChange = useCallback((index: number, field: keyof NewHangoutFormData['options'][0], value: any) => {
+    setFormData(prev => {
+      const newOptions = [...prev.options]
+      const existingOption = newOptions[index]
+      if (!existingOption) return prev
+
+      // Preserve the existing id - NEVER regenerate it to prevent key changes
+      const updatedOption = { ...existingOption, [field]: value }
+      // Ensure id exists (should already exist, but safety check)
+      if (!updatedOption.id) {
+        updatedOption.id = existingOption.id || `option_${Date.now()}_${index}`
+      }
+      newOptions[index] = updatedOption as NewHangoutFormData['options'][0]
+      return { ...prev, options: newOptions }
+    })
+  }, [])
 
   const addOption = () => {
     // Only allow adding options for multi_option type
@@ -611,7 +617,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
   return (
     <div className="w-full relative overflow-x-hidden">
-      <form onSubmit={handleSubmit} className="w-full max-w-full px-4 sm:px-6 pt-4 sm:pt-6 pb-40 sm:pb-12 space-y-6 sm:space-y-8">
+      <form onSubmit={handleSubmit} action="#" className="w-full max-w-full px-4 sm:px-6 pt-4 sm:pt-6 pb-40 sm:pb-12 space-y-6 sm:space-y-8">
         {/* Photo Upload */}
         <div className="flex justify-end">
           <input
@@ -931,7 +937,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         )}
 
         {/* Options */}
-        <Card className="bg-black border-gray-600">
+        <Card className="bg-black border-gray-600 relative" style={{ zIndex: 100 }}>
           <CardHeader>
             <CardTitle className="text-white">
               {formData.type === 'quick_plan' ? 'Plan Details' : 'Poll Options'}
@@ -971,14 +977,32 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                   className="bg-black border-gray-600 text-white"
                 />
 
-                <div className="space-y-3 relative" style={{ zIndex: 1000 }}>
-                  <GoogleMapsAutocomplete
-                    value={option.location || ''}
-                    onChange={(value) => handleOptionChange(index, 'location', value)}
-                    placeholder="Search for a location..."
-                    className="w-full"
-                  />
+                {/* Where - Using exact structure from SimplifiedHangoutForm */}
+                <Card className="bg-black border-gray-700 p-4 relative" style={{ zIndex: 100 }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="w-4 h-4 text-green-400" />
+                    <label className="text-white font-medium">Where?</label>
+                    <span className="text-sm text-gray-400">(optional)</span>
+                  </div>
+                  <div className="relative" style={{ zIndex: 1000 }}>
+                    <GoogleMapsAutocomplete
+                      value={option.location || ''}
+                      onChange={(value) => {
+                        // Simple location change like the quick hangout form
+                        setFormData(prev => ({
+                          ...prev,
+                          options: prev.options.map((opt, i) =>
+                            i === index ? { ...opt, location: value } : opt
+                          )
+                        }))
+                      }}
+                      placeholder="Search for a location..."
+                      className="w-full"
+                    />
+                  </div>
+                </Card>
 
+                <div className="space-y-3 relative">
                   {/* Advanced Date/Time Controls */}
                   <div className="space-y-2">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
@@ -1218,7 +1242,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </Card>
 
         {/* Sticky Submit Button with Progress */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-50 shadow-lg sm:sticky sm:relative sm:shadow-none sm:pb-4 sm:mt-6" style={{ paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))', paddingTop: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' }}>
+        <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-[100] shadow-lg sm:sticky sm:relative sm:shadow-none sm:pb-4 sm:mt-6" style={{ paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))', paddingTop: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' }}>
           {/* Progress Indicator */}
           <div className="mb-2">
             <div className="flex items-center justify-between mb-1">
@@ -1231,12 +1255,17 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
                 style={{ width: `${progress.percentage}%` }}
               />
             </div>
+            {progress.completed < progress.total && (
+              <p className="text-yellow-400 text-xs mt-2">
+                Please complete all required fields: Title and at least {formData.type === 'multi_option' ? '2' : '1'} option with date/time
+              </p>
+            )}
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12 text-white font-bold mt-4"
-            style={{ backgroundColor: '#792ADB' }}
+            className="w-full h-12 text-white font-bold mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: progress.completed >= progress.total ? '#792ADB' : '#4B5563' }}
             disabled={isLoading || progress.completed < progress.total}
           >
             {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Hangout' : 'Create Hangout')}
@@ -1246,13 +1275,15 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
 
 
       {/* Floating Invite Friends Bar - Positioned above submit button */}
-      <InviteFriendsBar
-        invitedFriends={invitedFriendsWithDetails}
-        onOpenModal={() => setIsFriendModalOpen(true)}
-        onRemoveFriend={removeParticipant}
-        mandatoryParticipants={formData.mandatoryParticipants}
-        coHosts={formData.coHosts}
-      />
+      <div className="fixed bottom-0 left-0 right-0 z-40" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+        <InviteFriendsBar
+          invitedFriends={invitedFriendsWithDetails}
+          onOpenModal={() => setIsFriendModalOpen(true)}
+          onRemoveFriend={removeParticipant}
+          mandatoryParticipants={formData.mandatoryParticipants}
+          coHosts={formData.coHosts}
+        />
+      </div>
 
       {/* Event Selection Modal */}
       <EventSelectionModal

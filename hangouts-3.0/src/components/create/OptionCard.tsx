@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { X, Users, TrendingUp, GripVertical } from 'lucide-react'
+import { X, Users, TrendingUp, GripVertical, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { SimpleDateTimePicker } from '@/components/ui/simple-datetime-picker'
 import { GoogleMapsAutocomplete } from '@/components/ui/google-maps-autocomplete'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 
 interface OptionCardProps {
     option: {
@@ -139,15 +140,23 @@ export function OptionCard({
                 className="bg-black border-gray-600 text-white mb-3"
             />
 
-            {/* Location autocomplete */}
-            <div className="mb-3">
-                <GoogleMapsAutocomplete
-                    value={option.location || ''}
-                    onChange={(value) => onChange('location', value)}
-                    placeholder="Search for a location..."
-                    className="w-full"
-                />
-            </div>
+            {/* Where - Using exact structure from SimplifiedHangoutForm */}
+            <Card className="bg-black border-gray-700 p-4 relative mb-3" style={{ zIndex: 100 }}>
+                <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="w-4 h-4 text-green-400" />
+                    <label className="text-white font-medium">Where?</label>
+                    <span className="text-sm text-gray-400">(optional)</span>
+                </div>
+                <div className="relative" style={{ zIndex: 1000 }}>
+                    <GoogleMapsAutocomplete
+                        key={`option-autocomplete-${option.id || index}`}
+                        value={option.location || ''}
+                        onChange={(value) => onChange('location', value)}
+                        placeholder="Search for a location..."
+                        className="w-full"
+                    />
+                </div>
+            </Card>
 
             {/* Date/Time controls */}
             <div className="space-y-3">
