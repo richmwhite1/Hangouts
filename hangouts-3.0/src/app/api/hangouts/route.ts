@@ -245,13 +245,44 @@ export async function POST(request: NextRequest) {
       hasParticipants: !!data.participants,
       participantsCount: data.participants?.length || 0,
       privacyLevel: data.privacyLevel,
-      hasImage: !!data.image
+      hasImage: !!data.image,
+      imageType: typeof data.image,
+      consensusPercentage: data.consensusPercentage
     })
     console.log('Hangouts API - Full request data:', JSON.stringify(data, null, 2))
 
+    // Preprocess data to fix common issues before validation
+    const preprocessedData = { ...data }
+    
+    // Fix image field: if it's an object, try to extract URL, otherwise set to null
+    if (preprocessedData.image !== null && preprocessedData.image !== undefined) {
+      if (typeof preprocessedData.image === 'object') {
+        const imgObj = preprocessedData.image as any
+        // Try common URL properties
+        preprocessedData.image = imgObj.url || imgObj.src || imgObj.imageUrl || imgObj.image || null
+        console.log('Hangouts API - Converted image object to string:', preprocessedData.image)
+      } else if (typeof preprocessedData.image !== 'string') {
+        // Not a string or object, set to null
+        preprocessedData.image = null
+        console.log('Hangouts API - Invalid image type, set to null')
+      }
+    }
+    
+    // Fix consensusPercentage: ensure it's >= 50, default to 70
+    if (preprocessedData.consensusPercentage === null || preprocessedData.consensusPercentage === undefined) {
+      preprocessedData.consensusPercentage = 70
+    } else if (typeof preprocessedData.consensusPercentage === 'number') {
+      // Clamp between 50 and 100
+      preprocessedData.consensusPercentage = Math.max(50, Math.min(100, preprocessedData.consensusPercentage))
+    } else {
+      // Invalid type, use default
+      preprocessedData.consensusPercentage = 70
+    }
+    console.log('Hangouts API - Processed consensusPercentage:', preprocessedData.consensusPercentage)
+
     // Validate the request data
     console.log('Hangouts API - Validating data...')
-    const validatedData = createHangoutSchema.parse(data)
+    const validatedData = createHangoutSchema.parse(preprocessedData)
     console.log('Hangouts API - Data validated successfully')
 
     // For the new flow, get start/end times from the first option or use defaults

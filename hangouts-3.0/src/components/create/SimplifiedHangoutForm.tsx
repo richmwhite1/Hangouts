@@ -246,6 +246,7 @@ export function SimplifiedHangoutForm({ onSubmit, isLoading = false, onDataChang
       participants: selectedFriends,
       type: 'quick_plan', // Default to simple plan, not voting
       privacyLevel: 'PUBLIC',
+      consensusPercentage: 70, // Default consensus percentage
       options: [{
         id: `option_${Date.now()}`,
         title: title,
