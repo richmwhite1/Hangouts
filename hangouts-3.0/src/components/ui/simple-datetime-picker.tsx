@@ -196,136 +196,23 @@ export function SimpleDateTimePicker({
         closeOnEscape={true}
         preventBodyScroll={true}
       >
-        <div className="p-4 space-y-6">
-
-          {/* Quick Date Options */}
-          <div className="mb-4">
-            <p className="text-sm text-gray-400 mb-2">Quick dates:</p>
-            <div className="flex gap-2 flex-wrap">
-              {quickDates.map((quick) => (
-                <button
-                  key={quick.label}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDate(quick.getDate())
-                    if (!selectedTime) setSelectedTime('18:00')
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    selectedDate === quick.getDate()
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  {quick.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Calendar */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isProcessing) return
-                  if (displayMonth === 0) {
-                    setDisplayMonth(11)
-                    setDisplayYear(displayYear - 1)
-                  } else {
-                    setDisplayMonth(displayMonth - 1)
-                  }
-                }}
-                disabled={isProcessing}
-                className="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1"
-              >
-                ‹
-              </button>
-              <h4 className="text-white font-medium">
-                {monthNames[displayMonth]} {displayYear}
-              </h4>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isProcessing) return
-                  if (displayMonth === 11) {
-                    setDisplayMonth(0)
-                    setDisplayYear(displayYear + 1)
-                  } else {
-                    setDisplayMonth(displayMonth + 1)
-                  }
-                }}
-                disabled={isProcessing}
-                className="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1"
-              >
-                ›
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {dayNames.map(day => (
-                <div key={day} className="text-center text-xs text-gray-500 py-1">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {days.map((day, index) => {
-                if (day === null) {
-                  return <div key={index} />
-                }
-                
-                const dateString = `${displayYear}-${(displayMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-                const isSelected = selectedDate === dateString
-                const isToday = dateString === new Date().toISOString().split('T')[0]
-                const isPast = new Date(dateString) < new Date(new Date().toISOString().split('T')[0])
-
-                return (
-                  <button
-                    key={`${day}-${displayMonth}-${displayYear}`}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleDateSelect(day)
-                    }}
-                    disabled={isPast || isProcessing}
-                    className={`aspect-square rounded-lg text-sm transition-colors ${
-                      isSelected
-                        ? 'bg-purple-600 text-white'
-                        : isToday
-                        ? 'bg-purple-600/30 text-white border border-purple-500'
-                        : isPast || isProcessing
-                        ? 'text-gray-600 cursor-not-allowed opacity-50'
-                        : 'text-gray-300 hover:bg-gray-800'
-                    }`}
-                  >
-                    {day}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Time Selection */}
-          <div className="mb-4">
-            <p className="text-sm text-gray-400 mb-2">Time:</p>
-            <div className="flex items-center gap-3">
-              <Input
-                type="time"
-                value={selectedTime}
-                onChange={handleTimeChange}
-                className="flex-1 bg-gray-800 border-gray-600 text-white"
-              />
-              <div className="flex gap-1 flex-wrap">
-                {quickTimes.map((quick) => (
+        <div className="flex flex-col h-full">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Quick Date Options */}
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-2">Quick dates:</p>
+              <div className="flex gap-2 flex-wrap">
+                {quickDates.map((quick) => (
                   <button
                     key={quick.label}
                     type="button"
-                    onClick={() => setSelectedTime(quick.time)}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${
-                      selectedTime === quick.time
+                    onClick={() => {
+                      setSelectedDate(quick.getDate())
+                      if (!selectedTime) setSelectedTime('18:00')
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      selectedDate === quick.getDate()
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
@@ -335,17 +222,134 @@ export function SimpleDateTimePicker({
                 ))}
               </div>
             </div>
+
+            {/* Calendar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isProcessing) return
+                    if (displayMonth === 0) {
+                      setDisplayMonth(11)
+                      setDisplayYear(displayYear - 1)
+                    } else {
+                      setDisplayMonth(displayMonth - 1)
+                    }
+                  }}
+                  disabled={isProcessing}
+                  className="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1"
+                >
+                  ‹
+                </button>
+                <h4 className="text-white font-medium">
+                  {monthNames[displayMonth]} {displayYear}
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isProcessing) return
+                    if (displayMonth === 11) {
+                      setDisplayMonth(0)
+                      setDisplayYear(displayYear + 1)
+                    } else {
+                      setDisplayMonth(displayMonth + 1)
+                    }
+                  }}
+                  disabled={isProcessing}
+                  className="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1"
+                >
+                  ›
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {dayNames.map(day => (
+                  <div key={day} className="text-center text-xs text-gray-500 py-1">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((day, index) => {
+                  if (day === null) {
+                    return <div key={index} />
+                  }
+                  
+                  const dateString = `${displayYear}-${(displayMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+                  const isSelected = selectedDate === dateString
+                  const isToday = dateString === new Date().toISOString().split('T')[0]
+                  const isPast = new Date(dateString) < new Date(new Date().toISOString().split('T')[0])
+
+                  return (
+                    <button
+                      key={`${day}-${displayMonth}-${displayYear}`}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDateSelect(day)
+                      }}
+                      disabled={isPast || isProcessing}
+                      className={`aspect-square rounded-lg text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-purple-600 text-white'
+                          : isToday
+                          ? 'bg-purple-600/30 text-white border border-purple-500'
+                          : isPast || isProcessing
+                          ? 'text-gray-600 cursor-not-allowed opacity-50'
+                          : 'text-gray-300 hover:bg-gray-800'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Time Selection */}
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-2">Time:</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <Input
+                  type="time"
+                  value={selectedTime}
+                  onChange={handleTimeChange}
+                  className="flex-1 bg-gray-800 border-gray-600 text-white"
+                />
+                <div className="flex gap-1 flex-wrap">
+                  {quickTimes.map((quick) => (
+                    <button
+                      key={quick.label}
+                      type="button"
+                      onClick={() => setSelectedTime(quick.time)}
+                      className={`px-2 py-1 rounded text-xs transition-colors ${
+                        selectedTime === quick.time
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      {quick.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Confirm Button */}
-          <Button
-            type="button"
-            onClick={handleConfirm}
-            disabled={!selectedDate || !selectedTime || isProcessing}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isProcessing ? 'Processing...' : 'Confirm'}
-          </Button>
+          {/* Fixed Confirm Button at Bottom */}
+          <div className="flex-shrink-0 p-4 pt-2 border-t border-gray-700 bg-gray-900">
+            <Button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!selectedDate || !selectedTime || isProcessing}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed py-3 text-base font-medium"
+            >
+              {isProcessing ? 'Processing...' : 'Confirm'}
+            </Button>
+          </div>
         </div>
       </MobileModal>
     </div>

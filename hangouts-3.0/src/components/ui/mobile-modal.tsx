@@ -98,24 +98,28 @@ export function MobileModal({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ zIndex: 100000 }}
       onClick={handleBackdropClick}
     >
       <div
         ref={modalRef}
         className={cn(
-          "bg-white dark:bg-gray-900 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl",
+          "bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-lg w-full max-w-4xl h-[90vh] sm:max-h-[90vh] flex flex-col shadow-xl",
           "animate-in fade-in-0 zoom-in-95 duration-200",
           className
         )}
-        style={{ zIndex: 100001 }}
+        style={{ 
+          zIndex: 100001,
+          maxHeight: '90vh',
+          height: '90vh'
+        }}
         onTouchStart={handleTouchStart}
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click when clicking inside modal
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             {title && (
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {title}
@@ -134,8 +138,8 @@ export function MobileModal({
           </div>
         )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Content - Ensure proper scrolling on mobile */}
+        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
       </div>
