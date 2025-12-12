@@ -74,10 +74,35 @@ export async function GET(
       )
     }
     
-    // Now fetch the full hangout data
+    // Now fetch the full hangout data - use explicit select to avoid lastActivityAt field
     const hangout = await db.content.findUnique({
       where: { id: hangoutId },
-      include: {
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        description: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        privacyLevel: true,
+        creatorId: true,
+        image: true,
+        weatherEnabled: true,
+        maxParticipants: true,
+        priceMin: true,
+        priceMax: true,
+        ticketUrl: true,
+        currency: true,
+        attendeeCount: true,
+        externalEventId: true,
+        source: true,
+        createdAt: true,
+        updatedAt: true,
+        // Relationships
         users: {
           select: {
             id: true,
@@ -89,7 +114,15 @@ export async function GET(
           }
         },
         content_participants: {
-          include: {
+          select: {
+            id: true,
+            contentId: true,
+            userId: true,
+            role: true,
+            joinedAt: true,
+            canEdit: true,
+            isMandatory: true,
+            isCoHost: true,
             users: {
               select: {
                 id: true,
@@ -103,9 +136,36 @@ export async function GET(
           }
         },
         polls: {
-          include: {
+          select: {
+            id: true,
+            contentId: true,
+            creatorId: true,
+            title: true,
+            description: true,
+            options: true,
+            allowMultiple: true,
+            isAnonymous: true,
+            expiresAt: true,
+            consensusPercentage: true,
+            minimumParticipants: true,
+            consensusType: true,
+            status: true,
+            allowDelegation: true,
+            allowAbstention: true,
+            allowAddOptions: true,
+            isPublic: true,
+            visibility: true,
+            createdAt: true,
+            updatedAt: true,
             votes: {
-              include: {
+              select: {
+                id: true,
+                pollId: true,
+                userId: true,
+                option: true,
+                weight: true,
+                createdAt: true,
+                updatedAt: true,
                 user: {
                   select: {
                     id: true,
@@ -118,7 +178,14 @@ export async function GET(
           }
         },
         rsvps: {
-          include: {
+          select: {
+            id: true,
+            contentId: true,
+            userId: true,
+            status: true,
+            respondedAt: true,
+            createdAt: true,
+            updatedAt: true,
             users: {
               select: {
                 id: true,
@@ -445,12 +512,21 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    // Check if hangout exists and user has edit permissions
+    // Check if hangout exists and user has edit permissions - use explicit select
     const hangout = await db.content.findUnique({
       where: { id: hangoutId },
-      include: {
+      select: {
+        id: true,
+        type: true,
+        creatorId: true,
         content_participants: {
-          where: { userId: user.id }
+          where: { userId: user.id },
+          select: {
+            id: true,
+            userId: true,
+            role: true,
+            canEdit: true
+          }
         }
       }
     })
@@ -487,11 +563,26 @@ export async function PUT(
     if (body.weatherEnabled !== undefined) updateData.weatherEnabled = body.weatherEnabled
     if (body.image !== undefined) updateData.image = body.image
 
-    // Update hangout
+    // Update hangout - use explicit select to avoid lastActivityAt field
     const updatedHangout = await db.content.update({
       where: { id: hangoutId },
       data: updateData,
-      include: {
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        description: true,
+        image: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        startTime: true,
+        endTime: true,
+        privacyLevel: true,
+        creatorId: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         users: {
           select: {
             id: true,
@@ -501,7 +592,13 @@ export async function PUT(
           }
         },
         content_participants: {
-          include: {
+          select: {
+            id: true,
+            contentId: true,
+            userId: true,
+            role: true,
+            joinedAt: true,
+            canEdit: true,
             users: {
               select: {
                 id: true,
@@ -549,7 +646,8 @@ export async function PUT(
       creatorId: updatedHangout.creatorId,
       creator: updatedHangout.users,
       participants,
-      state: updatedHangout.state || 'POLLING',
+      status: updatedHangout.status,
+      state: 'confirmed', // Default state for updated hangouts
       requiresVoting: false,
       options: [],
       counts: updatedHangout._count,
