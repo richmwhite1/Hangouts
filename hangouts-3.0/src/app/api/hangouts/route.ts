@@ -292,12 +292,19 @@ export async function POST(request: NextRequest) {
     if (validatedData.options && validatedData.options.length > 0) {
       // Use the first option's dateTime as start time
       const firstOption = validatedData.options[0]
-      startTime = new Date(firstOption?.dateTime || new Date())
+      const optionDateTime = firstOption?.dateTime ? new Date(firstOption.dateTime) : null
+      // If option has a dateTime, use it; otherwise default to 1 hour from now
+      if (optionDateTime && !isNaN(optionDateTime.getTime())) {
+        startTime = optionDateTime
+      } else {
+        // Default to 1 hour from now to ensure it shows in upcoming feed
+        startTime = new Date(Date.now() + 60 * 60 * 1000)
+      }
       // End time is 3 hours after start time
       endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
     } else {
-      // Default times if no options
-      startTime = new Date()
+      // Default to 1 hour from now to ensure it shows in upcoming feed
+      startTime = new Date(Date.now() + 60 * 60 * 1000)
       endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
     }
 
@@ -358,7 +365,7 @@ export async function POST(request: NextRequest) {
             ${hangoutId}, 'HANGOUT', ${validatedData.title},
             ${validatedData.description || null}, ${validatedData.location || null},
             ${validatedData.latitude || null}, ${validatedData.longitude || null},
-            ${startTime}, ${endTime}, ${Prisma.raw(`${privacyLevel}::"PrivacyLevel"`)},
+            ${startTime}, ${endTime}, ${Prisma.raw(`'${privacyLevel}'::"PrivacyLevel"`)},
             ${userId}, ${validatedData.image || null},
             ${validatedData.weatherEnabled ?? false}, ${validatedData.maxParticipants || null},
             'PUBLISHED', 0, NULL, 'USD', NULL, 0, NULL, 'MANUAL',

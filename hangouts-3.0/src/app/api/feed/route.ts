@@ -124,12 +124,38 @@ async function getFeedHandler(request: NextRequest) {
     }
 
     // Add time filter
+    // For home feed, always include user's own hangouts regardless of startTime
+    // This ensures newly created hangouts show up immediately
     const startTimeFilter = createStartTimeFilter({
       startDate: startDateParam,
       endDate: endDateParam,
       includePast
     })
-    if (startTimeFilter) {
+    if (startTimeFilter && feedType === 'home' && userId && whereClause.OR) {
+      // For home feed, restructure to ensure user's own content always shows
+      // Use AND/OR nesting: (user's content) OR (other content AND time filter)
+      const originalOR = whereClause.OR
+      const userOwnContent = originalOR.find((c: any) => c.creatorId === userId)
+      const otherContent = originalOR.filter((c: any) => !c.creatorId || c.creatorId !== userId)
+      
+      whereClause.AND = [
+        {
+          OR: [
+            // User's own content (always show, regardless of startTime)
+            userOwnContent || { creatorId: userId },
+            // Other content that matches the time filter
+            ...(otherContent.length > 0 ? [{
+              AND: [
+                { OR: otherContent },
+                { startTime: startTimeFilter }
+              ]
+            }] : [])
+          ]
+        }
+      ]
+      // Remove the old OR since we're using AND now
+      delete whereClause.OR
+    } else if (startTimeFilter) {
       whereClause.startTime = startTimeFilter
     }
 
