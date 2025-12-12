@@ -82,11 +82,23 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        // Get last activity timestamp
-        const content = await db.content.findUnique({
-          where: { id: hangoutId },
-          select: { lastActivityAt: true }
-        })
+        // Get last activity timestamp (handle case where lastActivityAt doesn't exist)
+        let lastActivityAt: string | null = null
+        try {
+          const content = await db.content.findUnique({
+            where: { id: hangoutId },
+            select: { lastActivityAt: true }
+          })
+          lastActivityAt = content?.lastActivityAt?.toISOString() || null
+        } catch (error: any) {
+          // If lastActivityAt column doesn't exist, just set to null
+          if (error?.code === 'P2022' && error?.message?.includes('lastActivityAt')) {
+            lastActivityAt = null
+          } else {
+            // Re-throw if it's a different error
+            throw error
+          }
+        }
 
         return {
           hangoutId,
@@ -94,7 +106,7 @@ export async function GET(request: NextRequest) {
           newPhotosCount,
           newCommentsCount,
           lastViewedAt: viewMap.get(hangoutId)?.toISOString() || null,
-          lastActivityAt: content?.lastActivityAt?.toISOString() || null
+          lastActivityAt
         }
       })
     )

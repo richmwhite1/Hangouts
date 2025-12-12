@@ -427,7 +427,33 @@ export class TransactionQueries {
           // Fetch the created hangout
           hangout = await tx.content.findUnique({
             where: { id: hangoutId },
-            include: hangoutInclude
+            select: {
+              id: true,
+              type: true,
+              title: true,
+              description: true,
+              location: true,
+              latitude: true,
+              longitude: true,
+              startTime: true,
+              endTime: true,
+              privacyLevel: true,
+              creatorId: true,
+              image: true,
+              weatherEnabled: true,
+              maxParticipants: true,
+              status: true,
+              priceMin: true,
+              priceMax: true,
+              currency: true,
+              ticketUrl: true,
+              attendeeCount: true,
+              externalEventId: true,
+              source: true,
+              createdAt: true,
+              updatedAt: true
+              // Explicitly exclude lastActivityAt since it doesn't exist in production
+            }
           })
           if (!hangout) {
             throw new Error('Failed to create hangout using fallback method')
