@@ -1242,7 +1242,14 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         </Card>
 
         {/* Sticky Submit Button with Progress */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-[100] shadow-lg sm:sticky sm:relative sm:shadow-none sm:pb-4 sm:mt-6" style={{ paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))', paddingTop: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' }}>
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-[100] shadow-lg sm:sticky sm:relative sm:bottom-auto sm:shadow-none sm:pb-4 sm:mt-6" 
+          style={{ 
+            bottom: formData.participants.length > 0 ? 'calc(80px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
+            paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))', 
+            paddingTop: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' 
+          }}
+        >
           {/* Progress Indicator */}
           <div className="mb-2">
             <div className="flex items-center justify-between mb-1">
