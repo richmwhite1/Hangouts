@@ -1245,7 +1245,8 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
         <div 
           className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-600 p-4 z-[100] shadow-lg sm:sticky sm:relative sm:bottom-auto sm:shadow-none sm:pb-4 sm:mt-6" 
           style={{ 
-            bottom: formData.participants.length > 0 ? 'calc(80px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
+            // Position above InviteFriendsBar (80px) when friends are invited, otherwise at bottom
+            bottom: formData.participants.length > 0 ? 'calc(80px + env(safe-area-inset-bottom))' : '0px',
             paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))', 
             paddingTop: 'max(16px, calc(env(safe-area-inset-bottom) + 12px))' 
           }}
