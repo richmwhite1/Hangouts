@@ -42,29 +42,80 @@ export function GoogleMapsAutocomplete({
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [suggestionsPosition, setSuggestionsPosition] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  // Unique instance ID and dynamic z-index for multiple component support
+  const instanceId = useRef(`gmap-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+  const baseZIndex = useRef(1000 + Math.floor(Math.random() * 900)) // Range: 1000-1900
+
+  // Track previous value to detect prop changes
+  const prevValueRef = useRef(value)
+  
+  // #region agent log
+  useEffect(() => {
+    const isMount = prevValueRef.current === undefined
+    const valueChanged = prevValueRef.current !== value
+    fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:54',message:'GoogleMapsAutocomplete render',data:{instanceId:instanceId.current,value,prevValue:prevValueRef.current,valueChanged,isMount,onChangeType:typeof onChange},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    prevValueRef.current = value
+  });
+  
+  useEffect(() => {
+    return () => {
+      fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:62',message:'GoogleMapsAutocomplete unmount',data:{instanceId:instanceId.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    };
+  }, []);
+  // #endregion
 
   // Fetch suggestions from server-side API
   const fetchSuggestions = useCallback(async (query: string) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:53',message:'fetchSuggestions called',data:{query,queryLength:query?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     if (!query || query.length < 2) {
       setSuggestions([])
       setIsOpen(false)
       return
     }
 
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+
     setIsLoading(true)
     setApiError(null)
 
     try {
-      const response = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(query)}`)
+      const response = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(query)}`, {
+        signal: abortControllerRef.current.signal
+      })
       const data = await response.json()
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:76',message:'fetchSuggestions response',data:{ok:response.ok,success:data.success,predictionsCount:data.predictions?.length||0,suggestionsCount:data.suggestions?.length||0,error:data.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+
+      // Check if request was aborted (double-check with null check)
+      if (!abortControllerRef.current || abortControllerRef.current.signal.aborted) {
+        return
+      }
 
       if (response.ok && data.success && (data.predictions?.length > 0 || data.suggestions?.length > 0)) {
         // Handle both new and legacy API formats
         const predictions = data.predictions || data.suggestions || []
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:86',message:'Setting suggestions',data:{predictionsCount:predictions.length,willOpen:predictions.length>0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         setSuggestions(predictions)
         // Always open dropdown when we have suggestions
         if (predictions.length > 0) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:105',message:'Setting suggestions and opening dropdown',data:{predictionsCount:predictions.length,instanceId:instanceId.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          // #endregion
           setIsOpen(true)
         }
         setApiError(null)
@@ -81,13 +132,22 @@ export function GoogleMapsAutocomplete({
         setSuggestions([])
         setIsOpen(false)
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Don't log or handle aborted requests
+      if (error.name === 'AbortError') {
+        return
+      }
+
       logger.error('Error fetching suggestions:', error)
       setSuggestions([])
       setIsOpen(false)
       setApiError('Failed to load suggestions. Please type location manually.')
     } finally {
       setIsLoading(false)
+      // Clean up abort controller after request completes
+      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+        abortControllerRef.current = null
+      }
     }
   }, [])
 
@@ -102,13 +162,33 @@ export function GoogleMapsAutocomplete({
       })
     }
   }, [isOpen, suggestions.length])
+  
+  // Track isOpen changes
+  const prevIsOpenRef = useRef(isOpen)
+  useEffect(() => {
+    if (prevIsOpenRef.current !== isOpen) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:152',message:'isOpen changed',data:{prevIsOpen:prevIsOpenRef.current,isOpen,suggestionsCount:suggestions.length,instanceId:instanceId.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      prevIsOpenRef.current = isOpen
+    }
+  }, [isOpen, suggestions.length])
 
   // Simplified modal handling - only close on blur or outside click
   // Removed aggressive modal detection that was causing freezing
 
+  // Track suggestions length with ref to avoid dependency issues
+  const suggestionsLengthRef = useRef(suggestions.length)
+  useEffect(() => {
+    suggestionsLengthRef.current = suggestions.length
+  }, [suggestions.length])
+
   // Debounced input handler - optimized for performance
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:147',message:'handleInputChange called',data:{newValue,currentValue:value,valueChanged:newValue!==value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     onChange(newValue)
 
     // Clear existing timer
@@ -116,15 +196,26 @@ export function GoogleMapsAutocomplete({
       clearTimeout(debounceTimerRef.current)
     }
 
-    // If input is cleared, close suggestions
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // If input is cleared, close suggestions immediately and cleanup
     if (newValue.length === 0) {
       setSuggestions([])
       setIsOpen(false)
+      setIsLoading(false)
+      // Cleanup pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
       return
     }
 
     // Show suggestions immediately if we have cached ones
-    if (suggestions.length > 0 && newValue.length > 0) {
+    if (suggestionsLengthRef.current > 0 && newValue.length > 0) {
       setIsOpen(true)
     }
 
@@ -137,8 +228,9 @@ export function GoogleMapsAutocomplete({
       // Clear suggestions for very short inputs
       setSuggestions([])
       setIsOpen(false)
+      setIsLoading(false)
     }
-  }, [onChange, fetchSuggestions, suggestions.length])
+  }, [onChange, fetchSuggestions])
 
   // Handle suggestion selection
   const handleSelectSuggestion = useCallback((suggestion: Suggestion) => {
@@ -160,26 +252,28 @@ export function GoogleMapsAutocomplete({
     }
   }, [onChange, onPlaceSelect])
 
-  // Close suggestions on outside click
+  // Close suggestions on outside click - using container-scoped detection
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        inputRef.current &&
-        suggestionsRef.current &&
-        !inputRef.current.contains(event.target as Node) &&
-        !suggestionsRef.current.contains(event.target as Node)
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+    // Use container-level event listener instead of document-level
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        container.removeEventListener('mousedown', handleClickOutside)
+      }
     }
   }, [])
 
-  // Close on Escape key
+  // Close on Escape key - using container-scoped detection
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -187,9 +281,13 @@ export function GoogleMapsAutocomplete({
       }
     }
 
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.removeEventListener('keydown', handleEscape)
+    // Use container-level event listener instead of document-level
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('keydown', handleEscape)
+      return () => {
+        container.removeEventListener('keydown', handleEscape)
+      }
     }
   }, [])
 
@@ -227,23 +325,52 @@ export function GoogleMapsAutocomplete({
     }
   }
 
-  // Cleanup debounce timer
+  // Comprehensive cleanup - timers, requests, and event listeners
   useEffect(() => {
     return () => {
+      // Clear debounce timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
       }
+
+      // Abort any pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+
+      // Close suggestions if open
+      setIsOpen(false)
+      setSuggestions([])
+      setIsLoading(false)
     }
   }, [])
 
+  // Additional cleanup on unmount to ensure no memory leaks
+  useEffect(() => {
+    const cleanup = () => {
+      // Final cleanup of any lingering state
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+
+    // Cleanup on component unmount
+    return cleanup
+  }, [])
+
   return (
-    <div ref={containerRef} className={`relative ${className}`} style={{ zIndex: 1000 }}>
+    <div ref={containerRef} className={`relative ${className}`} style={{ zIndex: baseZIndex.current }}>
       {apiError && (
         <div className="mb-2 p-2 bg-yellow-900/20 border border-yellow-600/30 rounded text-yellow-400 text-xs">
           ⚠️ {apiError}
         </div>
       )}
-      <div className="relative" style={{ zIndex: 1000 }}>
+      <div className="relative" style={{ zIndex: 999999 }}>
         <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
         <Input
           ref={inputRef}
@@ -284,17 +411,24 @@ export function GoogleMapsAutocomplete({
       {/* Custom suggestions dropdown - High z-index to appear above everything */}
       {isOpen && suggestions.length > 0 && (
         <>
+          {/* #region agent log */}
+          {(() => {
+            fetch('http://127.0.0.1:7242/ingest/d8eaea88-dac0-4e87-9fd0-a8c68b982993',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'google-maps-autocomplete.tsx:368',message:'Rendering suggestions dropdown',data:{isOpen,suggestionsCount:suggestions.length,hasPosition:!!suggestionsPosition,positionWidth:suggestionsPosition?.width,zIndex:999999},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'E'})}).catch(()=>{});
+            return null;
+          })()}
+          {/* #endregion */}
           {typeof window !== 'undefined' && suggestionsPosition && suggestionsPosition.width > 0 ? (
             createPortal(
               <div
                 ref={suggestionsRef}
                 className="fixed bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
-                style={{ 
+                data-instance-id={instanceId.current}
+                style={{
                   position: 'fixed',
                   top: `${suggestionsPosition.top}px`,
                   left: `${suggestionsPosition.left}px`,
                   width: `${suggestionsPosition.width}px`,
-                  zIndex: 99999,
+                  zIndex: 999999, // Very high z-index to ensure visibility above all other elements
                   marginTop: '0.5rem'
                 }}
               >
@@ -327,13 +461,14 @@ export function GoogleMapsAutocomplete({
           ) : (
             <div
               ref={suggestionsRef}
-              className="absolute w-full mt-2 bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto z-[99999]"
-              style={{ 
-                position: 'absolute', 
-                top: '100%', 
-                left: 0, 
+              className="absolute w-full mt-2 bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+              data-instance-id={instanceId.current}
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
                 right: 0,
-                zIndex: 99999,
+                zIndex: 999999, // Very high z-index to ensure visibility above all other elements
                 marginTop: '0.5rem'
               }}
             >
