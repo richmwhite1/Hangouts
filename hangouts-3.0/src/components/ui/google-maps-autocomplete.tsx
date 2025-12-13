@@ -47,8 +47,15 @@ export function GoogleMapsAutocomplete({
   const justSelectedRef = useRef(false) // Track if we just selected a suggestion to prevent reopening
 
   // Unique instance ID and dynamic z-index for multiple component support
-  const instanceId = useRef(`gmap-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
-  const baseZIndex = useRef(1000 + Math.floor(Math.random() * 900)) // Range: 1000-1900
+  // Use useState with lazy initializer to ensure these are only generated on the client
+  const [instanceId] = useState(() => {
+    if (typeof window === 'undefined') return 'gmap-ssr'
+    return `gmap-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  })
+  const [baseZIndex] = useState(() => {
+    if (typeof window === 'undefined') return 1000
+    return 1000 + Math.floor(Math.random() * 900) // Range: 1000-1900
+  })
 
 
   // Fetch suggestions from server-side API
@@ -331,7 +338,7 @@ export function GoogleMapsAutocomplete({
   }, [])
 
   return (
-    <div ref={containerRef} className={`relative ${className}`} style={{ zIndex: baseZIndex.current }}>
+    <div ref={containerRef} className={`relative ${className}`} style={{ zIndex: baseZIndex }}>
       {apiError && (
         <div className="mb-2 p-2 bg-yellow-900/20 border border-yellow-600/30 rounded text-yellow-400 text-xs">
           ⚠️ {apiError}
@@ -387,7 +394,7 @@ export function GoogleMapsAutocomplete({
             <div
               ref={suggestionsRef}
               className="fixed bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
-              data-instance-id={instanceId.current}
+              data-instance-id={instanceId}
               style={{
                 position: 'fixed',
                 top: `${suggestionsPosition.top}px`,
