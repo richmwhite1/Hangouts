@@ -36,7 +36,13 @@ async function getFeedHandler(request: NextRequest) {
   }
 
   try {
-    logger.debug('Starting feed request processing', { feedType, contentType, userId }, 'FEED')
+    logger.debug('Starting feed request processing', {
+      feedType,
+      contentType,
+      userId,
+      hasUserId: !!userId,
+      url: request.url
+    }, 'FEED')
     let friendIds: string[] = []
     
     // If user is authenticated, get their friends for FRIENDS_ONLY content
@@ -116,7 +122,10 @@ async function getFeedHandler(request: NextRequest) {
             }
           }
         ]
-        logger.debug('Using OR filter for user (no public content)', { userId }, 'FEED')
+        logger.debug('Using OR filter for user (no public content)', {
+          userId,
+          orConditionsCount: whereClause.OR.length
+        }, 'FEED')
       } else {
         // If no user, show only public content
         whereClause.privacyLevel = 'PUBLIC'
@@ -131,32 +140,31 @@ async function getFeedHandler(request: NextRequest) {
       endDate: endDateParam,
       includePast
     })
-    if (startTimeFilter && feedType === 'home' && userId && whereClause.OR) {
-      // For home feed, restructure to ensure user's own content always shows
-      // Use AND/OR nesting: (user's content) OR (other content AND time filter)
-      const originalOR = whereClause.OR
-      const userOwnContent = originalOR.find((c: any) => c.creatorId === userId)
-      const otherContent = originalOR.filter((c: any) => !c.creatorId || c.creatorId !== userId)
-      
-      whereClause.AND = [
-        {
-          OR: [
-            // User's own content (always show, regardless of startTime)
-            userOwnContent || { creatorId: userId },
-            // Other content that matches the time filter
-            ...(otherContent.length > 0 ? [{
-              AND: [
-                { OR: otherContent },
-                { startTime: startTimeFilter }
-              ]
-            }] : [])
-          ]
-        }
-      ]
-      // Remove the old OR since we're using AND now
-      delete whereClause.OR
-    } else if (startTimeFilter) {
-      whereClause.startTime = startTimeFilter
+
+    logger.debug('Time filtering setup', {
+      feedType,
+      userId,
+      startTimeFilter,
+      includePast,
+      hasOR: !!whereClause.OR
+    }, 'FEED')
+
+    // Apply time filtering
+    if (startTimeFilter) {
+      if (feedType === 'home' && userId) {
+        // For home feed: Apply time filtering but ensure user's own content is included
+        // We'll modify the query to include user's content separately
+        logger.debug('Home feed time filtering with user context', {
+          userId,
+          hasTimeFilter: true
+        }, 'FEED')
+      } else {
+        // For discover page or anonymous users: apply time filter normally
+        whereClause.startTime = startTimeFilter
+        logger.debug('Applied standard time filtering', { startTimeFilter }, 'FEED')
+      }
+    } else {
+      logger.debug('No time filtering applied', {}, 'FEED')
     }
 
     // Add location filter
@@ -167,15 +175,49 @@ async function getFeedHandler(request: NextRequest) {
       }
     }
 
-    // Add date filters
-    if (startDate || endDate) {
+    // Add date filters (only if not already handled by startTimeFilter above)
+    if ((startDate || endDate) && !(startTimeFilter && feedType === 'home' && userId && whereClause.OR)) {
       whereClause.startTime = {
         ...(startDate && { gte: new Date(startDate) }),
         ...(endDate && { lte: new Date(endDate) })
       }
     }
 
-    logger.debug('Executing content query', { whereClause, userId, feedType, page, limit, sortBy }, 'FEED')
+    // Debug: Check if user has any hangouts at all
+    if (userId && feedType === 'home') {
+      try {
+        const userHangoutsCount = await db.content.count({
+          where: {
+            creatorId: userId,
+            type: 'HANGOUT',
+            status: 'PUBLISHED'
+          }
+        })
+        logger.debug('User hangout count check', {
+          userId,
+          userHangoutsCount,
+          feedType
+        }, 'FEED')
+      } catch (countError) {
+        logger.error('Error checking user hangouts count', { userId, error: countError.message }, 'FEED')
+      }
+    }
+
+    logger.debug('Final where clause before query', {
+      whereClause: JSON.stringify(whereClause, null, 2),
+      userId,
+      feedType,
+      hasOR: !!whereClause.OR,
+      orLength: whereClause.OR?.length || 0
+    }, 'FEED')
+
+    logger.debug('Executing content query', {
+      userId,
+      feedType,
+      page,
+      limit,
+      sortBy
+    }, 'FEED')
     
     // Determine sort order based on sortBy parameter
     let orderBy: any
@@ -192,9 +234,186 @@ async function getFeedHandler(request: NextRequest) {
         : { startTime: 'asc' as const }
     }
 
-    // Simplified query for debugging
-    const content = await db.content.findMany({
-      where: whereClause,
+    // Debug: First try to get just user's own hangouts
+    let userOwnHangouts = []
+    if (userId && feedType === 'home') {
+      try {
+        userOwnHangouts = await db.content.findMany({
+          where: {
+            creatorId: userId,
+            type: 'HANGOUT',
+            status: 'PUBLISHED'
+          },
+          select: { id: true, title: true, startTime: true },
+          take: 5
+        })
+        logger.debug('User own hangouts found', {
+          userId,
+          count: userOwnHangouts.length,
+          hangouts: userOwnHangouts.map(h => ({ id: h.id, title: h.title, startTime: h.startTime }))
+        }, 'FEED')
+      } catch (debugError) {
+        logger.error('Error fetching user own hangouts', { userId, error: debugError.message }, 'FEED')
+      }
+    }
+
+    // TEMPORARY: For debugging, let's try a simpler query that just gets user's own hangouts
+    let content = []
+    if (feedType === 'home' && userId) {
+      try {
+        logger.debug('Using simplified home feed query for user', { userId }, 'FEED')
+        content = await db.content.findMany({
+          where: {
+            creatorId: userId,
+            status: 'PUBLISHED'
+          },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            description: true,
+            image: true,
+            location: true,
+            latitude: true,
+            longitude: true,
+            startTime: true,
+            endTime: true,
+            privacyLevel: true,
+            createdAt: true,
+            updatedAt: true,
+            venue: true,
+            address: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            priceMin: true,
+            priceMax: true,
+            currency: true,
+            ticketUrl: true,
+            attendeeCount: true,
+            externalEventId: true,
+            source: true,
+            maxParticipants: true,
+            weatherEnabled: true,
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true,
+                lastSeen: true,
+                isActive: true
+              }
+            },
+            content_participants: {
+              include: {
+                users: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatar: true,
+                    lastSeen: true,
+                    isActive: true
+                  }
+                }
+              }
+            },
+            eventTags: {
+              select: {
+                tag: true
+              }
+            },
+            eventImages: {
+              select: {
+                imageUrl: true,
+                orderIndex: true
+              },
+              orderBy: {
+                orderIndex: 'asc'
+              }
+            },
+            eventSaves: {
+              select: {
+                userId: true,
+                createdAt: true
+              }
+            },
+            polls: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                options: true,
+                status: true,
+                consensusPercentage: true,
+                expiresAt: true,
+                createdAt: true
+              }
+            },
+            photos: {
+              select: {
+                id: true,
+                originalUrl: true,
+                thumbnailUrl: true,
+                caption: true,
+                createdAt: true,
+                users: {
+                  select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    avatar: true
+                  }
+                }
+              },
+              orderBy: {
+                createdAt: 'desc'
+              },
+              take: 5
+            },
+            rsvps: {
+              select: {
+                id: true,
+                userId: true,
+                status: true,
+                respondedAt: true,
+                users: {
+                  select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    avatar: true
+                  }
+                }
+              }
+            },
+            _count: {
+              select: {
+                content_participants: true,
+                comments: true,
+                content_likes: true,
+                content_shares: true,
+                messages: true,
+                photos: true,
+                rsvps: true,
+                eventSaves: true
+              }
+            }
+          },
+          orderBy,
+          take: limit,
+          skip: offset
+        })
+      } catch (simpleQueryError) {
+        logger.error('Error with simplified query, falling back to original', {
+          userId,
+          error: simpleQueryError.message
+        }, 'FEED')
+      }
+      // Not home feed or no user, use original query
+      content = await db.content.findMany({
+        where: whereClause,
       select: {
         id: true,
         type: true,
@@ -344,6 +563,7 @@ async function getFeedHandler(request: NextRequest) {
       take: limit,
       skip: offset
     })
+    }
 
     // Get total count for hasMore calculation
     const totalCount = await db.content.count({

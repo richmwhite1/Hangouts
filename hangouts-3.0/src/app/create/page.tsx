@@ -6,6 +6,8 @@ import { useAuth } from "@clerk/nextjs"
 import NewHangoutForm, { NewHangoutFormData } from '@/components/create/NewHangoutForm'
 import { SimplifiedHangoutForm } from '@/components/create/SimplifiedHangoutForm'
 import { apiClient } from '@/lib/api-client'
+import { useApiClient } from '@/hooks/use-api-client'
+import { useImageUpload } from '@/hooks/use-image-upload'
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
@@ -14,7 +16,10 @@ import { Sparkles, Settings, Vote, BarChart3, Sliders } from 'lucide-react'
 export default function CreateHangoutPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isSignedIn, isLoaded, userId } = useAuth()
+  const { isSignedIn, isLoaded, userId, getToken } = useAuth()
+  // Ensure API client has auth token
+  useApiClient()
+  const { uploadImage } = useImageUpload()
   const [isCreating, setIsCreating] = useState(false)
   const [mode, setMode] = useState<'simple' | 'advanced'>('advanced') // Default to advanced mode for testing
   const [simpleFormData, setSimpleFormData] = useState<{
@@ -72,7 +77,68 @@ export default function CreateHangoutPage() {
     try {
       setIsCreating(true)
 
-      const response = await apiClient.createHangout(formData)
+      // Ensure we have a token before making the request
+      const token = await getToken()
+      if (token) {
+        apiClient.setToken(token)
+      }
+
+      // Prepare the data for submission - create a clean copy
+      const submissionData: any = { ...formData }
+
+      // Handle image field - must be a string URL or null/undefined
+      if (formData.image instanceof File) {
+        // Upload File and convert to URL string
+        try {
+          logger.info('Uploading image file:', { name: formData.image.name, size: formData.image.size, type: formData.image.type })
+          const uploadResult = await uploadImage(formData.image, 'hangout')
+          logger.info('Upload result:', uploadResult)
+          
+          if (uploadResult?.url) {
+            submissionData.image = uploadResult.url
+            logger.info('Image uploaded successfully:', uploadResult.url)
+          } else {
+            submissionData.image = null
+            logger.warn('Image upload returned no URL, continuing without image', uploadResult)
+            toast.error('Image upload failed, continuing without image')
+          }
+        } catch (imageError) {
+          logger.error('Error uploading image:', imageError)
+          submissionData.image = null
+          toast.error('Failed to upload image, continuing without image')
+        }
+      } else if (typeof formData.image === 'string') {
+        // Already a string, keep it
+        submissionData.image = formData.image
+      } else {
+        // Not a File or string - set to null (could be object, array, etc.)
+        submissionData.image = null
+      }
+
+      // Ensure consensusPercentage is >= 50
+      if (submissionData.consensusPercentage !== undefined && submissionData.consensusPercentage < 50) {
+        submissionData.consensusPercentage = 50
+      } else if (submissionData.consensusPercentage === undefined || submissionData.consensusPercentage === null) {
+        submissionData.consensusPercentage = 70 // Default value
+      }
+
+      // Final cleanup: ensure image is only string or null/undefined
+      if (submissionData.image !== null && submissionData.image !== undefined && typeof submissionData.image !== 'string') {
+        logger.warn('Image field is not a string, removing it:', typeof submissionData.image, submissionData.image)
+        submissionData.image = null
+      }
+
+      // Log the data being sent (without sensitive info)
+      logger.info('Submitting hangout data:', {
+        title: submissionData.title,
+        type: submissionData.type,
+        imageType: typeof submissionData.image,
+        imageValue: submissionData.image ? 'present' : 'null/undefined',
+        consensusPercentage: submissionData.consensusPercentage,
+        optionsCount: submissionData.options?.length || 0
+      })
+
+      const response = await apiClient.createHangout(submissionData)
 
       if (response.success) {
         toast.success('Hangout created successfully!')
@@ -80,9 +146,12 @@ export default function CreateHangoutPage() {
       } else {
         toast.error(response.error || 'Failed to create hangout')
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating hangout:', error);
-      toast.error('An unexpected error occurred')
+      const errorMessage = error?.message || 'An unexpected error occurred'
+      toast.error(errorMessage.includes('401') || errorMessage.includes('Unauthorized') 
+        ? 'Please sign in to create a hangout' 
+        : errorMessage)
     } finally {
       setIsCreating(false)
     }

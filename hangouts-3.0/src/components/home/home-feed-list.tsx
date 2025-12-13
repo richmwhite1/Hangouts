@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { FeedItemCard } from './feed-item-card'
 import { Calendar, Loader2 } from 'lucide-react'
@@ -17,7 +17,7 @@ export function HomeFeedList({ showPast }: HomeFeedListProps) {
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(true)
 
-  const fetchFeed = async (pageNum: number = 1, append: boolean = false) => {
+  const fetchFeed = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     if (!isLoaded) return
     
     try {
@@ -60,14 +60,39 @@ export function HomeFeedList({ showPast }: HomeFeedListProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isLoaded, getToken, showPast])
 
   useEffect(() => {
     if (!isLoaded) return
     setLoading(true)
     setPage(1)
     fetchFeed(1, false)
-  }, [showPast, isLoaded])
+  }, [showPast, isLoaded, fetchFeed])
+
+  // Refresh feed when page becomes visible (user navigates back)
+  useEffect(() => {
+    if (!isLoaded) return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setPage(1)
+        fetchFeed(1, false)
+      }
+    }
+
+    const handleFocus = () => {
+      setPage(1)
+      fetchFeed(1, false)
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [isLoaded, fetchFeed])
 
   const loadMore = async () => {
     if (loading || !hasMore) return

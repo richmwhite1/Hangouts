@@ -62,7 +62,25 @@ export function useImageUpload() {
       }
 
       const result = await response.json()
-      return result.data
+      
+      // Handle both response structures: { data: { url } } or { url, data: { url } }
+      if (result.data && result.data.url) {
+        return result.data
+      } else if (result.url) {
+        // Fallback: if data is missing but url exists at top level
+        return {
+          url: result.url,
+          filename: result.filename || '',
+          type: type,
+          size: result.size || 0,
+          dimensions: result.dimensions || { width: 0, height: 0 },
+          originalSize: result.originalSize || 0,
+          compressionRatio: result.compressionRatio || 0
+        }
+      }
+      
+      logger.error('Upload response missing expected structure:', result)
+      throw new Error('Invalid upload response format')
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed'

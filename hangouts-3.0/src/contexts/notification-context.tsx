@@ -87,17 +87,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [])
 
   const fetchUnreadCount = useCallback(async () => {
+    if (!isSignedIn) return
     try {
       const response = await fetch('/api/notifications/unread-count')
-      if (!response.ok) return
+      if (!response.ok) {
+        // Silently fail for 401 (unauthorized) - user just needs to sign in
+        if (response.status === 401) return
+        return
+      }
       const data = await response.json()
       if (data.success) {
         setUnreadCount(data.data.count)
       }
     } catch (error) {
+      // Only log non-network errors (network errors are expected when offline)
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        // Network error - silently ignore
+        return
+      }
       logger.warn('Failed to fetch unread count', error)
     }
-  }, [])
+  }, [isSignedIn])
 
   const fetchNotifications = useCallback(
     async (reset = false) => {
@@ -117,6 +127,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         })
         const response = await fetch(`/api/notifications?${params}`)
         if (!response.ok) {
+          // Silently fail for 401 (unauthorized) - user just needs to sign in
+          if (response.status === 401) return
           throw new Error('Failed to fetch notifications')
         }
 
@@ -130,6 +142,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         })
         setHasMore(Boolean(data.data.hasMore))
       } catch (error) {
+        // Only log non-network errors (network errors are expected when offline)
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          // Network error - silently ignore
+          return
+        }
         logger.error('Failed to fetch notifications', error)
       } finally {
         setIsLoading(false)

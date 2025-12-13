@@ -103,6 +103,7 @@ export async function GET(request: NextRequest) {
 
     const baseWhere: any = {
       type: 'HANGOUT',
+      status: 'PUBLISHED',
       ...whereClause
     }
 
@@ -317,35 +318,46 @@ export async function POST(request: NextRequest) {
 
     // Create the hangout in the database
     console.log('Hangouts API - Creating hangout in database...')
+    const hangoutData = {
+      id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'HANGOUT',
+      title: validatedData.title,
+      description: validatedData.description || null,
+      location: validatedData.location || null,
+      latitude: validatedData.latitude || null,
+      longitude: validatedData.longitude || null,
+      startTime,
+      endTime,
+      privacyLevel: validatedData.privacyLevel || 'PUBLIC',
+      creatorId: userId,
+      image: validatedData.image || null,
+      weatherEnabled: validatedData.weatherEnabled ?? false,
+      maxParticipants: validatedData.maxParticipants || null,
+      status: 'PUBLISHED',
+      priceMin: 0,
+      priceMax: null,
+      currency: 'USD',
+      ticketUrl: null,
+      attendeeCount: 0,
+      externalEventId: null,
+      source: 'MANUAL',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    console.log('Hangouts API - Hangout data:', {
+      id: hangoutData.id,
+      title: hangoutData.title,
+      privacyLevel: hangoutData.privacyLevel,
+      startTime: hangoutData.startTime.toISOString(),
+      endTime: hangoutData.endTime.toISOString(),
+      creatorId: hangoutData.creatorId,
+      status: hangoutData.status
+    })
+
     let hangout
     try {
       hangout = await db.content.create({
-        data: {
-          id: `hangout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type: 'HANGOUT',
-          title: validatedData.title,
-          description: validatedData.description || null,
-          location: validatedData.location || null,
-          latitude: validatedData.latitude || null,
-          longitude: validatedData.longitude || null,
-          startTime,
-          endTime,
-          privacyLevel: validatedData.privacyLevel || 'PUBLIC',
-          creatorId: userId,
-          image: validatedData.image || null,
-          weatherEnabled: validatedData.weatherEnabled ?? false,
-          maxParticipants: validatedData.maxParticipants || null,
-          status: 'PUBLISHED',
-          priceMin: 0,
-          priceMax: null,
-          currency: 'USD',
-          ticketUrl: null,
-          attendeeCount: 0,
-          externalEventId: null,
-          source: 'MANUAL',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
+        data: hangoutData
       })
     } catch (error: any) {
       // Handle case where lastActivityAt column doesn't exist in production
@@ -428,6 +440,66 @@ export async function POST(request: NextRequest) {
     })
     console.log('Hangouts API - Creator added as participant')
 
+    // If an image was provided during creation, create a photo record for it
+    if (validatedData.image && typeof validatedData.image === 'string') {
+      console.log('Hangouts API - Creating photo record from hangout creation image...')
+      console.log('Hangouts API - Image URL:', validatedData.image)
+      try {
+        const photoId = `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const imageUrl = validatedData.image
+        
+        // Create photo record with the uploaded image URL
+        const photo = await db.photos.create({
+          data: {
+            id: photoId,
+            contentId: hangout.id,
+            creatorId: userId,
+            originalUrl: imageUrl,
+            thumbnailUrl: imageUrl,
+            smallUrl: imageUrl,
+            mediumUrl: imageUrl,
+            largeUrl: imageUrl,
+            originalWidth: 800, // Default dimensions since we don't know them from upload API
+            originalHeight: 600,
+            fileSize: 0, // Unknown from upload API
+            mimeType: 'image/webp', // Upload API converts to webp
+            isPublic: hangout.privacyLevel === 'PUBLIC',
+            caption: 'Hangout cover photo',
+            updatedAt: new Date()
+          }
+        })
+        console.log('Hangouts API - Photo record created successfully:', photoId)
+        
+        // Ensure hangout.image is set to the photo URL (use mediumUrl for better quality)
+        if (hangout.image !== imageUrl) {
+          console.log('Hangouts API - Updating hangout.image to match photo URL')
+          await db.content.update({
+            where: { id: hangout.id },
+            data: {
+              image: imageUrl
+            }
+          })
+          // Update local hangout object
+          hangout.image = imageUrl
+        }
+        console.log('Hangouts API - Hangout image verified and set:', imageUrl)
+      } catch (photoError: any) {
+        console.error('Hangouts API - Error creating photo record from hangout image:', photoError)
+        console.error('Hangouts API - Photo error details:', {
+          message: photoError.message,
+          code: photoError.code,
+          stack: photoError.stack
+        })
+        // Log but don't fail the hangout creation - the hangout.image is already set
+        logger.error('Failed to create photo record during hangout creation:', photoError)
+      }
+    } else {
+      console.log('Hangouts API - No image provided or image is not a string:', {
+        hasImage: !!validatedData.image,
+        imageType: typeof validatedData.image
+      })
+    }
+
     // Add other participants if specified
     if (validatedData.participants && validatedData.participants.length > 0) {
       console.log('Hangouts API - Adding other participants...')
@@ -483,21 +555,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Fetch the final hangout data to ensure we have the latest image value
+    const finalHangout = await db.content.findUnique({
+      where: { id: hangout.id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        location: true,
+        startTime: true,
+        endTime: true,
+        privacyLevel: true,
+        image: true,
+        creatorId: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+    
     console.log('Hangouts API - Returning success response')
+    console.log('Hangouts API - Final hangout image:', finalHangout?.image)
     return NextResponse.json({
       success: true,
       data: {
-        id: hangout.id,
-        title: hangout.title,
-        description: hangout.description,
-        location: hangout.location,
-        startTime: hangout.startTime,
-        endTime: hangout.endTime,
-        privacyLevel: hangout.privacyLevel,
-        image: hangout.image,
-        creatorId: hangout.creatorId,
-        createdAt: hangout.createdAt,
-        updatedAt: hangout.updatedAt,
+        id: finalHangout?.id || hangout.id,
+        title: finalHangout?.title || hangout.title,
+        description: finalHangout?.description || hangout.description,
+        location: finalHangout?.location || hangout.location,
+        startTime: finalHangout?.startTime || hangout.startTime,
+        endTime: finalHangout?.endTime || hangout.endTime,
+        privacyLevel: finalHangout?.privacyLevel || hangout.privacyLevel,
+        image: finalHangout?.image || hangout.image, // Ensure image is included
+        creatorId: finalHangout?.creatorId || hangout.creatorId,
+        createdAt: finalHangout?.createdAt || hangout.createdAt,
+        updatedAt: finalHangout?.updatedAt || hangout.updatedAt,
         requiresVoting: flowResult.requiresVoting,
         options: validatedData.options || [],
         participants: validatedData.participants || []

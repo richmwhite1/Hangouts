@@ -2328,16 +2328,27 @@ function PhotosSection({
         body: formData
       })
       if (response.ok) {
+        const data = await response.json()
         await fetchPhotos() // Refresh photos
-        toast.success('Photos uploaded successfully!')
+        await onHangoutUpdate() // Refresh hangout to ensure image is updated
+        const uploadedCount = data.data?.photos?.length || files.length
+        toast.success(`Photo${uploadedCount > 1 ? 's' : ''} uploaded successfully!`)
       } else {
-        toast.error('Failed to upload photos')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.message || errorData.error || 'Failed to upload photos'
+        logger.error('Photo upload failed:', { status: response.status, error: errorMessage })
+        toast.error(errorMessage)
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error uploading photos:', error);
-      toast.error('An error occurred while uploading photos')
+      const errorMessage = error?.message || 'An error occurred while uploading photos'
+      toast.error(errorMessage)
     } finally {
       setIsUploading(false)
+      // Reset file input
+      if (event.target) {
+        event.target.value = ''
+      }
     }
   }
 
@@ -2587,15 +2598,19 @@ function PrimaryPhotoModal({
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file')
+    // Validate file size (50MB max to match backend)
+    const maxSize = 50 * 1024 * 1024 // 50MB
+    if (file.size > maxSize) {
+      toast.error(`File too large. Maximum size is 50MB`)
       return
     }
 
     setIsUploading(true)
     try {
       await onUploadNew(file)
+    } catch (error) {
+      logger.error('Error uploading file:', error);
+      toast.error('Failed to upload file. Please try again.')
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {
@@ -2619,12 +2634,12 @@ function PrimaryPhotoModal({
 
         {/* Upload New Photo Section */}
         <div className="mb-6">
-          <label className="block text-white font-medium mb-2">Upload New Photo</label>
+          <label className="block text-white font-medium mb-2">Upload New File</label>
           <div className="relative">
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="*/*"
               onChange={handleFileSelect}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               disabled={isUploading}
@@ -2637,7 +2652,7 @@ function PrimaryPhotoModal({
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
             >
-              {isUploading ? 'Uploading...' : '+ Upload New Photo'}
+              {isUploading ? 'Uploading...' : '+ Upload New File'}
             </button>
           </div>
         </div>

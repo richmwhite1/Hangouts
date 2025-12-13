@@ -60,28 +60,24 @@ export async function POST(
     const files = formData.getAll('photos') as File[];
 
     if (files.length === 0) {
-      return NextResponse.json(createErrorResponse('Bad Request', 'No photos provided'), { status: 400 });
+      return NextResponse.json(createErrorResponse('Bad Request', 'No files provided'), { status: 400 });
     }
 
-    // Validate file types and sizes
-    const allowedTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 
-      'image/gif', 'image/bmp', 'image/tiff', 'image/heic', 'image/heif'
-    ];
-    const maxSize = 20 * 1024 * 1024; // 20MB
+    // Increased max size to accommodate various file types (50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
 
     const uploadedPhotos = [];
 
     for (const file of files) {
-      // Validate file type
-      if (!file.type.startsWith('image/') || !allowedTypes.includes(file.type)) {
-        logger.warn(`Skipping invalid file type: ${file.type}`);
+      // Validate file size
+      if (file.size > maxSize) {
+        logger.warn(`Skipping file too large: ${file.size} bytes (max: ${maxSize})`);
         continue;
       }
 
-      // Validate file size
-      if (file.size > maxSize) {
-        logger.warn(`Skipping file too large: ${file.size} bytes`);
+      // Check if file is empty
+      if (file.size === 0) {
+        logger.warn(`Skipping empty file: ${file.name}`);
         continue;
       }
 
@@ -90,94 +86,151 @@ export async function POST(
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Process image with Sharp
-        let image = sharp(buffer);
+        // Check if file is an image
+        const isImage = file.type.startsWith('image/');
         
-        // Handle HEIC/HEIF formats
-        if (file.type === 'image/heic' || file.type === 'image/heif') {
-          image = image.heif();
-        }
-
-        const metadata = await image.metadata();
-        const originalWidth = metadata.width || 0;
-        const originalHeight = metadata.height || 0;
-
-        // Create multiple sizes for responsive design
-        const sizes = [
-          { name: 'thumbnail', width: 150, height: 150 },
-          { name: 'small', width: 400, height: 400 },
-          { name: 'medium', width: 800, height: 800 },
-          { name: 'large', width: 1200, height: 1200 },
-          { name: 'original', width: originalWidth, height: originalHeight }
-        ];
-
-        const processedImages: { [key: string]: { buffer: Buffer; filename: string; dimensions: { width: number; height: number } } } = {};
-        const baseFilename = `photo_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        for (const size of sizes) {
-          let processedBuffer: Buffer;
-          let dimensions: { width: number; height: number };
-
-          if (size.name === 'original') {
-            // Keep original dimensions but optimize to WebP
-            processedBuffer = await image
-              .webp({ 
-                quality: 90,
-                effort: 6,
-                lossless: false
-              })
-              .toBuffer();
-            dimensions = { width: originalWidth, height: originalHeight };
-          } else {
-            // Resize to specific dimensions
-            const aspectRatio = originalWidth / originalHeight;
-            let width: number, height: number;
-
-            if (aspectRatio > 1) {
-              // Landscape
-              width = Math.min(size.width, originalWidth);
-              height = Math.round(width / aspectRatio);
-            } else {
-              // Portrait or square
-              height = Math.min(size.height, originalHeight);
-              width = Math.round(height * aspectRatio);
-            }
-
-            processedBuffer = await image
-              .clone()
-              .resize(width, height, { 
-                fit: 'cover', 
-                position: 'center',
-                withoutEnlargement: true
-              })
-              .webp({ 
-                quality: size.name === 'thumbnail' ? 80 : 85,
-                effort: 6,
-                lossless: false
-              })
-              .toBuffer();
-
-            dimensions = { width, height };
-          }
-
-          const filename = `${baseFilename}_${size.name}.webp`;
-          processedImages[size.name] = {
-            buffer: processedBuffer,
-            filename,
-            dimensions
-          };
-        }
-
         // Create uploads directory structure
         const uploadsDir = join(process.cwd(), 'public', 'uploads', 'photos');
         await mkdir(uploadsDir, { recursive: true });
 
-        // Save all processed images
-        const savedFiles: { [key: string]: string } = {};
-        for (const [sizeName, imageData] of Object.entries(processedImages)) {
-          const filepath = join(uploadsDir, imageData.filename);
-          await writeFile(filepath, imageData.buffer);
-          savedFiles[sizeName] = `/uploads/photos/${imageData.filename}`;
+        const baseFilename = `file_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        let savedFiles: { [key: string]: string } = {};
+        let originalWidth = 0;
+        let originalHeight = 0;
+        let finalMimeType = file.type || 'application/octet-stream';
+
+        if (isImage) {
+          // Process image with Sharp
+          try {
+            let image = sharp(buffer);
+            
+            // Handle HEIC/HEIF formats
+            if (file.type === 'image/heic' || file.type === 'image/heif') {
+              try {
+                image = image.heif();
+              } catch (heifError) {
+                // If HEIC processing fails, try as regular image
+                logger.warn('HEIC processing failed, trying as regular image:', heifError);
+                image = sharp(buffer);
+              }
+            }
+
+            const metadata = await image.metadata();
+            originalWidth = metadata.width || 0;
+            originalHeight = metadata.height || 0;
+
+            // Create multiple sizes for responsive design
+            const sizes = [
+              { name: 'thumbnail', width: 150, height: 150 },
+              { name: 'small', width: 400, height: 400 },
+              { name: 'medium', width: 800, height: 800 },
+              { name: 'large', width: 1200, height: 1200 },
+              { name: 'original', width: originalWidth, height: originalHeight }
+            ];
+
+            const processedImages: { [key: string]: { buffer: Buffer; filename: string; dimensions: { width: number; height: number } } } = {};
+
+            for (const size of sizes) {
+              try {
+                let processedBuffer: Buffer;
+                let dimensions: { width: number; height: number };
+
+                if (size.name === 'original') {
+                  // Keep original dimensions but optimize to WebP
+                  processedBuffer = await image
+                    .webp({ 
+                      quality: 90,
+                      effort: 6,
+                      lossless: false
+                    })
+                    .toBuffer();
+                  dimensions = { width: originalWidth, height: originalHeight };
+                } else {
+                  // Resize to specific dimensions
+                  const aspectRatio = originalHeight > 0 ? originalWidth / originalHeight : 1;
+                  let width: number, height: number;
+
+                  if (aspectRatio > 1) {
+                    // Landscape
+                    width = Math.min(size.width, originalWidth || size.width);
+                    height = Math.round(width / aspectRatio);
+                  } else {
+                    // Portrait or square
+                    height = Math.min(size.height, originalHeight || size.height);
+                    width = Math.round(height * aspectRatio);
+                  }
+
+                  processedBuffer = await image
+                    .clone()
+                    .resize(width, height, { 
+                      fit: 'cover', 
+                      position: 'center',
+                      withoutEnlargement: true
+                    })
+                    .webp({ 
+                      quality: size.name === 'thumbnail' ? 80 : 85,
+                      effort: 6,
+                      lossless: false
+                    })
+                    .toBuffer();
+
+                  dimensions = { width, height };
+                }
+
+                const filename = `${baseFilename}_${size.name}.webp`;
+                processedImages[size.name] = {
+                  buffer: processedBuffer,
+                  filename,
+                  dimensions
+                };
+              } catch (sizeError: any) {
+                logger.error(`Error processing ${size.name} size:`, sizeError);
+                // Continue with other sizes
+              }
+            }
+
+            // Save all processed images
+            for (const [sizeName, imageData] of Object.entries(processedImages)) {
+              try {
+                const filepath = join(uploadsDir, imageData.filename);
+                await writeFile(filepath, imageData.buffer);
+                savedFiles[sizeName] = `/uploads/photos/${imageData.filename}`;
+              } catch (writeError: any) {
+                logger.error(`Error saving ${sizeName}:`, writeError);
+              }
+            }
+
+            // If we couldn't process any sizes, fall back to saving original
+            if (Object.keys(savedFiles).length === 0) {
+              throw new Error('Failed to process any image sizes');
+            }
+
+            finalMimeType = 'image/webp';
+          } catch (sharpError: any) {
+            // If Sharp processing fails, save the original file
+            logger.warn('Sharp processing failed, saving original file:', sharpError);
+            const fileExtension = file.name.split('.').pop() || 'bin';
+            const originalFilename = `${baseFilename}_original.${fileExtension}`;
+            const filepath = join(uploadsDir, originalFilename);
+            await writeFile(filepath, buffer);
+            savedFiles.original = `/uploads/photos/${originalFilename}`;
+            savedFiles.thumbnail = savedFiles.original;
+            savedFiles.small = savedFiles.original;
+            savedFiles.medium = savedFiles.original;
+            savedFiles.large = savedFiles.original;
+            finalMimeType = file.type || 'application/octet-stream';
+          }
+        } else {
+          // For non-image files, save directly
+          const fileExtension = file.name.split('.').pop() || 'bin';
+          const originalFilename = `${baseFilename}_original.${fileExtension}`;
+          const filepath = join(uploadsDir, originalFilename);
+          await writeFile(filepath, buffer);
+          savedFiles.original = `/uploads/photos/${originalFilename}`;
+          savedFiles.thumbnail = savedFiles.original;
+          savedFiles.small = savedFiles.original;
+          savedFiles.medium = savedFiles.original;
+          savedFiles.large = savedFiles.original;
         }
 
         // Create photo record
@@ -186,15 +239,15 @@ export async function POST(
             id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             contentId: hangoutId,
             creatorId: userId,
-            originalUrl: savedFiles.original,
-            thumbnailUrl: savedFiles.thumbnail,
-            smallUrl: savedFiles.small,
-            mediumUrl: savedFiles.medium,
-            largeUrl: savedFiles.large,
+            originalUrl: savedFiles.original || savedFiles.large || savedFiles.medium || savedFiles.small,
+            thumbnailUrl: savedFiles.thumbnail || savedFiles.small || savedFiles.original,
+            smallUrl: savedFiles.small || savedFiles.medium || savedFiles.original,
+            mediumUrl: savedFiles.medium || savedFiles.large || savedFiles.original,
+            largeUrl: savedFiles.large || savedFiles.original,
             originalWidth: originalWidth,
             originalHeight: originalHeight,
-            fileSize: processedImages.original.buffer.length,
-            mimeType: 'image/webp',
+            fileSize: buffer.length,
+            mimeType: finalMimeType,
             isPublic: true,
             caption: '',
             updatedAt: new Date()
@@ -203,7 +256,13 @@ export async function POST(
 
         uploadedPhotos.push(photo);
       } catch (processingError: any) {
-        logger.error('Error processing image:', processingError);
+        logger.error('Error processing file:', {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          error: processingError.message,
+          stack: processingError.stack
+        });
         // Continue with next file instead of failing entire request
         continue;
       }

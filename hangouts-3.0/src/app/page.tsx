@@ -70,7 +70,8 @@ export default function HomePage() {
         const token = await getToken()
 
         // Fetch from unified feed API for both hangouts and events
-        const response = await fetch('/api/feed?type=home&contentType=all&limit=100', {
+        // Include past plans so user can see all their created plans
+        const response = await fetch('/api/feed?type=home&contentType=all&limit=100&includePast=true', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -93,6 +94,29 @@ export default function HomePage() {
       fetchHangouts()
     } else {
       setLoading(false)
+    }
+
+    // Refresh feed when page becomes visible (user navigates back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isSignedIn) {
+        fetchHangouts()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Also refresh on focus (when user switches back to tab)
+    const handleFocus = () => {
+      if (isSignedIn) {
+        fetchHangouts()
+      }
+    }
+    
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [isLoaded, isSignedIn, getToken])
 

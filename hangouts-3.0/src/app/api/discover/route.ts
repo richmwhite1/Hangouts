@@ -89,32 +89,89 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
     }
 
     // Add date filters
+    // For discover page, exclude user's own hangouts from time filtering to ensure they always show
     if (startDate || endDate) {
-      whereClause.AND.push({
-        startTime: {
-          ...(startDate && { gte: new Date(startDate) }),
-          ...(endDate && { lte: new Date(endDate) })
-        }
-      })
+      // If we have userId, create a complex OR condition that excludes user's own content from time filtering
+      if (userId) {
+        whereClause.AND.push({
+          OR: [
+            // User's own content (no time filtering)
+            { creatorId: userId },
+            // Other content with time filtering
+            {
+              AND: [
+                { creatorId: { not: userId } }, // Explicitly exclude user's own content
+                {
+                  startTime: {
+                    ...(startDate && { gte: new Date(startDate) }),
+                    ...(endDate && { lte: new Date(endDate) })
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      } else {
+        // No user context, apply time filtering to all content
+        whereClause.AND.push({
+          startTime: {
+            ...(startDate && { gte: new Date(startDate) }),
+            ...(endDate && { lte: new Date(endDate) })
+          }
+        })
+      }
     } else if (!includePast) {
       // Filter out past hangouts by default (show only future or ongoing hangouts)
       const now = new Date()
-      whereClause.AND.push({
-        OR: [
-          { startTime: { gte: now } },
-          {
-            AND: [
-              { startTime: { lt: now } },
-              {
-                OR: [
-                  { endTime: { gte: now } },
-                  { endTime: null }
-                ]
-              }
-            ]
-          }
-        ]
-      })
+      if (userId) {
+        // Exclude user's own content from time filtering
+        whereClause.AND.push({
+          OR: [
+            // User's own content (no time filtering)
+            { creatorId: userId },
+            // Other content with time filtering
+            {
+              AND: [
+                { creatorId: { not: userId } }, // Explicitly exclude user's own content
+                {
+                  OR: [
+                    { startTime: { gte: now } },
+                    {
+                      AND: [
+                        { startTime: { lt: now } },
+                        {
+                          OR: [
+                            { endTime: { gte: now } },
+                            { endTime: null }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+      } else {
+        // No user context, apply time filtering to all content
+        whereClause.AND.push({
+          OR: [
+            { startTime: { gte: now } },
+            {
+              AND: [
+                { startTime: { lt: now } },
+                {
+                  OR: [
+                    { endTime: { gte: now } },
+                    { endTime: null }
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+      }
     }
 
     // Build content type filter
@@ -125,6 +182,15 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
       contentTypeFilter.type = 'EVENT'
     }
     // If contentType is 'all', don't filter by type
+
+    logger.debug('Executing discover query', {
+      whereClause: JSON.stringify(whereClause, null, 2),
+      contentTypeFilter,
+      userId,
+      page,
+      limit,
+      includePast
+    }, 'DISCOVER')
 
     const hangouts = await db.content.findMany({
       where: {
@@ -202,6 +268,18 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
         ...whereClause
       }
     })
+
+    logger.debug('Discover query results', {
+      hangoutsFound: hangouts.length,
+      totalCount,
+      firstHangout: hangouts[0] ? {
+        id: hangouts[0].id,
+        title: hangouts[0].title,
+        creatorId: hangouts[0].creatorId,
+        privacyLevel: hangouts[0].privacyLevel,
+        startTime: hangouts[0].startTime
+      } : null
+    }, 'DISCOVER')
 
     // Transform hangouts to use first photo as primary image
     const transformedHangouts = hangouts.map(hangout => ({
