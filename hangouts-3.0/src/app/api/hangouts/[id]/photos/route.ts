@@ -14,10 +14,22 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate Cloudinary configuration
-    validateCloudinaryConfig();
+    // Check Cloudinary configuration (non-blocking - log warning but don't fail)
+    let cloudinaryConfigured = false;
+    try {
+      validateCloudinaryConfig();
+      cloudinaryConfigured = true;
+    } catch (validationError: any) {
+      logger.warn('Cloudinary validation failed, uploads may not work', {
+        error: validationError.message,
+        nodeEnv: process.env.NODE_ENV
+      }, 'PHOTOS');
+      // Continue with request - will handle Cloudinary errors gracefully
+    }
 
     const { id: hangoutId } = await params;
+    logger.debug('Photo upload request', { hangoutId, cloudinaryConfigured }, 'PHOTOS');
+
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) {
@@ -30,27 +42,6 @@ export async function POST(
     }
 
     const userId = user.id;
-
-    // Validate Cloudinary configuration in production
-    if (process.env.NODE_ENV === 'production') {
-      const cloudinaryVars = [
-        process.env.CLOUDINARY_CLOUD_NAME,
-        process.env.CLOUDINARY_API_KEY,
-        process.env.CLOUDINARY_API_SECRET
-      ];
-
-      const missingVars = cloudinaryVars.filter(v => !v || v === 'demo' || v === 'your_cloudinary_cloud_name' || v === 'your_cloudinary_api_key');
-
-      if (missingVars.length > 0) {
-        logger.error('Cloudinary not properly configured in production', {
-          missingVars: missingVars.length,
-          hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-          hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-          hasApiSecret: !!process.env.CLOUDINARY_API_SECRET
-        }, 'PHOTOS');
-        return NextResponse.json(createErrorResponse('Service Unavailable', 'File upload service is not configured'), { status: 503 });
-      }
-    }
 
     // Check if hangout exists and get its details
     const hangout = await db.content.findUnique({
@@ -235,8 +226,19 @@ export async function POST(
               }
             }
 
-            // If we couldn't process any sizes, fall back to saving original
+            // If we couldn't process any sizes, check if Cloudinary is configured
             if (Object.keys(savedFiles).length === 0) {
+              const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                         process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                         process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
+              
+              if (!hasCloudinaryConfig && process.env.NODE_ENV === 'production') {
+                logger.error('Cloudinary not configured - cannot upload photos', {
+                  hangoutId,
+                  fileName: file.name
+                }, 'PHOTOS');
+                throw new Error('Photo upload service is not configured. Please contact support.');
+              }
               throw new Error('Failed to process any image sizes');
             }
 
@@ -264,11 +266,23 @@ export async function POST(
                 }, 'PHOTOS');
               } else {
                 logger.error('Failed to upload original file to Cloudinary:', cloudinaryResult.error);
-                throw new Error('Failed to upload original file to Cloudinary');
+                const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                           process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                           process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
+                if (!hasCloudinaryConfig && process.env.NODE_ENV === 'production') {
+                  throw new Error('Photo upload service is not configured. Please contact support.');
+                }
+                throw new Error(`Failed to upload file: ${cloudinaryResult.error || 'Unknown error'}`);
               }
             } catch (cloudinaryError: any) {
               logger.error('Cloudinary upload failed for original file:', cloudinaryError);
-              throw new Error('Image processing and upload failed');
+              const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                         process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                         process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
+              if (!hasCloudinaryConfig && process.env.NODE_ENV === 'production') {
+                throw new Error('Photo upload service is not configured. Please contact support.');
+              }
+              throw new Error(`Image processing and upload failed: ${cloudinaryError.message || 'Unknown error'}`);
             }
             finalMimeType = file.type || 'application/octet-stream';
           }
@@ -295,11 +309,23 @@ export async function POST(
               }, 'PHOTOS');
             } else {
               logger.error('Failed to upload non-image file to Cloudinary:', cloudinaryResult.error);
-              throw new Error('Failed to upload file to Cloudinary');
+              const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                         process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                         process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
+              if (!hasCloudinaryConfig && process.env.NODE_ENV === 'production') {
+                throw new Error('Photo upload service is not configured. Please contact support.');
+              }
+              throw new Error(`Failed to upload file: ${cloudinaryResult.error || 'Unknown error'}`);
             }
           } catch (uploadError: any) {
             logger.error('Cloudinary upload failed for non-image file:', uploadError);
-            throw new Error('File upload failed');
+            const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                       process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                       process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
+            if (!hasCloudinaryConfig && process.env.NODE_ENV === 'production') {
+              throw new Error('Photo upload service is not configured. Please contact support.');
+            }
+            throw new Error(`File upload failed: ${uploadError.message || 'Unknown error'}`);
           }
         }
 
@@ -486,7 +512,12 @@ export async function GET(
       });
       logger.debug('Photos query successful', { hangoutId, photoCount: photos.length }, 'PHOTOS');
     } catch (photosError: any) {
-      logger.error('Error fetching photos:', photosError, 'PHOTOS');
+      logger.error('Error fetching photos from database:', {
+        hangoutId,
+        error: photosError.message,
+        stack: photosError.stack,
+        name: photosError.name
+      }, 'PHOTOS');
       // Return empty array instead of failing entirely
       photos = [];
     }
