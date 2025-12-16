@@ -454,6 +454,47 @@ export async function POST(request: NextRequest) {
     }
     console.log('Hangouts API - Hangout created successfully:', hangout.id)
 
+    // Verify hangout can be retrieved immediately after creation
+    try {
+      const verificationQuery = await db.content.findUnique({
+        where: { id: hangout.id },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          privacyLevel: true,
+          creatorId: true,
+          createdAt: true
+        }
+      })
+
+      if (!verificationQuery) {
+        logger.error('Hangout verification failed - hangout not found after creation', {
+          hangoutId: hangout.id,
+          userId,
+          title: hangout.title
+        }, 'HANGOUT_CREATION')
+        throw new Error('Hangout created but cannot be retrieved')
+      }
+
+      logger.debug('Hangout creation verification successful', {
+        hangoutId: hangout.id,
+        title: verificationQuery.title,
+        status: verificationQuery.status,
+        privacyLevel: verificationQuery.privacyLevel,
+        creatorId: verificationQuery.creatorId,
+        createdAt: verificationQuery.createdAt
+      }, 'HANGOUT_CREATION')
+
+    } catch (verificationError: any) {
+      logger.error('Hangout creation verification failed', {
+        hangoutId: hangout.id,
+        error: verificationError.message,
+        userId
+      }, 'HANGOUT_CREATION')
+      // Continue with the request even if verification fails, but log the issue
+    }
+
     // Add creator as participant
     console.log('Hangouts API - Adding creator as participant...')
     await db.content_participants.create({

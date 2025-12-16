@@ -12,6 +12,7 @@ import { Toaster } from 'sonner'
 import { PWASetup } from '@/components/pwa-setup'
 import { NetworkStatus } from '@/components/network-status'
 import { InstallPrompt } from '@/components/install-prompt'
+import { validateCloudinaryConfig } from '@/lib/cloudinary'
 
 // import { ConsoleErrorHandler } from '@/components/console-error-handler' // Removed - causes webpack bundling issues
 // import { PWANavigationFix } from '@/components/pwa-navigation-fix'
@@ -68,6 +69,20 @@ export default function RootLayout({
 
   if (!clerkKey && process.env.NODE_ENV === 'development') {
     // Clerk publishable key not found - this is expected in some environments
+  }
+
+  // Validate Cloudinary configuration on startup
+  if (typeof window === 'undefined') { // Only run on server
+    try {
+      validateCloudinaryConfig();
+    } catch (error) {
+      console.error('Cloudinary configuration validation failed:', error.message);
+      // In production, this will cause the app to fail to start, which is desired
+      // In development, it will log but continue
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
+    }
   }
 
   return (

@@ -2,6 +2,51 @@ import { v2 as cloudinary } from 'cloudinary';
 import { saveFileLocally } from './local-storage';
 
 import { logger } from '@/lib/logger'
+
+// Validate Cloudinary configuration
+export const validateCloudinaryConfig = () => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || process.env.npm_lifecycle_event === 'build';
+
+  // Skip validation during build process - only validate at runtime
+  if (isBuild) {
+    logger.debug('Skipping Cloudinary validation during build', { isBuild, isProduction }, 'CLOUDINARY');
+    return;
+  }
+
+  // In production, all three variables must be set and not demo values
+  if (isProduction) {
+    const missing = [];
+    if (!cloudName || cloudName === 'demo' || cloudName === 'your_cloudinary_cloud_name') {
+      missing.push('CLOUDINARY_CLOUD_NAME');
+    }
+    if (!apiKey || apiKey === 'demo' || apiKey === 'your_cloudinary_api_key') {
+      missing.push('CLOUDINARY_API_KEY');
+    }
+    if (!apiSecret || apiSecret === 'demo' || apiSecret === 'your_cloudinary_api_secret') {
+      missing.push('CLOUDINARY_API_SECRET');
+    }
+
+    if (missing.length > 0) {
+      const error = `Missing or invalid Cloudinary configuration in production. Required environment variables: ${missing.join(', ')}`;
+      logger.error('Cloudinary configuration validation failed', { missing, isProduction }, 'CLOUDINARY');
+      throw new Error(error);
+    }
+
+    logger.info('Cloudinary configuration validated for production', {
+      cloudName: cloudName.substring(0, 8) + '...',
+      hasApiKey: !!apiKey,
+      hasApiSecret: !!apiSecret
+    }, 'CLOUDINARY');
+  } else {
+    logger.info('Cloudinary validation skipped for development mode', { isProduction }, 'CLOUDINARY');
+  }
+};
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',

@@ -583,6 +583,21 @@ async function getFeedHandler(request: NextRequest) {
       take: limit,
       skip: offset
     })
+
+    logger.debug('Main feed query completed', {
+      feedType,
+      userId,
+      contentType,
+      queryPath: 'main',
+      foundCount: content.length,
+      ids: content.map((c: any) => c.id),
+      titles: content.map((c: any) => c.title),
+      creators: content.map((c: any) => c.creatorId),
+      statuses: content.map((c: any) => c.status),
+      types: content.map((c: any) => c.type),
+      privacyLevels: content.map((c: any) => c.privacyLevel),
+      timestamp: new Date().toISOString()
+    }, 'FEED')
     }
 
     // Get total count for hasMore calculation

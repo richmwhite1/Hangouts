@@ -6,6 +6,7 @@ import { createErrorResponse, createSuccessResponse } from '@/lib/api-response';
 import sharp from 'sharp';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { uploadImage, validateCloudinaryConfig } from '@/lib/cloudinary';
 
 import { logger } from '@/lib/logger'
 export async function POST(
@@ -13,6 +14,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Validate Cloudinary configuration
+    validateCloudinaryConfig();
+
     const { id: hangoutId } = await params;
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth();
@@ -26,6 +30,27 @@ export async function POST(
     }
 
     const userId = user.id;
+
+    // Validate Cloudinary configuration in production
+    if (process.env.NODE_ENV === 'production') {
+      const cloudinaryVars = [
+        process.env.CLOUDINARY_CLOUD_NAME,
+        process.env.CLOUDINARY_API_KEY,
+        process.env.CLOUDINARY_API_SECRET
+      ];
+
+      const missingVars = cloudinaryVars.filter(v => !v || v === 'demo' || v === 'your_cloudinary_cloud_name' || v === 'your_cloudinary_api_key');
+
+      if (missingVars.length > 0) {
+        logger.error('Cloudinary not properly configured in production', {
+          missingVars: missingVars.length,
+          hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+          hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+          hasApiSecret: !!process.env.CLOUDINARY_API_SECRET
+        }, 'PHOTOS');
+        return NextResponse.json(createErrorResponse('Service Unavailable', 'File upload service is not configured'), { status: 503 });
+      }
+    }
 
     // Check if hangout exists and get its details
     const hangout = await db.content.findUnique({
@@ -88,10 +113,6 @@ export async function POST(
 
         // Check if file is an image
         const isImage = file.type.startsWith('image/');
-        
-        // Create uploads directory structure
-        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'photos');
-        await mkdir(uploadsDir, { recursive: true });
 
         const baseFilename = `file_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         let savedFiles: { [key: string]: string } = {};
@@ -189,14 +210,28 @@ export async function POST(
               }
             }
 
-            // Save all processed images
+            // Upload all processed images to Cloudinary
             for (const [sizeName, imageData] of Object.entries(processedImages)) {
               try {
-                const filepath = join(uploadsDir, imageData.filename);
-                await writeFile(filepath, imageData.buffer);
-                savedFiles[sizeName] = `/uploads/photos/${imageData.filename}`;
-              } catch (writeError: any) {
-                logger.error(`Error saving ${sizeName}:`, writeError);
+                const cloudinaryResult = await uploadImage(
+                  imageData.buffer,
+                  `${baseFilename}_${sizeName}`,
+                  'image/webp',
+                  'hangouts/photos'
+                );
+
+                if (cloudinaryResult.success) {
+                  savedFiles[sizeName] = cloudinaryResult.url;
+                  logger.debug(`Uploaded ${sizeName} to Cloudinary`, {
+                    sizeName,
+                    url: cloudinaryResult.url,
+                    publicId: cloudinaryResult.public_id
+                  }, 'PHOTOS');
+                } else {
+                  logger.error(`Failed to upload ${sizeName} to Cloudinary:`, cloudinaryResult.error);
+                }
+              } catch (uploadError: any) {
+                logger.error(`Error uploading ${sizeName} to Cloudinary:`, uploadError);
               }
             }
 
@@ -207,30 +242,65 @@ export async function POST(
 
             finalMimeType = 'image/webp';
           } catch (sharpError: any) {
-            // If Sharp processing fails, save the original file
-            logger.warn('Sharp processing failed, saving original file:', sharpError);
-            const fileExtension = file.name.split('.').pop() || 'bin';
-            const originalFilename = `${baseFilename}_original.${fileExtension}`;
-            const filepath = join(uploadsDir, originalFilename);
-            await writeFile(filepath, buffer);
-            savedFiles.original = `/uploads/photos/${originalFilename}`;
-            savedFiles.thumbnail = savedFiles.original;
-            savedFiles.small = savedFiles.original;
-            savedFiles.medium = savedFiles.original;
-            savedFiles.large = savedFiles.original;
+            // If Sharp processing fails, upload the original file to Cloudinary
+            logger.warn('Sharp processing failed, uploading original file to Cloudinary:', sharpError);
+            try {
+              const cloudinaryResult = await uploadImage(
+                buffer,
+                `${baseFilename}_original`,
+                file.type || 'application/octet-stream',
+                'hangouts/photos'
+              );
+
+              if (cloudinaryResult.success) {
+                savedFiles.original = cloudinaryResult.url;
+                savedFiles.thumbnail = cloudinaryResult.url;
+                savedFiles.small = cloudinaryResult.url;
+                savedFiles.medium = cloudinaryResult.url;
+                savedFiles.large = cloudinaryResult.url;
+                logger.debug('Uploaded original file to Cloudinary as fallback', {
+                  url: cloudinaryResult.url,
+                  publicId: cloudinaryResult.public_id
+                }, 'PHOTOS');
+              } else {
+                logger.error('Failed to upload original file to Cloudinary:', cloudinaryResult.error);
+                throw new Error('Failed to upload original file to Cloudinary');
+              }
+            } catch (cloudinaryError: any) {
+              logger.error('Cloudinary upload failed for original file:', cloudinaryError);
+              throw new Error('Image processing and upload failed');
+            }
             finalMimeType = file.type || 'application/octet-stream';
           }
         } else {
-          // For non-image files, save directly
-          const fileExtension = file.name.split('.').pop() || 'bin';
-          const originalFilename = `${baseFilename}_original.${fileExtension}`;
-          const filepath = join(uploadsDir, originalFilename);
-          await writeFile(filepath, buffer);
-          savedFiles.original = `/uploads/photos/${originalFilename}`;
-          savedFiles.thumbnail = savedFiles.original;
-          savedFiles.small = savedFiles.original;
-          savedFiles.medium = savedFiles.original;
-          savedFiles.large = savedFiles.original;
+          // For non-image files, upload directly to Cloudinary
+          try {
+            const cloudinaryResult = await uploadImage(
+              buffer,
+              `${baseFilename}_original`,
+              file.type || 'application/octet-stream',
+              'hangouts/photos'
+            );
+
+            if (cloudinaryResult.success) {
+              savedFiles.original = cloudinaryResult.url;
+              savedFiles.thumbnail = cloudinaryResult.url;
+              savedFiles.small = cloudinaryResult.url;
+              savedFiles.medium = cloudinaryResult.url;
+              savedFiles.large = cloudinaryResult.url;
+              logger.debug('Uploaded non-image file to Cloudinary', {
+                url: cloudinaryResult.url,
+                publicId: cloudinaryResult.public_id,
+                mimeType: file.type
+              }, 'PHOTOS');
+            } else {
+              logger.error('Failed to upload non-image file to Cloudinary:', cloudinaryResult.error);
+              throw new Error('Failed to upload file to Cloudinary');
+            }
+          } catch (uploadError: any) {
+            logger.error('Cloudinary upload failed for non-image file:', uploadError);
+            throw new Error('File upload failed');
+          }
         }
 
         // Create photo record
@@ -296,68 +366,150 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let hangoutId: string;
+
   try {
-    const { id: hangoutId } = await params;
+    logger.debug('Photos GET request started', { url: request.url }, 'PHOTOS');
+
+    // Extract hangout ID from params
+    try {
+      const resolvedParams = await params;
+      hangoutId = resolvedParams.id;
+      logger.debug('Params resolved', { hangoutId }, 'PHOTOS');
+    } catch (paramsError: any) {
+      logger.error('Error resolving params:', paramsError, 'PHOTOS');
+      return NextResponse.json(createErrorResponse('Invalid Request', 'Invalid hangout ID'), { status: 400 });
+    }
+
     // Verify authentication using Clerk
-    const { userId: clerkUserId } = await auth();
+    let clerkUserId: string | null;
+    try {
+      const authResult = await auth();
+      clerkUserId = authResult.userId;
+      logger.debug('Auth result', { hasUserId: !!clerkUserId }, 'PHOTOS');
+    } catch (authError: any) {
+      logger.error('Auth error:', authError, 'PHOTOS');
+      return NextResponse.json(createErrorResponse('Authentication Error', 'Failed to verify authentication'), { status: 401 });
+    }
+
     if (!clerkUserId) {
+      logger.warn('No authenticated user for photos request', { hangoutId }, 'PHOTOS');
       return NextResponse.json(createErrorResponse('Unauthorized', 'Authentication required'), { status: 401 });
     }
 
-    const user = await getClerkApiUser();
+    // Get user from database
+    let user: any;
+    try {
+      user = await getClerkApiUser();
+      logger.debug('User lookup result', { hasUser: !!user, userId: user?.id }, 'PHOTOS');
+    } catch (userError: any) {
+      logger.error('Error fetching user:', userError, 'PHOTOS');
+      return NextResponse.json(createErrorResponse('Authentication Error', 'Failed to fetch user data'), { status: 401 });
+    }
+
     if (!user) {
+      logger.warn('No user found in database', { clerkUserId }, 'PHOTOS');
       return NextResponse.json(createErrorResponse('Invalid token', 'Authentication failed'), { status: 401 });
     }
 
     const userId = user.id;
 
     // Check if hangout exists and get its details
-    const hangout = await db.content.findUnique({
-      where: { id: hangoutId }
-    });
+    let hangout: any;
+    try {
+      hangout = await db.content.findUnique({
+        where: { id: hangoutId }
+      });
+      logger.debug('Hangout lookup result', { hangoutId, found: !!hangout }, 'PHOTOS');
+    } catch (hangoutError: any) {
+      logger.error('Error fetching hangout:', hangoutError, 'PHOTOS');
+      return NextResponse.json(createErrorResponse('Database Error', 'Failed to check hangout existence'), { status: 500 });
+    }
 
     if (!hangout) {
+      logger.warn('Hangout not found', { hangoutId, userId }, 'PHOTOS');
       return NextResponse.json(createErrorResponse('Not Found', 'Hangout not found'), { status: 404 });
     }
 
     // Check if user is a participant, if not, add them as a participant
-    let participant = await db.content_participants.findFirst({
-      where: {
-        contentId: hangoutId,
-        userId: userId}});
-
-    if (!participant) {
-      // Add user as a participant automatically
-      participant = await db.content_participants.create({
-        data: {
-          id: `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    let participant: any;
+    try {
+      participant = await db.content_participants.findFirst({
+        where: {
           contentId: hangoutId,
-          userId: userId,
-          role: 'MEMBER',
-          canEdit: false,
-          isMandatory: false,
-          isCoHost: false,
-          joinedAt: new Date()}});
+          userId: userId
+        }
+      });
+      logger.debug('Participant check result', { hangoutId, userId, isParticipant: !!participant }, 'PHOTOS');
+    } catch (participantError: any) {
+      logger.error('Error checking participant:', participantError, 'PHOTOS');
+      // Continue with the request even if participant check fails
     }
 
-    const photos = await db.photos.findMany({
-      where: { contentId: hangoutId }, // Use contentId instead of hangoutId
-      orderBy: { createdAt: 'desc' },
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true
+    if (!participant) {
+      try {
+        participant = await db.content_participants.create({
+          data: {
+            id: `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            contentId: hangoutId,
+            userId: userId,
+            role: 'MEMBER',
+            canEdit: false,
+            isMandatory: false,
+            isCoHost: false,
+            joinedAt: new Date()
+          }
+        });
+        logger.debug('Created new participant', { hangoutId, userId, participantId: participant.id }, 'PHOTOS');
+      } catch (createParticipantError: any) {
+        logger.error('Error creating participant:', createParticipantError, 'PHOTOS');
+        // Continue with the request even if participant creation fails
+      }
+    }
+
+    // Fetch photos
+    let photos: any[] = [];
+    try {
+      photos = await db.photos.findMany({
+        where: { contentId: hangoutId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true
+            }
           }
         }
-      }
-    });
+      });
+      logger.debug('Photos query successful', { hangoutId, photoCount: photos.length }, 'PHOTOS');
+    } catch (photosError: any) {
+      logger.error('Error fetching photos:', photosError, 'PHOTOS');
+      // Return empty array instead of failing entirely
+      photos = [];
+    }
 
-    return NextResponse.json(createSuccessResponse({ photos }), { status: 200 });
+    const response = createSuccessResponse({ photos });
+    logger.debug('Photos GET request completed successfully', {
+      hangoutId,
+      photoCount: photos.length,
+      userId
+    }, 'PHOTOS');
+
+    return NextResponse.json(response, { status: 200 });
   } catch (error: any) {
-    logger.error('Error fetching photos:', error);
-    return NextResponse.json(createErrorResponse('Internal Server Error', error.message || 'Failed to fetch photos'), { status: 500 });
+    logger.error('Unexpected error in photos GET endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      hangoutId: hangoutId || 'unknown',
+      url: request.url
+    }, 'PHOTOS');
+
+    return NextResponse.json(
+      createErrorResponse('Internal Server Error', error.message || 'Failed to fetch photos'),
+      { status: 500 }
+    );
   }
 }
