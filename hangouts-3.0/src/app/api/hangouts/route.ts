@@ -210,11 +210,14 @@ export async function POST(request: NextRequest) {
       try {
         // Check if DATABASE_URL is set before attempting database operations
         if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
-          logger.error('Hangouts API - DATABASE_URL not configured', { clerkUserId })
+          logger.error('Hangouts API - DATABASE_URL not configured', { clerkUserId, isProduction: process.env.NODE_ENV === 'production' })
+          const isProduction = process.env.NODE_ENV === 'production'
           return NextResponse.json(
             { 
               error: 'Database not configured',
-              message: 'DATABASE_URL environment variable is not set. Please check your .env.local file and restart the development server.'
+              message: isProduction
+                ? 'DATABASE_URL environment variable is not set in Railway. Please check your Railway project settings and ensure your PostgreSQL service is properly linked to your app service.'
+                : 'DATABASE_URL environment variable is not set. Please check your .env.local file and restart the development server.'
             },
             { status: 500 }
           )
