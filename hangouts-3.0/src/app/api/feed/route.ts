@@ -261,12 +261,23 @@ async function getFeedHandler(request: NextRequest) {
     let content = []
     if (feedType === 'home' && userId) {
       try {
-        logger.debug('Using simplified home feed query for user', { userId }, 'FEED')
+        // Build where clause with contentType filter
+        const simplifiedWhere: any = {
+          creatorId: userId,
+          status: 'PUBLISHED'
+        }
+        
+        // Respect contentType parameter
+        if (contentType === 'hangouts') {
+          simplifiedWhere.type = 'HANGOUT'
+        } else if (contentType === 'events') {
+          simplifiedWhere.type = 'EVENT'
+        }
+        // If contentType is 'all', don't filter by type
+        
+        logger.debug('Using simplified home feed query for user', { userId, contentType, where: simplifiedWhere }, 'FEED')
         content = await db.content.findMany({
-          where: {
-            creatorId: userId,
-            status: 'PUBLISHED'
-          },
+          where: simplifiedWhere,
           select: {
             id: true,
             type: true,
@@ -405,6 +416,15 @@ async function getFeedHandler(request: NextRequest) {
           take: limit,
           skip: offset
         })
+        
+        // Add logging after query
+        logger.debug('Simplified query results', { 
+          userId, 
+          contentType,
+          count: content.length,
+          hangoutIds: content.map((c: any) => c.id),
+          hangoutTitles: content.map((c: any) => c.title)
+        }, 'FEED')
       } catch (simpleQueryError) {
         logger.error('Error with simplified query, falling back to original', {
           userId,

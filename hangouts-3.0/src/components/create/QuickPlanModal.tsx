@@ -74,7 +74,9 @@ export function QuickPlanModal({ isOpen, onClose }: QuickPlanModalProps) {
             if (response.ok) {
                 const data = await response.json()
                 toast.success('Hangout created! 🚀')
-                router.push(`/hangout/${data.id}`)
+                // Fix: API returns { success: true, data: { id: ... } }
+                const hangoutId = data.data?.id || data.id
+                router.push(`/hangout/${hangoutId}`)
                 onClose()
             } else {
                 throw new Error('Failed to create')
