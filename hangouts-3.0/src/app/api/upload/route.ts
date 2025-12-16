@@ -24,11 +24,76 @@ export async function POST(request: NextRequest) {
     console.log('Upload API - Database user:', user?.id)
     
     if (!user) {
-      console.log('Upload API - No database user found after auto-sync')
-      return NextResponse.json(
-        { error: 'User not found in database' },
-        { status: 404 }
-      )
+      // User exists in Clerk but not in database - try to create them
+      console.log('Upload API - No database user found, attempting to create...')
+      try {
+        // Check if DATABASE_URL is set and valid
+        if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
+          logger.error('Upload API - DATABASE_URL not configured', { clerkUserId })
+          return NextResponse.json(
+            { 
+              error: 'Database not configured',
+              message: 'DATABASE_URL environment variable is not set in Railway. Please check your Railway project settings.'
+            },
+            { status: 500 }
+          )
+        }
+        
+        // Validate DATABASE_URL format
+        if (!process.env.DATABASE_URL.startsWith('postgresql://') && !process.env.DATABASE_URL.startsWith('postgres://')) {
+          logger.error('Upload API - Invalid DATABASE_URL format', { 
+            clerkUserId,
+            urlPrefix: process.env.DATABASE_URL.substring(0, 20) 
+          })
+          return NextResponse.json(
+            { 
+              error: 'Invalid database configuration',
+              message: 'DATABASE_URL must start with postgresql:// or postgres://. Please check your Railway database service is properly linked.'
+            },
+            { status: 500 }
+          )
+        }
+        
+        // Try to get user again - getClerkApiUser should create them
+        user = await getClerkApiUser()
+        
+        if (!user) {
+          // If still no user, try direct creation as fallback
+          const { db } = await import('@/lib/db')
+          user = await db.user.create({
+            data: {
+              id: clerkUserId,
+              clerkId: clerkUserId,
+              email: `${clerkUserId}@clerk.temp`,
+              username: `user_${clerkUserId.substring(0, 8)}`,
+              name: 'New User',
+              role: 'USER',
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          })
+          console.log('Upload API - User created via fallback:', user.id)
+        }
+      } catch (dbError: any) {
+        console.error('Upload API - Error creating user:', dbError.message)
+        logger.error('Upload API - Database error creating user', { error: dbError.message, clerkUserId })
+        
+        let errorMessage = 'Failed to create user in database'
+        if (dbError.message?.includes('DATABASE_URL') || dbError.message?.includes('datasource')) {
+          errorMessage = 'Database connection not configured. Please ensure DATABASE_URL is set correctly in Railway project settings and that your PostgreSQL service is properly linked.'
+        } else if (dbError.message?.includes('postgresql://') || dbError.message?.includes('postgres://')) {
+          errorMessage = 'Invalid database URL format. Please check that your Railway PostgreSQL service is properly configured and linked to your app service.'
+        }
+        
+        return NextResponse.json(
+          { 
+            error: 'Database error',
+            message: errorMessage
+          },
+          { status: 500 }
+        )
+      }
     }
 
     const formData = await request.formData()

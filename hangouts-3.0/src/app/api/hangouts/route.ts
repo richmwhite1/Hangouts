@@ -208,6 +208,18 @@ export async function POST(request: NextRequest) {
       // User exists in Clerk but not in database - create them
       console.log('Hangouts API - Creating user in database...')
       try {
+        // Check if DATABASE_URL is set before attempting database operations
+        if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
+          logger.error('Hangouts API - DATABASE_URL not configured', { clerkUserId })
+          return NextResponse.json(
+            { 
+              error: 'Database not configured',
+              message: 'DATABASE_URL environment variable is not set. Please check your .env.local file and restart the development server.'
+            },
+            { status: 500 }
+          )
+        }
+        
         user = await db.user.create({
           data: {
             id: clerkUserId,
@@ -224,10 +236,25 @@ export async function POST(request: NextRequest) {
         console.log('Hangouts API - User created successfully:', user.id)
       } catch (dbError: any) {
         console.error('Hangouts API - Error creating user:', dbError.message)
+        logger.error('Hangouts API - Database error creating user', { error: dbError.message, clerkUserId })
+        
+        // Provide more helpful error messages
+        let errorMessage = dbError.message
+        const isProduction = process.env.NODE_ENV === 'production'
+        if (dbError.message?.includes('DATABASE_URL') || dbError.message?.includes('datasource')) {
+          errorMessage = isProduction
+            ? 'Database connection not configured. Please ensure DATABASE_URL is set correctly in Railway project settings and that your PostgreSQL service is properly linked to your app service.'
+            : 'Database connection not configured. Please ensure DATABASE_URL is set in your .env.local file and restart the development server.'
+        } else if (dbError.message?.includes('postgresql://') || dbError.message?.includes('postgres://')) {
+          errorMessage = isProduction
+            ? 'Invalid database URL format. Please check that your Railway PostgreSQL service is properly configured and linked to your app service.'
+            : 'Invalid database URL format. Please check your DATABASE_URL in .env.local file.'
+        }
+        
         return NextResponse.json(
           { 
             error: 'Failed to create user',
-            message: dbError.message
+            message: errorMessage
           },
           { status: 500 }
         )

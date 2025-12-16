@@ -16,8 +16,17 @@ export async function GET(request: NextRequest) {
       return new Response('Unauthorized', { status: 401 })
     }
 
+    // Check if database is configured before attempting to get user
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
+      logger.warn('notification-stream: DATABASE_URL not configured', { clerkUserId })
+      return new Response('Service temporarily unavailable', { status: 503 })
+    }
+
     const user = await getClerkApiUser()
     if (!user) {
+      // User doesn't exist in database yet - this is okay, just return 401
+      // The user will be created when they try to create a hangout
+      logger.info('notification-stream: User not found in database', { clerkUserId })
       return new Response('Unauthorized', { status: 401 })
     }
 

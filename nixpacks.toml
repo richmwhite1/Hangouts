@@ -10,8 +10,5 @@ cmds = [
   "cd hangouts-3.0 && NODE_ENV=production npm run build"
 ]
 
-[variables]
-NODE_ENV = "production"
-
 [start]
 cmd = "cd hangouts-3.0 && npm start"

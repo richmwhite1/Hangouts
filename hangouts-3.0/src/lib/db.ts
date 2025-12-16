@@ -10,8 +10,25 @@ const globalForPrisma = globalThis as unknown as {
 const createPrismaClient = () => {
   let databaseUrl = process.env.DATABASE_URL
   
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is required')
+  if (!databaseUrl || databaseUrl.trim() === '') {
+    const isProduction = process.env.NODE_ENV === 'production'
+    const errorMsg = isProduction
+      ? 'DATABASE_URL environment variable is required but not set in Railway. Please ensure your PostgreSQL service is linked to your app service in Railway dashboard.'
+      : 'DATABASE_URL environment variable is required but not set. Please check your .env.local file and ensure DATABASE_URL is configured. For local development, you can use: DATABASE_URL="postgresql://username@localhost:5432/database_name"'
+    logger.error('Database configuration error:', { error: errorMsg, hasEnvVar: !!process.env.DATABASE_URL, isProduction })
+    throw new Error(errorMsg)
+  }
+  
+  // Validate DATABASE_URL format for production (must be PostgreSQL)
+  const isProduction = process.env.NODE_ENV === 'production'
+  if (isProduction && !databaseUrl.startsWith('postgresql://') && !databaseUrl.startsWith('postgres://')) {
+    const errorMsg = `Invalid DATABASE_URL format in production. Expected postgresql:// or postgres://, but got: ${databaseUrl.substring(0, 50)}... Please check your Railway PostgreSQL service is properly linked and DATABASE_URL is set correctly.`
+    logger.error('Database URL format error:', { 
+      error: errorMsg, 
+      urlPrefix: databaseUrl.substring(0, 50),
+      isProduction 
+    })
+    throw new Error(errorMsg)
   }
   
   // Only normalize SQLite file URLs in development
