@@ -831,15 +831,26 @@ export default function HangoutDetailPage() {
                 alt={hangout.title}
                 className="w-full h-64 object-cover rounded-xl shadow-lg"
                 onError={(e) => {
-                  // Handle broken images - hide the broken image
+                  // Handle broken images - especially local file paths that don't exist on Railway
                   const target = e.target as HTMLImageElement
+                  const imageUrl = target.src
+                  
+                  // Check if it's a local file path that won't work in production
+                  if (imageUrl.startsWith('/uploads/') || imageUrl.includes('/uploads/')) {
+                    logger.warn('Local file path detected in production:', { imageUrl, hangoutId: hangout.id })
+                  }
+                  
                   target.style.display = 'none'
                   // Show a placeholder or error message
                   const parent = target.parentElement
                   if (parent && !parent.querySelector('.broken-image-placeholder')) {
                     const placeholder = document.createElement('div')
-                    placeholder.className = 'broken-image-placeholder w-full h-64 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400'
-                    placeholder.textContent = 'Image failed to load'
+                    placeholder.className = 'broken-image-placeholder w-full h-64 bg-gray-800 rounded-xl flex flex-col items-center justify-center text-gray-400'
+                    placeholder.innerHTML = `
+                      <div class="text-4xl mb-2">📷</div>
+                      <div class="text-sm">Image unavailable</div>
+                      <div class="text-xs mt-1 text-gray-500">Click "Change Photo" to upload a new one</div>
+                    `
                     parent.appendChild(placeholder)
                   }
                 }}
@@ -863,10 +874,17 @@ export default function HangoutDetailPage() {
                         const photosData = await photosResponse.json()
                         setAvailablePhotos(photosData.data?.photos || [])
                         setShowPrimaryPhotoModal(true)
+                      } else {
+                        const errorData = await photosResponse.json().catch(() => ({}))
+                        logger.error('Error fetching photos:', { 
+                          status: photosResponse.status, 
+                          error: errorData 
+                        });
+                        toast.error(errorData.message || `Failed to load photos (${photosResponse.status})`)
                       }
-                    } catch (error) {
+                    } catch (error: any) {
                       logger.error('Error fetching photos:', error);
-                      toast.error('Failed to load photos')
+                      toast.error(error?.message || 'Failed to load photos. Please try again.')
                     }
                   }}
                   className="absolute top-3 left-3 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-110 z-10"
@@ -892,10 +910,17 @@ export default function HangoutDetailPage() {
                           const photosData = await photosResponse.json()
                           setAvailablePhotos(photosData.data?.photos || [])
                           setShowPrimaryPhotoModal(true)
+                        } else {
+                          const errorData = await photosResponse.json().catch(() => ({}))
+                          logger.error('Error fetching photos:', { 
+                            status: photosResponse.status, 
+                            error: errorData 
+                          });
+                          toast.error(errorData.message || `Failed to load photos (${photosResponse.status})`)
                         }
-                      } catch (error) {
+                      } catch (error: any) {
                         logger.error('Error fetching photos:', error);
-                        toast.error('Failed to load photos')
+                        toast.error(error?.message || 'Failed to load photos. Please try again.')
                       }
                     }}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium shadow-lg"

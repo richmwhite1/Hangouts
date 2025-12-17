@@ -543,10 +543,27 @@ export async function GET(
         hangoutId,
         error: photosError.message,
         stack: photosError.stack,
-        name: photosError.name
+        name: photosError.name,
+        code: photosError.code
       }, 'PHOTOS');
-      // Return empty array instead of failing entirely
-      photos = [];
+      
+      // Try a simpler query without the include if the first one fails
+      try {
+        logger.debug('Retrying photos query without user relation', { hangoutId }, 'PHOTOS');
+        photos = await db.photos.findMany({
+          where: { contentId: hangoutId },
+          orderBy: { createdAt: 'desc' }
+        });
+        logger.debug('Simple photos query successful', { hangoutId, photoCount: photos.length }, 'PHOTOS');
+      } catch (retryError: any) {
+        logger.error('Retry photos query also failed:', {
+          hangoutId,
+          error: retryError.message,
+          stack: retryError.stack
+        }, 'PHOTOS');
+        // Return empty array instead of failing entirely
+        photos = [];
+      }
     }
 
     const response = createSuccessResponse({ photos });
