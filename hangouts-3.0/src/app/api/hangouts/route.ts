@@ -323,13 +323,35 @@ export async function POST(request: NextRequest) {
     if (validatedData.options && validatedData.options.length > 0) {
       // Use the first option's dateTime as start time
       const firstOption = validatedData.options[0]
-      const optionDateTime = firstOption?.dateTime ? new Date(firstOption.dateTime) : null
-      // If option has a dateTime, use it; otherwise default to 1 hour from now
+      logger.debug('Processing dateTime from first option', {
+        hasDateTime: !!firstOption?.dateTime,
+        dateTime: firstOption?.dateTime,
+        dateTimeType: typeof firstOption?.dateTime
+      }, 'HANGOUT_CREATION')
+      
+      let optionDateTime: Date | null = null
+      if (firstOption?.dateTime) {
+        // Handle both ISO string and Date object
+        if (typeof firstOption.dateTime === 'string') {
+          optionDateTime = new Date(firstOption.dateTime)
+        } else if (firstOption.dateTime instanceof Date) {
+          optionDateTime = firstOption.dateTime
+        }
+      }
+      
+      // If option has a valid dateTime, use it; otherwise default to 1 hour from now
       if (optionDateTime && !isNaN(optionDateTime.getTime())) {
         startTime = optionDateTime
+        logger.info('Using dateTime from first option', {
+          startTime: startTime.toISOString()
+        }, 'HANGOUT_CREATION')
       } else {
         // Default to 1 hour from now to ensure it shows in upcoming feed
         startTime = new Date(Date.now() + 60 * 60 * 1000)
+        logger.warn('Invalid or missing dateTime, using default', {
+          providedDateTime: firstOption?.dateTime,
+          defaultStartTime: startTime.toISOString()
+        }, 'HANGOUT_CREATION')
       }
       // End time is 3 hours after start time
       endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
@@ -337,6 +359,10 @@ export async function POST(request: NextRequest) {
       // Default to 1 hour from now to ensure it shows in upcoming feed
       startTime = new Date(Date.now() + 60 * 60 * 1000)
       endTime = new Date(startTime.getTime() + 3 * 60 * 60 * 1000)
+      logger.warn('No options provided, using default start/end times', {
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString()
+      }, 'HANGOUT_CREATION')
     }
 
     // Determine the flow

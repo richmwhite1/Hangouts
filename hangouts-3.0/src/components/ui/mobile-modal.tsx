@@ -99,7 +99,7 @@ export function MobileModal({
   return (
     <div 
       className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ zIndex: 100000 }}
+      style={{ zIndex: 1000000, pointerEvents: 'auto' }}
       onClick={handleBackdropClick}
     >
       <div
@@ -110,9 +110,10 @@ export function MobileModal({
           className
         )}
         style={{ 
-          zIndex: 100001,
+          zIndex: 1000001,
           maxHeight: '90vh',
-          height: '90vh'
+          height: '90vh',
+          pointerEvents: 'auto'
         }}
         onTouchStart={handleTouchStart}
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click when clicking inside modal

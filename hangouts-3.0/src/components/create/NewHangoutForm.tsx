@@ -381,6 +381,25 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
       }
     }
 
+    // Ensure all dateTime values are properly formatted as ISO strings
+    const formattedFormData = {
+      ...formData,
+      options: formData.options.map(option => ({
+        ...option,
+        dateTime: option.dateTime ? (typeof option.dateTime === 'string' 
+          ? option.dateTime 
+          : new Date(option.dateTime).toISOString()) 
+        : ''
+      }))
+    }
+
+    // Log for debugging
+    logger.debug('Submitting hangout form', {
+      hasOptions: formattedFormData.options.length > 0,
+      firstOptionDateTime: formattedFormData.options[0]?.dateTime,
+      allOptionDateTimes: formattedFormData.options.map(opt => opt.dateTime)
+    }, 'HANGOUT_FORM')
+
     // Trigger confetti
     confetti({
       particleCount: 100,
@@ -388,7 +407,7 @@ export default function NewHangoutForm({ onSubmit, isLoading = false, prefillEve
       origin: { y: 0.6 }
     })
 
-    onSubmit(formData)
+    onSubmit(formattedFormData)
   }
 
   const handleInputChange = (field: keyof NewHangoutFormData, value: any) => {

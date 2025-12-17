@@ -105,7 +105,7 @@ export default function EditHangoutModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700" style={{ pointerEvents: 'auto' }}>
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
             <Edit className="w-5 h-5" />
