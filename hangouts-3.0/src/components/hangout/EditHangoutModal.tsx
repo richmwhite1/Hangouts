@@ -57,17 +57,56 @@ export default function EditHangoutModal({
         return
       }
 
+      // Extract dateTime from first option - ensure it's properly formatted
+      let newStartTime = hangout.startTime
+      if (formData.options && formData.options.length > 0 && formData.options[0]?.dateTime) {
+        const dateTimeValue = formData.options[0].dateTime
+        // Ensure it's a valid date string (ISO format)
+        if (dateTimeValue && dateTimeValue.trim() !== '') {
+          try {
+            // Validate the date by creating a Date object
+            const dateObj = new Date(dateTimeValue)
+            if (!isNaN(dateObj.getTime())) {
+              newStartTime = dateObj.toISOString()
+            } else {
+              logger.warn('Invalid dateTime in form data, using original startTime', { dateTimeValue })
+            }
+          } catch (error) {
+            logger.error('Error parsing dateTime:', error)
+          }
+        }
+      }
+      
+      // Calculate endTime based on startTime (default to 3 hours later)
+      let newEndTime = hangout.endTime
+      if (newStartTime !== hangout.startTime) {
+        try {
+          const startDate = new Date(newStartTime)
+          const endDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000) // 3 hours later
+          newEndTime = endDate.toISOString()
+        } catch (error) {
+          logger.error('Error calculating endTime:', error)
+        }
+      }
+
       // Prepare update data
       const updateData = {
         title: formData.title,
         description: formData.description || null,
         location: formData.location || null,
         privacyLevel: formData.privacyLevel,
-        startTime: formData.options[0]?.dateTime || hangout.startTime,
-        endTime: hangout.endTime, // Keep original end time for now
+        startTime: newStartTime,
+        endTime: newEndTime,
         maxParticipants: hangout.maxParticipants,
         weatherEnabled: hangout.weatherEnabled
       }
+      
+      logger.info('Updating hangout with data:', {
+        hangoutId: hangout.id,
+        startTime: newStartTime,
+        endTime: newEndTime,
+        location: formData.location
+      })
 
       // Get token for authentication
       const token = await getToken()
@@ -130,9 +169,22 @@ export default function EditHangoutModal({
               title: hangout.title,
               description: hangout.description || '',
               location: hangout.location || '',
-              dateTime: hangout.startTime,
+              dateTime: hangout.startTime, // This will be used to prefill the first option's dateTime
               price: 0,
-              options: hangout.options || []
+              options: hangout.options && hangout.options.length > 0 
+                ? hangout.options.map(opt => ({
+                    ...opt,
+                    dateTime: opt.dateTime || hangout.startTime // Ensure each option has dateTime
+                  }))
+                : [{
+                    id: `option_${Date.now()}_1`,
+                    title: hangout.title,
+                    description: hangout.description || '',
+                    location: hangout.location || '',
+                    dateTime: hangout.startTime, // Use hangout's startTime as default
+                    price: 0,
+                    hangoutUrl: ''
+                  }]
             }}
             isEditMode={true}
             hangoutState={hangout.state}

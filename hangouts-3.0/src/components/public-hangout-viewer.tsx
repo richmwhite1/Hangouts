@@ -284,7 +284,18 @@ export function PublicHangoutViewer({ hangoutId, onSignInRequired }: PublicHango
                     <div className="flex-shrink-0 w-12 h-12 rounded-full bg-purple-600/10 border border-purple-600/30 flex items-center justify-center">
                       <MapPin className="h-6 w-6 text-purple-400" />
                     </div>
-                    <p className="text-white text-lg">{hangout.location}</p>
+                    <div className="flex-1">
+                      <p className="text-white text-lg">{hangout.location}</p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 text-sm mt-1 inline-flex items-center gap-1"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Open in Google Maps
+                      </a>
+                    </div>
                   </div>
                 )}
 

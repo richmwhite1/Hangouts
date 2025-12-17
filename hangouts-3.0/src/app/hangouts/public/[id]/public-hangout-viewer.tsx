@@ -537,9 +537,18 @@ END:VCALENDAR`
                 {currentHangout.location && (
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-blue-400 mt-0.5" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-white">Location</p>
                       <p className="text-gray-300">{currentHangout.location}</p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentHangout.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 text-sm mt-1 inline-flex items-center gap-1"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Open in Google Maps
+                      </a>
                     </div>
                   </div>
                 )}

@@ -507,10 +507,19 @@ export default function HangoutDetailModern({
                   {hangout.location && (
                     <div className="flex items-start space-x-4 mb-3">
                       <MapPin className="h-5 w-5 text-red-500 mt-1" />
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium text-gray-900 dark:text-white">
                           {hangout.location}
                         </p>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hangout.location)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-600 text-sm mt-1 inline-flex items-center gap-1"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Open in Google Maps
+                        </a>
                       </div>
                     </div>
                   )}

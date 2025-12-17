@@ -556,8 +556,24 @@ export async function PUT(
     if (body.location !== undefined) updateData.location = body.location
     if (body.latitude !== undefined) updateData.latitude = body.latitude
     if (body.longitude !== undefined) updateData.longitude = body.longitude
-    if (body.startTime !== undefined) updateData.startTime = new Date(body.startTime)
-    if (body.endTime !== undefined) updateData.endTime = new Date(body.endTime)
+    if (body.startTime !== undefined) {
+      // Ensure startTime is properly converted to Date
+      const startDate = typeof body.startTime === 'string' ? new Date(body.startTime) : body.startTime
+      if (!isNaN(startDate.getTime())) {
+        updateData.startTime = startDate
+      } else {
+        logger.warn('Invalid startTime provided, skipping update', { startTime: body.startTime })
+      }
+    }
+    if (body.endTime !== undefined) {
+      // Ensure endTime is properly converted to Date
+      const endDate = typeof body.endTime === 'string' ? new Date(body.endTime) : body.endTime
+      if (!isNaN(endDate.getTime())) {
+        updateData.endTime = endDate
+      } else {
+        logger.warn('Invalid endTime provided, skipping update', { endTime: body.endTime })
+      }
+    }
     if (body.privacyLevel !== undefined) updateData.privacyLevel = body.privacyLevel
     if (body.maxParticipants !== undefined) updateData.maxParticipants = body.maxParticipants
     if (body.weatherEnabled !== undefined) updateData.weatherEnabled = body.weatherEnabled
