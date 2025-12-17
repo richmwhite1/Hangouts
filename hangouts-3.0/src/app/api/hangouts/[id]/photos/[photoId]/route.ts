@@ -7,33 +7,57 @@ import { logger } from '@/lib/logger';
 
 // Helper function to check if user is host or cohost
 async function checkHostPermissions(hangoutId: string, userId: string): Promise<boolean> {
-  const hangout = await db.content.findUnique({
-    where: { id: hangoutId },
-    include: {
-      content_participants: {
-        where: {
-          userId: userId
+  try {
+    const hangout = await db.content.findUnique({
+      where: { id: hangoutId },
+      include: {
+        content_participants: {
+          where: {
+            userId: userId
+          }
         }
       }
-    }
-  });
+    });
 
-  if (!hangout) {
+    if (!hangout) {
+      logger.warn('Hangout not found in checkHostPermissions', { hangoutId, userId }, 'PHOTOS');
+      return false;
+    }
+
+    // Check if user is creator
+    if (hangout.creatorId === userId) {
+      logger.debug('User is creator', { hangoutId, userId }, 'PHOTOS');
+      return true;
+    }
+
+    // Check if user is cohost or has edit permissions
+    const participant = hangout.content_participants[0];
+    if (participant) {
+      const hasPermission = participant.role === 'CO_HOST' || 
+                           participant.role === 'CREATOR' || 
+                           participant.isCoHost ||
+                           participant.canEdit;
+      logger.debug('Participant permission check', {
+        hangoutId,
+        userId,
+        role: participant.role,
+        isCoHost: participant.isCoHost,
+        canEdit: participant.canEdit,
+        hasPermission
+      }, 'PHOTOS');
+      return hasPermission;
+    }
+
+    logger.debug('User is not a participant', { hangoutId, userId }, 'PHOTOS');
+    return false;
+  } catch (error: any) {
+    logger.error('Error checking host permissions:', {
+      error: error.message,
+      hangoutId,
+      userId
+    }, 'PHOTOS');
     return false;
   }
-
-  // Check if user is creator
-  if (hangout.creatorId === userId) {
-    return true;
-  }
-
-  // Check if user is cohost or has edit permissions
-  const participant = hangout.content_participants[0];
-  if (participant && (participant.role === 'CO_HOST' || participant.role === 'CREATOR' || participant.canEdit)) {
-    return true;
-  }
-
-  return false;
 }
 
 // DELETE a photo
@@ -141,8 +165,13 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string; photoId: string }> }
 ) {
+  let hangoutId: string = '';
+  let photoId: string = '';
+  
   try {
-    const { id: hangoutId, photoId } = await params;
+    const resolvedParams = await params;
+    hangoutId = resolvedParams.id;
+    photoId = resolvedParams.photoId;
     
     // Verify authentication
     const { userId: clerkUserId } = await auth();
@@ -212,17 +241,60 @@ export async function PATCH(
     // Set as primary photo if requested
     if (setAsPrimary) {
       const photoUrl = photo.originalUrl || photo.thumbnailUrl || photo.smallUrl || photo.mediumUrl || photo.largeUrl;
-      await db.content.update({
-        where: { id: hangoutId },
-        data: {
-          image: photoUrl
-        }
-      });
+      
+      if (!photoUrl) {
+        logger.error('Cannot set primary photo: No valid URL found', {
+          photoId,
+          hangoutId,
+          photo: {
+            originalUrl: photo.originalUrl,
+            thumbnailUrl: photo.thumbnailUrl,
+            smallUrl: photo.smallUrl,
+            mediumUrl: photo.mediumUrl,
+            largeUrl: photo.largeUrl
+          }
+        }, 'PHOTOS');
+        return NextResponse.json(
+          createErrorResponse('Bad Request', 'Photo has no valid URL to set as primary'), 
+          { status: 400 }
+        );
+      }
+
+      try {
+        await db.content.update({
+          where: { id: hangoutId },
+          data: {
+            image: photoUrl
+          }
+        });
+        logger.info('Primary photo updated successfully', {
+          hangoutId,
+          photoId,
+          photoUrl
+        }, 'PHOTOS');
+      } catch (updateError: any) {
+        logger.error('Error updating primary photo in database:', {
+          error: updateError.message,
+          stack: updateError.stack,
+          hangoutId,
+          photoId
+        }, 'PHOTOS');
+        throw new Error(`Failed to update primary photo: ${updateError.message || 'Database error'}`);
+      }
     }
 
     return NextResponse.json(createSuccessResponse({ message: 'Photo updated successfully' }), { status: 200 });
   } catch (error: any) {
-    logger.error('Error updating photo:', error);
-    return NextResponse.json(createErrorResponse('Internal Server Error', error.message || 'Failed to update photo'), { status: 500 });
+    logger.error('Error updating photo:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name,
+      hangoutId,
+      photoId
+    }, 'PHOTOS');
+    return NextResponse.json(
+      createErrorResponse('Internal Server Error', error.message || 'Failed to update photo'), 
+      { status: 500 }
+    );
   }
 }

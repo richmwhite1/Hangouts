@@ -329,21 +329,38 @@ export async function POST(
           }
         }
 
+        // Validate that we have at least one URL before creating photo record
+        const originalUrl = savedFiles.original || savedFiles.large || savedFiles.medium || savedFiles.small || savedFiles.thumbnail;
+        if (!originalUrl) {
+          logger.error('No URLs available after processing', {
+            savedFiles,
+            fileName: file.name,
+            hangoutId
+          }, 'PHOTOS');
+          throw new Error('Failed to upload photo: No URLs generated after processing');
+        }
+
+        // Ensure all required URL fields have values (use originalUrl as fallback)
+        const thumbnailUrl = savedFiles.thumbnail || savedFiles.small || savedFiles.medium || originalUrl;
+        const smallUrl = savedFiles.small || savedFiles.medium || savedFiles.large || originalUrl;
+        const mediumUrl = savedFiles.medium || savedFiles.large || originalUrl;
+        const largeUrl = savedFiles.large || savedFiles.original || originalUrl;
+
         // Create photo record
         const photo = await db.photos.create({
           data: {
             id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             contentId: hangoutId,
             creatorId: userId,
-            originalUrl: savedFiles.original || savedFiles.large || savedFiles.medium || savedFiles.small,
-            thumbnailUrl: savedFiles.thumbnail || savedFiles.small || savedFiles.original,
-            smallUrl: savedFiles.small || savedFiles.medium || savedFiles.original,
-            mediumUrl: savedFiles.medium || savedFiles.large || savedFiles.original,
-            largeUrl: savedFiles.large || savedFiles.original,
-            originalWidth: originalWidth,
-            originalHeight: originalHeight,
+            originalUrl: originalUrl,
+            thumbnailUrl: thumbnailUrl,
+            smallUrl: smallUrl,
+            mediumUrl: mediumUrl,
+            largeUrl: largeUrl,
+            originalWidth: originalWidth || 0,
+            originalHeight: originalHeight || 0,
             fileSize: buffer.length,
-            mimeType: finalMimeType,
+            mimeType: finalMimeType || 'image/webp',
             isPublic: true,
             caption: '',
             updatedAt: new Date()
@@ -357,9 +374,12 @@ export async function POST(
           fileType: file.type,
           fileSize: file.size,
           error: processingError.message,
-          stack: processingError.stack
-        });
+          stack: processingError.stack,
+          hangoutId,
+          userId
+        }, 'PHOTOS');
         // Continue with next file instead of failing entire request
+        // But log the error so we can debug
         continue;
       }
     }
@@ -383,8 +403,15 @@ export async function POST(
 
     return NextResponse.json(createSuccessResponse({ photos: uploadedPhotos }), { status: 201 });
   } catch (error: any) {
-    logger.error('Error uploading photos:', error);
-    return NextResponse.json(createErrorResponse('Internal Server Error', error.message || 'Failed to upload photos'), { status: 500 });
+    logger.error('Error uploading photos:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    }, 'PHOTOS');
+    return NextResponse.json(
+      createErrorResponse('Internal Server Error', error.message || 'Failed to upload photos'), 
+      { status: 500 }
+    );
   }
 }
 

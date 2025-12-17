@@ -5,6 +5,7 @@ import sharp from 'sharp'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { PrismaClient } from '@prisma/client'
+import { uploadImage } from '@/lib/cloudinary'
 
 import { logger } from '@/lib/logger'
 
@@ -270,16 +271,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Save to local filesystem
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', type)
-    await mkdir(uploadsDir, { recursive: true })
+    // Determine folder for Cloudinary upload
+    const cloudinaryFolder = type === 'hangout' ? 'hangouts' : type === 'profile' ? 'profiles' : 'backgrounds'
     
-    // Write file to disk
-    const filePath = join(uploadsDir, filename)
-    await writeFile(filePath, processedBuffer)
+    // Try to upload to Cloudinary first (if configured)
+    const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name' &&
+                                process.env.CLOUDINARY_API_KEY &&
+                                process.env.CLOUDINARY_API_KEY !== 'demo' &&
+                                process.env.CLOUDINARY_API_KEY !== 'your_cloudinary_api_key'
     
-    // Return file info
-    const fileUrl = `/uploads/${type}/${filename}`
+    let fileUrl: string
+    let uploadMethod: 'cloudinary' | 'local' = 'local'
+    
+    if (hasCloudinaryConfig) {
+      try {
+        logger.info('Upload API - Uploading to Cloudinary', { type, folder: cloudinaryFolder, filename })
+        const cloudinaryResult = await uploadImage(
+          processedBuffer,
+          filename, // uploadImage function will handle extension removal
+          'image/webp',
+          cloudinaryFolder
+        )
+        
+        if (cloudinaryResult.success && cloudinaryResult.url) {
+          fileUrl = cloudinaryResult.url
+          uploadMethod = 'cloudinary'
+          logger.info('Upload API - Cloudinary upload successful', { url: fileUrl })
+        } else {
+          logger.warn('Upload API - Cloudinary upload failed, falling back to local storage', { error: cloudinaryResult.error })
+          throw new Error(cloudinaryResult.error || 'Cloudinary upload failed')
+        }
+      } catch (cloudinaryError: any) {
+        logger.warn('Upload API - Cloudinary error, falling back to local storage', { error: cloudinaryError.message })
+        // Fall through to local storage
+      }
+    }
+    
+    // Fallback to local filesystem if Cloudinary is not configured or upload failed
+    if (uploadMethod === 'local' || !fileUrl) {
+      logger.info('Upload API - Using local filesystem storage', { type, filename })
+      const uploadsDir = join(process.cwd(), 'public', 'uploads', type)
+      await mkdir(uploadsDir, { recursive: true })
+      
+      // Write file to disk
+      const filePath = join(uploadsDir, filename)
+      await writeFile(filePath, processedBuffer)
+      
+      // Return file info with local URL
+      fileUrl = `/uploads/${type}/${filename}`
+    }
     
     return NextResponse.json({
       success: true,
@@ -292,6 +334,7 @@ export async function POST(request: NextRequest) {
         dimensions,
         originalSize: file.size,
         compressionRatio: Math.round((1 - processedBuffer.length / file.size) * 100),
+        uploadMethod,
         ...(type === 'hangout' && hangoutId && { hangoutId })
       }
     })

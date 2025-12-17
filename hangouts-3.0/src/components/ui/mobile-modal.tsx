@@ -96,7 +96,7 @@ export function MobileModal({
 
   if (!isOpen) return null
 
-  return (
+  const modalContent = (
     <div 
       className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ zIndex: 1000000, pointerEvents: 'auto' }}
@@ -146,6 +146,9 @@ export function MobileModal({
       </div>
     </div>
   )
+
+  // Use portal to render outside Dialog hierarchy
+  return createPortal(modalContent, document.body)
 }
 
 // Mobile-optimized full-screen modal for mobile devices

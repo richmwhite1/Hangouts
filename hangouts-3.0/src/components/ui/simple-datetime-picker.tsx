@@ -31,9 +31,9 @@ export function SimpleDateTimePicker({
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear())
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Initialize from value
+  // Initialize from value - only update when modal is closed to prevent interference
   useEffect(() => {
-    if (value) {
+    if (!isOpen && value) {
       try {
         const date = new Date(value)
         if (!isNaN(date.getTime())) {
@@ -52,7 +52,7 @@ export function SimpleDateTimePicker({
         console.error('Error parsing date:', error)
       }
     }
-  }, [value])
+  }, [value, isOpen])
 
   // Generate calendar days
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate()
@@ -147,6 +147,40 @@ export function SimpleDateTimePicker({
     }},
   ]
 
+  // Initialize date/time when modal opens if not already set
+  useEffect(() => {
+    if (isOpen && (!selectedDate || !selectedTime)) {
+      if (value) {
+        try {
+          const date = new Date(value)
+          if (!isNaN(date.getTime())) {
+            const dateString = date.toISOString().split('T')[0]
+            setSelectedDate(dateString)
+            
+            const hours = date.getHours().toString().padStart(2, '0')
+            const minutes = date.getMinutes().toString().padStart(2, '0')
+            setSelectedTime(`${hours}:${minutes}`)
+            
+            setDisplayMonth(date.getMonth())
+            setDisplayYear(date.getFullYear())
+          }
+        } catch (error) {
+          console.error('Error parsing date:', error)
+        }
+      } else {
+        // Default to today and current time if no value
+        const now = new Date()
+        const dateString = now.toISOString().split('T')[0]
+        setSelectedDate(dateString)
+        const hours = now.getHours().toString().padStart(2, '0')
+        const minutes = now.getMinutes().toString().padStart(2, '0')
+        setSelectedTime(`${hours}:${minutes}`)
+        setDisplayMonth(now.getMonth())
+        setDisplayYear(now.getFullYear())
+      }
+    }
+  }, [isOpen, value, selectedDate, selectedTime])
+
   // Close any open location suggestions when date picker opens
   useEffect(() => {
     if (isOpen) {
@@ -168,7 +202,9 @@ export function SimpleDateTimePicker({
     <div className={className}>
       <button
         type="button"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           // Close any open location suggestions before opening date picker
           const pacContainers = document.querySelectorAll('.pac-container')
           pacContainers.forEach(container => {
@@ -180,6 +216,7 @@ export function SimpleDateTimePicker({
           })
           setIsOpen(true)
         }}
+        style={{ pointerEvents: 'auto', cursor: 'pointer' }}
         className="w-full flex items-center gap-2 px-4 py-3 bg-black border border-gray-600 rounded-lg text-white hover:border-purple-500 transition-colors text-left"
       >
         <Calendar className="w-5 h-5 text-blue-400" />

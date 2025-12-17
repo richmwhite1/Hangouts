@@ -413,7 +413,10 @@ export function MergedDiscoveryPage() {
       params.append('page', String(pageNum))
       params.append('limit', '50') // Increased from default
       
-      if (!isSignedIn) {
+      // Always specify contentType to ensure hangouts are filtered correctly
+      if (isSignedIn) {
+        params.append('contentType', 'hangouts')
+      } else {
         params.append('type', 'HANGOUT')
         params.append('privacyLevel', 'PUBLIC')
       }
