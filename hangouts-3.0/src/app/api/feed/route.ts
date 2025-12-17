@@ -234,26 +234,31 @@ async function getFeedHandler(request: NextRequest) {
         : { startTime: 'asc' as const }
     }
 
-    // Debug: First try to get just user's own hangouts
+    // Debug: First try to get just user's own hangouts to verify they exist
     let userOwnHangouts = []
     if (userId && feedType === 'home') {
       try {
         userOwnHangouts = await db.content.findMany({
           where: {
             creatorId: userId,
-            type: 'HANGOUT',
-            status: 'PUBLISHED'
+            status: 'PUBLISHED',
+            ...(contentType === 'hangouts' ? { type: 'HANGOUT' } : contentType === 'events' ? { type: 'EVENT' } : {})
           },
-          select: { id: true, title: true, startTime: true },
-          take: 5
+          select: { id: true, title: true, startTime: true, type: true },
+          take: 10
         })
-        logger.debug('User own hangouts found', {
+        logger.debug('User own content found', {
           userId,
+          contentType,
           count: userOwnHangouts.length,
-          hangouts: userOwnHangouts.map(h => ({ id: h.id, title: h.title, startTime: h.startTime }))
+          items: userOwnHangouts.map(h => ({ id: h.id, title: h.title, type: h.type, startTime: h.startTime }))
         }, 'FEED')
-      } catch (debugError) {
-        logger.error('Error fetching user own hangouts', { userId, error: debugError.message }, 'FEED')
+      } catch (debugError: any) {
+        logger.error('Error fetching user own content', { 
+          userId, 
+          contentType,
+          error: debugError?.message || String(debugError) 
+        }, 'FEED')
       }
     }
 
@@ -299,6 +304,7 @@ async function getFeedHandler(request: NextRequest) {
             startTime: true,
             endTime: true,
             privacyLevel: true,
+            creatorId: true,
             createdAt: true,
             updatedAt: true,
             venue: true,
@@ -439,18 +445,48 @@ async function getFeedHandler(request: NextRequest) {
         logger.info('Home feed query completed for user', {
           userId,
           totalHangouts: content.length,
+          contentType,
           hangoutDetails: content.map((c: any) => ({
             id: c.id,
             title: c.title,
             creatorId: c.creatorId,
             status: c.status,
-            type: c.type
+            type: c.type,
+            startTime: c.startTime
           }))
         }, 'HOME_FEED')
+        
+        // If no content found, log a warning and check if user has any hangouts at all
+        if (content.length === 0) {
+          logger.warn('No content found in simplified home feed query', {
+            userId,
+            contentType,
+            where: simplifiedWhere
+          }, 'HOME_FEED')
+          
+          // Double-check: Query directly for user's hangouts
+          const directCheck = await db.content.findMany({
+            where: {
+              creatorId: userId,
+              status: 'PUBLISHED',
+              ...(contentType === 'hangouts' ? { type: 'HANGOUT' } : contentType === 'events' ? { type: 'EVENT' } : {})
+            },
+            select: { id: true, title: true, type: true },
+            take: 5
+          })
+          logger.debug('Direct check for user content', {
+            userId,
+            contentType,
+            found: directCheck.length,
+            items: directCheck.map(c => ({ id: c.id, title: c.title, type: c.type }))
+          }, 'HOME_FEED')
+        }
       } catch (simpleQueryError: any) {
         logger.error('Error with simplified query, falling back to original', {
           userId,
-          error: simpleQueryError?.message || String(simpleQueryError)
+          contentType,
+          error: simpleQueryError?.message || String(simpleQueryError),
+          stack: simpleQueryError?.stack
         }, 'FEED')
         // Only use fallback if simplified query failed - content will be empty array
         content = await db.content.findMany({
@@ -783,8 +819,30 @@ async function getFeedHandler(request: NextRequest) {
     }
 
     // Get total count for hasMore calculation
+    // Use the same where clause that was used for the query
+    let countWhere = whereClause
+    if (feedType === 'home' && userId) {
+      // Use the simplified where clause for count as well
+      countWhere = {
+        status: 'PUBLISHED',
+        OR: [
+          { creatorId: userId },
+          {
+            content_participants: {
+              some: { userId: userId }
+            }
+          }
+        ]
+      }
+      if (contentType === 'hangouts') {
+        countWhere.type = 'HANGOUT'
+      } else if (contentType === 'events') {
+        countWhere.type = 'EVENT'
+      }
+    }
+    
     const totalCount = await db.content.count({
-      where: whereClause
+      where: countWhere
     })
 
     logger.debug('Raw content found', { count: content.length, total: totalCount, firstItem: content[0] ? { id: content[0].id, title: content[0].title } : null }, 'FEED')
@@ -900,6 +958,15 @@ async function getFeedHandler(request: NextRequest) {
       }
     }).filter(item => item !== null)
 
+    logger.debug('Sending feed response', {
+      feedType,
+      userId,
+      contentType,
+      contentCount: transformedContent.length,
+      totalCount,
+      hasMore: offset + transformedContent.length < totalCount
+    }, 'FEED')
+    
     return NextResponse.json({ 
       success: true,
       data: { 
