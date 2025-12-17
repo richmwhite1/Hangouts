@@ -257,16 +257,25 @@ async function getFeedHandler(request: NextRequest) {
       }
     }
 
-    // TEMPORARY: For debugging, let's try a simpler query that just gets user's own hangouts
-    let content = []
+    // TEMPORARY: For debugging, let's try a simpler query that just gets user's own hangouts and hangouts they're invited to
+    let content: any[] = []
     if (feedType === 'home' && userId) {
       try {
-        // Build where clause with contentType filter
+        // Build where clause with contentType filter - include both creator and participant hangouts
         const simplifiedWhere: any = {
-          creatorId: userId,
-          status: 'PUBLISHED'
+          status: 'PUBLISHED',
+          OR: [
+            // User's own content (all privacy levels)
+            { creatorId: userId },
+            // Content where user is a participant (invited)
+            {
+              content_participants: {
+                some: { userId: userId }
+              }
+            }
+          ]
         }
-        
+
         // Respect contentType parameter
         if (contentType === 'hangouts') {
           simplifiedWhere.type = 'HANGOUT'
@@ -418,22 +427,34 @@ async function getFeedHandler(request: NextRequest) {
         })
         
         // Add logging after query
-        logger.debug('Simplified query results', { 
-          userId, 
+        logger.debug('Simplified query results', {
+          userId,
           contentType,
           count: content.length,
           hangoutIds: content.map((c: any) => c.id),
-          hangoutTitles: content.map((c: any) => c.title)
+          hangoutTitles: content.map((c: any) => c.title),
+          hangoutCreators: content.map((c: any) => c.creatorId),
+          hangoutStatuses: content.map((c: any) => c.status)
         }, 'FEED')
-      } catch (simpleQueryError) {
+        logger.info('Home feed query completed for user', {
+          userId,
+          totalHangouts: content.length,
+          hangoutDetails: content.map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            creatorId: c.creatorId,
+            status: c.status,
+            type: c.type
+          }))
+        }, 'HOME_FEED')
+      } catch (simpleQueryError: any) {
         logger.error('Error with simplified query, falling back to original', {
           userId,
-          error: simpleQueryError.message
+          error: simpleQueryError?.message || String(simpleQueryError)
         }, 'FEED')
-      }
-      // Not home feed or no user, use original query
-      content = await db.content.findMany({
-        where: whereClause,
+        // Only use fallback if simplified query failed - content will be empty array
+        content = await db.content.findMany({
+          where: whereClause,
       select: {
         id: true,
         type: true,
@@ -583,21 +604,182 @@ async function getFeedHandler(request: NextRequest) {
       take: limit,
       skip: offset
     })
+      }
 
-    logger.debug('Main feed query completed', {
-      feedType,
-      userId,
-      contentType,
-      queryPath: 'main',
-      foundCount: content.length,
-      ids: content.map((c: any) => c.id),
-      titles: content.map((c: any) => c.title),
-      creators: content.map((c: any) => c.creatorId),
-      statuses: content.map((c: any) => c.status),
-      types: content.map((c: any) => c.type),
-      privacyLevels: content.map((c: any) => c.privacyLevel),
-      timestamp: new Date().toISOString()
-    }, 'FEED')
+      logger.debug('Main feed query completed', {
+        feedType,
+        userId,
+        contentType,
+        queryPath: 'main',
+        foundCount: content.length,
+        ids: content.map((c: any) => c.id),
+        titles: content.map((c: any) => c.title),
+        creators: content.map((c: any) => c.creatorId),
+        statuses: content.map((c: any) => c.status),
+        types: content.map((c: any) => c.type),
+        privacyLevels: content.map((c: any) => c.privacyLevel),
+        timestamp: new Date().toISOString()
+      }, 'FEED')
+    } else {
+      // Not home feed or no user, use original query
+      content = await db.content.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          description: true,
+          image: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          startTime: true,
+          endTime: true,
+          privacyLevel: true,
+          createdAt: true,
+          updatedAt: true,
+          // Event-specific fields
+          venue: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          priceMin: true,
+          priceMax: true,
+          currency: true,
+          ticketUrl: true,
+          attendeeCount: true,
+          externalEventId: true,
+          source: true,
+          // Hangout-specific fields
+          maxParticipants: true,
+          weatherEnabled: true,
+          // Creator info
+          users: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              avatar: true,
+              lastSeen: true,
+              isActive: true
+            }
+          },
+          // Participants
+          content_participants: {
+            include: {
+              users: {
+                select: {
+                  id: true,
+                  username: true,
+                  name: true,
+                  avatar: true,
+                  lastSeen: true,
+                  isActive: true
+                }
+              }
+            }
+          },
+          // Event tags
+          eventTags: {
+            select: {
+              tag: true
+            }
+          },
+          // Event images
+          eventImages: {
+            select: {
+              imageUrl: true,
+              orderIndex: true
+            },
+            orderBy: {
+              orderIndex: 'asc'
+            }
+          },
+          // Event saves
+          eventSaves: {
+            select: {
+              userId: true,
+              createdAt: true
+            }
+          },
+          // Polls (for hangouts)
+          polls: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              options: true,
+              status: true,
+              consensusPercentage: true,
+              expiresAt: true,
+              createdAt: true
+            }
+          },
+          // Photos
+          photos: {
+            select: {
+              id: true,
+              originalUrl: true,
+              thumbnailUrl: true,
+              caption: true,
+              createdAt: true,
+              users: {
+                select: {
+                  id: true,
+                  name: true,
+                  username: true,
+                  avatar: true
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'desc'
+            },
+            take: 5 // Limit photos for feed
+          },
+          // RSVPs
+          rsvps: {
+            select: {
+              id: true,
+              userId: true,
+              status: true,
+              respondedAt: true,
+              users: {
+                select: {
+                  id: true,
+                  name: true,
+                  username: true,
+                  avatar: true
+                }
+              }
+            }
+          },
+          // Counts
+          _count: {
+            select: {
+              content_participants: true,
+              comments: true,
+              content_likes: true,
+              content_shares: true,
+              messages: true,
+              photos: true,
+              rsvps: true,
+              eventSaves: true
+            }
+          }
+        },
+        orderBy,
+        take: limit,
+        skip: offset
+      })
+
+      logger.debug('Non-home feed query completed', {
+        feedType,
+        userId,
+        contentType,
+        foundCount: content.length
+      }, 'FEED')
     }
 
     // Get total count for hasMore calculation

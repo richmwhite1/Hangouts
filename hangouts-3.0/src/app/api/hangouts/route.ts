@@ -383,6 +383,14 @@ export async function POST(request: NextRequest) {
       creatorId: hangoutData.creatorId,
       status: hangoutData.status
     })
+    logger.info('Hangout creation initiated', {
+      hangoutId: hangoutData.id,
+      title: hangoutData.title,
+      creatorId: hangoutData.creatorId,
+      privacyLevel: hangoutData.privacyLevel,
+      status: hangoutData.status,
+      startTime: hangoutData.startTime.toISOString()
+    }, 'HANGOUT_CREATION')
 
     let hangout
     try {

@@ -175,28 +175,36 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
     }
 
     // Build content type filter
+    // Default to HANGOUT type for discover page to ensure public hangouts are visible
     let contentTypeFilter: any = {}
-    if (contentType === 'hangouts') {
+    if (contentType === 'hangouts' || contentType === 'all' || !contentType) {
       contentTypeFilter.type = 'HANGOUT'
     } else if (contentType === 'events') {
       contentTypeFilter.type = 'EVENT'
     }
-    // If contentType is 'all', don't filter by type
+    // Note: When contentType is 'all', we default to HANGOUT to ensure hangouts are shown
+    // If you want to show both hangouts and events, you would need to remove the type filter
+
+    // Ensure the query structure correctly combines all filters
+    // The where clause should include: type (if specified), status, privacyLevel OR conditions, and date filters
+    const finalWhere: any = {
+      ...contentTypeFilter,
+      ...whereClause
+    }
 
     logger.debug('Executing discover query', {
       whereClause: JSON.stringify(whereClause, null, 2),
       contentTypeFilter,
+      finalWhere: JSON.stringify(finalWhere, null, 2),
       userId,
       page,
       limit,
-      includePast
+      includePast,
+      contentType
     }, 'DISCOVER')
 
     const hangouts = await db.content.findMany({
-      where: {
-        ...contentTypeFilter,
-        ...whereClause
-      },
+      where: finalWhere,
       select: {
         id: true,
         title: true,
@@ -280,6 +288,17 @@ async function getDiscoverHangoutsHandler(request: NextRequest) {
         startTime: hangouts[0].startTime
       } : null
     }, 'DISCOVER')
+    logger.info('Discovery page query completed', {
+      userId,
+      totalHangouts: hangouts.length,
+      hangoutDetails: hangouts.slice(0, 5).map(h => ({
+        id: h.id,
+        title: h.title,
+        creatorId: h.creatorId,
+        privacyLevel: h.privacyLevel,
+        status: h.status
+      }))
+    }, 'DISCOVERY_FEED')
 
     // Transform hangouts to use first photo as primary image
     const transformedHangouts = hangouts.map(hangout => ({
