@@ -28,7 +28,24 @@ export async function POST(
     }
 
     const { id: hangoutId } = await params;
-    logger.debug('Photo upload request', { hangoutId, cloudinaryConfigured }, 'PHOTOS');
+    
+    // Check Cloudinary configuration early
+    const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name' &&
+                                process.env.CLOUDINARY_API_KEY &&
+                                process.env.CLOUDINARY_API_KEY !== 'demo' &&
+                                process.env.CLOUDINARY_API_KEY !== 'your_cloudinary_api_key' &&
+                                process.env.CLOUDINARY_API_SECRET &&
+                                process.env.CLOUDINARY_API_SECRET !== 'demo' &&
+                                process.env.CLOUDINARY_API_SECRET !== 'your_cloudinary_api_secret';
+    
+    logger.debug('Photo upload request', { 
+      hangoutId, 
+      cloudinaryConfigured, 
+      hasCloudinaryConfig,
+      nodeEnv: process.env.NODE_ENV 
+    }, 'PHOTOS');
 
     // Verify authentication using Clerk
     const { userId: clerkUserId } = await auth();
@@ -42,6 +59,21 @@ export async function POST(
     }
 
     const userId = user.id;
+    
+    // Early check: If in production and Cloudinary is not configured, return helpful error
+    if (process.env.NODE_ENV === 'production' && !hasCloudinaryConfig) {
+      logger.error('Photo upload attempted in production without Cloudinary configuration', {
+        hangoutId,
+        userId
+      }, 'PHOTOS');
+      return NextResponse.json(
+        createErrorResponse(
+          'Configuration Error', 
+          'Photo upload service is not configured. Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set in your environment variables.'
+        ), 
+        { status: 500 }
+      );
+    }
 
     // Check if hangout exists and get its details
     const hangout = await db.content.findUnique({
@@ -228,18 +260,17 @@ export async function POST(
 
             // If we couldn't process any sizes, check if Cloudinary is configured
             if (Object.keys(savedFiles).length === 0) {
-              const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
-                                         process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
-                                         process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
+              logger.error('Failed to upload any image sizes to Cloudinary', {
+                hangoutId,
+                fileName: file.name,
+                hasCloudinaryConfig,
+                nodeEnv: process.env.NODE_ENV
+              }, 'PHOTOS');
               
               if (!hasCloudinaryConfig && process.env.NODE_ENV === 'production') {
-                logger.error('Cloudinary not configured - cannot upload photos', {
-                  hangoutId,
-                  fileName: file.name
-                }, 'PHOTOS');
-                throw new Error('Photo upload service is not configured. Please contact support.');
+                throw new Error('Photo upload service is not configured. Please ensure Cloudinary environment variables are set.');
               }
-              throw new Error('Failed to process any image sizes');
+              throw new Error('Failed to process and upload image. Please try a different image file.');
             }
 
             finalMimeType = 'image/webp';
@@ -376,7 +407,10 @@ export async function POST(
           error: processingError.message,
           stack: processingError.stack,
           hangoutId,
-          userId
+          userId,
+          hasCloudinaryConfig: !!(process.env.CLOUDINARY_CLOUD_NAME && 
+                                 process.env.CLOUDINARY_CLOUD_NAME !== 'demo' &&
+                                 process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name')
         }, 'PHOTOS');
         // Continue with next file instead of failing entire request
         // But log the error so we can debug
@@ -385,7 +419,12 @@ export async function POST(
     }
 
     if (uploadedPhotos.length === 0) {
-      return NextResponse.json(createErrorResponse('Bad Request', 'No valid photos were uploaded'), { status: 400 });
+      logger.error('No photos were successfully uploaded', {
+        hangoutId,
+        userId,
+        filesProcessed: files.length
+      }, 'PHOTOS');
+      return NextResponse.json(createErrorResponse('Bad Request', 'No valid photos were uploaded. Please check that the files are valid images and try again.'), { status: 400 });
     }
 
     // Update content's updatedAt timestamp for recent activity sorting
@@ -406,10 +445,20 @@ export async function POST(
     logger.error('Error uploading photos:', {
       error: error.message,
       stack: error.stack,
-      name: error.name
+      name: error.name,
+      hangoutId: hangoutId || 'unknown'
     }, 'PHOTOS');
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Failed to upload photos';
+    if (error.message?.includes('Cloudinary') || error.message?.includes('upload service')) {
+      errorMessage = 'Photo upload service is not configured. Please contact support.';
+    } else if (error.message?.includes('processing')) {
+      errorMessage = 'Failed to process image. Please try a different image file.';
+    }
+    
     return NextResponse.json(
-      createErrorResponse('Internal Server Error', error.message || 'Failed to upload photos'), 
+      createErrorResponse('Internal Server Error', errorMessage), 
       { status: 500 }
     );
   }
